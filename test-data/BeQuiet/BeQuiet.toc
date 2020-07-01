@@ -1,0 +1,7 @@
+## Interface: 80300
+## Version: 2.0.4
+## Title: BeQuiet
+## Notes: Suppresses talking chat head frame and audio
+## SavedVariables: ASHRAN, ENABLED, ISLANDS, NAZJATAR
+
+BeQuiet.lua

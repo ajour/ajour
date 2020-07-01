@@ -1,0 +1,11 @@
+## Interface: 80100
+## Version: 1.0.13
+## X-CompatibleWith: 80000
+## Title: Lib: SpellRange-1.0
+## Notes: Provides enhanced spell range checking functionality
+## Author: Cybeloras of Aerie Peak
+## X-Category: Library
+
+libs\LibStub\LibStub.lua
+
+lib.xml

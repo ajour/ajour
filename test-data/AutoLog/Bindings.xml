@@ -1,0 +1,5 @@
+<Bindings>
+    <Binding name="AUTOLOG_TOGGLE" header="AUTOLOG">
+		AutoLog:ToggleLog()
+	</Binding>
+</Bindings>

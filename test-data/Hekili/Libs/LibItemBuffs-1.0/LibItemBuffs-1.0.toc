@@ -1,0 +1,13 @@
+## Interface: 80000
+## Title: Lib: ItemBuffs-1.0
+## Notes: Buff-to-item database.
+## Author: Adirelle
+## Version: e9412c3
+## LoadOnDemand: 1
+## X-Date: 2018-09-09T08:21:07Z
+## X-Category: Library
+## X-License: GPL v3
+## X-eMail: adirelle@gmail.com
+
+LibStub.lua
+LibItemBuffs-1.0.xml

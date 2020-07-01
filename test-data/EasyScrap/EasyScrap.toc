@@ -1,0 +1,24 @@
+## Interface: 80300
+## Title: Easy Scrap
+## Notes: Adds all eligible gear to the scrapper interface.
+## Author: Motig
+## Version: 24
+## SavedVariablesPerCharacter: EasyScrap_IgnoreList
+## SavedVariables: EasyScrap_SaveData
+
+EasyScrap.lua
+EasyScrap_WhatsNew.lua
+EasyScrap_Functions.lua
+
+Frames\EasyScrapXMLFrames.xml
+Frames\TooltipReader.lua
+Frames\EasyScrapMainFrame.lua
+Frames\EasyScrapItemFrame.lua
+Frames\EasyScrapEditFilterFrame.lua
+Frames\EasyScrapFilterFrame.lua
+Frames\EasyScrapOptionsFrame.lua
+
+EasyScrap_Filters.lua
+EasyScrap_ItemDisplay.lua
+EasyScrap_Main.lua
+Bindings.xml

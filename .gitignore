@@ -11,3 +11,6 @@ Cargo.lock
 
 #Added by cargo
 /target
+
+# OS Specific
+.DS_Store

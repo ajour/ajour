@@ -1,0 +1,59 @@
+## Interface: 80300
+## Version: v8.3.0-07
+## Title: Hekili
+## Author: Hekili
+## Notes: Priority helper for many DPS and tanking specializations, based on SimulationCraft action lists.
+## SavedVariables: HekiliDB
+## OptionalDeps: AddOnSkins, BrewmasterTools, ConsolePort, ElvUI, LibDualSpec-1.0, Masque, SpellFlash, SpellFlashCore, WeakAuras
+## X-Curse-Project-ID: 69254
+## X-WoWI-ID: 24608
+
+embeds.xml
+
+Hekili.lua
+Utils.lua
+Formatting.lua
+MultilineEditor.lua
+Constants.lua
+State.lua
+Events.lua
+
+Classes.lua
+Classes\DeathKnightBlood.lua
+Classes\DeathKnightFrost.lua
+Classes\DeathKnightUnholy.lua
+Classes\DemonHunterHavoc.lua
+Classes\DemonHunterVengeance.lua
+Classes\DruidBalance.lua
+Classes\DruidFeral.lua
+Classes\DruidGuardian.lua
+Classes\HunterBeastMastery.lua
+Classes\HunterMarksmanship.lua
+Classes\HunterSurvival.lua
+Classes\MageArcane.lua
+Classes\MageFire.lua
+Classes\MageFrost.lua
+Classes\MonkBrewmaster.lua
+Classes\MonkMistweaver.lua
+Classes\MonkWindwalker.lua
+Classes\PaladinProtection.lua
+Classes\PaladinRetribution.lua
+Classes\PriestDiscipline.lua
+Classes\PriestShadow.lua
+Classes\RogueAssassination.lua
+Classes\RogueOutlaw.lua
+Classes\RogueSubtlety.lua
+Classes\ShamanElemental.lua
+Classes\ShamanEnhancement.lua
+Classes\WarlockAffliction.lua
+Classes\WarlockDemonology.lua
+Classes\WarlockDestruction.lua
+Classes\WarriorArms.lua
+Classes\WarriorFury.lua
+Classes\WarriorProtection.lua
+
+Targets.lua
+Options.lua
+UI.lua
+Scripts.lua
+Core.lua

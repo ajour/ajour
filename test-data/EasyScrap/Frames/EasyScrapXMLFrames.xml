@@ -1,0 +1,247 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+	<Button name="EasyScrapFrameTabButtonTemplate" virtual="true" hidden="false">
+        <Size>
+            <AbsDimension x="10" y="32"/>
+        </Size>
+        <Layers>
+        	<Layer level="BACKGROUND">
+        		<Texture name="$parentLeftDisabled" file="Interface\PaperDollInfoFrame\UI-Character-ActiveTab">
+        			<Size>
+        				<AbsDimension x="20" y="35"/>
+        			</Size>
+        			<Anchors>
+        				<Anchor point="TOPLEFT">
+        					<Offset>
+        						<AbsDimension x="0" y="3"/>
+        					</Offset>
+        				</Anchor>
+        			</Anchors>
+					<TexCoords left="0" right="0.15625" top="0" bottom="0.546875"/>
+        		</Texture>
+				<Texture name="$parentMiddleDisabled" file="Interface\PaperDollInfoFrame\UI-Character-ActiveTab">
+        			<Size>
+        				<AbsDimension x="88" y="35"/>
+        			</Size>
+        			<Anchors>
+        				<Anchor point="LEFT" relativeTo="$parentLeftDisabled" relativePoint="RIGHT"/>
+        			</Anchors>
+					<TexCoords left="0.15625" right="0.84375" top="0" bottom="0.546875"/>
+        		</Texture>
+				<Texture name="$parentRightDisabled" file="Interface\PaperDollInfoFrame\UI-Character-ActiveTab">
+        			<Size>
+        				<AbsDimension x="20" y="35"/>
+        			</Size>
+        			<Anchors>
+        				<Anchor point="LEFT" relativeTo="$parentMiddleDisabled" relativePoint="RIGHT"/>
+        			</Anchors>
+					<TexCoords left="0.84375" right="1.0" top="0" bottom="0.546875"/>
+        		</Texture>
+				<Texture name="$parentLeft" file="Interface\PaperDollInfoFrame\UI-Character-InActiveTab">
+        			<Size>
+        				<AbsDimension x="20" y="32"/>
+        			</Size>
+        			<Anchors>
+        				<Anchor point="TOPLEFT" x="0" y="-1"/>
+        			</Anchors>
+					<TexCoords left="0" right="0.15625" top="0" bottom="1.0"/>
+        		</Texture>
+				<Texture name="$parentMiddle" file="Interface\PaperDollInfoFrame\UI-Character-InActiveTab">
+        			<Size>
+        				<AbsDimension x="88" y="32"/>
+        			</Size>
+        			<Anchors>
+        				<Anchor point="LEFT" relativeTo="$parentLeft" relativePoint="RIGHT"/>
+					</Anchors>
+					<TexCoords left="0.15625" right="0.84375" top="0" bottom="1.0"/>
+        		</Texture>
+				<Texture name="$parentRight" file="Interface\PaperDollInfoFrame\UI-Character-InActiveTab">
+        			<Size>
+        				<AbsDimension x="20" y="32"/>
+        			</Size>
+        			<Anchors>
+        				<Anchor point="LEFT" relativeTo="$parentMiddle" relativePoint="RIGHT"/>
+        			</Anchors>
+					<TexCoords left="0.84375" right="1.0" top="0" bottom="1.0"/>
+        		</Texture>
+        	</Layer>
+        </Layers>
+		<Frames>
+			<Frame name="$parentShine" parentKey="shineFrame" inherits="AutoCastShineTemplate">
+				<Anchors>
+					<Anchor point="CENTER" x="1" y="28"/>
+				</Anchors>
+				<Size x="76" y="76"/>
+			</Frame>
+		</Frames>
+		<Scripts>
+			<OnLoad>
+				self:SetFrameLevel(self:GetFrameLevel() + 4);
+				self:RegisterEvent("DISPLAY_SIZE_CHANGED");
+			</OnLoad>
+			<OnEvent>
+				if (self:IsVisible()) then
+					PanelTemplates_TabResize(self, 0, 104, 36, self:GetParent().maxTabWidth or 88);
+				end
+			</OnEvent>
+			<OnClick>
+				<!-- PanelTemplates_Tab_OnClick(self, CharacterFrame); 
+				CharacterFrameTab_OnClick(self, button); -->
+			</OnClick>
+			<OnShow>
+				PanelTemplates_TabResize(self, 0, 104, 36, self:GetParent().maxTabWidth or 88);
+				CharacterFrame_TabBoundsCheck(self);
+			</OnShow>
+			<OnEnter>
+				local buttonText = _G[self:GetName().."Text"];
+				if (buttonText and buttonText:IsTruncated()) then
+					GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+					GameTooltip:SetText(buttonText:GetText());
+				end
+			</OnEnter>
+			<OnLeave>
+				GameTooltip_Hide();
+			</OnLeave>
+		</Scripts>
+		<ButtonText name="$parentText">
+			<Size>
+				<AbsDimension x="0" y="10"/>
+			</Size>
+			<Anchors>
+				<Anchor point="CENTER">
+					<Offset>
+						<AbsDimension x="0" y="4"/>
+					</Offset>
+				</Anchor>
+			</Anchors>
+		</ButtonText>
+		<NormalFont style="GameFontNormalSmall"/>
+		<HighlightFont style="GameFontHighlightSmall"/>
+		<DisabledFont style="GameFontHighlightSmall"/>
+		<HighlightTexture name="$parentHighlightTexture" file="Interface\PaperDollInfoFrame\UI-Character-Tab-RealHighlight" alphaMode="ADD">
+			<Anchors>
+				<Anchor point="TOPLEFT">
+					<Offset>
+						<AbsDimension x="3" y="5"/>
+					</Offset>
+				</Anchor>
+				<Anchor point="BOTTOMRIGHT">
+					<Offset>
+						<AbsDimension x="-3" y="0"/>
+					</Offset>
+				</Anchor>
+			</Anchors>
+		</HighlightTexture>
+    </Button>
+    
+    <CheckButton name="EasyScrapCheckButtonTemplate" inherits="UICheckButtonTemplate" virtual="true">
+        <Size>
+            <AbsDimension x="20" y="20"/>
+        </Size>
+        <Layers>
+            <Layer level="ARTWORK">
+                <FontString name="$parentText" parentKey="text" inherits="GameFontNormalSmall" text="CheckButton Text">
+        			<Anchors>
+        				<Anchor point="LEFT">
+        					<Offset>
+        						<AbsDimension x="20" y="1"/>
+        					</Offset>
+        				</Anchor>
+        			</Anchors>
+                    <Color r="1" g="1" b="1"/>
+                </FontString>
+            </Layer>
+        </Layers>
+    </CheckButton>
+    
+    <EditBox name="EasyScrapEditBoxTemplate" autoFocus="false" inherits="InputBoxTemplate" virtual="true">
+        <Size>
+            <AbsDimension x="28" y="24" />
+        </Size>
+        <Scripts>
+            <OnEscapePressed function="EditBox_ClearFocus"/>
+            <OnEnterPressed function="EditBox_ClearFocus"/>
+        </Scripts>
+    </EditBox>
+    
+ 	<Button name="EasyScrapItemButtonTemplate" registerForClicks="LeftButtonUp, RightButtonUp" virtual="true">
+		<Size>
+			<AbsDimension x="37" y="37"/>
+		</Size>
+		<Animations>
+			<AnimationGroup parentKey="newitemglowAnim" setToFinalAlpha="true" looping="REPEAT">
+				<Alpha childKey="NewItemTexture" smoothing="NONE" duration="0.8" order="1" fromAlpha="1" toAlpha="0.35"/>
+				<Alpha childKey="NewItemTexture" smoothing="NONE" duration="0.8" order="2" fromAlpha="0.35" toAlpha="1"/>
+			</AnimationGroup>
+			<AnimationGroup parentKey="flashAnim" setToFinalAlpha="true">
+				<Alpha childKey="flash" smoothing="OUT" duration="0.6" order="1" fromAlpha="1" toAlpha="0"/>
+			</AnimationGroup>
+		</Animations>
+		<Layers>
+			<Layer level="BORDER">
+				<Texture name="$parentIconTexture" parentKey="icon"/>
+			</Layer>
+			<Layer level="ARTWORK" textureSubLevel="2">
+                <Texture parentKey="NewActionTexture" atlas="bags-newitem" useAtlasSize="false" alphaMode="ADD" hidden="true">
+                    <Size x="44" y="44"/>
+                    <Anchors>
+                        <Anchor point="CENTER"/>
+                    </Anchors>
+                </Texture>
+				<FontString name="$parentCount" inherits="NumberFontNormal" justifyH="RIGHT" hidden="true" parentKey="Count">
+					<Anchors>
+						<Anchor point="BOTTOMRIGHT">
+							<Offset>
+								<AbsDimension x="-5" y="2"/>
+							</Offset>
+						</Anchor>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentStock" inherits="NumberFontNormalYellow" justifyH="LEFT" hidden="true">
+					<Anchors>
+						<Anchor point="TOPLEFT">
+							<Offset>
+								<AbsDimension x="0" y="-2"/>
+							</Offset>
+						</Anchor>
+					</Anchors>
+				</FontString>
+			</Layer>
+			<Layer level="OVERLAY" textureSubLevel="4">
+				<Texture name="$parentSearchOverlay" parentKey="searchOverlay" setAllPoints="true" hidden="true">
+					<Color r="0" g="0" b="0" a="0.8"/>
+				</Texture> 
+			</Layer>
+			<Layer level="OVERLAY">
+				<Texture parentKey="IconBorder" file="Interface\Common\WhiteIconFrame" hidden="true">
+					<Size x="37" y="37"/>
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="OVERLAY" textureSubLevel="1">
+				<Texture parentKey="IconOverlay" hidden="true">
+					<Size x="37" y="37"/>
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+		<NormalTexture name="$parentNormalTexture" file="Interface\Buttons\UI-Quickslot2">
+			<Size>
+				<AbsDimension x="64" y="64"/>
+			</Size>
+			<Anchors>
+				<Anchor point="CENTER">
+					<Offset>
+						<AbsDimension x="0" y="-1"/>
+					</Offset>
+				</Anchor>
+			</Anchors>
+		</NormalTexture>
+		<PushedTexture file="Interface\Buttons\UI-Quickslot-Depress"/>
+		<HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD"/>
+	</Button>
+</Ui>
