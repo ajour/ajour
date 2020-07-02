@@ -10,6 +10,7 @@ pub struct Addon {
     title: Option<String>
 }
 
+/// Struct which stores information about a single Addon.
 impl Addon {
     fn new() -> Self {
       return Addon { title: None }
@@ -20,7 +21,10 @@ impl Addon {
     }
 }
 
+/// Return a Vec<Addon> parsed from TOC files in the given directory.
 pub fn read_addon_dir<P: AsRef<Path>>(path: P) -> Vec<Addon> {
+    // TODO: Consider skipping DirEntry if we encounter a
+    //       blizzard addon. Blizzard adddon starts with 'Blizzard_*'.
     let mut vec: Vec<Addon> = Vec::new();
     for e in WalkDir::new(path)
         .max_depth(2)
@@ -40,6 +44,9 @@ pub fn read_addon_dir<P: AsRef<Path>>(path: P) -> Vec<Addon> {
     return vec;
 }
 
+// Helper function to return str file extension.
+//
+// Source:
 // https://stackoverflow.com/a/45292067
 fn get_extension(filename: &OsStr) -> Option<&str> {
     Path::new(filename).extension().and_then(OsStr::to_str)
@@ -47,6 +54,10 @@ fn get_extension(filename: &OsStr) -> Option<&str> {
 
 
 
+// Helper function to parse a given TOC file
+// (DirEntry) into a Addon struct.
+//
+// TOC format summary:
 // https://wowwiki.fandom.com/wiki/TOC_format
 fn parse_addon_dir_entry(entry: DirEntry) -> Addon {
     let file = File::open(entry.path()).unwrap();
