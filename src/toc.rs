@@ -52,8 +52,6 @@ fn get_extension(filename: &OsStr) -> Option<&str> {
     Path::new(filename).extension().and_then(OsStr::to_str)
 }
 
-
-
 // Helper function to parse a given TOC file
 // (DirEntry) into a Addon struct.
 //
