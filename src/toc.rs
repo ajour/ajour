@@ -1,19 +1,19 @@
-use std::fs::File;
+use regex::Regex;
 use std::ffi::OsStr;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
-use std::io::{BufRead, BufReader};
-use regex::Regex;
 
 #[derive(Debug)]
 pub struct Addon {
-    title: Option<String>
+    title: Option<String>,
 }
 
 /// Struct which stores information about a single Addon.
 impl Addon {
     fn new() -> Self {
-      return Addon { title: None }
+        return Addon { title: None };
     }
 
     fn set_title(&mut self, title: String) {
@@ -82,7 +82,6 @@ mod tests {
 
     #[test]
     fn test_add() {
-        assert_eq!(1+2, 3);
+        assert_eq!(1 + 2, 3);
     }
 }
-
