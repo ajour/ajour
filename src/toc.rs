@@ -76,3 +76,13 @@ fn parse_addon_dir_entry(entry: DirEntry) -> Addon {
     return addon;
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add() {
+        assert_eq!(1+2, 3);
+    }
+}
+
