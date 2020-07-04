@@ -5,6 +5,8 @@ use iced::{
     HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
 };
 
+use crate::toc::{Addon, Error, read_addon_dir};
+
 /// Starts the GUI.
 /// This function does not return.
 pub fn run() {
@@ -17,6 +19,7 @@ pub fn run() {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    RefreshAddons(Result<Vec<Addon>, Error>),
     RefreshPressed,
     UpdateAllPressed,
 }
@@ -24,8 +27,19 @@ pub enum Message {
 struct Ajour {
     update_all_button_state: button::State,
     refresh_button_state: button::State,
-
     addons_scrollable_state: scrollable::State,
+    addons: Vec<Addon>,
+}
+
+impl Default for Ajour {
+    fn default() -> Self {
+        Self {
+            update_all_button_state: Default::default(),
+            refresh_button_state: Default::default(),
+            addons_scrollable_state: Default::default(),
+            addons: Default::default(),
+        }
+    }
 }
 
 impl Application for Ajour {
@@ -34,15 +48,13 @@ impl Application for Ajour {
     type Flags = ();
 
     fn new(_flags: ()) -> (Ajour, Command<Self::Message>) {
+        println!("hello world");
         (
-            Ajour {
-                update_all_button_state: button::State::new(),
-                refresh_button_state: button::State::new(),
-                addons_scrollable_state: scrollable::State::new(),
-            },
-            Command::none(),
+            Ajour::default(),
+            Command::perform(read_addon_dir("../../test-data"), Message::RefreshAddons),
         )
     }
+
 
     fn title(&self) -> String {
         String::from("Ajour")
@@ -58,6 +70,15 @@ impl Application for Ajour {
                 println!("Refresh button pressed");
                 Command::none()
             }
+            Message::RefreshAddons(Ok(addons)) => {
+                println!(" IS THERE ANYONE HERE? ");
+                self.addons = addons;
+                Command::none()
+            }
+            Message::RefreshAddons(Err(error)) => {
+                println!("{:?}", error);
+                Command::none()
+            }
         }
     }
 
@@ -66,24 +87,15 @@ impl Application for Ajour {
             update_all_button_state,
             refresh_button_state,
             addons_scrollable_state,
+            addons,
         } = self;
 
-        let mut controls = Row::new().spacing(2).padding(10);
-        let mut addons = Scrollable::new(addons_scrollable_state)
-            .spacing(1)
-            .padding(10);
+        println!("addons: {:?}", addons);
 
-        for _ in 0..10 {
-            let text = Text::new("addon").size(14);
-            let cell = Container::new(text)
-                .width(Length::Fill)
-                .height(Length::Units(30))
-                .center_y()
-                .padding(5)
-                .style(style::Cell);
-            addons = addons.push(cell);
-        }
-
+        // General controls
+        //
+        // A row contain general controls.
+        let mut controls = Row::new().spacing(1).padding(10);
         controls = controls.push(
             Button::new(
                 update_all_button_state,
@@ -94,7 +106,6 @@ impl Application for Ajour {
             .on_press(Message::UpdateAllPressed)
             .style(style::DefaultButton),
         );
-
         controls = controls.push(
             Button::new(
                 refresh_button_state,
@@ -105,6 +116,52 @@ impl Application for Ajour {
             .on_press(Message::RefreshPressed)
             .style(style::DefaultButton),
         );
+
+        // Addons
+        //
+        // A scrollable list containg rows.
+        // Each row holds information about a single addon.
+        let mut addons = Scrollable::new(addons_scrollable_state)
+            .spacing(1)
+            .padding(10);
+        for _ in 0..10 {
+            let text = Text::new("Raider.IO Mythic Plus and Raid Progress by TheFakeJah").size(12);
+            let text_container = Container::new(text)
+                .height(Length::Units(30))
+                .width(Length::FillPortion(1))
+                .center_y()
+                .padding(5)
+                .center_y()
+                .style(style::AddonTextContainer);
+
+            let installed_version = Text::new("8.2.5").size(12);
+            let installed_version_container = Container::new(installed_version)
+                .height(Length::Units(30))
+                .width(Length::Units(75))
+                .center_y()
+                .padding(5)
+                .center_y()
+                .style(style::AddonDescriptionContainer);
+
+            let available_version = Text::new("8.2.5").size(12);
+            let available_version_container = Container::new(available_version)
+                .height(Length::Units(30))
+                .width(Length::Units(75))
+                .center_y()
+                .padding(5)
+                .center_y()
+                .style(style::AddonDescriptionContainer);
+
+            let row = Row::new()
+                .push(text_container)
+                .push(installed_version_container)
+                .push(available_version_container)
+                .spacing(1);
+
+            // Cell
+            let cell = Container::new(row).width(Length::Fill).style(style::Cell);
+            addons = addons.push(cell);
+        }
 
         let content: Element<_> = Column::new().push(controls).push(addons).into();
 

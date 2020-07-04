@@ -5,26 +5,37 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
 
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
+pub enum Error {
+}
+
+#[derive(Debug, Clone)]
 pub struct Addon {
     title: Option<String>,
+    version: Option<String>,
 }
 
 /// Struct which stores information about a single Addon.
 impl Addon {
     fn new() -> Self {
-        return Addon { title: None };
+        return Addon { title: None, version: None };
     }
 
     fn set_title(&mut self, title: String) {
         self.title = Some(title);
     }
+
+    fn set_version(&mut self, version: String) {
+        self.version = Some(version)
+    }
 }
 
 /// Return a Vec<Addon> parsed from TOC files in the given directory.
-pub fn read_addon_dir<P: AsRef<Path>>(path: P) -> Vec<Addon> {
+pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>, Error> {
     // TODO: Consider skipping DirEntry if we encounter a
     //       blizzard addon. Blizzard adddon starts with 'Blizzard_*'.
+    println!("hi world");
     let mut vec: Vec<Addon> = Vec::new();
     for e in WalkDir::new(path)
         .max_depth(2)
@@ -41,7 +52,9 @@ pub fn read_addon_dir<P: AsRef<Path>>(path: P) -> Vec<Addon> {
         }
     }
 
-    return vec;
+    println!("{:?}", vec);
+
+    return Ok(vec);
 }
 
 // Helper function to return str file extension.
@@ -67,8 +80,13 @@ fn parse_addon_dir_entry(entry: DirEntry) -> Addon {
         let re = Regex::new(r"##\s(?P<key>.*):\s(?P<value>.*)").unwrap();
         for cap in re.captures_iter(l.as_str()) {
             if &cap["key"] == "Title" {
-                let s = String::from(&cap["value"]);
-                addon.set_title(s);
+                let title = String::from(&cap["value"]);
+                addon.set_title(title);
+            }
+
+            if &cap["key"] == "Version" {
+                let version = String::from(&cap["value"]);
+                addon.set_version(version);
             }
         }
     }
@@ -76,12 +94,3 @@ fn parse_addon_dir_entry(entry: DirEntry) -> Addon {
     return addon;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_add() {
-        assert_eq!(1 + 2, 3);
-    }
-}

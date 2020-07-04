@@ -50,12 +50,33 @@ impl container::StyleSheet for Content {
     }
 }
 
-pub struct Cell;
-impl container::StyleSheet for Cell {
+pub struct AddonTextContainer;
+impl container::StyleSheet for AddonTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
             background: Some(Background::Color(ColorPalette::Surface.rgb())),
             text_color: Some(ColorPalette::OnSurface.rgb()),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct AddonDescriptionContainer;
+impl container::StyleSheet for AddonDescriptionContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(ColorPalette::Surface.rgb())),
+            text_color: Some(ColorPalette::OnSurface.rgb()),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct Cell;
+impl container::StyleSheet for Cell {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(ColorPalette::Background.rgb())),
             ..container::Style::default()
         }
     }
