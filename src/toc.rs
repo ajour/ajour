@@ -5,9 +5,9 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
 
-
 #[derive(Debug, Clone)]
 pub enum Error {
+    Unknown
 }
 
 #[derive(Debug, Clone)]
@@ -35,13 +35,13 @@ impl Addon {
 pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>, Error> {
     // TODO: Consider skipping DirEntry if we encounter a
     //       blizzard addon. Blizzard adddon starts with 'Blizzard_*'.
-    println!("hi world");
     let mut vec: Vec<Addon> = Vec::new();
     for e in WalkDir::new(path)
         .max_depth(2)
         .into_iter()
         .filter_map(|e| e.ok())
     {
+        println!("e: {:?}", e);
         if e.metadata().map_or(false, |m| m.is_file()) {
             let file_name = e.file_name();
             let file_extension = get_extension(file_name);
@@ -52,9 +52,8 @@ pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>, Error
         }
     }
 
-    println!("{:?}", vec);
-
-    return Ok(vec);
+    //return Ok(vec);
+    return Err(Error::Unknown)
 }
 
 // Helper function to return str file extension.

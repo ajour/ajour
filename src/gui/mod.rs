@@ -1,7 +1,7 @@
 mod style;
 
 use iced::{
-    button, executor, scrollable, Application, Button, Column, Command, Container, Element,
+    button, scrollable, Application, Button, Column, Command, Container, Element,
     HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
 };
 
@@ -24,6 +24,7 @@ pub enum Message {
     UpdateAllPressed,
 }
 
+
 struct Ajour {
     update_all_button_state: button::State,
     refresh_button_state: button::State,
@@ -43,12 +44,11 @@ impl Default for Ajour {
 }
 
 impl Application for Ajour {
-    type Executor = executor::Null;
+    type Executor = iced::executor::Default;
     type Message = Message;
     type Flags = ();
 
-    fn new(_flags: ()) -> (Ajour, Command<Self::Message>) {
-        println!("hello world");
+    fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Ajour::default(),
             Command::perform(read_addon_dir("../../test-data"), Message::RefreshAddons),
@@ -70,13 +70,10 @@ impl Application for Ajour {
                 println!("Refresh button pressed");
                 Command::none()
             }
-            Message::RefreshAddons(Ok(addons)) => {
-                println!(" IS THERE ANYONE HERE? ");
-                self.addons = addons;
-                Command::none()
-            }
-            Message::RefreshAddons(Err(error)) => {
-                println!("{:?}", error);
+            Message::RefreshAddons(result) => {
+                println!("We fetched addons");
+                println!("addons {:?}", result);
+                // self.addons = addons;
                 Command::none()
             }
         }
