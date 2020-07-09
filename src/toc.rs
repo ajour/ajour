@@ -7,7 +7,7 @@ use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Unknown
+    Unknown,
 }
 
 #[derive(Debug, Clone)]
@@ -19,7 +19,10 @@ pub struct Addon {
 /// Struct which stores information about a single Addon.
 impl Addon {
     fn new() -> Self {
-        return Addon { title: None, version: None };
+        return Addon {
+            title: None,
+            version: None,
+        };
     }
 
     fn set_title(&mut self, title: String) {
@@ -53,7 +56,7 @@ pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>, Error
     }
 
     //return Ok(vec);
-    return Err(Error::Unknown)
+    return Err(Error::Unknown);
 }
 
 // Helper function to return str file extension.
@@ -92,4 +95,3 @@ fn parse_addon_dir_entry(entry: DirEntry) -> Addon {
 
     return addon;
 }
-

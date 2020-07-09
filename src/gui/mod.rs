@@ -5,7 +5,7 @@ use iced::{
     HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
 };
 
-use crate::toc::{Addon, Error, read_addon_dir};
+use crate::toc::{read_addon_dir, Addon, Error};
 
 /// Starts the GUI.
 /// This function does not return.
@@ -23,7 +23,6 @@ pub enum Message {
     RefreshPressed,
     UpdateAllPressed,
 }
-
 
 struct Ajour {
     update_all_button_state: button::State,
@@ -55,7 +54,6 @@ impl Application for Ajour {
         )
     }
 
-
     fn title(&self) -> String {
         String::from("Ajour")
     }
@@ -70,9 +68,8 @@ impl Application for Ajour {
                 println!("Refresh button pressed");
                 Command::none()
             }
-            Message::RefreshAddons(result) => {
+            Message::RefreshAddons(_) => {
                 println!("We fetched addons");
-                println!("addons {:?}", result);
                 // self.addons = addons;
                 Command::none()
             }
@@ -84,10 +81,8 @@ impl Application for Ajour {
             update_all_button_state,
             refresh_button_state,
             addons_scrollable_state,
-            addons,
+            addons: _,
         } = self;
-
-        println!("addons: {:?}", addons);
 
         // General controls
         //
