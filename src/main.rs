@@ -3,7 +3,9 @@ mod gui;
 mod toc;
 
 pub fn main() {
-    let config = config::load();
-    println!("config: {:?}", config);
+    // Loads the Config file
+    let _ = config::load();
+
+    // Start the GUI
     gui::run();
 }

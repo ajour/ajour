@@ -18,6 +18,7 @@ pub struct Config {
     wow_directory: Option<PathBuf>,
 }
 
+/// Default World of Warcraft directory value.
 fn default_wow_directory() -> Option<PathBuf> {
     None
 }
