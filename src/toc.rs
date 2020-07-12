@@ -7,19 +7,23 @@ use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Unknown
+    NotFound,
+    Unknown,
 }
 
 #[derive(Debug, Clone)]
 pub struct Addon {
-    title: Option<String>,
-    version: Option<String>,
+    pub title: Option<String>,
+    pub version: Option<String>,
 }
 
 /// Struct which stores information about a single Addon.
 impl Addon {
     fn new() -> Self {
-        return Addon { title: None, version: None };
+        return Addon {
+            title: None,
+            version: None,
+        };
     }
 
     fn set_title(&mut self, title: String) {
@@ -35,13 +39,14 @@ impl Addon {
 pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>, Error> {
     // TODO: Consider skipping DirEntry if we encounter a
     //       blizzard addon. Blizzard adddon starts with 'Blizzard_*'.
+    //
+    // TODO: We should handle errors here, if nothing is find eg.
     let mut vec: Vec<Addon> = Vec::new();
     for e in WalkDir::new(path)
         .max_depth(2)
         .into_iter()
         .filter_map(|e| e.ok())
     {
-        println!("e: {:?}", e);
         if e.metadata().map_or(false, |m| m.is_file()) {
             let file_name = e.file_name();
             let file_extension = get_extension(file_name);
@@ -52,8 +57,7 @@ pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>, Error
         }
     }
 
-    //return Ok(vec);
-    return Err(Error::Unknown)
+    return Ok(vec);
 }
 
 // Helper function to return str file extension.
@@ -77,6 +81,7 @@ fn parse_addon_dir_entry(entry: DirEntry) -> Addon {
     for line in reader.lines() {
         let l = line.unwrap();
         let re = Regex::new(r"##\s(?P<key>.*):\s(?P<value>.*)").unwrap();
+
         for cap in re.captures_iter(l.as_str()) {
             if &cap["key"] == "Title" {
                 let title = String::from(&cap["value"]);
@@ -92,4 +97,3 @@ fn parse_addon_dir_entry(entry: DirEntry) -> Addon {
 
     return addon;
 }
-

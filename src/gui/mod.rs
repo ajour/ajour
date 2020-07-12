@@ -5,7 +5,7 @@ use iced::{
     HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
 };
 
-use crate::toc::{Addon, Error, read_addon_dir};
+use crate::toc::{read_addon_dir, Addon, Error};
 
 /// Starts the GUI.
 /// This function does not return.
@@ -23,7 +23,6 @@ pub enum Message {
     RefreshPressed,
     UpdateAllPressed,
 }
-
 
 struct Ajour {
     update_all_button_state: button::State,
@@ -51,10 +50,9 @@ impl Application for Ajour {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Ajour::default(),
-            Command::perform(read_addon_dir("../../test-data"), Message::RefreshAddons),
+            Command::perform(read_addon_dir("/Users/crs/Source/Private/ajour/test-data"), Message::RefreshAddons),
         )
     }
-
 
     fn title(&self) -> String {
         String::from("Ajour")
@@ -70,10 +68,11 @@ impl Application for Ajour {
                 println!("Refresh button pressed");
                 Command::none()
             }
-            Message::RefreshAddons(result) => {
-                println!("We fetched addons");
-                println!("addons {:?}", result);
-                // self.addons = addons;
+            Message::RefreshAddons(Ok(addons)) => {
+                self.addons = addons;
+                Command::none()
+            }
+            Message::RefreshAddons(Err(_)) => {
                 Command::none()
             }
         }
@@ -87,7 +86,6 @@ impl Application for Ajour {
             addons,
         } = self;
 
-        println!("addons: {:?}", addons);
 
         // General controls
         //
@@ -118,11 +116,16 @@ impl Application for Ajour {
         //
         // A scrollable list containg rows.
         // Each row holds information about a single addon.
-        let mut addons = Scrollable::new(addons_scrollable_state)
+        let mut addons_scrollable = Scrollable::new(addons_scrollable_state)
             .spacing(1)
             .padding(10);
-        for _ in 0..10 {
-            let text = Text::new("Raider.IO Mythic Plus and Raid Progress by TheFakeJah").size(12);
+
+
+        for addon in &mut self.addons {
+            let Addon { title, version } = addon;
+            let title = title.clone().unwrap();
+            let version = version.clone().unwrap();
+            let text = Text::new(title).size(12);
             let text_container = Container::new(text)
                 .height(Length::Units(30))
                 .width(Length::FillPortion(1))
@@ -131,7 +134,7 @@ impl Application for Ajour {
                 .center_y()
                 .style(style::AddonTextContainer);
 
-            let installed_version = Text::new("8.2.5").size(12);
+            let installed_version = Text::new(version).size(12);
             let installed_version_container = Container::new(installed_version)
                 .height(Length::Units(30))
                 .width(Length::Units(75))
@@ -140,7 +143,7 @@ impl Application for Ajour {
                 .center_y()
                 .style(style::AddonDescriptionContainer);
 
-            let available_version = Text::new("8.2.5").size(12);
+            let available_version = Text::new("-").size(12);
             let available_version_container = Container::new(available_version)
                 .height(Length::Units(30))
                 .width(Length::Units(75))
@@ -157,10 +160,10 @@ impl Application for Ajour {
 
             // Cell
             let cell = Container::new(row).width(Length::Fill).style(style::Cell);
-            addons = addons.push(cell);
+            addons_scrollable = addons_scrollable.push(cell);
         }
 
-        let content: Element<_> = Column::new().push(controls).push(addons).into();
+        let content: Element<_> = Column::new().push(controls).push(addons_scrollable).into();
 
         Container::new(content)
             .width(Length::Fill)
