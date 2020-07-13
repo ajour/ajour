@@ -56,7 +56,6 @@ impl Application for Ajour {
             Ajour::default(),
             Command::perform(
                 load_config(),
-                //read_addon_dir("/Users/crs/Source/Private/ajour/test-data"),
                 Message::LoadConfig,
             ),
         )
@@ -69,6 +68,9 @@ impl Application for Ajour {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::LoadConfig(config) => {
+                // This is called when config has been loaded.
+                // When we have the config, we perform an action to read the addon directory
+                // which is provided by the config.
                 self.config = config;
                 let wow_directory = self.config.wow_directory.clone();
                 match wow_directory {
@@ -95,13 +97,6 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-        let Ajour {
-            update_all_button_state,
-            refresh_button_state,
-            addons_scrollable_state,
-            addons,
-            config,
-        } = self;
 
         // General controls
         //
@@ -109,7 +104,7 @@ impl Application for Ajour {
         let mut controls = Row::new().spacing(1).padding(10);
         controls = controls.push(
             Button::new(
-                update_all_button_state,
+                &mut self.update_all_button_state,
                 Text::new("Update all")
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
@@ -119,7 +114,7 @@ impl Application for Ajour {
         );
         controls = controls.push(
             Button::new(
-                refresh_button_state,
+                &mut self.refresh_button_state,
                 Text::new("Refresh")
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
@@ -132,7 +127,7 @@ impl Application for Ajour {
         //
         // A scrollable list containg rows.
         // Each row holds information about a single addon.
-        let mut addons_scrollable = Scrollable::new(addons_scrollable_state)
+        let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state)
             .spacing(1)
             .padding(10);
 
