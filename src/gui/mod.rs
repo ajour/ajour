@@ -5,6 +5,7 @@ use iced::{
     HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
 };
 
+use crate::config::{load_config, Config};
 use crate::toc::{read_addon_dir, Addon, Error};
 
 /// Starts the GUI.
@@ -19,6 +20,7 @@ pub fn run() {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    LoadConfig(Config),
     RefreshAddons(Result<Vec<Addon>, Error>),
     RefreshPressed,
     UpdateAllPressed,
@@ -29,6 +31,7 @@ struct Ajour {
     refresh_button_state: button::State,
     addons_scrollable_state: scrollable::State,
     addons: Vec<Addon>,
+    config: Config,
 }
 
 impl Default for Ajour {
@@ -37,7 +40,8 @@ impl Default for Ajour {
             update_all_button_state: Default::default(),
             refresh_button_state: Default::default(),
             addons_scrollable_state: Default::default(),
-            addons: Default::default(),
+            addons: Vec::new(),
+            config: Config::default(),
         }
     }
 }
@@ -50,7 +54,11 @@ impl Application for Ajour {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Ajour::default(),
-            Command::perform(read_addon_dir("/Users/crs/Source/Private/ajour/test-data"), Message::RefreshAddons),
+            Command::perform(
+                load_config(),
+                //read_addon_dir("/Users/crs/Source/Private/ajour/test-data"),
+                Message::LoadConfig,
+            ),
         )
     }
 
@@ -60,6 +68,16 @@ impl Application for Ajour {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
+            Message::LoadConfig(config) => {
+                self.config = config;
+                let wow_directory = self.config.wow_directory.clone();
+                match wow_directory {
+                    Some(wow_directory) => {
+                        Command::perform(read_addon_dir(wow_directory), Message::RefreshAddons)
+                    }
+                    None => Command::none(),
+                }
+            }
             Message::UpdateAllPressed => {
                 println!("Update all button pressed");
                 Command::none()
@@ -72,9 +90,7 @@ impl Application for Ajour {
                 self.addons = addons;
                 Command::none()
             }
-            Message::RefreshAddons(Err(_)) => {
-                Command::none()
-            }
+            Message::RefreshAddons(Err(_)) => Command::none(),
         }
     }
 
@@ -84,8 +100,8 @@ impl Application for Ajour {
             refresh_button_state,
             addons_scrollable_state,
             addons,
+            config,
         } = self;
-
 
         // General controls
         //
@@ -120,11 +136,10 @@ impl Application for Ajour {
             .spacing(1)
             .padding(10);
 
-
         for addon in &mut self.addons {
             let Addon { title, version } = addon;
-            let title = title.clone().unwrap();
-            let version = version.clone().unwrap();
+            let title = title.clone();
+            let version = version.clone();
             let text = Text::new(title).size(12);
             let text_container = Container::new(text)
                 .height(Length::Units(30))

@@ -11,11 +11,11 @@ use error::Error;
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Config type.
-#[derive(Debug, PartialEq, Default, Deserialize)]
+#[derive(Debug, PartialEq, Default, Deserialize, Clone)]
 pub struct Config {
     /// Path to World of Warcraft
     #[serde(default = "default_wow_directory")]
-    wow_directory: Option<PathBuf>,
+    pub wow_directory: Option<PathBuf>,
 }
 
 /// Default World of Warcraft directory value.
@@ -24,7 +24,6 @@ fn default_wow_directory() -> Option<PathBuf> {
 }
 
 impl Config {}
-
 
 /// Returns the location of the first found config file paths
 /// according to the following order:
@@ -77,14 +76,13 @@ fn parse_config(path: &PathBuf) -> Result<Config> {
     }
 }
 
-
 /// Returns a Config.
 ///
 /// This functions handles the initialization of a Config.
-pub fn load() -> Config {
+pub async fn load_config() -> Config {
     let path = installed_config();
     match path {
         Some(p) => parse_config(&p).unwrap_or(Config::default()),
-        None => Config::default()
+        None => Config::default(),
     }
 }
