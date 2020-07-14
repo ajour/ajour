@@ -15,12 +15,14 @@ pub enum Error {
 pub struct Addon {
     pub title: String,
     pub version: String,
+
+    pub delete_btn_state: iced::button::State,
 }
 
 /// Struct which stores information about a single Addon.
 impl Addon {
     fn new(title: String, version: String) -> Self {
-        return Addon { title, version };
+        return Addon { title, version, delete_btn_state: Default::default() };
     }
 }
 

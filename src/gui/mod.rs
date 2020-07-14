@@ -54,10 +54,7 @@ impl Application for Ajour {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Ajour::default(),
-            Command::perform(
-                load_config(),
-                Message::LoadConfig,
-            ),
+            Command::perform(load_config(), Message::LoadConfig),
         )
     }
 
@@ -68,7 +65,6 @@ impl Application for Ajour {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::LoadConfig(config) => {
-                // This is called when config has been loaded.
                 // When we have the config, we perform an action to read the addon directory
                 // which is provided by the config.
                 self.config = config;
@@ -85,8 +81,9 @@ impl Application for Ajour {
                 Command::none()
             }
             Message::RefreshPressed => {
-                println!("Refresh button pressed");
-                Command::none()
+                // Refreshes the state.
+                self.addons = Vec::new();
+                Command::perform(load_config(), Message::LoadConfig)
             }
             Message::RefreshAddons(Ok(addons)) => {
                 self.addons = addons;
@@ -97,7 +94,6 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-
         // General controls
         //
         // A row contain general controls.
@@ -132,16 +128,14 @@ impl Application for Ajour {
             .padding(10);
 
         for addon in &mut self.addons {
-            let Addon { title, version } = addon;
-            let title = title.clone();
-            let version = version.clone();
+            let title = addon.title.clone();
+            let version = addon.version.clone();
             let text = Text::new(title).size(12);
             let text_container = Container::new(text)
                 .height(Length::Units(30))
                 .width(Length::FillPortion(1))
                 .center_y()
                 .padding(5)
-                .center_y()
                 .style(style::AddonTextContainer);
 
             let installed_version = Text::new(version).size(12);
@@ -150,7 +144,6 @@ impl Application for Ajour {
                 .width(Length::Units(75))
                 .center_y()
                 .padding(5)
-                .center_y()
                 .style(style::AddonDescriptionContainer);
 
             let available_version = Text::new("-").size(12);
@@ -159,13 +152,28 @@ impl Application for Ajour {
                 .width(Length::Units(75))
                 .center_y()
                 .padding(5)
+                .style(style::AddonDescriptionContainer);
+
+            let delete_button = Button::new(
+                &mut addon.delete_btn_state,
+                Text::new("Delete")
+                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .size(12),
+            )
+            .on_press(Message::UpdateAllPressed)
+            .style(style::DeleteButton);
+
+            let delete_button_container = Container::new(delete_button)
+                .height(Length::Units(30))
                 .center_y()
+                .padding(5)
                 .style(style::AddonDescriptionContainer);
 
             let row = Row::new()
                 .push(text_container)
                 .push(installed_version_container)
                 .push(available_version_container)
+                .push(delete_button_container)
                 .spacing(1);
 
             // Cell
