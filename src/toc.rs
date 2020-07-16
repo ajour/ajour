@@ -76,10 +76,6 @@ async fn get_extension(filename: &OsStr) -> Option<&str> {
 //
 // TOC format summary:
 // https://wowwiki.fandom.com/wiki/TOC_format
-//
-// TODO:
-// - We should properly ignore 'Dependency' addons.
-//
 async fn parse_addon_dir_entry(dir_entry: DirEntry) -> Option<Addon> {
     let file = File::open(dir_entry.path()).unwrap();
     let reader = BufReader::new(file);
@@ -99,7 +95,8 @@ async fn parse_addon_dir_entry(dir_entry: DirEntry) -> Option<Addon> {
         for cap in re_toc.captures_iter(l.as_str()) {
             if &cap["key"] == "Title" {
                 // Title can include a color hex.
-                // An example is: |cff1784d1ElvUI|r
+                // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
+                // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
                 title = Some(re_title.replace_all(&cap["value"], "$1").to_string());
             }
 
@@ -117,9 +114,5 @@ async fn parse_addon_dir_entry(dir_entry: DirEntry) -> Option<Addon> {
         }
     }
 
-    return Some(Addon::new(
-        title,
-        version,
-        dir_entry,
-    ));
+    return Some(Addon::new(title, version, dir_entry));
 }
