@@ -128,8 +128,9 @@ impl Application for Ajour {
             .padding(10);
 
         for addon in &mut self.addons {
-            let title = addon.title.clone();
-            let version = addon.version.clone();
+            let title = addon.title.clone().unwrap_or(String::from("-"));
+            let version = addon.version.clone().unwrap_or(String::from("-"));
+
             let text = Text::new(title).size(12);
             let text_container = Container::new(text)
                 .height(Length::Units(30))
