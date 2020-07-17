@@ -15,22 +15,37 @@ pub enum Error {
 pub struct Addon {
     pub title: Option<String>,
     pub version: Option<String>,
-    //pub dependencies: Option<Vec<String>>,
     pub dir_entry: DirEntry,
+    pub dependencies: Vec<String>,
+    pub optional_dependencies: Vec<String>,
+    pub required_dependencies: Vec<String>,
 
     pub delete_btn_state: iced::button::State,
 }
 
 /// Struct which stores information about a single Addon.
 impl Addon {
-    fn new(title: Option<String>, version: Option<String>, dir_entry: DirEntry) -> Self {
+    fn new(
+        title: Option<String>,
+        version: Option<String>,
+        dir_entry: DirEntry,
+        dependencies: Vec<String>,
+        optional_dependencies: Vec<String>,
+        required_dependencies: Vec<String>,
+    ) -> Self {
         return Addon {
             title,
             version,
-            //dependencies,
             dir_entry,
+            dependencies,
+            optional_dependencies,
+            required_dependencies,
             delete_btn_state: Default::default(),
         };
+    }
+
+    fn is_parent() -> bool {
+        true
     }
 }
 
@@ -82,37 +97,70 @@ async fn parse_addon_dir_entry(dir_entry: DirEntry) -> Option<Addon> {
 
     let mut title: Option<String> = None;
     let mut version: Option<String> = None;
+    let mut dependencies: Vec<String> = Vec::new();
+    let mut optional_dependencies: Vec<String> = Vec::new();
+    let mut required_dependencies: Vec<String> = Vec::new();
 
     // It is an anti-pattern to compile the same regular expression in a loop,
     // which is why they are created here.
     //
     // https://docs.rs/regex/1.3.9/regex/#example-avoid-compiling-the-same-regex-in-a-loop
-    let re_toc = Regex::new(r"\##\s(?P<key>[^:]+)(:\s)(?P<value>.+)").unwrap();
+    let re_toc = Regex::new(r"##\s(?P<key>.*?):\s(?P<value>.*)").unwrap();
     let re_title = Regex::new(r"\|[a-f\d]{9}([^|]+)\|?r?").unwrap();
 
     for line in reader.lines() {
         let l = line.unwrap();
         for cap in re_toc.captures_iter(l.as_str()) {
-            if &cap["key"] == "Title" {
-                // Title can include a color hex.
-                // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
-                // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
-                title = Some(re_title.replace_all(&cap["value"], "$1").to_string());
+            match &cap["key"] {
+                "Title" => {
+                    // String - The name to display.
+                    //
+                    // Note: Coloring is possible via UI escape sequences.
+                    // Since we don't want any color modifications, we will
+                    // trim it away.
+                    // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
+                    // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
+                    title = Some(re_title.replace_all(&cap["value"], "$1").to_string())
+                }
+                "Version" => {
+                    // String - The AddOn version
+                    version = Some(String::from(&cap["value"]));
+                },
+                "Dependencies" => {
+                    // String - A comma-separated list of addon (directory)
+                    // names that must be loaded before this addon can be loaded.
+                    dependencies = split_dependencies_into_vec(&cap["value"]);
+                }
+                "RequiredDeps" => {
+                    // String - A comma-separated list of addon (directory)
+                    // names that must be loaded before this addon can be loaded.
+                    required_dependencies = split_dependencies_into_vec(&cap["value"])
+                }
+                "OptionalDeps" => {
+                    // String - A comma-separated list of addon (directory)
+                    // names that should be loaded before this addon if they
+                    // can be loaded.
+                    optional_dependencies = split_dependencies_into_vec(&cap["value"])
+                }
+                _ => (),
             }
-
-            if &cap["key"] == "Version" {
-                version = Some(String::from(&cap["value"]));
-            }
-
-            // TODO:
-            // We should also check for RequiredDeps, or anything
-            // starting with Deps
-            // if &cap["key"] == "Dependencies" {
-            //     let value = &cap["value"];
-            //     let dependencies: Vec<_> = value.split([','].as_ref()).map(|s| s.trim().to_string()).collect();
-            // }
         }
     }
 
-    return Some(Addon::new(title, version, dir_entry));
+    return Some(Addon::new(
+        title,
+        version,
+        dir_entry,
+        dependencies,
+        optional_dependencies,
+        required_dependencies,
+    ));
+}
+
+/// Helper function to split a comma seperated string into Vec<String>.
+fn split_dependencies_into_vec(value: &str) -> Vec<String> {
+    value
+        .split([','].as_ref())
+        .map(|s| s.trim().to_string())
+        .collect()
 }
