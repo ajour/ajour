@@ -43,10 +43,6 @@ impl Addon {
             delete_btn_state: Default::default(),
         };
     }
-
-    fn is_parent() -> bool {
-        true
-    }
 }
 
 /// Return a Vec<Addon> parsed from TOC files in the given directory.
@@ -125,7 +121,7 @@ async fn parse_addon_dir_entry(dir_entry: DirEntry) -> Option<Addon> {
                 "Version" => {
                     // String - The AddOn version
                     version = Some(String::from(&cap["value"]));
-                },
+                }
                 "Dependencies" => {
                     // String - A comma-separated list of addon (directory)
                     // names that must be loaded before this addon can be loaded.
