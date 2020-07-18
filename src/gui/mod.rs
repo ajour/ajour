@@ -24,6 +24,7 @@ pub enum Message {
     RefreshAddons(Result<Vec<Addon>, Error>),
     RefreshPressed,
     UpdateAllPressed,
+    DeleteAddonPressed,
 }
 
 struct Ajour {
@@ -85,8 +86,15 @@ impl Application for Ajour {
                 self.addons = Vec::new();
                 Command::perform(load_config(), Message::LoadConfig)
             }
+            Message::DeleteAddonPressed => {
+                Command::none()
+            }
             Message::RefreshAddons(Ok(addons)) => {
-                self.addons = addons;
+                 self.addons = addons
+                     .into_iter()
+                     .filter(|a| a.version.is_some())
+                     .collect::<Vec<Addon>>()
+                     .clone();
                 Command::none()
             }
             Message::RefreshAddons(Err(_)) => Command::none(),
@@ -161,7 +169,7 @@ impl Application for Ajour {
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
             )
-            .on_press(Message::UpdateAllPressed)
+            .on_press(Message::DeleteAddonPressed)
             .style(style::DeleteButton);
 
             let delete_button_container = Container::new(delete_button)
