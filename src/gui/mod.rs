@@ -19,12 +19,17 @@ pub fn run() {
 }
 
 #[derive(Debug, Clone)]
+pub enum Interaction {
+    Refresh,
+    UpdateAll,
+    Delete,
+}
+
+#[derive(Debug, Clone)]
 pub enum Message {
-    LoadConfig(Config),
-    RefreshAddons(Result<Vec<Addon>, Error>),
-    RefreshPressed,
-    UpdateAllPressed,
-    DeleteAddonPressed,
+    Load(Config),
+    Loaded(Result<Vec<Addon>, Error>),
+    Interaction(Interaction)
 }
 
 struct Ajour {
@@ -55,7 +60,7 @@ impl Application for Ajour {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Ajour::default(),
-            Command::perform(load_config(), Message::LoadConfig),
+            Command::perform(load_config(), Message::Load),
         )
     }
 
@@ -65,31 +70,30 @@ impl Application for Ajour {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::LoadConfig(config) => {
+            Message::Load(config) => {
                 // When we have the config, we perform an action to read the addon directory
                 // which is provided by the config.
                 self.config = config;
                 let wow_directory = self.config.wow_directory.clone();
                 match wow_directory {
                     Some(wow_directory) => {
-                        Command::perform(read_addon_dir(wow_directory), Message::RefreshAddons)
+                        Command::perform(read_addon_dir(wow_directory), Message::Loaded)
                     }
                     None => Command::none(),
                 }
             }
-            Message::UpdateAllPressed => {
-                println!("Update all button pressed");
-                Command::none()
-            }
-            Message::RefreshPressed => {
+            Message::Interaction(Interaction::Refresh) => {
                 // Refreshes the state.
                 self.addons = Vec::new();
-                Command::perform(load_config(), Message::LoadConfig)
+                Command::perform(load_config(), Message::Load)
             }
-            Message::DeleteAddonPressed => {
+            Message::Interaction(Interaction::Delete) => {
                 Command::none()
             }
-            Message::RefreshAddons(Ok(addons)) => {
+            Message::Interaction(Interaction::UpdateAll) => {
+                Command::none()
+            }
+            Message::Loaded(Ok(addons)) => {
                  self.addons = addons
                      .into_iter()
                      .filter(|a| a.version.is_some())
@@ -97,7 +101,7 @@ impl Application for Ajour {
                      .clone();
                 Command::none()
             }
-            Message::RefreshAddons(Err(_)) => Command::none(),
+            Message::Loaded(Err(_)) => Command::none(),
         }
     }
 
@@ -113,7 +117,7 @@ impl Application for Ajour {
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
             )
-            .on_press(Message::UpdateAllPressed)
+            .on_press(Message::Interaction(Interaction::UpdateAll))
             .style(style::DefaultButton),
         );
         controls = controls.push(
@@ -123,7 +127,7 @@ impl Application for Ajour {
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
             )
-            .on_press(Message::RefreshPressed)
+            .on_press(Message::Interaction(Interaction::Refresh))
             .style(style::DefaultButton),
         );
 
@@ -169,7 +173,7 @@ impl Application for Ajour {
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
             )
-            .on_press(Message::DeleteAddonPressed)
+            .on_press(Message::Interaction(Interaction::Refresh))
             .style(style::DeleteButton);
 
             let delete_button_container = Container::new(delete_button)
