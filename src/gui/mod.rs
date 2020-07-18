@@ -128,9 +128,6 @@ impl Application for Ajour {
             .padding(10);
 
         for addon in &mut self.addons {
-            println!("deps - {:?}", addon.dependencies);
-            println!("opt_deps - {:?}", addon.optional_dependencies);
-            println!("req_deps - {:?}", addon.required_dependencies);
             let title = addon.title.clone().unwrap_or(String::from("-"));
             let version = addon.version.clone().unwrap_or(String::from("-"));
 
