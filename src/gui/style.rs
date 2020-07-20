@@ -85,8 +85,8 @@ impl container::StyleSheet for AddonTextContainer {
     }
 }
 
-pub struct LoadingTextContainer;
-impl container::StyleSheet for LoadingTextContainer {
+pub struct StatusTextContainer;
+impl container::StyleSheet for StatusTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
             background: Some(Background::Color(ColorPalette::Background.rgb())),

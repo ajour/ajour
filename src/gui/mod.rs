@@ -185,7 +185,7 @@ impl Application for Ajour {
             .width(Length::FillPortion(1))
             .center_y()
             .padding(5)
-            .style(style::AddonTextContainer);
+            .style(style::StatusTextContainer);
 
         let spacer_1 = Container::new(Text::new(""))
             .height(Length::Units(10))
@@ -226,3 +226,4 @@ pub fn run() {
     settings.antialiasing = true;
     Ajour::run(settings);
 }
+
