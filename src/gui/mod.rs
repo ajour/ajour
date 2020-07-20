@@ -1,38 +1,41 @@
 mod style;
-
+mod update;
 use iced::{
     button, scrollable, Application, Button, Column, Command, Container, Element,
     HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
 };
+use crate::{
+    config::{load_config, Config},
+    error::ClientError,
+    toc::Addon,
+    Result,
+};
 
-use crate::config::{load_config, Config};
-use crate::toc::{read_addon_dir, Addon, Error};
-
-/// Starts the GUI.
-/// This function does not return.
-pub fn run() {
-    let mut settings = Settings::default();
-    settings.window.size = (1050, 620);
-    // Enforce the usage of dedicated gpu if available
-    settings.antialiasing = true;
-    Ajour::run(settings);
+#[derive(Debug)]
+pub enum AjourState {
+    Idle,
+    Loading,
+    Refreshing,
+    Error(ClientError),
 }
 
 #[derive(Debug, Clone)]
 pub enum Interaction {
     Refresh,
     UpdateAll,
-    Delete,
+    Delete(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Message {
     Load(Config),
-    Loaded(Result<Vec<Addon>, Error>),
-    Interaction(Interaction)
+    Loaded(Result<Vec<Addon>>),
+    Interaction(Interaction),
+    Error(ClientError),
 }
 
-struct Ajour {
+pub struct Ajour {
+    state: AjourState,
     update_all_button_state: button::State,
     refresh_button_state: button::State,
     addons_scrollable_state: scrollable::State,
@@ -43,6 +46,7 @@ struct Ajour {
 impl Default for Ajour {
     fn default() -> Self {
         Self {
+            state: AjourState::Loading,
             update_all_button_state: Default::default(),
             refresh_button_state: Default::default(),
             addons_scrollable_state: Default::default(),
@@ -69,75 +73,48 @@ impl Application for Ajour {
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
-        match message {
-            Message::Load(config) => {
-                // When we have the config, we perform an action to read the addon directory
-                // which is provided by the config.
-                self.config = config;
-                let wow_directory = self.config.wow_directory.clone();
-                match wow_directory {
-                    Some(wow_directory) => {
-                        Command::perform(read_addon_dir(wow_directory), Message::Loaded)
-                    }
-                    None => Command::none(),
-                }
-            }
-            Message::Interaction(Interaction::Refresh) => {
-                // Refreshes the state.
-                self.addons = Vec::new();
-                Command::perform(load_config(), Message::Load)
-            }
-            Message::Interaction(Interaction::Delete) => {
-                Command::none()
-            }
-            Message::Interaction(Interaction::UpdateAll) => {
-                Command::none()
-            }
-            Message::Loaded(Ok(addons)) => {
-                 self.addons = addons
-                     .into_iter()
-                     .filter(|a| a.version.is_some())
-                     .collect::<Vec<Addon>>()
-                     .clone();
-                Command::none()
-            }
-            Message::Loaded(Err(_)) => Command::none(),
+        match update::handle_message(self, message) {
+            Ok(x) => x,
+            Err(e) => Command::perform(async { e }, Message::Error),
         }
     }
 
     fn view(&mut self) -> Element<Self::Message> {
+        let addons_length = &mut self.addons.len().clone();
+
         // General controls
         //
         // A row contain general controls.
-        let mut controls = Row::new().spacing(1).padding(10);
-        controls = controls.push(
-            Button::new(
-                &mut self.update_all_button_state,
-                Text::new("Update all")
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(12),
-            )
-            .on_press(Message::Interaction(Interaction::UpdateAll))
-            .style(style::DefaultButton),
-        );
-        controls = controls.push(
-            Button::new(
-                &mut self.refresh_button_state,
-                Text::new("Refresh")
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(12),
-            )
-            .on_press(Message::Interaction(Interaction::Refresh))
-            .style(style::DefaultButton),
-        );
+        let mut controls = Row::new().spacing(1);
+
+        let update_all_button: Element<Interaction> = Button::new(
+            &mut self.update_all_button_state,
+            Text::new("Update All")
+                .horizontal_alignment(HorizontalAlignment::Center)
+                .size(12),
+        )
+        .on_press(Interaction::UpdateAll)
+        .style(style::DefaultButton)
+        .into();
+
+        let refresh_button: Element<Interaction> = Button::new(
+            &mut self.refresh_button_state,
+            Text::new("Refresh")
+                .horizontal_alignment(HorizontalAlignment::Center)
+                .size(12),
+        )
+        .on_press(Interaction::Refresh)
+        .style(style::DefaultButton)
+        .into();
+
+        controls = controls.push(update_all_button.map(Message::Interaction));
+        controls = controls.push(refresh_button.map(Message::Interaction));
 
         // Addons
         //
         // A scrollable list containg rows.
         // Each row holds information about a single addon.
-        let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state)
-            .spacing(1)
-            .padding(10);
+        let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
 
         for addon in &mut self.addons {
             let title = addon.title.clone().unwrap_or(String::from("-"));
@@ -167,16 +144,17 @@ impl Application for Ajour {
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
-            let delete_button = Button::new(
+            let delete_button: Element<Interaction> = Button::new(
                 &mut addon.delete_btn_state,
                 Text::new("Delete")
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
             )
-            .on_press(Message::Interaction(Interaction::Refresh))
-            .style(style::DeleteButton);
+            .on_press(Interaction::Delete(addon.id.clone()))
+            .style(style::DeleteButton)
+            .into();
 
-            let delete_button_container = Container::new(delete_button)
+            let delete_button_container = Container::new(delete_button.map(Message::Interaction))
                 .height(Length::Units(30))
                 .center_y()
                 .padding(5)
@@ -189,17 +167,62 @@ impl Application for Ajour {
                 .push(delete_button_container)
                 .spacing(1);
 
-            // Cell
             let cell = Container::new(row).width(Length::Fill).style(style::Cell);
             addons_scrollable = addons_scrollable.push(cell);
         }
 
-        let content: Element<_> = Column::new().push(controls).push(addons_scrollable).into();
+        // Status text
+        //
+        // Displays text depending on the state of the app.
+        let status_text = match &self.state {
+            AjourState::Idle => Text::new(format!("Loaded {:?} addons", addons_length)).size(12),
+            AjourState::Loading => Text::new("Loading config file").size(12),
+            AjourState::Refreshing => Text::new("Refreshing addons").size(12),
+            AjourState::Error(e) => Text::new(e.to_string()).size(12),
+        };
+        let status_container = Container::new(status_text)
+            .height(Length::Units(30))
+            .width(Length::FillPortion(1))
+            .center_y()
+            .padding(5)
+            .style(style::AddonTextContainer);
 
+        let spacer_1 = Container::new(Text::new(""))
+            .height(Length::Units(10))
+            .width(Length::Fill);
+
+        let spacer_2 = Container::new(Text::new(""))
+            .height(Length::Units(10))
+            .width(Length::Fill);
+
+        // Column
+        //
+        // This column gathers all the other elements together.
+        let content = Column::new()
+            .push(controls)
+            .push(spacer_1)
+            .push(status_container)
+            .push(spacer_2)
+            .push(addons_scrollable);
+
+        // Container
+        //
+        // This container wraps the whole content.
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .style(style::Content)
+            .padding(10)
             .into()
     }
+}
+
+/// Starts the GUI.
+/// This function does not return.
+pub fn run() {
+    let mut settings = Settings::default();
+    settings.window.size = (1050, 620);
+    // Enforce the usage of dedicated gpu if available
+    settings.antialiasing = true;
+    Ajour::run(settings);
 }

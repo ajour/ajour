@@ -3,16 +3,14 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
 
-#[derive(Debug, Clone)]
-pub enum Error {
-    // NotFound,
-    // Unknown,
-}
+use crate::{error::ClientError, Result};
 
 #[derive(Debug, Clone)]
 pub struct Addon {
+    pub id: String,
     pub title: Option<String>,
     pub version: Option<String>,
     pub dir_entry: DirEntry,
@@ -34,6 +32,7 @@ impl Addon {
         required_dependencies: Vec<String>,
     ) -> Self {
         return Addon {
+            id: Uuid::new_v4().to_simple().to_string(),
             title,
             version,
             dir_entry,
@@ -46,23 +45,23 @@ impl Addon {
 }
 
 /// Return a Vec<Addon> parsed from TOC files in the given directory.
-pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>, Error> {
+pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>> {
     // TODO: Consider skipping DirEntry if we encounter a
     //       blizzard addon. Blizzard adddon starts with 'Blizzard_*'.
     //
     // TODO: We should handle errors here, if nothing is find eg.
     //
     let mut vec: Vec<Addon> = Vec::new();
-    for e in WalkDir::new(path)
+    for entry in WalkDir::new(path)
         .max_depth(2)
         .into_iter()
         .filter_map(|e| e.ok())
     {
-        if e.metadata().map_or(false, |m| m.is_file()) {
-            let file_name = e.file_name();
+        if entry.metadata().map_or(false, |m| m.is_file()) {
+            let file_name = entry.file_name();
             let file_extension = get_extension(file_name).await;
             if file_extension == Some("toc") {
-                let addon = parse_addon_dir_entry(e).await;
+                let addon = parse_addon_dir_entry(entry).await;
                 match addon {
                     Some(addon) => vec.push(addon),
                     None => (),
