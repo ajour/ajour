@@ -6,7 +6,9 @@ use std::path::Path;
 use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{error::ClientError, Result};
+use crate::error::ClientError;
+
+use crate::Result;
 
 #[derive(Debug, Clone)]
 pub struct Addon {
@@ -45,12 +47,17 @@ impl Addon {
 }
 
 /// Return a Vec<Addon> parsed from TOC files in the given directory.
-pub async fn read_addon_dir<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>> {
+pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>> {
     // TODO: Consider skipping DirEntry if we encounter a
     //       blizzard addon. Blizzard adddon starts with 'Blizzard_*'.
-    //
-    // TODO: We should handle errors here, if nothing is find eg.
-    //
+
+    // If the path does not exists or does not point on a directory we throw an Error.
+    if !path.as_ref().is_dir() {
+        return Err(ClientError::Custom(
+            format!("Addon directory not found: {:?}", path.as_ref().to_owned()).to_owned(),
+        ));
+    }
+
     let mut vec: Vec<Addon> = Vec::new();
     for entry in WalkDir::new(path)
         .max_depth(2)

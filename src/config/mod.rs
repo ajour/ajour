@@ -1,14 +1,9 @@
-mod error;
-
 use serde_derive::Deserialize;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-use error::Error;
-
-/// Result from config loading.
-pub type Result<T> = std::result::Result<T, Error>;
+use crate::{error::ClientError, Result};
 
 /// Config type.
 #[derive(Debug, PartialEq, Default, Deserialize, Clone)]
@@ -16,6 +11,10 @@ pub struct Config {
     /// Path to World of Warcraft
     #[serde(default = "default_wow_directory")]
     pub wow_directory: Option<PathBuf>,
+
+    /// Client Version
+    #[serde(default = "default_client_version")]
+    pub client_version: String,
 }
 
 /// Default World of Warcraft directory value.
@@ -23,7 +22,27 @@ fn default_wow_directory() -> Option<PathBuf> {
     None
 }
 
-impl Config {}
+/// Default Client Version
+fn default_client_version() -> String {
+    "retail".to_owned()
+}
+
+impl Config {
+    pub fn get_addon_directory(&self) -> Option<PathBuf> {
+        match self.wow_directory.clone() {
+            Some(dir) => {
+                // We prepend and append `_` to the client_version so it
+                // either becomes _retail_, or _classic_.
+                let formatted_client_version = format!("_{}_", self.client_version.clone());
+
+                // The path for the AddOns is expected to be located at
+                // wow_directory/formatted_client_version/Interface/AddOns
+                Some(dir.join(formatted_client_version).join("Interface/AddOns"))
+            }
+            None => None,
+        }
+    }
+}
 
 /// Returns the location of the first found config file paths
 /// according to the following order:
@@ -69,7 +88,7 @@ fn parse_config(path: &PathBuf) -> Result<Config> {
             if error.to_string() == "EOF while parsing a value" {
                 Ok(Config::default())
             } else {
-                Err(Error::Yaml(error))
+                Err(ClientError::YamlError(error))
             }
         }
         Ok(config) => Ok(config),

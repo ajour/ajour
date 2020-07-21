@@ -3,7 +3,7 @@ use {
     crate::{
         config::load_config,
         error::ClientError,
-        toc::{read_addon_dir, Addon},
+        toc::{read_addon_directory, Addon},
         Result,
     },
     iced::Command,
@@ -16,10 +16,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // When we have the config, we perform an action to read the addon directory
             // which is provided by the config.
             ajour.config = config;
-            let wow_directory = ajour.config.wow_directory.clone();
+            let addon_directory = ajour.config.get_addon_directory();
 
-            match wow_directory {
-                Some(dir) => return Ok(Command::perform(read_addon_dir(dir), Message::Loaded)),
+            match addon_directory {
+                Some(dir) => {
+                    return Ok(Command::perform(read_addon_directory(dir), Message::Loaded))
+                }
                 None => {
                     return Err(ClientError::Custom(
                         "World of Warcraft directory is not set.".to_owned(),

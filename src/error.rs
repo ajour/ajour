@@ -5,6 +5,7 @@ pub enum ClientError {
     Custom(String),
     IoError(std::io::Error),
     WalkDir(walkdir::Error),
+    YamlError(serde_yaml::Error),
 }
 
 impl fmt::Display for ClientError {
@@ -13,6 +14,7 @@ impl fmt::Display for ClientError {
             Self::IoError(x) => write!(f, "{}", x),
             Self::WalkDir(x) => write!(f, "{}", x),
             Self::Custom(x) => write!(f, "{}", x),
+            Self::YamlError(x) => write!(f, "{}", x),
         }
     }
 }
@@ -26,5 +28,11 @@ impl From<std::io::Error> for ClientError {
 impl From<walkdir::Error> for ClientError {
     fn from(error: walkdir::Error) -> Self {
         Self::WalkDir(error)
+    }
+}
+
+impl From<serde_yaml::Error> for ClientError {
+    fn from(val: serde_yaml::Error) -> Self {
+        Self::YamlError(val)
     }
 }

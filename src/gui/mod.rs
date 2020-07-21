@@ -1,14 +1,14 @@
 mod style;
 mod update;
-use iced::{
-    button, scrollable, Application, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
-};
 use crate::{
     config::{load_config, Config},
     error::ClientError,
     toc::Addon,
     Result,
+};
+use iced::{
+    button, scrollable, Application, Button, Column, Command, Container, Element,
+    HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
 };
 
 #[derive(Debug)]
@@ -226,4 +226,3 @@ pub fn run() {
     settings.antialiasing = true;
     Ajour::run(settings);
 }
-

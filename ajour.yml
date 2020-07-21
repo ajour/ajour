@@ -1,5 +1,12 @@
 # Configuration for Ajour.
 # An open source World of Warcraft addon manager written in Rust.
 
-# Path for the World of Warcraft AddOns folder
-# wow_directory: /Applications/World of Warcraft/_retail_/Interface/AddOns
+# Path for the World of Warcraft
+# wow_directory: /Applications/World of Warcraft
+
+# Client version determines which version of World of Warcraft you
+# would like Ajour to manage addons for.
+#
+# Values for `client_version`
+#   - retail
+# client_version: retail
