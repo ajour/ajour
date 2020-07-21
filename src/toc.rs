@@ -6,9 +6,7 @@ use std::path::Path;
 use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::error::ClientError;
-
-use crate::Result;
+use crate::{error::ClientError, Result};
 
 #[derive(Debug, Clone)]
 pub struct Addon {
