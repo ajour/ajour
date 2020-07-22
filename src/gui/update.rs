@@ -3,7 +3,8 @@ use {
     crate::{
         config::load_config,
         error::ClientError,
-        toc::{read_addon_directory, Addon},
+        toc::read_addon_directory,
+        toc::addon::Addon,
         Result,
     },
     iced::Command,

@@ -3,7 +3,7 @@ mod update;
 use crate::{
     config::{load_config, Config},
     error::ClientError,
-    toc::Addon,
+    toc::addon::Addon,
     Result,
 };
 use iced::{
