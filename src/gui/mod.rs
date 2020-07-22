@@ -187,10 +187,12 @@ impl Application for Ajour {
             .padding(5)
             .style(style::StatusTextContainer);
 
+        // A little "hack" to make a spacer
         let spacer_1 = Container::new(Text::new(""))
             .height(Length::Units(10))
             .width(Length::Fill);
 
+        // A little "hack" to make a spacer
         let spacer_2 = Container::new(Text::new(""))
             .height(Length::Units(10))
             .width(Length::Fill);

@@ -1,12 +1,12 @@
+use std::path::PathBuf;
 use uuid::Uuid;
-use walkdir::DirEntry;
 
 #[derive(Debug, Clone)]
 pub struct Addon {
     pub id: String,
     pub title: Option<String>,
     pub version: Option<String>,
-    pub dir_entry: DirEntry,
+    pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub optional_dependencies: Vec<String>,
     pub required_dependencies: Vec<String>,
@@ -19,7 +19,7 @@ impl Addon {
     pub fn new(
         title: Option<String>,
         version: Option<String>,
-        dir_entry: DirEntry,
+        path: PathBuf,
         dependencies: Vec<String>,
         optional_dependencies: Vec<String>,
         required_dependencies: Vec<String>,
@@ -28,7 +28,7 @@ impl Addon {
             id: Uuid::new_v4().to_simple().to_string(),
             title,
             version,
-            dir_entry,
+            path,
             dependencies,
             optional_dependencies,
             required_dependencies,

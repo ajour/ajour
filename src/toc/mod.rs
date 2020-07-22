@@ -31,7 +31,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<addon::
             let file_name = entry.file_name();
             let file_extension = get_extension(file_name).await;
             if file_extension == Some("toc") {
-                let addon = parse_addon_dir_entry(entry).await;
+                let addon = parse_toc_entry(entry).await;
                 match addon {
                     Some(addon) => vec.push(addon),
                     None => (),
@@ -56,10 +56,11 @@ async fn get_extension(filename: &OsStr) -> Option<&str> {
 //
 // TOC format summary:
 // https://wowwiki.fandom.com/wiki/TOC_format
-async fn parse_addon_dir_entry(dir_entry: DirEntry) -> Option<addon::Addon> {
-    let file = File::open(dir_entry.path()).unwrap();
+async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
+    let file = File::open(toc_entry.path()).unwrap();
     let reader = BufReader::new(file);
 
+    let path = toc_entry.path().parent()?.to_path_buf();
     let mut title: Option<String> = None;
     let mut version: Option<String> = None;
     let mut dependencies: Vec<String> = Vec::new();
@@ -112,10 +113,11 @@ async fn parse_addon_dir_entry(dir_entry: DirEntry) -> Option<addon::Addon> {
         }
     }
 
+
     return Some(addon::Addon::new(
         title,
         version,
-        dir_entry,
+        path,
         dependencies,
         optional_dependencies,
         required_dependencies,

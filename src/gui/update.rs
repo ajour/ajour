@@ -6,6 +6,7 @@ use {
         toc::read_addon_directory,
         toc::addon::Addon,
         Result,
+        fs::delete_addon
     },
     iced::Command,
 };
@@ -36,9 +37,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons = Vec::new();
             return Ok(Command::perform(load_config(), Message::Load));
         }
-        Message::Interaction(Interaction::Delete(_)) => {
-            // let addon = self.addons.iter_mut().find(|a| a.id == id);
-            // println!("addon: {:?}", addon);
+        Message::Interaction(Interaction::Delete(id)) => {
+            let addon = ajour.addons.iter_mut().find(|a| a.id == id);
+            let a = addon.unwrap();
+            let _ = delete_addon(a);
         }
         Message::Interaction(Interaction::UpdateAll) => {
             println!("Update all pressed.");
