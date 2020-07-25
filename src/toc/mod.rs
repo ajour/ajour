@@ -108,6 +108,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
     //
     // https://docs.rs/regex/1.3.9/regex/#example-avoid-compiling-the-same-regex-in-a-loop
     let re_toc = Regex::new(r"##\s(?P<key>.*?):\s?(?P<value>.*)").unwrap();
+    let re_title = Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?").unwrap();
 
     for line in reader.lines() {
         let l = line.unwrap();
@@ -115,7 +116,13 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
             match &cap["key"] {
                 "Title" => {
                     // String - The title to display.
-                    title = Some(String::from(&cap["value"]));
+                    //
+                    // Note: Coloring is possible via UI escape sequences.
+                    // Since we don't want any color modifications, we will
+                    // trim it away.
+                    // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
+                    // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
+                    title = Some(re_title.replace_all(&cap["value"], "$1").to_string())
                 }
                 "Version" => {
                     // String - The AddOn version

@@ -122,7 +122,7 @@ impl Application for Ajour {
                 continue;
             }
 
-            let title = addon.readable_title();
+            let title = addon.title.clone();
             let version = addon.version.clone().unwrap_or(String::from("-"));
 
             let text = Text::new(title).size(12);

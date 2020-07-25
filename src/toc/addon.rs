@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::path::PathBuf;
 use uuid::Uuid;
 
@@ -30,19 +29,6 @@ impl Addon {
             dependencies,
             delete_btn_state: Default::default(),
         };
-    }
-
-    /// Function returns a readable title used for GUI
-    ///
-    /// Function is needed because coloring is possible
-    /// in toc files, which can make the title nonreadable
-    /// due to color escape sequences.
-    ///
-    /// Example 1: |cff1784d1ElvUI|r becomes ElvUI.
-    /// Example 2: BigWigs [|cffeda55fUldir|r] becomes BigWigs [Uldir].
-    pub fn readable_title(&self) -> String {
-        let re = Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?").unwrap();
-        re.replace_all(&*self.title, "$1").to_string()
     }
 
     /// Function returns folder name of the addon.
