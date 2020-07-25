@@ -117,7 +117,12 @@ impl Application for Ajour {
         let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
 
         for addon in &mut self.addons {
-            let title = addon.title.clone().unwrap_or(String::from("-"));
+            // We filter away addons without version
+            if addon.version.is_none() {
+                continue;
+            }
+
+            let title = addon.readable_title();
             let version = addon.version.clone().unwrap_or(String::from("-"));
 
             let text = Text::new(title).size(12);

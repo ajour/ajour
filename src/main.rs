@@ -1,8 +1,8 @@
 mod config;
 mod error;
+mod fs;
 mod gui;
 mod toc;
-mod fs;
 
 use crate::error::ClientError;
 
