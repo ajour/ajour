@@ -117,8 +117,8 @@ impl Application for Ajour {
         let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
 
         for addon in &mut self.addons {
-            // We filter away addons without version
-            if addon.version.is_none() {
+            // We filter away addons which isn't parent
+            if !addon.is_parent() {
                 continue;
             }
 

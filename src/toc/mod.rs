@@ -41,6 +41,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<addon::
     }
 
     // Link all dependencies bidirectional
+    // TODO: naming
     link_dependencies_bidirectional(&mut addons);
 
     return Ok(addons);
@@ -49,30 +50,31 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<addon::
 /// Helper function to run through all addons and
 /// link all dependencies bidirectional.
 ///
-/// This ensures that for any Addon we always know all
-/// dependencies to it.
-///
 /// Example: We download a Addon which upon unzipping has
 /// three folders (addons): `Foo`, `Bar`, `Baz`.
-/// `Foo` is the main addon, which will be shown in the GUI,
-/// and `Bar` and `Baz` is two helper addons. `Bar` and `Baz`
-/// both dependent on `Foo`. This we know because it is written
-/// in their .toc file.
+/// `Foo` is the parent and `Bar` and `Baz` are two helper addons.
+/// `Bar` and `Baz` are both dependent on `Foo`.
+/// This we know because of their .toc file.
 /// However we don't know anything about `Bar` and `Baz` when
-/// only looking at `Foo`. This can cause a headache when we
-/// want to delete `Foo` because we want to cleanup all folders
-/// upon deletion.
+/// only looking at `Foo`.
 ///
-/// TODO: This function could properly be optimized, however
-/// for this given time, it works.
+/// After reading TOC files:
+/// `Foo` - dependencies: []
+/// `Bar` - dependencies: [`Foo`]
+/// `Baz` - dependencies: [`Foo`]
+///
+/// After bidirectional dependencies link:
+/// `Foo` - dependencies: [`Bar`, `Baz`]
+/// `Bar` - dependencies: [`Foo`]
+/// `Baz` - dependencies: [`Foo`]
 fn link_dependencies_bidirectional(addons: &mut Vec<addon::Addon>) {
     let clone_addons = addons.clone();
 
     for addon in addons {
         for clone_addon in &clone_addons {
             for dependency in &clone_addon.dependencies {
-                if dependency == &addon.folder_title() {
-                    addon.dependencies.push(clone_addon.folder_title());
+                if dependency == &addon.id {
+                    addon.dependencies.push(clone_addon.id.clone());
                 }
             }
         }
@@ -138,12 +140,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
         }
     }
 
-    return Some(addon::Addon::new(
-        title?,
-        version,
-        path,
-        dependencies,
-    ));
+    return Some(addon::Addon::new(title?, version, path, dependencies));
 }
 
 /// Helper function to split a comma seperated string into `Vec<String>`.

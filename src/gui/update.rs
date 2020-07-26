@@ -34,14 +34,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::perform(load_config(), Message::Load));
         }
         Message::Interaction(Interaction::Delete(id)) => {
-            let addon = &ajour.addons.clone().into_iter().find(|a| a.id == id).unwrap();
-            let dependency_paths = addon.dependency_paths(&ajour.addons);
-            for dependency in dependency_paths {
-                let _ = delete_addon(dependency);
-            }
+            // Delete addon, and it's dependencies.
+            let addons = &ajour.addons.clone();
+            let target_addon = addons.into_iter().find(|a| a.id == id).unwrap();
+            let combined_dependencies = target_addon.combined_dependencies(addons);
+            let addons_to_be_deleted = addons
+                .into_iter()
+                .filter(|a| combined_dependencies.contains(&a.id)).collect::<Vec<_>>();
 
-            let addon_directory = ajour.config.get_addon_directory().unwrap();
-            return Ok(Command::perform(read_addon_directory(addon_directory), Message::Loaded))
+            // Loops the addons marked for deletion and remove them one by one.
+             for addon in addons_to_be_deleted {
+                 let _ = delete_addon(addon);
+             }
+             // Refreshes the GUI by reparsing the addon directory.
+             let addon_directory = ajour.config.get_addon_directory().unwrap();
+             return Ok(Command::perform(
+                 read_addon_directory(addon_directory),
+                 Message::Loaded,
+             ));
         }
         Message::Interaction(Interaction::UpdateAll) => {
             println!("Update all pressed.");

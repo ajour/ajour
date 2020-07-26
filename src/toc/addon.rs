@@ -1,8 +1,23 @@
 use std::path::PathBuf;
-use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 /// Struct which stores information about a single Addon.
+///
+/// `id`: Unique identifier for each addon.
+/// This is actually the folder name toc files
+/// use to reference other addons which is why
+/// it is chosen to be the identifier.
+///
+/// `title`: Readable title to be used in the GUI.
+///
+/// `version`: Each addon can have a version.
+/// If there is no version, it is most likely because
+/// it is dependent on another addon.
+///
+/// `path`: A `PathBuf` to this addon folder.
+///
+/// `dependencies`: A list of `id's` to other addons
+/// which this addon is dependent on.
 pub struct Addon {
     pub id: String,
     pub title: String,
@@ -21,8 +36,11 @@ impl Addon {
         path: PathBuf,
         dependencies: Vec<String>,
     ) -> Self {
+        let os_title = path.file_name().unwrap();
+        let str_title = os_title.to_str().unwrap();
+
         return Addon {
-            id: Uuid::new_v4().to_simple().to_string(),
+            id: str_title.to_string(),
             title,
             version,
             path,
@@ -31,37 +49,67 @@ impl Addon {
         };
     }
 
-    /// Function returns folder name of the addon.
+    /// Function returns a `bool` which indicates
+    /// if a addon is a parent.
     ///
-    /// Addons can reference other addons in their toc file.
-    /// The way they do this, is by their folder name.
-    pub fn folder_title(&self) -> String {
-        // TODO: Handle the unwraps better.
-        let os_title = self.path.file_name().unwrap();
-        let str_title = os_title.to_str().unwrap();
-
-        str_title.to_string()
+    /// A parent addon can have dependencies which upon
+    /// deletion will be deleted. A parent cannot delete
+    /// another parent addon.
+    ///
+    /// There's an edgecase where a downloaded addon,
+    /// containg multiple folders (addons) can have multiple
+    /// parents because one or more have a version attatched.
+    pub fn is_parent(&self) -> bool {
+        self.version.is_some()
     }
 
-    /// Function returns a `Vec<PathBufs>` which has a `PathBuf`
-    /// for each dependency the addon has.
-    pub fn dependency_paths(&self, addons: &Vec<Addon>) -> Vec<PathBuf> {
-        let mut paths: Vec<PathBuf> = Vec::new();
-        // Loops through all addons. If a dependency is equal to a given
-        // addon, we add the path to the Vec.
+    /// Function returns a `Vec<String>` which contains
+    /// all combined dependencies.
+    ///
+    /// Example:
+    /// `Foo` - dependencies: [`Bar`, `Baz`]
+    /// `Bar` - dependencies: [`Foo`]
+    /// `Baz` - dependencies: [`Foo`]
+    ///
+    /// If `Baz` is self, we will return [`Foo`, `Bar`, `Baz`]
+    pub fn combined_dependencies(&self, addons: &Vec<Addon>) -> Vec<String> {
+        let addons = &addons.clone();
+        let mut dependencies: Vec<String> = Vec::new();
+
+        // Add own dependency to dependencies.
+        dependencies.push(self.id.clone());
+         // Loops dependencies of the target addon.
         for dependency in &self.dependencies {
-            for addon in addons {
-                if dependency == &addon.folder_title() {
-                    paths.push(addon.path.clone());
-                }
-            }
+            // Find the addon.
+            let addon = addons.into_iter().find(|a| &a.id == dependency);
+            match addon {
+                Some(addon) => {
+                    // If target_addon is a parent, and the dependency addon is a parent
+                    // we skip it.
+                    if self.is_parent() && addon.is_parent() {
+                        continue;
+                    }
+
+                    // Add dependency to dependencies.
+                    dependencies.push(dependency.clone());
+                    // Loops the dependencies of the found addon.
+                    for dependency in &addon.dependencies {
+                        dependencies.push(dependency.clone());
+                    }
+                },
+                // If we can't find the addon, we will just skip it.
+                None => continue
+            };
         }
 
-        // Add this addons path to the Vec.
-        paths.push(self.path.clone());
+        dependencies.sort();
+        dependencies.dedup();
+        dependencies
+    }
+}
 
-        // Ensure that we don't have any duplicates.
-        paths.dedup();
-        paths
+impl PartialEq for Addon {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
     }
 }

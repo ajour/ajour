@@ -1,9 +1,8 @@
 use crate::Result;
-use std::path::PathBuf;
-use crate::error::ClientError;
+use crate::{error::ClientError, toc::addon::Addon};
 use std::fs::remove_dir_all;
 
-/// Deletes an AddOn from disk.
-pub fn delete_addon(path: PathBuf) -> Result<()> {
-    remove_dir_all(path).map_err(|e| ClientError::IoError(e))
+/// Deletes an Addon from disk.
+pub fn delete_addon(addon: &Addon) -> Result<()> {
+    remove_dir_all(addon.path.to_path_buf()).map_err(|e| ClientError::IoError(e))
 }

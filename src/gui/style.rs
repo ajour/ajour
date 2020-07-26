@@ -13,8 +13,8 @@ enum ColorPalette {
 impl ColorPalette {
     fn rgb(&self) -> Color {
         match self {
-            ColorPalette::Primary => return Color::from_rgb(0.22, 0.17, 0.28),
-            ColorPalette::OnPrimary => return Color::from_rgb(0.73, 0.52, 0.99),
+            ColorPalette::Primary => return Color::from_rgb(0.88, 0.74, 0.28),
+            ColorPalette::OnPrimary => return Color::from_rgb(0.32, 0.27, 0.10),
             ColorPalette::Surface => return Color::from_rgb(0.12, 0.12, 0.12),
             ColorPalette::OnSurface => return Color::from_rgb(0.88, 0.88, 0.88),
             ColorPalette::Background => return Color::from_rgb(0.07, 0.07, 0.07),
