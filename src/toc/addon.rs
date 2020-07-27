@@ -17,6 +17,8 @@ use std::cmp::Ordering;
 ///
 /// `path`: A `PathBuf` to this addon folder.
 ///
+/// `wowi_id`: Addon identifier for Wowinterface API.
+///
 /// `dependencies`: A list of `id's` to other addons
 /// which this addon is dependent on.
 pub struct Addon {
@@ -25,6 +27,7 @@ pub struct Addon {
     pub version: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
+    pub wowi_id: Option<u32>,
 
     pub delete_btn_state: iced::button::State,
 }
@@ -35,6 +38,7 @@ impl Addon {
         title: String,
         version: Option<String>,
         path: PathBuf,
+        wowi_id: Option<u32>,
         dependencies: Vec<String>,
     ) -> Self {
         let os_title = path.file_name().unwrap();
@@ -46,6 +50,7 @@ impl Addon {
             version,
             path,
             dependencies,
+            wowi_id,
             delete_btn_state: Default::default(),
         };
     }

@@ -104,6 +104,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
     let mut title: Option<String> = None;
     let mut version: Option<String> = None;
     let mut dependencies: Vec<String> = Vec::new();
+    let mut wowi_id: Option<u32> = None;
 
     // It is an anti-pattern to compile the same regular expression in a loop,
     // which is why they are created here.
@@ -116,31 +117,39 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
         let l = line.unwrap();
         for cap in re_toc.captures_iter(l.as_str()) {
             match &cap["key"] {
+                // String - The title to display.
+                //
+                // Note: Coloring is possible via UI escape sequences.
+                // Since we don't want any color modifications, we will
+                // trim it away.
+                // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
+                // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
                 "Title" => {
-                    // String - The title to display.
-                    //
-                    // Note: Coloring is possible via UI escape sequences.
-                    // Since we don't want any color modifications, we will
-                    // trim it away.
-                    // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
-                    // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
                     title = Some(re_title.replace_all(&cap["value"], "$1").to_string())
                 }
+                // String - The AddOn version
                 "Version" => {
-                    // String - The AddOn version
                     version = Some(String::from(&cap["value"]));
                 }
+                // String - A comma-separated list of addon (directory)
+                // names that must be loaded before this addon can be loaded.
                 "Dependencies" | "RequiredDeps" => {
-                    // String - A comma-separated list of addon (directory)
-                    // names that must be loaded before this addon can be loaded.
                     dependencies.append(&mut split_dependencies_into_vec(&cap["value"]));
+                }
+                // Integer - Addon identifier for Wowinterface API.
+                "X-WoWI-ID" => {
+                    wowi_id = match cap["value"].parse::<u32>() {
+                        Ok(number) => Some(number),
+                        Err(_) => None,
+                    };
+
                 }
                 _ => (),
             }
         }
     }
 
-    return Some(addon::Addon::new(title?, version, path, dependencies));
+    return Some(addon::Addon::new(title?, version, path, wowi_id, dependencies));
 }
 
 /// Helper function to split a comma seperated string into `Vec<String>`.
