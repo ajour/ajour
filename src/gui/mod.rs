@@ -80,8 +80,6 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-        let addons_length = &mut self.addons.len().clone();
-
         // General controls
         //
         // A row contain general controls.
@@ -116,11 +114,19 @@ impl Application for Ajour {
         // Each row holds information about a single addon.
         let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
 
+
+        // Primitive way to count how many addons we will show.
+        let mut addon_count = 0;
+
+        // Loops addons for GUI.
         for addon in &mut self.addons {
-            // We filter away addons which isn't parent
+            // We filter away addons which isn't parent.
             if !addon.is_parent() {
                 continue;
             }
+
+            // Increment addon count.
+            addon_count = addon_count + 1;
 
             let title = addon.title.clone();
             let version = addon.version.clone().unwrap_or(String::from("-"));
@@ -136,7 +142,7 @@ impl Application for Ajour {
             let installed_version = Text::new(version).size(12);
             let installed_version_container = Container::new(installed_version)
                 .height(Length::Units(30))
-                .width(Length::Units(75))
+                .width(Length::Units(125))
                 .center_y()
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
@@ -144,7 +150,7 @@ impl Application for Ajour {
             let available_version = Text::new("-").size(12);
             let available_version_container = Container::new(available_version)
                 .height(Length::Units(30))
-                .width(Length::Units(75))
+                .width(Length::Units(125))
                 .center_y()
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
@@ -180,7 +186,7 @@ impl Application for Ajour {
         //
         // Displays text depending on the state of the app.
         let status_text = match &self.state {
-            AjourState::Idle => Text::new(format!("Loaded {:?} addons", addons_length)).size(12),
+            AjourState::Idle => Text::new(format!("Loaded {:?} addons", addon_count)).size(12),
             AjourState::Loading => Text::new("Loading config file").size(12),
             AjourState::Refreshing => Text::new("Refreshing addons").size(12),
             AjourState::Error(e) => Text::new(e.to_string()).size(12),

@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::cmp::Ordering;
 
 #[derive(Debug, Clone)]
 /// Struct which stores information about a single Addon.
@@ -113,3 +114,17 @@ impl PartialEq for Addon {
         self.id == other.id
     }
 }
+
+impl PartialOrd for Addon {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.id.cmp(&other.id))
+    }
+}
+
+impl Ord for Addon {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl Eq for Addon { }

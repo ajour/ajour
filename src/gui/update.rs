@@ -59,6 +59,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Loaded(Ok(addons)) => {
             ajour.state = AjourState::Idle;
             ajour.addons = addons;
+            ajour.addons.sort();
             return Ok(Command::none());
         }
         Message::Error(error) | Message::Loaded(Err(error)) => {
