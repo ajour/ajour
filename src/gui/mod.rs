@@ -23,6 +23,7 @@ pub enum AjourState {
 pub enum Interaction {
     Refresh,
     UpdateAll,
+    Update(String),
     Delete(String),
 }
 
@@ -155,6 +156,22 @@ impl Application for Ajour {
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
+            let update_button: Element<Interaction> = Button::new(
+                &mut addon.update_btn_state,
+                Text::new("Update")
+                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .size(12),
+            )
+            .on_press(Interaction::Update(addon.id.clone()))
+            .style(style::DefaultButton)
+            .into();
+
+            let update_button_container = Container::new(update_button.map(Message::Interaction))
+                .height(Length::Units(30))
+                .center_y()
+                .padding(5)
+                .style(style::AddonDescriptionContainer);
+
             let delete_button: Element<Interaction> = Button::new(
                 &mut addon.delete_btn_state,
                 Text::new("Delete")
@@ -175,6 +192,7 @@ impl Application for Ajour {
                 .push(text_container)
                 .push(installed_version_container)
                 .push(available_version_container)
+                .push(update_button_container)
                 .push(delete_button_container)
                 .spacing(1);
 

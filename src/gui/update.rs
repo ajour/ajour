@@ -53,6 +53,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                  Message::Loaded,
              ));
         }
+        Message::Interaction(Interaction::Update(id)) => {
+            // Update addon.
+            let addons = &ajour.addons.clone();
+            let target_addon = addons.into_iter().find(|a| a.id == id).unwrap();
+            println!("target_addon: {:?}", target_addon);
+        }
         Message::Interaction(Interaction::UpdateAll) => {
             println!("Update all pressed.");
         }

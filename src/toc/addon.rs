@@ -29,6 +29,7 @@ pub struct Addon {
     pub dependencies: Vec<String>,
     pub wowi_id: Option<u32>,
 
+    pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
 }
 
@@ -51,6 +52,7 @@ impl Addon {
             path,
             dependencies,
             wowi_id,
+            update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         };
     }
