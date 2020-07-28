@@ -1,8 +1,8 @@
 use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
-        config::load_config, error::ClientError, fs::delete_addon,
-        toc::read_addon_directory, Result,
+        config::load_config, error::ClientError, fs::delete_addon, toc::read_addon_directory,
+        wowinterface_api::get_addon_details, Result, toc::addon::Addon, config::Config,
     },
     iced::Command,
 };
@@ -40,24 +40,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let combined_dependencies = target_addon.combined_dependencies(addons);
             let addons_to_be_deleted = addons
                 .into_iter()
-                .filter(|a| combined_dependencies.contains(&a.id)).collect::<Vec<_>>();
+                .filter(|a| combined_dependencies.contains(&a.id))
+                .collect::<Vec<_>>();
 
             // Loops the addons marked for deletion and remove them one by one.
-             for addon in addons_to_be_deleted {
-                 let _ = delete_addon(addon);
-             }
-             // Refreshes the GUI by reparsing the addon directory.
-             let addon_directory = ajour.config.get_addon_directory().unwrap();
-             return Ok(Command::perform(
-                 read_addon_directory(addon_directory),
-                 Message::Loaded,
-             ));
-        }
-        Message::Interaction(Interaction::Update(id)) => {
-            // Update addon.
-            let addons = &ajour.addons.clone();
-            let target_addon = addons.into_iter().find(|a| a.id == id).unwrap();
-            println!("target_addon: {:?}", target_addon);
+            for addon in addons_to_be_deleted {
+                let _ = delete_addon(addon);
+            }
+            // Refreshes the GUI by reparsing the addon directory.
+            let addon_directory = ajour.config.get_addon_directory().unwrap();
+            return Ok(Command::perform(
+                read_addon_directory(addon_directory),
+                Message::Loaded,
+            ));
         }
         Message::Interaction(Interaction::UpdateAll) => {
             println!("Update all pressed.");
@@ -66,13 +61,30 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.state = AjourState::Idle;
             ajour.addons = addons;
             ajour.addons.sort();
-            return Ok(Command::none());
+
+            return Ok(Command::perform(get_all_details(ajour.addons.clone(), ajour.config.clone()), Message::AddonDetails));
         }
-        Message::Error(error) | Message::Loaded(Err(error)) => {
+        Message::AddonDetails(Ok(addons)) => {
+            ajour.addons = addons;
+        }
+        Message::Interaction(Interaction::Disabled) => {}
+        Message::Error(error) | Message::Loaded(Err(error)) | Message::AddonDetails(Err(error)) => {
             println!("error: {:?}", &error);
             ajour.state = AjourState::Error(error);
         }
     }
 
     Ok(Command::none())
+}
+
+async fn get_all_details(mut addons: Vec<Addon>, config: Config) -> Result<Vec<Addon>> {
+    for addon in &mut addons {
+        if addon.wowi_id.clone().is_some() {
+            let addon_patches = get_addon_details(addon.wowi_id.clone().unwrap(), config.clone()).await?;
+            let patch = addon_patches.first().unwrap();
+            addon.apply_patch(patch);
+        }
+    }
+
+    Ok(addons)
 }

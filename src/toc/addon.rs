@@ -1,5 +1,6 @@
-use std::path::PathBuf;
+use serde_derive::Deserialize;
 use std::cmp::Ordering;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 /// Struct which stores information about a single Addon.
@@ -25,9 +26,10 @@ pub struct Addon {
     pub id: String,
     pub title: String,
     pub version: Option<String>,
+    pub available_version: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
-    pub wowi_id: Option<u32>,
+    pub wowi_id: Option<String>,
 
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
@@ -39,7 +41,7 @@ impl Addon {
         title: String,
         version: Option<String>,
         path: PathBuf,
-        wowi_id: Option<u32>,
+        wowi_id: Option<String>,
         dependencies: Vec<String>,
     ) -> Self {
         let os_title = path.file_name().unwrap();
@@ -49,12 +51,17 @@ impl Addon {
             id: str_title.to_string(),
             title,
             version,
+            available_version: None,
             path,
             dependencies,
             wowi_id,
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         };
+    }
+
+    pub fn apply_patch(&mut self, patch: &AddonPatch) {
+        self.available_version = Some(patch.version.clone());
     }
 
     /// Function returns a `bool` which indicates
@@ -86,7 +93,7 @@ impl Addon {
 
         // Add own dependency to dependencies.
         dependencies.push(self.id.clone());
-         // Loops dependencies of the target addon.
+        // Loops dependencies of the target addon.
         for dependency in &self.dependencies {
             // Find the addon.
             let addon = addons.into_iter().find(|a| &a.id == dependency);
@@ -104,9 +111,9 @@ impl Addon {
                     for dependency in &addon.dependencies {
                         dependencies.push(dependency.clone());
                     }
-                },
+                }
                 // If we can't find the addon, we will just skip it.
-                None => continue
+                None => continue,
             };
         }
 
@@ -134,4 +141,10 @@ impl Ord for Addon {
     }
 }
 
-impl Eq for Addon { }
+impl Eq for Addon {}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct AddonPatch {
+    pub id: String,
+    pub version: String,
+}

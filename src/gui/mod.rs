@@ -3,7 +3,7 @@ mod update;
 use crate::{
     config::{load_config, Config},
     error::ClientError,
-    toc::addon::Addon,
+    toc::addon::Addon ,
     Result,
 };
 use iced::{
@@ -23,14 +23,16 @@ pub enum AjourState {
 pub enum Interaction {
     Refresh,
     UpdateAll,
-    Update(String),
     Delete(String),
+
+    Disabled,
 }
 
 #[derive(Debug)]
 pub enum Message {
     Load(Config),
     Loaded(Result<Vec<Addon>>),
+    AddonDetails(Result<Vec<Addon>>),
     Interaction(Interaction),
     Error(ClientError),
 }
@@ -115,7 +117,6 @@ impl Application for Ajour {
         // Each row holds information about a single addon.
         let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
 
-
         // Primitive way to count how many addons we will show.
         let mut addon_count = 0;
 
@@ -131,6 +132,7 @@ impl Application for Ajour {
 
             let title = addon.title.clone();
             let version = addon.version.clone().unwrap_or(String::from("-"));
+            let available_version = addon.available_version.clone().unwrap_or(String::from("-"));
 
             let text = Text::new(title).size(12);
             let text_container = Container::new(text)
@@ -148,7 +150,7 @@ impl Application for Ajour {
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
-            let available_version = Text::new("-").size(12);
+            let available_version = Text::new(available_version).size(12);
             let available_version_container = Container::new(available_version)
                 .height(Length::Units(30))
                 .width(Length::Units(125))
@@ -162,7 +164,7 @@ impl Application for Ajour {
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
             )
-            .on_press(Interaction::Update(addon.id.clone()))
+            .on_press(Interaction::Disabled)
             .style(style::DefaultButton)
             .into();
 

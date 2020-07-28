@@ -104,7 +104,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
     let mut title: Option<String> = None;
     let mut version: Option<String> = None;
     let mut dependencies: Vec<String> = Vec::new();
-    let mut wowi_id: Option<u32> = None;
+    let mut wowi_id: Option<String> = None;
 
     // It is an anti-pattern to compile the same regular expression in a loop,
     // which is why they are created here.
@@ -124,9 +124,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
                 // trim it away.
                 // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
                 // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
-                "Title" => {
-                    title = Some(re_title.replace_all(&cap["value"], "$1").to_string())
-                }
+                "Title" => title = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
                 // String - The AddOn version
                 "Version" => {
                     version = Some(String::from(&cap["value"]));
@@ -136,20 +134,22 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
                 "Dependencies" | "RequiredDeps" => {
                     dependencies.append(&mut split_dependencies_into_vec(&cap["value"]));
                 }
-                // Integer - Addon identifier for Wowinterface API.
+                // String - Addon identifier for Wowinterface API.
                 "X-WoWI-ID" => {
-                    wowi_id = match cap["value"].parse::<u32>() {
-                        Ok(number) => Some(number),
-                        Err(_) => None,
-                    };
-
+                    wowi_id = Some(cap["value"].to_string());
                 }
                 _ => (),
             }
         }
     }
 
-    return Some(addon::Addon::new(title?, version, path, wowi_id, dependencies));
+    return Some(addon::Addon::new(
+        title?,
+        version,
+        path,
+        wowi_id,
+        dependencies,
+    ));
 }
 
 /// Helper function to split a comma seperated string into `Vec<String>`.

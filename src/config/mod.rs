@@ -15,6 +15,10 @@ pub struct Config {
     /// Client Version
     #[serde(default = "default_client_version")]
     pub client_version: String,
+
+    /// Wowinterface Token
+    #[serde(default = "default_wow_interface_token")]
+    pub wow_interface_token: String,
 }
 
 /// Default World of Warcraft directory value.
@@ -25,6 +29,13 @@ fn default_wow_directory() -> Option<PathBuf> {
 /// Default Client Version
 fn default_client_version() -> String {
     "retail".to_owned()
+}
+
+/// Default Wowinterface Token
+fn default_wow_interface_token() -> String {
+    // TODO: Load a default token (from dotenv eg.)
+    // https://github.com/dotenv-rs/dotenv
+    "TODO_LOAD_TOKEN".to_owned()
 }
 
 impl Config {

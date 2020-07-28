@@ -13,4 +13,5 @@ dirs = "3.0"
 serde = "1.0.114"
 serde_yaml = "0.8.13"
 serde_derive = "1.0.114"
-uuid = { version = "0.8.1", features = ["v4"] }
+serde_json = "1.0.57"
+isahc = { version = "0.9.6", features = ["json"] }
