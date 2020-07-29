@@ -1,24 +1,26 @@
 use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
-        config::load_config, error::ClientError, fs::delete_addon, toc::read_addon_directory,
-        wowinterface_api::get_addon_details, Result, toc::addon::Addon, config::Config,
+        config::load_config, error::ClientError, fs::delete_addon,
+        toc::addon::Addon, toc::read_addon_directory, wowinterface_api::get_addon_details, Result,
     },
     iced::Command,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
-    let _ = ajour.config;
     match message {
-        Message::Load(config) => {
-            // When we have the config, we perform an action to read the addon directory
+        Message::Parse(config) => {
+            // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
             let addon_directory = ajour.config.get_addon_directory();
 
             match addon_directory {
                 Some(dir) => {
-                    return Ok(Command::perform(read_addon_directory(dir), Message::Loaded))
+                    return Ok(Command::perform(
+                        read_addon_directory(dir),
+                        Message::ParsedAddons,
+                    ))
                 }
                 None => {
                     return Err(ClientError::Custom(
@@ -28,10 +30,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Interaction(Interaction::Refresh) => {
-            // Refreshes the state.
-            ajour.state = AjourState::Refreshing;
+            // Re-parse addons.
+            ajour.state = AjourState::Parsing;
             ajour.addons = Vec::new();
-            return Ok(Command::perform(load_config(), Message::Load));
+            return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
@@ -51,25 +53,35 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addon_directory = ajour.config.get_addon_directory().unwrap();
             return Ok(Command::perform(
                 read_addon_directory(addon_directory),
-                Message::Loaded,
+                Message::ParsedAddons,
             ));
         }
         Message::Interaction(Interaction::UpdateAll) => {
             println!("Update all pressed.");
         }
-        Message::Loaded(Ok(addons)) => {
+        Message::ParsedAddons(Ok(addons)) => {
+            // When addons has been parsed, we update state.
+            // Once that is done, we begin fetching patches for addons.
+            ajour.state = AjourState::FetchingDetails;
+            // ajour.addons = addons;
+            // ajour.addons.sort();
+
+            let wowi_token = ajour.config.wow_interface_token.clone();
+            return Ok(Command::perform(
+                apply_addon_details(addons, wowi_token),
+                Message::PatchedAddons,
+            ));
+        }
+        Message::PatchedAddons(Ok(addons)) => {
+            // When addons has been patched, we update state.
             ajour.state = AjourState::Idle;
             ajour.addons = addons;
             ajour.addons.sort();
-
-            return Ok(Command::perform(get_all_details(ajour.addons.clone(), ajour.config.clone()), Message::AddonDetails));
-        }
-        Message::AddonDetails(Ok(addons)) => {
-            ajour.addons = addons;
         }
         Message::Interaction(Interaction::Disabled) => {}
-        Message::Error(error) | Message::Loaded(Err(error)) | Message::AddonDetails(Err(error)) => {
-            println!("error: {:?}", &error);
+        Message::Error(error)
+        | Message::ParsedAddons(Err(error))
+        | Message::PatchedAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
     }
@@ -77,14 +89,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
     Ok(Command::none())
 }
 
-async fn get_all_details(mut addons: Vec<Addon>, config: Config) -> Result<Vec<Addon>> {
+/// Function to fetch remote data (patches) from the different repositories:
+/// - Warcraftinterface
+async fn apply_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result<Vec<Addon>> {
     for addon in &mut addons {
-        if addon.wowi_id.clone().is_some() {
-            let addon_patches = get_addon_details(addon.wowi_id.clone().unwrap(), config.clone()).await?;
-            let patch = addon_patches.first().unwrap();
-            addon.apply_patch(patch);
+        match &addon.wowi_id {
+            Some(id) => {
+                let details = get_addon_details(&id[..], &wowi_token).await?;
+                match details.first() {
+                    Some(details) => {
+                        addon.apply_details(details);
+                    }
+                    None =>  continue ,
+                };
+            }
+            None => continue,
         }
     }
 
+    // Once the patches has been applied, we return the addons.
     Ok(addons)
 }

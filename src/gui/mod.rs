@@ -3,7 +3,7 @@ mod update;
 use crate::{
     config::{load_config, Config},
     error::ClientError,
-    toc::addon::Addon ,
+    toc::addon::Addon,
     Result,
 };
 use iced::{
@@ -14,8 +14,8 @@ use iced::{
 #[derive(Debug)]
 pub enum AjourState {
     Idle,
-    Loading,
-    Refreshing,
+    Parsing,
+    FetchingDetails,
     Error(ClientError),
 }
 
@@ -30,9 +30,9 @@ pub enum Interaction {
 
 #[derive(Debug)]
 pub enum Message {
-    Load(Config),
-    Loaded(Result<Vec<Addon>>),
-    AddonDetails(Result<Vec<Addon>>),
+    Parse(Config),
+    ParsedAddons(Result<Vec<Addon>>),
+    PatchedAddons(Result<Vec<Addon>>),
     Interaction(Interaction),
     Error(ClientError),
 }
@@ -49,7 +49,7 @@ pub struct Ajour {
 impl Default for Ajour {
     fn default() -> Self {
         Self {
-            state: AjourState::Loading,
+            state: AjourState::Parsing,
             update_all_button_state: Default::default(),
             refresh_button_state: Default::default(),
             addons_scrollable_state: Default::default(),
@@ -67,7 +67,7 @@ impl Application for Ajour {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Ajour::default(),
-            Command::perform(load_config(), Message::Load),
+            Command::perform(load_config(), Message::Parse),
         )
     }
 
@@ -132,7 +132,8 @@ impl Application for Ajour {
 
             let title = addon.title.clone();
             let version = addon.version.clone().unwrap_or(String::from("-"));
-            let available_version = addon.available_version.clone().unwrap_or(String::from("-"));
+            let remote_version = addon.remote_version.clone().unwrap_or(String::from("-"));
+            let is_updatable = addon.is_updatable();
 
             let text = Text::new(title).size(12);
             let text_container = Container::new(text)
@@ -150,23 +151,27 @@ impl Application for Ajour {
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
-            let available_version = Text::new(available_version).size(12);
-            let available_version_container = Container::new(available_version)
+            let remote_version = Text::new(remote_version).size(12);
+            let remote_version_container = Container::new(remote_version)
                 .height(Length::Units(30))
                 .width(Length::Units(125))
                 .center_y()
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
-            let update_button: Element<Interaction> = Button::new(
+            let mut update_button = Button::new(
                 &mut addon.update_btn_state,
                 Text::new("Update")
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(12),
             )
-            .on_press(Interaction::Disabled)
-            .style(style::DefaultButton)
-            .into();
+            .style(style::DefaultButton);
+
+            if is_updatable {
+                update_button = update_button.on_press(Interaction::Disabled);
+            }
+
+            let update_button: Element<Interaction> = update_button.into();
 
             let update_button_container = Container::new(update_button.map(Message::Interaction))
                 .height(Length::Units(30))
@@ -193,10 +198,11 @@ impl Application for Ajour {
             let row = Row::new()
                 .push(text_container)
                 .push(installed_version_container)
-                .push(available_version_container)
+                .push(remote_version_container)
                 .push(update_button_container)
                 .push(delete_button_container)
                 .spacing(1);
+
 
             let cell = Container::new(row).width(Length::Fill).style(style::Cell);
             addons_scrollable = addons_scrollable.push(cell);
@@ -207,8 +213,8 @@ impl Application for Ajour {
         // Displays text depending on the state of the app.
         let status_text = match &self.state {
             AjourState::Idle => Text::new(format!("Loaded {:?} addons", addon_count)).size(12),
-            AjourState::Loading => Text::new("Loading config file").size(12),
-            AjourState::Refreshing => Text::new("Refreshing addons").size(12),
+            AjourState::Parsing => Text::new("Parsing local addons").size(12),
+            AjourState::FetchingDetails => Text::new("Fetching data from repositories").size(12),
             AjourState::Error(e) => Text::new(e.to_string()).size(12),
         };
         let status_container = Container::new(status_text)

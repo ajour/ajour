@@ -26,7 +26,7 @@ pub struct Addon {
     pub id: String,
     pub title: String,
     pub version: Option<String>,
-    pub available_version: Option<String>,
+    pub remote_version: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub wowi_id: Option<String>,
@@ -51,7 +51,7 @@ impl Addon {
             id: str_title.to_string(),
             title,
             version,
-            available_version: None,
+            remote_version: None,
             path,
             dependencies,
             wowi_id,
@@ -60,8 +60,17 @@ impl Addon {
         };
     }
 
-    pub fn apply_patch(&mut self, patch: &AddonPatch) {
-        self.available_version = Some(patch.version.clone());
+    /// TBA.
+    pub fn is_updatable(&self) -> bool {
+        match self.remote_version {
+            Some(_) => self.version != self.remote_version,
+            None => false
+        }
+    }
+
+    /// TBA.
+    pub fn apply_details(&mut self, patch: &AddonDetails) {
+        self.remote_version = Some(patch.version.clone());
     }
 
     /// Function returns a `bool` which indicates
@@ -131,20 +140,20 @@ impl PartialEq for Addon {
 
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.id.cmp(&other.id))
+        Some(self.is_updatable().cmp(&other.is_updatable()).reverse().then_with(|| self.id.cmp(&other.id)))
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.id.cmp(&other.id)
+        self.is_updatable().cmp(&other.is_updatable()).reverse().then_with(|| self.id.cmp(&other.id))
     }
 }
 
 impl Eq for Addon {}
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AddonPatch {
+pub struct AddonDetails {
     pub id: String,
     pub version: String,
 }

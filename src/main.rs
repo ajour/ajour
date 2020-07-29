@@ -2,7 +2,6 @@ mod config;
 mod error;
 mod fs;
 mod gui;
-mod network;
 mod toc;
 mod wowinterface_api;
 
