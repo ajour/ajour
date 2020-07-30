@@ -3,6 +3,15 @@ use std::cmp::Ordering;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
+pub enum AddonState {
+    Ajour,
+    Updatable,
+    Downloading,
+    Unpacking,
+}
+
+
+#[derive(Debug, Clone)]
 /// Struct which stores information about a single Addon.
 ///
 /// `id`: Unique identifier for each addon.
@@ -29,6 +38,7 @@ pub struct Addon {
     pub remote_version: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
+    pub state: AddonState,
     pub wowi_id: Option<String>,
 
     pub update_btn_state: iced::button::State,
@@ -54,6 +64,7 @@ impl Addon {
             remote_version: None,
             path,
             dependencies,
+            state: AddonState::Ajour,
             wowi_id,
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
@@ -61,16 +72,13 @@ impl Addon {
     }
 
     /// TBA.
-    pub fn is_updatable(&self) -> bool {
-        match self.remote_version {
-            Some(_) => self.version != self.remote_version,
-            None => false
-        }
-    }
-
-    /// TBA.
     pub fn apply_details(&mut self, patch: &AddonDetails) {
         self.remote_version = Some(patch.version.clone());
+
+        if self.is_updatable() {
+            self.state = AddonState::Updatable;
+        }
+
     }
 
     /// Function returns a `bool` which indicates
@@ -130,6 +138,14 @@ impl Addon {
         dependencies.dedup();
         dependencies
     }
+
+    /// TBA.
+    fn is_updatable(&self) -> bool {
+        match self.remote_version {
+            Some(_) => self.version != self.remote_version,
+            None => false,
+        }
+    }
 }
 
 impl PartialEq for Addon {
@@ -140,13 +156,21 @@ impl PartialEq for Addon {
 
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.is_updatable().cmp(&other.is_updatable()).reverse().then_with(|| self.id.cmp(&other.id)))
+        Some(
+            self.is_updatable()
+                .cmp(&other.is_updatable())
+                .reverse()
+                .then_with(|| self.id.cmp(&other.id)),
+        )
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.is_updatable().cmp(&other.is_updatable()).reverse().then_with(|| self.id.cmp(&other.id))
+        self.is_updatable()
+            .cmp(&other.is_updatable())
+            .reverse()
+            .then_with(|| self.id.cmp(&other.id))
     }
 }
 
@@ -157,3 +181,5 @@ pub struct AddonDetails {
     pub id: String,
     pub version: String,
 }
+
+

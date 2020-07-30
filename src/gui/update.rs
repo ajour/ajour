@@ -1,8 +1,9 @@
 use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
-        config::load_config, error::ClientError, fs::delete_addon,
-        toc::addon::Addon, toc::read_addon_directory, wowinterface_api::get_addon_details, Result,
+        config::load_config, error::ClientError, fs::delete_addon, toc::addon::Addon,
+        toc::read_addon_directory,
+        wowinterface_api::{get_addon_details, download_addon}, Result,
     },
     iced::Command,
 };
@@ -56,6 +57,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::ParsedAddons,
             ));
         }
+        Message::Interaction(Interaction::Update(id)) => {
+            println!("Update pressed.");
+            // let addon = &ajour.addons.clone().into_iter().find(|a| a.id == id).unwrap();
+            return Ok(Command::perform(
+                perform_addon_update(id),
+                Message::DownloadedAddon,
+            ));
+        }
         Message::Interaction(Interaction::UpdateAll) => {
             println!("Update all pressed.");
         }
@@ -63,8 +72,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // When addons has been parsed, we update state.
             // Once that is done, we begin fetching patches for addons.
             ajour.state = AjourState::FetchingDetails;
-            // ajour.addons = addons;
-            // ajour.addons.sort();
 
             let wowi_token = ajour.config.wow_interface_token.clone();
             return Ok(Command::perform(
@@ -78,9 +85,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons = addons;
             ajour.addons.sort();
         }
+        Message::DownloadedAddon(Ok(())) => {
+            println!("Message::DownloadedAddon!");
+        }
         Message::Interaction(Interaction::Disabled) => {}
         Message::Error(error)
         | Message::ParsedAddons(Err(error))
+        | Message::DownloadedAddon(Err(error))
         | Message::PatchedAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
@@ -100,7 +111,7 @@ async fn apply_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Resu
                     Some(details) => {
                         addon.apply_details(details);
                     }
-                    None =>  continue ,
+                    None => continue,
                 };
             }
             None => continue,
@@ -109,4 +120,10 @@ async fn apply_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Resu
 
     // Once the patches has been applied, we return the addons.
     Ok(addons)
+}
+
+/// TBA.
+async fn perform_addon_update(id: String) -> Result<()> {
+    download_addon(&id[..]).await?;
+    Ok(())
 }

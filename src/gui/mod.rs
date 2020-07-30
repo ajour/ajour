@@ -3,7 +3,7 @@ mod update;
 use crate::{
     config::{load_config, Config},
     error::ClientError,
-    toc::addon::Addon,
+    toc::addon::{Addon, AddonState},
     Result,
 };
 use iced::{
@@ -23,6 +23,7 @@ pub enum AjourState {
 pub enum Interaction {
     Refresh,
     UpdateAll,
+    Update(String),
     Delete(String),
 
     Disabled,
@@ -33,6 +34,7 @@ pub enum Message {
     Parse(Config),
     ParsedAddons(Result<Vec<Addon>>),
     PatchedAddons(Result<Vec<Addon>>),
+    DownloadedAddon(Result<()>),
     Interaction(Interaction),
     Error(ClientError),
 }
@@ -122,6 +124,9 @@ impl Application for Ajour {
 
         // Loops addons for GUI.
         for addon in &mut self.addons {
+            // Default element height
+            let default_height = Length::Units(35);
+
             // We filter away addons which isn't parent.
             if !addon.is_parent() {
                 continue;
@@ -133,11 +138,10 @@ impl Application for Ajour {
             let title = addon.title.clone();
             let version = addon.version.clone().unwrap_or(String::from("-"));
             let remote_version = addon.remote_version.clone().unwrap_or(String::from("-"));
-            let is_updatable = addon.is_updatable();
 
             let text = Text::new(title).size(12);
             let text_container = Container::new(text)
-                .height(Length::Units(30))
+                .height(default_height)
                 .width(Length::FillPortion(1))
                 .center_y()
                 .padding(5)
@@ -145,7 +149,7 @@ impl Application for Ajour {
 
             let installed_version = Text::new(version).size(12);
             let installed_version_container = Container::new(installed_version)
-                .height(Length::Units(30))
+                .height(default_height)
                 .width(Length::Units(125))
                 .center_y()
                 .padding(5)
@@ -153,31 +157,77 @@ impl Application for Ajour {
 
             let remote_version = Text::new(remote_version).size(12);
             let remote_version_container = Container::new(remote_version)
-                .height(Length::Units(30))
+                .height(default_height)
                 .width(Length::Units(125))
                 .center_y()
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
-            let mut update_button = Button::new(
-                &mut addon.update_btn_state,
-                Text::new("Update")
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(12),
-            )
-            .style(style::DefaultButton);
 
-            if is_updatable {
-                update_button = update_button.on_press(Interaction::Disabled);
-            }
+            let update_button_width = Length::Units(100);
+            let update_button_container = match addon.state {
+                AddonState::Ajour => {
+                    Container::new(Text::new(""))
+                        .height(default_height)
+                        .width(update_button_width)
+                        .style(style::AddonDescriptionContainer)
+                },
+                AddonState::Updatable => {
+                    let id = addon.wowi_id.clone().unwrap();
+                    let update_button: Element<Interaction> = Button::new(
+                        &mut addon.update_btn_state,
+                        Text::new("Update")
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .size(12),
+                    )
+                        .style(style::DefaultButton)
+                        .on_press(Interaction::Update(id))
+                        .into();
 
-            let update_button: Element<Interaction> = update_button.into();
+                    Container::new(update_button.map(Message::Interaction))
+                        .height(default_height)
+                        .width(update_button_width)
+                        .center_y()
+                        .padding(5)
+                        .style(style::AddonDescriptionContainer)
+                },
+                AddonState::Downloading => {
+                    let update_button: Element<Interaction> = Button::new(
+                        &mut addon.update_btn_state,
+                        Text::new("Downloading")
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .size(12),
+                    )
+                        .style(style::DefaultButton)
+                        .into();
 
-            let update_button_container = Container::new(update_button.map(Message::Interaction))
-                .height(Length::Units(30))
-                .center_y()
-                .padding(5)
-                .style(style::AddonDescriptionContainer);
+                    Container::new(update_button.map(Message::Interaction))
+                        .height(default_height)
+                        .width(update_button_width)
+                        .center_y()
+                        .padding(5)
+                        .style(style::AddonDescriptionContainer)
+                },
+                AddonState::Unpacking => {
+                    let id = addon.wowi_id.clone().unwrap();
+                    let update_button: Element<Interaction> = Button::new(
+                        &mut addon.update_btn_state,
+                        Text::new("Unpacking")
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .size(12),
+                    )
+                        .style(style::DefaultButton)
+                        .on_press(Interaction::Update(id))
+                        .into();
+
+                    Container::new(update_button.map(Message::Interaction))
+                        .height(default_height)
+                        .width(update_button_width)
+                        .center_y()
+                        .padding(5)
+                        .style(style::AddonDescriptionContainer)
+                },
+            };
 
             let delete_button: Element<Interaction> = Button::new(
                 &mut addon.delete_btn_state,
@@ -190,7 +240,7 @@ impl Application for Ajour {
             .into();
 
             let delete_button_container = Container::new(delete_button.map(Message::Interaction))
-                .height(Length::Units(30))
+                .height(default_height)
                 .center_y()
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
@@ -202,7 +252,6 @@ impl Application for Ajour {
                 .push(update_button_container)
                 .push(delete_button_container)
                 .spacing(1);
-
 
             let cell = Container::new(row).width(Length::Fill).style(style::Cell);
             addons_scrollable = addons_scrollable.push(cell);
@@ -218,7 +267,7 @@ impl Application for Ajour {
             AjourState::Error(e) => Text::new(e.to_string()).size(12),
         };
         let status_container = Container::new(status_text)
-            .height(Length::Units(30))
+                .height(Length::Units(35))
             .width(Length::FillPortion(1))
             .center_y()
             .padding(5)
@@ -260,7 +309,7 @@ impl Application for Ajour {
 /// This function does not return.
 pub fn run() {
     let mut settings = Settings::default();
-    settings.window.size = (1050, 620);
+    settings.window.size = (900, 620);
     // Enforce the usage of dedicated gpu if available
     settings.antialiasing = true;
     Ajour::run(settings);

@@ -12,6 +12,12 @@ pub struct Config {
     #[serde(default = "default_wow_directory")]
     pub wow_directory: Option<PathBuf>,
 
+    /// Path to a folder which will store addons while they
+    /// are downloaded. They will be removed from this
+    /// location afterwards.
+    #[serde(default = "default_tmp_directory")]
+    pub tmp_directory: Option<PathBuf>,
+
     /// Client Version
     #[serde(default = "default_client_version")]
     pub client_version: String,
@@ -29,6 +35,12 @@ fn default_wow_directory() -> Option<PathBuf> {
 /// Default Client Version
 fn default_client_version() -> String {
     "retail".to_owned()
+}
+
+/// Default Temp Directory
+/// TODO: Add a temp directory
+fn default_tmp_directory() -> Option<PathBuf> {
+    None
 }
 
 /// Default Wowinterface Token
