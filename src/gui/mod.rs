@@ -8,7 +8,7 @@ use crate::{
 };
 use iced::{
     button, scrollable, Application, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Settings, Text,
+    HorizontalAlignment, VerticalAlignment, Length, Row, Scrollable, Settings, Text,
 };
 
 #[derive(Debug)]
@@ -34,7 +34,8 @@ pub enum Message {
     Parse(Config),
     ParsedAddons(Result<Vec<Addon>>),
     PatchedAddons(Result<Vec<Addon>>),
-    DownloadedAddon(Result<()>),
+    DownloadedAddon(Result<String>),
+    UnpackedAddon(Result<String>),
     Interaction(Interaction),
     Error(ClientError),
 }
@@ -164,12 +165,15 @@ impl Application for Ajour {
                 .style(style::AddonDescriptionContainer);
 
 
-            let update_button_width = Length::Units(100);
-            let update_button_container = match addon.state {
-                AddonState::Ajour => {
-                    Container::new(Text::new(""))
+            let update_button_width = Length::Units(75);
+            let update_button_container = match &addon.state {
+                AddonState::Ajour(string) => {
+                    Container::new(Text::new(string.clone().unwrap_or("".to_string())).size(12))
                         .height(default_height)
                         .width(update_button_width)
+                        .center_y()
+                        .center_x()
+                        .padding(5)
                         .style(style::AddonDescriptionContainer)
                 },
                 AddonState::Updatable => {
@@ -188,42 +192,25 @@ impl Application for Ajour {
                         .height(default_height)
                         .width(update_button_width)
                         .center_y()
+                        .center_x()
                         .padding(5)
                         .style(style::AddonDescriptionContainer)
                 },
                 AddonState::Downloading => {
-                    let update_button: Element<Interaction> = Button::new(
-                        &mut addon.update_btn_state,
-                        Text::new("Downloading")
-                        .horizontal_alignment(HorizontalAlignment::Center)
-                        .size(12),
-                    )
-                        .style(style::DefaultButton)
-                        .into();
-
-                    Container::new(update_button.map(Message::Interaction))
+                    Container::new(Text::new("Downloading").size(12))
                         .height(default_height)
                         .width(update_button_width)
                         .center_y()
+                        .center_x()
                         .padding(5)
                         .style(style::AddonDescriptionContainer)
                 },
                 AddonState::Unpacking => {
-                    let id = addon.wowi_id.clone().unwrap();
-                    let update_button: Element<Interaction> = Button::new(
-                        &mut addon.update_btn_state,
-                        Text::new("Unpacking")
-                        .horizontal_alignment(HorizontalAlignment::Center)
-                        .size(12),
-                    )
-                        .style(style::DefaultButton)
-                        .on_press(Interaction::Update(id))
-                        .into();
-
-                    Container::new(update_button.map(Message::Interaction))
+                    Container::new(Text::new("Unpacking").size(12))
                         .height(default_height)
                         .width(update_button_width)
                         .center_y()
+                        .center_x()
                         .padding(5)
                         .style(style::AddonDescriptionContainer)
                 },
@@ -232,8 +219,9 @@ impl Application for Ajour {
             let delete_button: Element<Interaction> = Button::new(
                 &mut addon.delete_btn_state,
                 Text::new("Delete")
+                    .vertical_alignment(VerticalAlignment::Center)
                     .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(12),
+                    .size(12)
             )
             .on_press(Interaction::Delete(addon.id.clone()))
             .style(style::DeleteButton)
@@ -241,7 +229,9 @@ impl Application for Ajour {
 
             let delete_button_container = Container::new(delete_button.map(Message::Interaction))
                 .height(default_height)
+                .width(Length::Units(65))
                 .center_y()
+                .center_x()
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 

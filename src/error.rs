@@ -9,6 +9,7 @@ pub enum ClientError {
     JsonError(serde_json::Error),
     HttpError(isahc::http::Error),
     NetworkError(isahc::Error),
+    ZipError(zip::result::ZipError),
 }
 
 impl fmt::Display for ClientError {
@@ -24,6 +25,7 @@ impl fmt::Display for ClientError {
                 "A network error occured. Please check your internet connection and try again."
             ),
             Self::HttpError(x) => write!(f, "{}", x),
+            Self::ZipError(x) => write!(f, "{}", x),
         }
     }
 }
@@ -61,5 +63,11 @@ impl From<isahc::Error> for ClientError {
 impl From<isahc::http::Error> for ClientError {
     fn from(error: isahc::http::Error) -> Self {
         Self::HttpError(error)
+    }
+}
+
+impl From<zip::result::ZipError> for ClientError {
+    fn from(error: zip::result::ZipError) -> Self {
+        Self::ZipError(error)
     }
 }

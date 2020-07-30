@@ -3,6 +3,8 @@ use iced::{button, container, Background, Color};
 enum ColorPalette {
     Primary,
     OnPrimary,
+    Secondary,
+    OnSecondary,
     Error,
     OnError,
     Surface,
@@ -15,6 +17,8 @@ impl ColorPalette {
         match self {
             ColorPalette::Primary => return Color::from_rgb(0.88, 0.74, 0.28),
             ColorPalette::OnPrimary => return Color::from_rgb(0.32, 0.27, 0.10),
+            ColorPalette::Secondary => return Color::from_rgb(0.22, 0.17, 0.28),
+            ColorPalette::OnSecondary => return Color::from_rgb(0.73, 0.52, 0.99),
             ColorPalette::Surface => return Color::from_rgb(0.12, 0.12, 0.12),
             ColorPalette::OnSurface => return Color::from_rgb(0.88, 0.88, 0.88),
             ColorPalette::Background => return Color::from_rgb(0.07, 0.07, 0.07),
@@ -39,6 +43,34 @@ impl button::StyleSheet for DefaultButton {
         button::Style {
             background: Some(Background::Color(ColorPalette::OnPrimary.rgb())),
             text_color: ColorPalette::Primary.rgb(),
+            ..self.active()
+        }
+    }
+}
+
+pub struct SecondaryButton;
+impl button::StyleSheet for SecondaryButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(ColorPalette::Secondary.rgb())),
+            text_color: ColorPalette::OnSecondary.rgb(),
+            border_radius: 2,
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(ColorPalette::Secondary.rgb())),
+            text_color: ColorPalette::OnSecondary.rgb(),
+            ..self.active()
+        }
+    }
+
+    fn disabled(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(ColorPalette::Secondary.rgb())),
+            text_color: ColorPalette::OnSecondary.rgb(),
             ..self.active()
         }
     }

@@ -1,9 +1,8 @@
 use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
-        config::load_config, error::ClientError, fs::delete_addon, toc::addon::Addon,
-        toc::read_addon_directory,
-        wowinterface_api::{get_addon_details, download_addon}, Result,
+        config::load_config, error::ClientError, fs::{delete_addon, install_addon}, toc::addon::{Addon, AddonState},
+        toc::read_addon_directory, Result, wowinterface_api::{fetch_addon_details, download_addon}
     },
     iced::Command,
 };
@@ -57,16 +56,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::ParsedAddons,
             ));
         }
-        Message::Interaction(Interaction::Update(id)) => {
-            println!("Update pressed.");
-            // let addon = &ajour.addons.clone().into_iter().find(|a| a.id == id).unwrap();
-            return Ok(Command::perform(
-                perform_addon_update(id),
-                Message::DownloadedAddon,
-            ));
+        Message::Interaction(Interaction::Update(wowi_id)) => {
+            for addon in &mut ajour.addons {
+                if addon.state == AddonState::Updatable {
+                    if addon.wowi_id.clone().unwrap() == wowi_id {
+                        addon.state = AddonState::Downloading;
+                        let addon = addon.clone();
+
+                        return Ok(Command::perform(
+                                perform_addon_update(addon),
+                                Message::DownloadedAddon,
+                        ));
+                    }
+                }
+            }
+
         }
         Message::Interaction(Interaction::UpdateAll) => {
-            println!("Update all pressed.");
+            // Update all pressed
         }
         Message::ParsedAddons(Ok(addons)) => {
             // When addons has been parsed, we update state.
@@ -75,7 +82,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let wowi_token = ajour.config.wow_interface_token.clone();
             return Ok(Command::perform(
-                apply_addon_details(addons, wowi_token),
+                get_addon_details(addons, wowi_token),
                 Message::PatchedAddons,
             ));
         }
@@ -85,13 +92,34 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons = addons;
             ajour.addons.sort();
         }
-        Message::DownloadedAddon(Ok(())) => {
-            println!("Message::DownloadedAddon!");
+        Message::DownloadedAddon(Ok(id)) => {
+            for addon in &mut ajour.addons {
+                if addon.state == AddonState::Downloading {
+                    if addon.id == id {
+                        addon.state = AddonState::Unpacking;
+                        let addon = addon.clone();
+
+                        return Ok(Command::perform(unpack_addon(addon), Message::UnpackedAddon));
+                    }
+                }
+            }
+
+        }
+        Message::UnpackedAddon(Ok(id)) => {
+            for addon in &mut ajour.addons {
+                if addon.state == AddonState::Unpacking {
+                    if addon.id == id {
+                        addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                    }
+                }
+            }
+            println!("Message::Unpacked!!");
         }
         Message::Interaction(Interaction::Disabled) => {}
         Message::Error(error)
         | Message::ParsedAddons(Err(error))
         | Message::DownloadedAddon(Err(error))
+        | Message::UnpackedAddon(Err(error))
         | Message::PatchedAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
@@ -102,11 +130,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
 /// Function to fetch remote data (patches) from the different repositories:
 /// - Warcraftinterface
-async fn apply_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result<Vec<Addon>> {
+async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result<Vec<Addon>> {
     for addon in &mut addons {
         match &addon.wowi_id {
             Some(id) => {
-                let details = get_addon_details(&id[..], &wowi_token).await?;
+                let details = fetch_addon_details(&id[..], &wowi_token).await?;
                 match details.first() {
                     Some(details) => {
                         addon.apply_details(details);
@@ -123,7 +151,13 @@ async fn apply_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Resu
 }
 
 /// TBA.
-async fn perform_addon_update(id: String) -> Result<()> {
-    download_addon(&id[..]).await?;
-    Ok(())
+async fn perform_addon_update(addon: Addon) -> Result<String> {
+    download_addon(&addon).await?;
+    Ok(addon.id)
+}
+
+
+async fn unpack_addon(addon: Addon) -> Result<String> {
+    install_addon(&addon).await?;
+    Ok(addon.id)
 }

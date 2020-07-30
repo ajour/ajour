@@ -2,9 +2,9 @@ use serde_derive::Deserialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AddonState {
-    Ajour,
+    Ajour(Option<String>),
     Updatable,
     Downloading,
     Unpacking,
@@ -36,6 +36,7 @@ pub struct Addon {
     pub title: String,
     pub version: Option<String>,
     pub remote_version: Option<String>,
+    pub remote_filename: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
@@ -62,9 +63,10 @@ impl Addon {
             title,
             version,
             remote_version: None,
+            remote_filename: None,
             path,
             dependencies,
-            state: AddonState::Ajour,
+            state: AddonState::Ajour(None),
             wowi_id,
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
@@ -74,11 +76,11 @@ impl Addon {
     /// TBA.
     pub fn apply_details(&mut self, patch: &AddonDetails) {
         self.remote_version = Some(patch.version.clone());
+        self.remote_filename = Some(patch.filename.clone());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;
         }
-
     }
 
     /// Function returns a `bool` which indicates
@@ -180,6 +182,7 @@ impl Eq for Addon {}
 pub struct AddonDetails {
     pub id: String,
     pub version: String,
+    pub filename: String,
 }
 
 

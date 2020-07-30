@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use async_std::{fs::File, prelude::*};
-use crate::{error::ClientError, toc::addon::AddonDetails, Result};
+use crate::{error::ClientError, toc::addon::{Addon, AddonDetails}, Result};
 use isahc::{config::RedirectPolicy, prelude::*};
 
 const API_ENDPOINT: &str = "https://api.wowinterface.com/addons";
@@ -20,7 +20,7 @@ async fn request<T: ToString>(url: T, token: &str) -> Result<Response<isahc::Bod
 /// Function to fetch details for addon from `warcraftinterface.com`
 /// Note: When fetching details for a addon, result might return multiple patches,
 /// which is why the return is a `Vec<_>`
-pub async fn get_addon_details(id: &str, token: &str) -> Result<Vec<AddonDetails>> {
+pub async fn fetch_addon_details(id: &str, token: &str) -> Result<Vec<AddonDetails>> {
     let url = format!("{}/details/{}.json", API_ENDPOINT, id);
     let mut resp = request(url, token).await?;
 
@@ -39,15 +39,17 @@ pub async fn get_addon_details(id: &str, token: &str) -> Result<Vec<AddonDetails
 }
 
 /// TBA.
-pub async fn download_addon(id: &str) -> Result<()> {
-    let mut response = Request::get(format!("{}{}", DL_ENDPOINT, id))
+pub async fn download_addon(addon: &Addon) -> Result<()> {
+    let wowi_id = addon.wowi_id.clone().unwrap();
+    let filename = addon.remote_filename.clone().unwrap();
+
+    let mut response = Request::get(format!("{}{}", DL_ENDPOINT, wowi_id))
         .metrics(true)
         .redirect_policy(RedirectPolicy::Follow)
         .body(())?
         .send()?;
 
-    let metrics = response.metrics().unwrap().clone();
-    let zip_path = PathBuf::from("/tmp").join("addon.zip");
+    let zip_path = PathBuf::from("/tmp").join(filename);
 
     let body = response.body_mut();
     let mut buffer = [0; 8000]; // 8KB
@@ -58,7 +60,6 @@ pub async fn download_addon(id: &str) -> Result<()> {
     loop {
         match body.read(&mut buffer).await {
             Ok(0) => {
-                println!("Download finished");
                 break;
             }
             Ok(x) => {
