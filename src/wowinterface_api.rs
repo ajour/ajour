@@ -78,12 +78,5 @@ pub async fn download_addon(addon: &Addon) -> Result<()> {
         }
     }
 
-    // TODO: få filename
-    // TODO: få temp-dir fra config
-    // TODO: brug metrics
-    // TODO: find ud af om der er racecondition
-    // TODO: update gui
-    // TODO: unpack, move and cleanup
-
     Ok(())
 }
