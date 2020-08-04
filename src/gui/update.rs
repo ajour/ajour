@@ -92,34 +92,38 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons = addons;
             ajour.addons.sort();
         }
-        Message::DownloadedAddon(Ok(id)) => {
-            for addon in &mut ajour.addons {
-                if addon.state == AddonState::Downloading {
-                    if addon.id == id {
+        Message::DownloadedAddon((id, result)) => {
+            let addon = ajour.addons.iter_mut().find(|a| a.id == id).expect("Expected addon for id to exsist.");
+            match result {
+                Ok(_) => {
+                    if addon.state == AddonState::Downloading {
                         addon.state = AddonState::Unpacking;
                         let addon = addon.clone();
-
                         return Ok(Command::perform(unpack_addon(addon), Message::UnpackedAddon));
                     }
+                },
+                Err(err) => {
+                    ajour.state = AjourState::Error(err);
                 }
-            }
 
+            }
         }
-        Message::UnpackedAddon(Ok(id)) => {
-            for addon in &mut ajour.addons {
-                if addon.state == AddonState::Unpacking {
-                    if addon.id == id {
-                        addon.state = AddonState::Ajour(Some("Completed".to_owned()));
-                    }
+        Message::UnpackedAddon((id, result)) => {
+            let addon = ajour.addons.iter_mut().find(|a| a.id == id).expect("Expected addon for id to exsist.");
+            match result {
+                Ok(_) => {
+                    addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                },
+                Err(err) => {
+                    // TODO: Handle when addon fails to unpack.
+                    ajour.state = AjourState::Error(err);
+                    addon.state = AddonState::Ajour(Some("Error!".to_owned()));
                 }
             }
-            println!("Message::Unpacked!!");
         }
         Message::Interaction(Interaction::Disabled) => {}
         Message::Error(error)
         | Message::ParsedAddons(Err(error))
-        | Message::DownloadedAddon(Err(error))
-        | Message::UnpackedAddon(Err(error))
         | Message::PatchedAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
@@ -151,13 +155,10 @@ async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result
 }
 
 /// TBA.
-async fn perform_addon_update(addon: Addon) -> Result<String> {
-    download_addon(&addon).await?;
-    Ok(addon.id)
+async fn perform_addon_update(addon: Addon) -> (String, Result<()>) {
+    (addon.id.clone(), download_addon(&addon).await.map(|_| ()))
 }
 
-
-async fn unpack_addon(addon: Addon) -> Result<String> {
-    install_addon(&addon).await?;
-    Ok(addon.id)
+async fn unpack_addon(addon: Addon) -> (String, Result<()>) {
+    (addon.id.clone(), install_addon(&addon).await.map(|_| ()))
 }

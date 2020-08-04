@@ -20,7 +20,6 @@ pub async fn install_addon(addon: &Addon) -> Result<()> {
     for i in 1..archive.len() {
         let mut file = archive.by_index(i)?;
         let path = PathBuf::from("/tmp").join(file.sanitized_name());
-        println!("path: {:?}", path);
 
         if file.is_dir() {
             std::fs::create_dir_all(path)?;

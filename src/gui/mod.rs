@@ -34,8 +34,8 @@ pub enum Message {
     Parse(Config),
     ParsedAddons(Result<Vec<Addon>>),
     PatchedAddons(Result<Vec<Addon>>),
-    DownloadedAddon(Result<String>),
-    UnpackedAddon(Result<String>),
+    DownloadedAddon((String, Result<()>)),
+    UnpackedAddon((String, Result<()>)),
     Interaction(Interaction),
     Error(ClientError),
 }
