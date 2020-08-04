@@ -10,16 +10,22 @@ pub fn delete_addon(addon: &Addon) -> Result<()> {
 
 /// TBA.
 /// An erro can happen, dunno why yet.
-pub async fn install_addon(addon: &Addon) -> Result<()> {
-    let zip_path = PathBuf::from("/tmp").join(addon.remote_filename.clone().unwrap());
+pub async fn install_addon(
+    addon: &Addon,
+    from_directory: &PathBuf,
+    to_directory: &PathBuf,
+) -> Result<()> {
+    let zip_path = from_directory.join(addon.remote_filename.clone().unwrap());
     // TODO: This sometimes fails: No such file or directory (os error 2).
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
-    // TODO: Maybe remove old addon now here.
+
+    // TODO: Maybe remove old addon here, so we dont replace.
 
     for i in 1..archive.len() {
         let mut file = archive.by_index(i)?;
-        let path = PathBuf::from("/tmp").join(file.sanitized_name());
+        // let path = directory.join(file.sanitized_name());
+        let path = to_directory.join(file.sanitized_name());
 
         if file.is_dir() {
             std::fs::create_dir_all(path)?;

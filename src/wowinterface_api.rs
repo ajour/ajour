@@ -43,7 +43,7 @@ pub async fn fetch_addon_details(id: &str, token: &str) -> Result<Vec<AddonDetai
 }
 
 /// TBA.
-pub async fn download_addon(addon: &Addon) -> Result<()> {
+pub async fn download_addon(addon: &Addon, to_directory: &PathBuf) -> Result<()> {
     let wowi_id = addon.wowi_id.clone().unwrap();
     let filename = addon.remote_filename.clone().unwrap();
 
@@ -53,7 +53,7 @@ pub async fn download_addon(addon: &Addon) -> Result<()> {
         .body(())?
         .send()?;
 
-    let zip_path = PathBuf::from("/tmp").join(filename);
+    let zip_path = to_directory.join(filename);
 
     let body = response.body_mut();
     let mut buffer = [0; 8000]; // 8KB

@@ -9,6 +9,7 @@ use {
         wowinterface_api, Result,
     },
     iced::Command,
+    std::path::PathBuf,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -61,6 +62,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ));
         }
         Message::Interaction(Interaction::Update(wowi_id)) => {
+            let to_directory = ajour
+                .config
+                .get_temporary_addon_directory()
+                .expect("Expected a valid path");
             for addon in &mut ajour.addons {
                 if addon.state == AddonState::Updatable {
                     if addon.wowi_id.clone().unwrap() == wowi_id {
@@ -68,7 +73,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         let addon = addon.clone();
 
                         return Ok(Command::perform(
-                            download_addon(addon),
+                            download_addon(addon, to_directory),
                             Message::DownloadedAddon,
                         ));
                     }
@@ -99,6 +104,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // When an addon has been successfully downloaded we begin to
             // unpack it.
             // If it for some reason fails to download, we handle the error.
+            let from_directory = ajour
+                .config
+                .get_temporary_addon_directory()
+                .expect("Expected a valid path");
+            let to_directory = ajour
+                .config
+                .get_addon_directory()
+                .expect("Expected a valid path");
             let addon = ajour
                 .addons
                 .iter_mut()
@@ -110,7 +123,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon.state = AddonState::Unpacking;
                         let addon = addon.clone();
                         return Ok(Command::perform(
-                            unpack_addon(addon),
+                            unpack_addon(addon, from_directory, to_directory),
                             Message::UnpackedAddon,
                         ));
                     }
@@ -172,15 +185,25 @@ async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result
 
 /// Downloads the newest version of the addon.
 /// This is for now only downloading from warcraftinterface.
-async fn download_addon(addon: Addon) -> (String, Result<()>) {
+async fn download_addon(addon: Addon, to_directory: PathBuf) -> (String, Result<()>) {
     (
         addon.id.clone(),
-        wowinterface_api::download_addon(&addon).await.map(|_| ()),
+        wowinterface_api::download_addon(&addon, &to_directory)
+            .await
+            .map(|_| ()),
     )
 }
 
-/// Unzips the downloaded addon.
-/// TODO: This often fails for some unknown reason.
-async fn unpack_addon(addon: Addon) -> (String, Result<()>) {
-    (addon.id.clone(), install_addon(&addon).await.map(|_| ()))
+/// Unzips `Addon` at given `from_directory` and moves it `to_directory`.
+async fn unpack_addon(
+    addon: Addon,
+    from_directory: PathBuf,
+    to_directory: PathBuf,
+) -> (String, Result<()>) {
+    (
+        addon.id.clone(),
+        install_addon(&addon, &from_directory, &to_directory)
+            .await
+            .map(|_| ()),
+    )
 }

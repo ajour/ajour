@@ -51,6 +51,8 @@ fn default_wow_interface_token() -> String {
 }
 
 impl Config {
+    /// Returns a `Option<PathBuf>` to the directory containing the addons.
+    /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory(&self) -> Option<PathBuf> {
         match self.wow_directory.clone() {
             Some(dir) => {
@@ -58,9 +60,23 @@ impl Config {
                 // either becomes _retail_, or _classic_.
                 let formatted_client_version = format!("_{}_", self.client_version.clone());
 
-                // The path for the AddOns is expected to be located at
-                // wow_directory/formatted_client_version/Interface/AddOns
+                // The path to the directory containing the addons
                 Some(dir.join(formatted_client_version).join("Interface/AddOns"))
+            }
+            None => None,
+        }
+    }
+
+    /// Returns a `Option<PathBuf>` to the directory which will hold the
+    /// temporary zip archives.
+    /// For now it will use the parent of the Addons folder.
+    /// This will return `None` if no `wow_directory` is set in the config.
+    pub fn get_temporary_addon_directory(&self) -> Option<PathBuf> {
+        match self.get_addon_directory() {
+            Some(dir) => {
+                // The path to the directory which hold the temporary zip archives
+                let dir = dir.parent().expect("Expected Addons folder has a parent.");
+                Some(dir.to_path_buf())
             }
             None => None,
         }
