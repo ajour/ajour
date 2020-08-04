@@ -10,7 +10,6 @@ pub enum AddonState {
     Unpacking,
 }
 
-
 #[derive(Debug, Clone)]
 /// Struct which stores information about a single Addon.
 ///
@@ -184,5 +183,3 @@ pub struct AddonDetails {
     pub version: String,
     pub filename: String,
 }
-
-

@@ -1,7 +1,11 @@
-use std::path::{Path, PathBuf};
+use crate::{
+    error::ClientError,
+    toc::addon::{Addon, AddonDetails},
+    Result,
+};
 use async_std::{fs::File, prelude::*};
-use crate::{error::ClientError, toc::addon::{Addon, AddonDetails}, Result};
 use isahc::{config::RedirectPolicy, prelude::*};
+use std::path::{Path, PathBuf};
 
 const API_ENDPOINT: &str = "https://api.wowinterface.com/addons";
 const DL_ENDPOINT: &str = "https://cdn.wowinterface.com/downloads/getfile.php?id=";

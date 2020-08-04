@@ -1,7 +1,7 @@
-use std::path::PathBuf;
 use crate::Result;
 use crate::{error::ClientError, toc::addon::Addon};
 use std::fs::remove_dir_all;
+use std::path::PathBuf;
 
 /// Deletes an Addon from disk.
 pub fn delete_addon(addon: &Addon) -> Result<()> {
@@ -37,5 +37,5 @@ pub async fn install_addon(addon: &Addon) -> Result<()> {
     // Cleanup
     std::fs::remove_file(&zip_path)?;
 
-    return Ok(())
+    return Ok(());
 }

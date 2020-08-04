@@ -8,7 +8,7 @@ use crate::{
 };
 use iced::{
     button, scrollable, Application, Button, Column, Command, Container, Element,
-    HorizontalAlignment, VerticalAlignment, Length, Row, Scrollable, Settings, Text,
+    HorizontalAlignment, Length, Row, Scrollable, Settings, Text, VerticalAlignment,
 };
 
 #[derive(Debug)]
@@ -164,7 +164,6 @@ impl Application for Ajour {
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
-
             let update_button_width = Length::Units(75);
             let update_button_container = match &addon.state {
                 AddonState::Ajour(string) => {
@@ -175,18 +174,18 @@ impl Application for Ajour {
                         .center_x()
                         .padding(5)
                         .style(style::AddonDescriptionContainer)
-                },
+                }
                 AddonState::Updatable => {
                     let id = addon.wowi_id.clone().unwrap();
                     let update_button: Element<Interaction> = Button::new(
                         &mut addon.update_btn_state,
                         Text::new("Update")
-                        .horizontal_alignment(HorizontalAlignment::Center)
-                        .size(12),
+                            .horizontal_alignment(HorizontalAlignment::Center)
+                            .size(12),
                     )
-                        .style(style::DefaultButton)
-                        .on_press(Interaction::Update(id))
-                        .into();
+                    .style(style::DefaultButton)
+                    .on_press(Interaction::Update(id))
+                    .into();
 
                     Container::new(update_button.map(Message::Interaction))
                         .height(default_height)
@@ -195,25 +194,21 @@ impl Application for Ajour {
                         .center_x()
                         .padding(5)
                         .style(style::AddonDescriptionContainer)
-                },
-                AddonState::Downloading => {
-                    Container::new(Text::new("Downloading").size(12))
-                        .height(default_height)
-                        .width(update_button_width)
-                        .center_y()
-                        .center_x()
-                        .padding(5)
-                        .style(style::AddonDescriptionContainer)
-                },
-                AddonState::Unpacking => {
-                    Container::new(Text::new("Unpacking").size(12))
-                        .height(default_height)
-                        .width(update_button_width)
-                        .center_y()
-                        .center_x()
-                        .padding(5)
-                        .style(style::AddonDescriptionContainer)
-                },
+                }
+                AddonState::Downloading => Container::new(Text::new("Downloading").size(12))
+                    .height(default_height)
+                    .width(update_button_width)
+                    .center_y()
+                    .center_x()
+                    .padding(5)
+                    .style(style::AddonDescriptionContainer),
+                AddonState::Unpacking => Container::new(Text::new("Unpacking").size(12))
+                    .height(default_height)
+                    .width(update_button_width)
+                    .center_y()
+                    .center_x()
+                    .padding(5)
+                    .style(style::AddonDescriptionContainer),
             };
 
             let delete_button: Element<Interaction> = Button::new(
@@ -221,7 +216,7 @@ impl Application for Ajour {
                 Text::new("Delete")
                     .vertical_alignment(VerticalAlignment::Center)
                     .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(12)
+                    .size(12),
             )
             .on_press(Interaction::Delete(addon.id.clone()))
             .style(style::DeleteButton)
@@ -257,7 +252,7 @@ impl Application for Ajour {
             AjourState::Error(e) => Text::new(e.to_string()).size(12),
         };
         let status_container = Container::new(status_text)
-                .height(Length::Units(35))
+            .height(Length::Units(35))
             .width(Length::FillPortion(1))
             .center_y()
             .padding(5)

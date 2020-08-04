@@ -1,8 +1,12 @@
 use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
-        config::load_config, error::ClientError, fs::{delete_addon, install_addon}, toc::addon::{Addon, AddonState},
-        toc::read_addon_directory, Result, wowinterface_api::{fetch_addon_details, download_addon}
+        config::load_config,
+        error::ClientError,
+        fs::{delete_addon, install_addon},
+        toc::addon::{Addon, AddonState},
+        toc::read_addon_directory,
+        wowinterface_api, Result,
     },
     iced::Command,
 };
@@ -64,13 +68,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         let addon = addon.clone();
 
                         return Ok(Command::perform(
-                                perform_addon_update(addon),
-                                Message::DownloadedAddon,
+                            download_addon(addon),
+                            Message::DownloadedAddon,
                         ));
                     }
                 }
             }
-
         }
         Message::Interaction(Interaction::UpdateAll) => {
             // Update all pressed
@@ -93,27 +96,40 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons.sort();
         }
         Message::DownloadedAddon((id, result)) => {
-            let addon = ajour.addons.iter_mut().find(|a| a.id == id).expect("Expected addon for id to exsist.");
+            // When an addon has been successfully downloaded we begin to
+            // unpack it.
+            // If it for some reason fails to download, we handle the error.
+            let addon = ajour
+                .addons
+                .iter_mut()
+                .find(|a| a.id == id)
+                .expect("Expected addon for id to exsist.");
             match result {
                 Ok(_) => {
                     if addon.state == AddonState::Downloading {
                         addon.state = AddonState::Unpacking;
                         let addon = addon.clone();
-                        return Ok(Command::perform(unpack_addon(addon), Message::UnpackedAddon));
+                        return Ok(Command::perform(
+                            unpack_addon(addon),
+                            Message::UnpackedAddon,
+                        ));
                     }
-                },
+                }
                 Err(err) => {
                     ajour.state = AjourState::Error(err);
                 }
-
             }
         }
         Message::UnpackedAddon((id, result)) => {
-            let addon = ajour.addons.iter_mut().find(|a| a.id == id).expect("Expected addon for id to exsist.");
+            let addon = ajour
+                .addons
+                .iter_mut()
+                .find(|a| a.id == id)
+                .expect("Expected addon for id to exsist.");
             match result {
                 Ok(_) => {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
-                },
+                }
                 Err(err) => {
                     // TODO: Handle when addon fails to unpack.
                     ajour.state = AjourState::Error(err);
@@ -138,7 +154,7 @@ async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result
     for addon in &mut addons {
         match &addon.wowi_id {
             Some(id) => {
-                let details = fetch_addon_details(&id[..], &wowi_token).await?;
+                let details = wowinterface_api::fetch_addon_details(&id[..], &wowi_token).await?;
                 match details.first() {
                     Some(details) => {
                         addon.apply_details(details);
@@ -154,11 +170,17 @@ async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result
     Ok(addons)
 }
 
-/// TBA.
-async fn perform_addon_update(addon: Addon) -> (String, Result<()>) {
-    (addon.id.clone(), download_addon(&addon).await.map(|_| ()))
+/// Downloads the newest version of the addon.
+/// This is for now only downloading from warcraftinterface.
+async fn download_addon(addon: Addon) -> (String, Result<()>) {
+    (
+        addon.id.clone(),
+        wowinterface_api::download_addon(&addon).await.map(|_| ()),
+    )
 }
 
+/// Unzips the downloaded addon.
+/// TODO: This often fails for some unknown reason.
 async fn unpack_addon(addon: Addon) -> (String, Result<()>) {
     (addon.id.clone(), install_addon(&addon).await.map(|_| ()))
 }
