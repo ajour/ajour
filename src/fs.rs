@@ -8,8 +8,9 @@ pub fn delete_addon(addon: &Addon) -> Result<()> {
     remove_dir_all(addon.path.to_path_buf()).map_err(|e| ClientError::IoError(e))
 }
 
-/// TBA.
-/// An erro can happen, dunno why yet.
+/// Unzips an `Addon` archive, and once that is done, it moves the content
+/// to the `to_directory`.
+/// At the end it will cleanup and remove the archive.
 pub async fn install_addon(
     addon: &Addon,
     from_directory: &PathBuf,
@@ -24,7 +25,6 @@ pub async fn install_addon(
 
     for i in 1..archive.len() {
         let mut file = archive.by_index(i)?;
-        // let path = directory.join(file.sanitized_name());
         let path = to_directory.join(file.sanitized_name());
 
         if file.is_dir() {

@@ -12,24 +12,6 @@ pub enum AddonState {
 
 #[derive(Debug, Clone)]
 /// Struct which stores information about a single Addon.
-///
-/// `id`: Unique identifier for each addon.
-/// This is actually the folder name toc files
-/// use to reference other addons which is why
-/// it is chosen to be the identifier.
-///
-/// `title`: Readable title to be used in the GUI.
-///
-/// `version`: Each addon can have a version.
-/// If there is no version, it is most likely because
-/// it is dependent on another addon.
-///
-/// `path`: A `PathBuf` to this addon folder.
-///
-/// `wowi_id`: Addon identifier for Wowinterface API.
-///
-/// `dependencies`: A list of `id's` to other addons
-/// which this addon is dependent on.
 pub struct Addon {
     pub id: String,
     pub title: String,
@@ -72,7 +54,10 @@ impl Addon {
         };
     }
 
-    /// TBA.
+    /// Function to apply details to a `Addon`.
+    ///
+    /// This is used to apply additional information after pulling the
+    /// information from a repository.
     pub fn apply_details(&mut self, patch: &AddonDetails) {
         self.remote_version = Some(patch.version.clone());
         self.remote_filename = Some(patch.filename.clone());
@@ -140,7 +125,10 @@ impl Addon {
         dependencies
     }
 
-    /// TBA.
+    /// Check if the `Addon` is updatable.
+    /// This is done by a simple comparision, which means it will also flag
+    /// the addon as updatable if the `remote_version` is LOWER than
+    /// `version`.
     fn is_updatable(&self) -> bool {
         match self.remote_version {
             Some(_) => self.version != self.remote_version,
