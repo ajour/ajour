@@ -45,7 +45,7 @@ pub async fn fetch_addon_details(id: &str, token: &str) -> Result<Vec<AddonDetai
 /// Function to download a zip archive from `warcraftinterface.com`.
 pub async fn download_addon(addon: &Addon, to_directory: &PathBuf) -> Result<()> {
     let wowi_id = addon.wowi_id.clone().unwrap();
-    let filename = addon.remote_filename.clone().unwrap();
+    let filename = addon.id.clone();
 
     let mut response = Request::get(format!("{}{}", DL_ENDPOINT, wowi_id))
         .metrics(true)

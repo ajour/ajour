@@ -17,7 +17,6 @@ pub struct Addon {
     pub title: String,
     pub version: Option<String>,
     pub remote_version: Option<String>,
-    pub remote_filename: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
@@ -44,7 +43,6 @@ impl Addon {
             title,
             version,
             remote_version: None,
-            remote_filename: None,
             path,
             dependencies,
             state: AddonState::Ajour(None),
@@ -60,7 +58,6 @@ impl Addon {
     /// information from a repository.
     pub fn apply_details(&mut self, patch: &AddonDetails) {
         self.remote_version = Some(patch.version.clone());
-        self.remote_filename = Some(patch.filename.clone());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;
@@ -169,5 +166,4 @@ impl Eq for Addon {}
 pub struct AddonDetails {
     pub id: String,
     pub version: String,
-    pub filename: String,
 }

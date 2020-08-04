@@ -25,8 +25,6 @@ pub enum Interaction {
     UpdateAll,
     Update(String),
     Delete(String),
-
-    Disabled,
 }
 
 #[derive(Debug)]

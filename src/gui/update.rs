@@ -142,6 +142,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             match result {
                 Ok(_) => {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                    addon.version = addon.remote_version.clone();
                 }
                 Err(err) => {
                     // TODO: Handle when addon fails to unpack.
@@ -150,7 +151,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::Interaction(Interaction::Disabled) => {}
         Message::Error(error)
         | Message::ParsedAddons(Err(error))
         | Message::PatchedAddons(Err(error)) => {

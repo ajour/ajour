@@ -16,7 +16,7 @@ pub async fn install_addon(
     from_directory: &PathBuf,
     to_directory: &PathBuf,
 ) -> Result<()> {
-    let zip_path = from_directory.join(addon.remote_filename.clone().unwrap());
+    let zip_path = from_directory.join(addon.id.clone());
     // TODO: This sometimes fails: No such file or directory (os error 2).
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
