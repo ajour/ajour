@@ -3,6 +3,7 @@ mod error;
 mod fs;
 mod gui;
 mod toc;
+mod wowinterface_api;
 
 use crate::error::ClientError;
 

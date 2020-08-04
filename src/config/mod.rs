@@ -12,9 +12,19 @@ pub struct Config {
     #[serde(default = "default_wow_directory")]
     pub wow_directory: Option<PathBuf>,
 
+    /// Path to a folder which will store addons while they
+    /// are downloaded. They will be removed from this
+    /// location afterwards.
+    #[serde(default = "default_tmp_directory")]
+    pub tmp_directory: Option<PathBuf>,
+
     /// Client Version
     #[serde(default = "default_client_version")]
     pub client_version: String,
+
+    /// Wowinterface Token
+    #[serde(default = "default_wow_interface_token")]
+    pub wow_interface_token: String,
 }
 
 /// Default World of Warcraft directory value.
@@ -27,7 +37,22 @@ fn default_client_version() -> String {
     "retail".to_owned()
 }
 
+/// Default Temp Directory
+/// TODO: Add a temp directory
+fn default_tmp_directory() -> Option<PathBuf> {
+    None
+}
+
+/// Default Wowinterface Token
+fn default_wow_interface_token() -> String {
+    // TODO: Load a default token (from dotenv eg.)
+    // https://github.com/dotenv-rs/dotenv
+    "TODO_LOAD_TOKEN".to_owned()
+}
+
 impl Config {
+    /// Returns a `Option<PathBuf>` to the directory containing the addons.
+    /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory(&self) -> Option<PathBuf> {
         match self.wow_directory.clone() {
             Some(dir) => {
@@ -35,9 +60,23 @@ impl Config {
                 // either becomes _retail_, or _classic_.
                 let formatted_client_version = format!("_{}_", self.client_version.clone());
 
-                // The path for the AddOns is expected to be located at
-                // wow_directory/formatted_client_version/Interface/AddOns
+                // The path to the directory containing the addons
                 Some(dir.join(formatted_client_version).join("Interface/AddOns"))
+            }
+            None => None,
+        }
+    }
+
+    /// Returns a `Option<PathBuf>` to the directory which will hold the
+    /// temporary zip archives.
+    /// For now it will use the parent of the Addons folder.
+    /// This will return `None` if no `wow_directory` is set in the config.
+    pub fn get_temporary_addon_directory(&self) -> Option<PathBuf> {
+        match self.get_addon_directory() {
+            Some(dir) => {
+                // The path to the directory which hold the temporary zip archives
+                let dir = dir.parent().expect("Expected Addons folder has a parent.");
+                Some(dir.to_path_buf())
             }
             None => None,
         }
