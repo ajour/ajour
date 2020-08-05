@@ -11,5 +11,3 @@ pub struct Tokens {
 fn default_wowinterface() -> Option<String> {
     None
 }
-
-

@@ -19,4 +19,3 @@ fn default_directory() -> Option<PathBuf> {
 fn default_version() -> String {
     "retail".to_owned()
 }
-
