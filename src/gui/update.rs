@@ -89,10 +89,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.state = AjourState::FetchingDetails;
 
             let wowi_token = ajour.config.wow_interface_token.clone();
-            return Ok(Command::perform(
-                get_addon_details(addons, wowi_token),
-                Message::PatchedAddons,
-            ));
+            if wowi_token.is_some() {
+                return Ok(Command::perform(
+                        get_addon_details(addons, wowi_token.unwrap()),
+                        Message::PatchedAddons,
+                ));
+            }
         }
         Message::PatchedAddons(Ok(addons)) => {
             // When addons has been patched, we update state.

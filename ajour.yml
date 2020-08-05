@@ -1,21 +1,20 @@
 # Configuration for Ajour.
 # An open source World of Warcraft addon manager written in Rust.
 
-# Required
-
-# Path for the World of Warcraft.
+# World of Warcraft directory.
+# - Required.
+#
 # wow_directory: /Applications/World of Warcraft
 
-# Optional
-
-# Client version determines which version of World of Warcraft you
-# would like Ajour to manage addons for.
-#
-# Values for `client_version`
+# World of Warcraft client version.
+# - Optional.
+# - Values:
 #   - retail (default)
-# client_version: retail
+#
+## client_version: retail
 
-# Token to be used to authenticate requests to https://wowinterface.com
-# If none is supplied, it will use a bundled token.
+# API Token for warcraftinterface.com.
+# Can be generated here: https://www.wowinterface.com/downloads/filecpl.php?action=apitokens
+# - Required to use warcraftinterface as a addon repository.
 #
 # wow_interface_token: 42

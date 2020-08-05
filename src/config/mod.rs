@@ -18,7 +18,7 @@ pub struct Config {
 
     /// Wowinterface Token
     #[serde(default = "default_wow_interface_token")]
-    pub wow_interface_token: String,
+    pub wow_interface_token: Option<String>,
 }
 
 /// Default World of Warcraft directory value.
@@ -32,10 +32,8 @@ fn default_client_version() -> String {
 }
 
 /// Default Wowinterface Token
-fn default_wow_interface_token() -> String {
-    // If we don't have a token in the config file, we expect to find one
-    // in the environment variables.
-    env::var("WOW_INTERFACE_TOKEN").expect("Expected token in environment variables.")
+fn default_wow_interface_token() -> Option<String> {
+    None
 }
 
 impl Config {
