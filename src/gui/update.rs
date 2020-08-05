@@ -167,8 +167,12 @@ async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result
     for addon in &mut addons {
         match &addon.wowi_id {
             Some(id) => {
-                let details = wowinterface_api::fetch_addon_details(&id[..], &wowi_token).await?;
-                match details.first() {
+                // Details for an addon is return as a `Vec<AddonDetails>`.
+                // This is because an addon can multiple variations.
+                // Eg. classic and retail.
+                let all_details = wowinterface_api::fetch_addon_details(&id[..], &wowi_token).await?;
+                let details = all_details.iter().find(|a| &a.id == id);
+                match details {
                     Some(details) => {
                         addon.apply_details(details);
                     }
