@@ -4,30 +4,25 @@ use std::fs;
 use std::path::PathBuf;
 
 mod tokens;
+mod wow;
 
 use crate::{error::ClientError, Result};
 
 pub use crate::config::tokens::Tokens;
+pub use crate::config::wow::Wow;
 
 /// Config struct.
 #[derive(Debug, PartialEq, Default, Deserialize, Clone)]
 pub struct Config {
-    #[serde(default = "default_wow_directory")]
-    pub wow_directory: Option<PathBuf>,
-
-    #[serde(default = "default_client_version")]
-    pub client_version: String,
+    #[serde(default = "default_wow")]
+    pub wow: Wow,
 
     #[serde(default = "default_tokens")]
     pub tokens: Tokens,
 }
 
-fn default_wow_directory() -> Option<PathBuf> {
-    None
-}
-
-fn default_client_version() -> String {
-    "retail".to_owned()
+fn default_wow() -> Wow {
+    Wow::default()
 }
 
 fn default_tokens() -> Tokens {
@@ -38,11 +33,11 @@ impl Config {
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory(&self) -> Option<PathBuf> {
-        match self.wow_directory.clone() {
+        match self.wow.directory.clone() {
             Some(dir) => {
                 // We prepend and append `_` to the client_version so it
                 // either becomes _retail_, or _classic_.
-                let formatted_client_version = format!("_{}_", self.client_version.clone());
+                let formatted_client_version = format!("_{}_", self.wow.version.clone());
 
                 // The path to the directory containing the addons
                 Some(dir.join(formatted_client_version).join("Interface/AddOns"))

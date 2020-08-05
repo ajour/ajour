@@ -1,13 +1,13 @@
 # Configuration for Ajour.
 # An open source World of Warcraft addon manager written in Rust.
 
-# World of Warcraft directory.
-#wow_directory: /Applications/World of Warcraft
-
-# World of Warcraft client version.
-# Values:
+# World of Warcraft related settings
+#wow:
+#  Directory.
+# directory: /Applications/World of Warcraft
+#  Client version:
 #   - retail (default)
-#client_version: retail
+# client_version: retail
 
 # Tokens for repositories
 #tokens:
