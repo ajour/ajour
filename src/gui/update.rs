@@ -82,6 +82,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::UpdateAll) => {
             // Update all pressed
+            let mut commands = Vec::<Command<Message>>::new();
+            for addon in &mut ajour.addons {
+                if addon.state == AddonState::Updatable {
+                    let to_directory = ajour
+                        .config
+                        .get_temporary_addon_directory()
+                        .expect("Expected a valid path");
+                    addon.state = AddonState::Downloading;
+                    let addon = addon.clone();
+                    commands.push(Command::perform(
+                        download_addon(addon, to_directory),
+                        Message::DownloadedAddon,
+                    ))
+                }
+            }
+            return Ok(Command::batch(commands));
         }
         Message::ParsedAddons(Ok(addons)) => {
             // When addons has been parsed, we update state.
@@ -91,8 +107,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let tokens = ajour.config.tokens.clone();
             if tokens.wowinterface.is_some() {
                 return Ok(Command::perform(
-                        get_addon_details(addons, tokens.wowinterface.unwrap()),
-                        Message::PatchedAddons,
+                    get_addon_details(addons, tokens.wowinterface.unwrap()),
+                    Message::PatchedAddons,
                 ));
             }
         }
@@ -172,7 +188,8 @@ async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result
                 // Details for an addon is return as a `Vec<AddonDetails>`.
                 // This is because an addon can multiple variations.
                 // Eg. classic and retail.
-                let all_details = wowinterface_api::fetch_addon_details(&id[..], &wowi_token).await?;
+                let all_details =
+                    wowinterface_api::fetch_addon_details(&id[..], &wowi_token).await?;
                 let details = all_details.iter().find(|a| &a.id == id);
                 match details {
                     Some(details) => {
