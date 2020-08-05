@@ -1,6 +1,10 @@
 # Ajour
 An open source World of Warcraft addon manager written in Rust.
 
+## Audience
+This software is for **Windows** and **MacOS**.  
+For **Linux** I would recommend [strongbox](https://github.com/ogri-la/strongbox).
+
 ## Build
 ```
 cargo run
@@ -30,6 +34,9 @@ Our features for version `1.0` will be the following:
 - Windows and Mac support
 - Bulk update
 - Delete an addon
+
+## Other addon managers
+https://ogri-la.github.io/wow-addon-managers/
 
 # License
 MIT
