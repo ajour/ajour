@@ -5,7 +5,7 @@
 #wow_directory: /Applications/World of Warcraft
 
 # World of Warcraft client version.
-# - Values:
+# Values:
 #   - retail (default)
 #client_version: retail
 
