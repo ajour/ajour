@@ -12,12 +12,6 @@ pub struct Config {
     #[serde(default = "default_wow_directory")]
     pub wow_directory: Option<PathBuf>,
 
-    /// Path to a folder which will store addons while they
-    /// are downloaded. They will be removed from this
-    /// location afterwards.
-    #[serde(default = "default_tmp_directory")]
-    pub tmp_directory: Option<PathBuf>,
-
     /// Client Version
     #[serde(default = "default_client_version")]
     pub client_version: String,
@@ -37,17 +31,11 @@ fn default_client_version() -> String {
     "retail".to_owned()
 }
 
-/// Default Temp Directory
-/// TODO: Add a temp directory
-fn default_tmp_directory() -> Option<PathBuf> {
-    None
-}
-
 /// Default Wowinterface Token
 fn default_wow_interface_token() -> String {
-    // TODO: Load a default token (from dotenv eg.)
-    // https://github.com/dotenv-rs/dotenv
-    "TODO_LOAD_TOKEN".to_owned()
+    // If we don't have a token in the config file, we expect to find one
+    // in the environment variables.
+    env::var("WOW_INTERFACE_TOKEN").expect("Expected token in environment variables.")
 }
 
 impl Config {
