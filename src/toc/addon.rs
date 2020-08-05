@@ -145,6 +145,7 @@ impl PartialOrd for Addon {
         Some(
             self.is_updatable()
                 .cmp(&other.is_updatable())
+                .then_with(|| self.remote_version.cmp(&other.remote_version))
                 .reverse()
                 .then_with(|| self.id.cmp(&other.id)),
         )
@@ -155,6 +156,7 @@ impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
         self.is_updatable()
             .cmp(&other.is_updatable())
+            .then_with(|| self.remote_version.cmp(&other.remote_version))
             .reverse()
             .then_with(|| self.id.cmp(&other.id))
     }
