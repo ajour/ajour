@@ -88,10 +88,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Once that is done, we begin fetching patches for addons.
             ajour.state = AjourState::FetchingDetails;
 
-            let wowi_token = ajour.config.wow_interface_token.clone();
-            if wowi_token.is_some() {
+            let tokens = ajour.config.tokens.clone();
+            if tokens.wowinterface.is_some() {
                 return Ok(Command::perform(
-                        get_addon_details(addons, wowi_token.unwrap()),
+                        get_addon_details(addons, tokens.wowinterface.unwrap()),
                         Message::PatchedAddons,
                 ));
             }

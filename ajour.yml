@@ -2,19 +2,15 @@
 # An open source World of Warcraft addon manager written in Rust.
 
 # World of Warcraft directory.
-# - Required.
-#
-# wow_directory: /Applications/World of Warcraft
+#wow_directory: /Applications/World of Warcraft
 
 # World of Warcraft client version.
-# - Optional.
 # - Values:
 #   - retail (default)
-#
-## client_version: retail
+#client_version: retail
 
-# API Token for warcraftinterface.com.
-# Can be generated here: https://www.wowinterface.com/downloads/filecpl.php?action=apitokens
-# - Required to use warcraftinterface as a addon repository.
-#
-# wow_interface_token: 42
+# Tokens for repositories
+#tokens:
+#   API token for warcraftinterface.com
+#   Token can be generated here: https://www.wowinterface.com/downloads/filecpl.php?action=apitokens
+#  wowinterface: 42

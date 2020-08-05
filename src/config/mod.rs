@@ -3,37 +3,35 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+mod tokens;
+
 use crate::{error::ClientError, Result};
 
-/// Config type.
+pub use crate::config::tokens::Tokens;
+
+/// Config struct.
 #[derive(Debug, PartialEq, Default, Deserialize, Clone)]
 pub struct Config {
-    /// Path to World of Warcraft
     #[serde(default = "default_wow_directory")]
     pub wow_directory: Option<PathBuf>,
 
-    /// Client Version
     #[serde(default = "default_client_version")]
     pub client_version: String,
 
-    /// Wowinterface Token
-    #[serde(default = "default_wow_interface_token")]
-    pub wow_interface_token: Option<String>,
+    #[serde(default = "default_tokens")]
+    pub tokens: Tokens,
 }
 
-/// Default World of Warcraft directory value.
 fn default_wow_directory() -> Option<PathBuf> {
     None
 }
 
-/// Default Client Version
 fn default_client_version() -> String {
     "retail".to_owned()
 }
 
-/// Default Wowinterface Token
-fn default_wow_interface_token() -> Option<String> {
-    None
+fn default_tokens() -> Tokens {
+    Tokens::default()
 }
 
 impl Config {
