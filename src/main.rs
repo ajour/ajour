@@ -4,6 +4,7 @@ mod fs;
 mod gui;
 mod toc;
 mod wowinterface_api;
+mod tukui_api;
 
 use crate::error::ClientError;
 

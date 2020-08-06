@@ -21,6 +21,7 @@ pub struct Addon {
     pub dependencies: Vec<String>,
     pub state: AddonState,
     pub wowi_id: Option<String>,
+    pub tukui_id: Option<String>,
 
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
@@ -33,6 +34,7 @@ impl Addon {
         version: Option<String>,
         path: PathBuf,
         wowi_id: Option<String>,
+        tukui_id: Option<String>,
         dependencies: Vec<String>,
     ) -> Self {
         let os_title = path.file_name().unwrap();
@@ -47,6 +49,7 @@ impl Addon {
             dependencies,
             state: AddonState::Ajour(None),
             wowi_id,
+            tukui_id,
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         };
@@ -165,7 +168,8 @@ impl Ord for Addon {
 impl Eq for Addon {}
 
 #[derive(Clone, Debug, Deserialize)]
+/// TBA. Maybe update the name to make it clear that this is information from the remote addon.
 pub struct AddonDetails {
-    pub id: String,
+    // pub id: i32,
     pub version: String,
 }

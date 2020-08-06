@@ -1,5 +1,5 @@
 use crate::Result;
-use crate::{error::ClientError, toc::addon::Addon};
+use crate::{error::ClientError, toc::Addon};
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
 

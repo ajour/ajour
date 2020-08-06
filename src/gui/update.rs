@@ -1,12 +1,11 @@
 use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
-        config::load_config,
+        config::{load_config, Tokens},
         error::ClientError,
         fs::{delete_addon, install_addon},
-        toc::addon::{Addon, AddonState},
-        toc::read_addon_directory,
-        wowinterface_api, Result,
+        toc::{read_addon_directory, Addon, AddonState, AddonDetails},
+        wowinterface_api, tukui_api, Result,
     },
     iced::Command,
     std::path::PathBuf,
@@ -105,12 +104,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.state = AjourState::FetchingDetails;
 
             let tokens = ajour.config.tokens.clone();
-            if tokens.wowinterface.is_some() {
-                return Ok(Command::perform(
-                    get_addon_details(addons, tokens.wowinterface.unwrap()),
+            return Ok(Command::perform(
+                    get_addon_details(addons, tokens),
                     Message::PatchedAddons,
-                ));
-            }
+            ));
         }
         Message::PatchedAddons(Ok(addons)) => {
             // When addons has been patched, we update state.
@@ -181,24 +178,32 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
 /// Function to fetch remote data (patches) from the different repositories:
 /// - Warcraftinterface
-async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result<Vec<Addon>> {
+/// - TukUI
+async fn get_addon_details(mut addons: Vec<Addon>, tokens: Tokens) -> Result<Vec<Addon>> {
     for addon in &mut addons {
-        match &addon.wowi_id {
-            Some(id) => {
-                // Details for an addon is return as a `Vec<AddonDetails>`.
-                // This is because an addon can multiple variations.
-                // Eg. classic and retail.
-                let all_details =
-                    wowinterface_api::fetch_addon_details(&id[..], &wowi_token).await?;
-                let details = all_details.iter().find(|a| &a.id == id);
-                match details {
-                    Some(details) => {
-                        addon.apply_details(details);
-                    }
-                    None => continue,
-                };
+        // Wowinterface.
+        // match (&addon.wowi_id, &tokens.wowinterface) {
+        //     (Some(wowi_id), Some(wowi_token)) => {
+        //         let all_details =
+        //             wowinterface_api::fetch_addon_details(&wowi_id[..], &wowi_token).await?;
+        //         let details = all_details.iter().find(|a| &a.id == wowi_id);
+        //         match details {
+        //             Some(details) => {
+        //                 addon.apply_details(details);
+        //             }
+        //             _ => (),
+        //         };
+        //     }
+        //     _ => (),
+        // }
+
+        // TukUI.
+        match &addon.tukui_id {
+            Some(tukui_id) => {
+                let details = tukui_api::fetch_addon_details(&tukui_id[..]).await?;
+                println!("details: {:?}", details);
             }
-            None => continue,
+            _ => (),
         }
     }
 

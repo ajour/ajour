@@ -1,6 +1,6 @@
 use crate::{
     error::ClientError,
-    toc::addon::{Addon, AddonDetails},
+    toc::{Addon, AddonDetails},
     Result,
 };
 use async_std::{fs::File, prelude::*};
@@ -11,7 +11,7 @@ const API_ENDPOINT: &str = "https://api.wowinterface.com/addons";
 const DL_ENDPOINT: &str = "https://cdn.wowinterface.com/downloads/getfile.php?id=";
 
 /// Helper function to handle requests.
-/// It might make sense to refactor this out in a seperate module later.
+/// TODO: It might make sense to refactor this out in a seperate module later.
 async fn request<T: ToString>(url: T, token: &str) -> Result<Response<isahc::Body>> {
     Ok(Request::get(url.to_string())
         .timeout(std::time::Duration::from_secs(20))
