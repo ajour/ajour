@@ -1,12 +1,13 @@
 use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
-        config::load_config,
+        network::download_addon,
+        config::{load_config, Tokens},
         error::ClientError,
         fs::{delete_addon, install_addon},
-        toc::addon::{Addon, AddonState},
         toc::read_addon_directory,
-        wowinterface_api, Result,
+        addon::{Addon, AddonState},
+        wowinterface_api, tukui_api, Result,
     },
     iced::Command,
     std::path::PathBuf,
@@ -61,22 +62,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::ParsedAddons,
             ));
         }
-        Message::Interaction(Interaction::Update(wowi_id)) => {
+        Message::Interaction(Interaction::Update(id)) => {
             let to_directory = ajour
                 .config
                 .get_temporary_addon_directory()
                 .expect("Expected a valid path");
             for addon in &mut ajour.addons {
-                if addon.state == AddonState::Updatable {
-                    if addon.wowi_id.clone().unwrap() == wowi_id {
-                        addon.state = AddonState::Downloading;
-                        let addon = addon.clone();
-
-                        return Ok(Command::perform(
-                            download_addon(addon, to_directory),
+                if addon.id == id {
+                    addon.state = AddonState::Downloading;
+                    return Ok(Command::perform(
+                            perform_download_addon(addon.clone(), to_directory),
                             Message::DownloadedAddon,
-                        ));
-                    }
+                    ));
                 }
             }
         }
@@ -92,7 +89,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.state = AddonState::Downloading;
                     let addon = addon.clone();
                     commands.push(Command::perform(
-                        download_addon(addon, to_directory),
+                        perform_download_addon(addon, to_directory),
                         Message::DownloadedAddon,
                     ))
                 }
@@ -105,12 +102,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.state = AjourState::FetchingDetails;
 
             let tokens = ajour.config.tokens.clone();
-            if tokens.wowinterface.is_some() {
-                return Ok(Command::perform(
-                    get_addon_details(addons, tokens.wowinterface.unwrap()),
+            return Ok(Command::perform(
+                    get_addon_details(addons, tokens),
                     Message::PatchedAddons,
-                ));
-            }
+            ));
         }
         Message::PatchedAddons(Ok(addons)) => {
             // When addons has been patched, we update state.
@@ -141,7 +136,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon.state = AddonState::Unpacking;
                         let addon = addon.clone();
                         return Ok(Command::perform(
-                            unpack_addon(addon, from_directory, to_directory),
+                            perform_unpack_addon(addon, from_directory, to_directory),
                             Message::UnpackedAddon,
                         ));
                     }
@@ -181,24 +176,32 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
 /// Function to fetch remote data (patches) from the different repositories:
 /// - Warcraftinterface
-async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result<Vec<Addon>> {
+/// - TukUI
+async fn get_addon_details(mut addons: Vec<Addon>, tokens: Tokens) -> Result<Vec<Addon>> {
     for addon in &mut addons {
-        match &addon.wowi_id {
-            Some(id) => {
-                // Details for an addon is return as a `Vec<AddonDetails>`.
-                // This is because an addon can multiple variations.
-                // Eg. classic and retail.
-                let all_details =
-                    wowinterface_api::fetch_addon_details(&id[..], &wowi_token).await?;
-                let details = all_details.iter().find(|a| &a.id == id);
-                match details {
-                    Some(details) => {
-                        addon.apply_details(details);
+        // Wowinterface.
+        match (&addon.wowi_id, &tokens.wowinterface) {
+            (Some(wowi_id), Some(wowi_token)) => {
+                let packages =
+                    wowinterface_api::fetch_addon_packages(&wowi_id[..], &wowi_token).await?;
+                let package = packages.iter().find(|a| &a.id == wowi_id);
+                match package {
+                    Some(package) => {
+                        addon.apply_wowi_package(package);
                     }
-                    None => continue,
+                    _ => (),
                 };
             }
-            None => continue,
+            _ => (),
+        }
+
+        // TukUI.
+        match &addon.tukui_id {
+            Some(tukui_id) => {
+                let package = tukui_api::fetch_addon_details(&tukui_id[..]).await?;
+                addon.apply_tukui_package(&package);
+            }
+            _ => (),
         }
     }
 
@@ -208,17 +211,17 @@ async fn get_addon_details(mut addons: Vec<Addon>, wowi_token: String) -> Result
 
 /// Downloads the newest version of the addon.
 /// This is for now only downloading from warcraftinterface.
-async fn download_addon(addon: Addon, to_directory: PathBuf) -> (String, Result<()>) {
+async fn perform_download_addon(addon: Addon, to_directory: PathBuf) -> (String, Result<()>) {
     (
         addon.id.clone(),
-        wowinterface_api::download_addon(&addon, &to_directory)
+        download_addon(&addon, &to_directory)
             .await
             .map(|_| ()),
     )
 }
 
 /// Unzips `Addon` at given `from_directory` and moves it `to_directory`.
-async fn unpack_addon(
+async fn perform_unpack_addon(
     addon: Addon,
     from_directory: PathBuf,
     to_directory: PathBuf,

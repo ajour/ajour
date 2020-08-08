@@ -1,6 +1,6 @@
-use serde_derive::Deserialize;
 use std::cmp::Ordering;
 use std::path::PathBuf;
+use crate::{wowinterface_api, tukui_api};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AddonState {
@@ -17,10 +17,12 @@ pub struct Addon {
     pub title: String,
     pub version: Option<String>,
     pub remote_version: Option<String>,
+    pub remote_url: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
     pub wowi_id: Option<String>,
+    pub tukui_id: Option<String>,
 
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
@@ -33,6 +35,7 @@ impl Addon {
         version: Option<String>,
         path: PathBuf,
         wowi_id: Option<String>,
+        tukui_id: Option<String>,
         dependencies: Vec<String>,
     ) -> Self {
         let os_title = path.file_name().unwrap();
@@ -43,21 +46,32 @@ impl Addon {
             title,
             version,
             remote_version: None,
+            remote_url: None,
             path,
             dependencies,
             state: AddonState::Ajour(None),
             wowi_id,
+            tukui_id,
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         };
     }
 
-    /// Function to apply details to a `Addon`.
-    ///
-    /// This is used to apply additional information after pulling the
-    /// information from a repository.
-    pub fn apply_details(&mut self, patch: &AddonDetails) {
-        self.remote_version = Some(patch.version.clone());
+    /// TBA
+    pub fn apply_wowi_package(&mut self, package: &wowinterface_api::Package) {
+        let id = self.wowi_id.clone().unwrap();
+        self.remote_version = Some(package.version.clone());
+        self.remote_url = Some(crate::wowinterface_api::remote_url(&id));
+
+        if self.is_updatable() {
+            self.state = AddonState::Updatable;
+        }
+    }
+
+    /// TBA
+    pub fn apply_tukui_package(&mut self, package: &tukui_api::Package) {
+        self.remote_version = Some(package.version.clone());
+        self.remote_url = Some(package.url.clone());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;
@@ -164,8 +178,3 @@ impl Ord for Addon {
 
 impl Eq for Addon {}
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct AddonDetails {
-    pub id: String,
-    pub version: String,
-}

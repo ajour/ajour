@@ -3,7 +3,7 @@ mod update;
 use crate::{
     config::{load_config, Config},
     error::ClientError,
-    toc::addon::{Addon, AddonState},
+    addon::{Addon, AddonState},
     Result,
 };
 use iced::{
@@ -174,7 +174,7 @@ impl Application for Ajour {
                         .style(style::AddonDescriptionContainer)
                 }
                 AddonState::Updatable => {
-                    let id = addon.wowi_id.clone().unwrap();
+                    let id = addon.id.clone();
                     let update_button: Element<Interaction> = Button::new(
                         &mut addon.update_btn_state,
                         Text::new("Update")

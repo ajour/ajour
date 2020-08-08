@@ -1,5 +1,3 @@
-pub mod addon;
-
 use regex::Regex;
 use std::ffi::OsStr;
 use std::fs::File;
@@ -7,10 +5,10 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{error::ClientError, Result};
+use crate::{error::ClientError, Result, addon::Addon};
 
 /// Return a `Vec<Addon>` parsed from TOC files in the given directory.
-pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<addon::Addon>> {
+pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>> {
     // TODO: Consider skipping DirEntry if we encounter a
     // blizzard addon. Blizzard adddon starts with 'Blizzard_*'.
 
@@ -21,7 +19,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<addon::
         ));
     }
 
-    let mut addons: Vec<addon::Addon> = Vec::new();
+    let mut addons: Vec<Addon> = Vec::new();
     for entry in WalkDir::new(path)
         .max_depth(2)
         .into_iter()
@@ -67,7 +65,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<addon::
 /// `Foo` - dependencies: [`Bar`, `Baz`]
 /// `Bar` - dependencies: [`Foo`]
 /// `Baz` - dependencies: [`Foo`]
-fn link_dependencies_bidirectional(addons: &mut Vec<addon::Addon>) {
+fn link_dependencies_bidirectional(addons: &mut Vec<Addon>) {
     let clone_addons = addons.clone();
 
     for addon in addons {
@@ -96,7 +94,7 @@ async fn get_extension(filename: &OsStr) -> Option<&str> {
 ///
 /// TOC format summary:
 /// https://wowwiki.fandom.com/wiki/TOC_format
-async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
+async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
     let file = File::open(toc_entry.path()).unwrap();
     let reader = BufReader::new(file);
 
@@ -105,6 +103,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
     let mut version: Option<String> = None;
     let mut dependencies: Vec<String> = Vec::new();
     let mut wowi_id: Option<String> = None;
+    let mut tukui_id: Option<String> = None;
 
     // It is an anti-pattern to compile the same regular expression in a loop,
     // which is why they are created here.
@@ -138,16 +137,21 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<addon::Addon> {
                 "X-WoWI-ID" => {
                     wowi_id = Some(cap["value"].to_string());
                 }
+                // String - Addon identifier for TukUI API.
+                "X-Tukui-ProjectID" => {
+                    tukui_id = Some(cap["value"].to_string());
+                }
                 _ => (),
             }
         }
     }
 
-    return Some(addon::Addon::new(
+    return Some(Addon::new(
         title?,
         version,
         path,
         wowi_id,
+        tukui_id,
         dependencies,
     ));
 }
