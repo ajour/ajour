@@ -1,5 +1,3 @@
-mod addon;
-
 use regex::Regex;
 use std::ffi::OsStr;
 use std::fs::File;
@@ -7,8 +5,7 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{error::ClientError, Result};
-pub use crate::toc::addon::{Addon, AddonState, AddonDetails};
+use crate::{error::ClientError, Result, addon::Addon};
 
 /// Return a `Vec<Addon>` parsed from TOC files in the given directory.
 pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>> {
