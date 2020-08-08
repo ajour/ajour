@@ -6,7 +6,7 @@ use async_std::{fs::File, prelude::*};
 use isahc::prelude::*;
 use std::path::PathBuf;
 
-/// TBA.
+/// Generic request function.
 pub fn request<T: ToString>(url: T, headers: Vec<(&str, &str)>) -> Result<Response<isahc::Body>> {
     let mut r = Request::get(url.to_string())
         .timeout(std::time::Duration::from_secs(20));
@@ -18,7 +18,8 @@ pub fn request<T: ToString>(url: T, headers: Vec<(&str, &str)>) -> Result<Respon
     Ok(r.body(())?.send()?)
 }
 
-/// Function to download a zip archive from `warcraftinterface.com`.
+/// Function to download a zip archive for a `Addon`.
+/// Note: Addon needs to have a `remote_url` to the file.
 pub async fn download_addon(addon: &Addon, to_directory: &PathBuf) -> Result<()> {
     let filename = addon.id.clone();
     let url = addon.remote_url.clone().unwrap();

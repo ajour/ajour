@@ -7,13 +7,14 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize)]
-// TBA
+/// Struct for applying tukui details to an `Addon`.
 pub struct Package {
     pub id: i32,
     pub version: String,
     pub url: String,
 }
 
+/// Return the tukui API endpoint.
 fn api_endpoint(id: &str) -> String {
     match id {
         "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
@@ -22,7 +23,9 @@ fn api_endpoint(id: &str) -> String {
     }
 }
 
-pub async fn fetch_addon_details(id: &str) -> Result<Package> {
+/// Function to fetch a remote addon package which contains
+/// information about the addon on the repository.
+pub async fn fetch_remote_package(id: &str) -> Result<Package> {
     let url = api_endpoint(id);
     let mut resp = request(&url, vec![])?;
 
