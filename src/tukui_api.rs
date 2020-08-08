@@ -1,10 +1,6 @@
-use serde_derive::Deserialize;
+use crate::{error::ClientError, network::request, Result};
 use isahc::prelude::*;
-use crate::{
-    error::ClientError,
-    network::request,
-    Result,
-};
+use serde_derive::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 /// Struct for applying tukui details to an `Addon`.
@@ -19,7 +15,7 @@ fn api_endpoint(id: &str) -> String {
     match id {
         "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
         "-2" => "https://www.tukui.org/api.php?ui=elvui".to_owned(),
-        _    => format!("https://www.tukui.org/api.php?addon={}", id)
+        _ => format!("https://www.tukui.org/api.php?addon={}", id),
     }
 }
 

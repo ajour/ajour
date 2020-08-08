@@ -1,13 +1,13 @@
 use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
-        network::download_addon,
+        addon::{Addon, AddonState},
         config::{load_config, Tokens},
         error::ClientError,
         fs::{delete_addon, install_addon},
+        network::download_addon,
         toc::read_addon_directory,
-        addon::{Addon, AddonState},
-        wowinterface_api, tukui_api, Result,
+        tukui_api, wowinterface_api, Result,
     },
     iced::Command,
     std::path::PathBuf,
@@ -71,8 +71,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if addon.id == id {
                     addon.state = AddonState::Downloading;
                     return Ok(Command::perform(
-                            perform_download_addon(addon.clone(), to_directory),
-                            Message::DownloadedAddon,
+                        perform_download_addon(addon.clone(), to_directory),
+                        Message::DownloadedAddon,
                     ));
                 }
             }
@@ -103,8 +103,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let tokens = ajour.config.tokens.clone();
             return Ok(Command::perform(
-                    get_addon_details(addons, tokens),
-                    Message::PatchedAddons,
+                get_addon_details(addons, tokens),
+                Message::PatchedAddons,
             ));
         }
         Message::PatchedAddons(Ok(addons)) => {
@@ -214,9 +214,7 @@ async fn get_addon_details(mut addons: Vec<Addon>, tokens: Tokens) -> Result<Vec
 async fn perform_download_addon(addon: Addon, to_directory: PathBuf) -> (String, Result<()>) {
     (
         addon.id.clone(),
-        download_addon(&addon, &to_directory)
-            .await
-            .map(|_| ()),
+        download_addon(&addon, &to_directory).await.map(|_| ()),
     )
 }
 

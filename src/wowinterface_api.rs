@@ -1,10 +1,6 @@
-use serde_derive::Deserialize;
+use crate::{error::ClientError, network::request, Result};
 use isahc::prelude::*;
-use crate::{
-    network::request,
-    error::ClientError,
-    Result,
-};
+use serde_derive::Deserialize;
 
 const API_ENDPOINT: &str = "https://api.wowinterface.com/addons";
 const DL_ENDPOINT: &str = "https://cdn.wowinterface.com/downloads/getfile.php?id=";
@@ -42,4 +38,3 @@ pub async fn fetch_remote_packages(id: &str, token: &str) -> Result<Vec<Package>
 pub fn remote_url(id: &str) -> String {
     format!("{}{}", DL_ENDPOINT, id)
 }
-

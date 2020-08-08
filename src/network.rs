@@ -1,15 +1,11 @@
-use crate::{
-    addon::Addon,
-    Result,
-};
+use crate::{addon::Addon, Result};
 use async_std::{fs::File, prelude::*};
 use isahc::prelude::*;
 use std::path::PathBuf;
 
 /// Generic request function.
 pub fn request<T: ToString>(url: T, headers: Vec<(&str, &str)>) -> Result<Response<isahc::Body>> {
-    let mut r = Request::get(url.to_string())
-        .timeout(std::time::Duration::from_secs(20));
+    let mut r = Request::get(url.to_string()).timeout(std::time::Duration::from_secs(20));
 
     for (name, value) in headers {
         r = r.header(name, value);

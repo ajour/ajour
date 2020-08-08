@@ -1,9 +1,9 @@
 mod style;
 mod update;
 use crate::{
+    addon::{Addon, AddonState},
     config::{load_config, Config},
     error::ClientError,
-    addon::{Addon, AddonState},
     Result,
 };
 use iced::{

@@ -1,6 +1,6 @@
+use crate::{tukui_api, wowinterface_api};
 use std::cmp::Ordering;
 use std::path::PathBuf;
-use crate::{wowinterface_api, tukui_api};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AddonState {
@@ -177,4 +177,3 @@ impl Ord for Addon {
 }
 
 impl Eq for Addon {}
-
