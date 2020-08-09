@@ -32,7 +32,7 @@ On Windows, the config file should be located at:
 * `%APPDATA%\ajour\ajour.yml`
 
 ## Screenshots
-![](./screenshots/ajour-0.0.1.png)
+![](./resources/screenshots/ajour-0.0.1.png)
 
 ## Other addon managers
 https://ogri-la.github.io/wow-addon-managers/
