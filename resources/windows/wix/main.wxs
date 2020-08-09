@@ -42,7 +42,7 @@
         <MajorUpgrade
             Schedule='afterInstallInitialize'
             DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
-        
+
         <Icon Id='ProductICO' SourceFile='.\resources\windows\ajour.ico'/>
         <Property Id='ARPPRODUCTICON' Value='ProductICO' />
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
