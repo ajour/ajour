@@ -1,3 +1,8 @@
+// Avoid spawning an console window for the program.
+// This is ignored on other platforms.
+// https://msdn.microsoft.com/en-us/library/4cc7ya5b.aspx for more information.
+#![windows_subsystem = "windows"]
+
 mod addon;
 mod config;
 mod error;
