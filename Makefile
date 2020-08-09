@@ -1,4 +1,8 @@
 ## Makefile which is used to generate a .app and .dmg for MacOS.
+##
+## Credits:
+## This Makefile is heaviliy inspirred by Alacrittys.
+## https://github.com/alacritty/alacritty/blob/master/Makefile
 
 TARGET = ajour
 
@@ -12,7 +16,7 @@ APP_BINARY = $(RELEASE_DIR)/$(TARGET)
 APP_BINARY_DIR  = $(APP_DIR)/$(APP_NAME)/Contents/MacOS
 APP_RESOURCES_DIR = $(APP_DIR)/$(APP_NAME)/Contents/Resources
 
-DMG_NAME = Alacritty.dmg
+DMG_NAME = Ajour.dmg
 DMG_DIR = $(RELEASE_DIR)/osx
 
 vpath $(TARGET) $(RELEASE_DIR)
@@ -42,7 +46,7 @@ $(DMG_NAME): $(APP_NAME)
 	@echo "Packing disk image..."
 	@ln -sf /Applications $(DMG_DIR)/Applications
 	@hdiutil create $(DMG_DIR)/$(DMG_NAME) \
-		-volname "Alacritty" \
+		-volname "Ajour" \
 		-fs HFS+ \
 		-srcfolder $(APP_DIR) \
 		-ov -format UDZO
