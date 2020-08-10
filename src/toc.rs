@@ -14,9 +14,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>>
 
     // If the path does not exists or does not point on a directory we throw an Error.
     if !path.as_ref().is_dir() {
-        return Err(ClientError::Custom(
-            format!("Addon directory not found: {:?}", path.as_ref().to_owned()),
-        ));
+        return Err(ClientError::Custom(format!(
+            "Addon directory not found: {:?}",
+            path.as_ref().to_owned()
+        )));
     }
 
     let mut addons: Vec<Addon> = Vec::new();

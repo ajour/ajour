@@ -1,6 +1,6 @@
+use crate::{addon::Addon, Result};
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
-use crate::{addon::Addon, Result};
 
 /// Deletes an Addon from disk.
 pub fn delete_addon(addon: &Addon) -> Result<()> {
