@@ -29,7 +29,6 @@ pub async fn fetch_remote_packages(id: &str, token: &str) -> Result<Vec<Package>
                 "Coudn't fetch details for addon. Server returned: {}",
                 resp.text()?
             )
-            .to_owned(),
         ))
     }
 }

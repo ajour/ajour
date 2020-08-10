@@ -15,15 +15,15 @@ enum ColorPalette {
 impl ColorPalette {
     fn rgb(&self) -> Color {
         match self {
-            ColorPalette::Primary => return Color::from_rgb(0.88, 0.74, 0.28),
-            ColorPalette::OnPrimary => return Color::from_rgb(0.32, 0.27, 0.10),
-            ColorPalette::Secondary => return Color::from_rgb(0.22, 0.17, 0.28),
-            ColorPalette::OnSecondary => return Color::from_rgb(0.73, 0.52, 0.99),
-            ColorPalette::Surface => return Color::from_rgb(0.12, 0.12, 0.12),
-            ColorPalette::OnSurface => return Color::from_rgb(0.88, 0.88, 0.88),
-            ColorPalette::Background => return Color::from_rgb(0.07, 0.07, 0.07),
-            ColorPalette::Error => return Color::from_rgb(0.81, 0.4, 0.47),
-            ColorPalette::OnError => return Color::from_rgb(0.68, 0.0, 0.13),
+            ColorPalette::Primary => Color::from_rgb(0.88, 0.74, 0.28),
+            ColorPalette::OnPrimary => Color::from_rgb(0.32, 0.27, 0.10),
+            ColorPalette::Secondary => Color::from_rgb(0.22, 0.17, 0.28),
+            ColorPalette::OnSecondary => Color::from_rgb(0.73, 0.52, 0.99),
+            ColorPalette::Surface => Color::from_rgb(0.12, 0.12, 0.12),
+            ColorPalette::OnSurface => Color::from_rgb(0.88, 0.88, 0.88),
+            ColorPalette::Background => Color::from_rgb(0.07, 0.07, 0.07),
+            ColorPalette::Error => Color::from_rgb(0.81, 0.4, 0.47),
+            ColorPalette::OnError => Color::from_rgb(0.68, 0.0, 0.13),
         }
     }
 }

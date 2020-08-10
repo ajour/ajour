@@ -1,11 +1,11 @@
-use crate::Result;
-use crate::{addon::Addon, error::ClientError};
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
+use crate::{addon::Addon, Result};
 
 /// Deletes an Addon from disk.
 pub fn delete_addon(addon: &Addon) -> Result<()> {
-    remove_dir_all(addon.path.to_path_buf()).map_err(|e| ClientError::IoError(e))
+    remove_dir_all(addon.path.to_path_buf())?;
+    Ok(())
 }
 
 /// Unzips an `Addon` archive, and once that is done, it moves the content
@@ -43,5 +43,5 @@ pub async fn install_addon(
     // Cleanup
     std::fs::remove_file(&zip_path)?;
 
-    return Ok(());
+    Ok(())
 }

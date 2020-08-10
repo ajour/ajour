@@ -119,7 +119,7 @@ fn parse_config(path: &PathBuf) -> Result<Config> {
 pub async fn load_config() -> Config {
     let path = installed_config();
     match path {
-        Some(p) => parse_config(&p).unwrap_or(Config::default()),
+        Some(p) => parse_config(&p).unwrap_or_default(),
         None => Config::default(),
     }
 }

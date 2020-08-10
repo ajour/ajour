@@ -41,7 +41,7 @@ impl Addon {
         let os_title = path.file_name().unwrap();
         let str_title = os_title.to_str().unwrap();
 
-        return Addon {
+        Addon {
             id: str_title.to_string(),
             title,
             version,
@@ -54,7 +54,7 @@ impl Addon {
             tukui_id,
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
-        };
+        }
     }
 
     /// TBA
@@ -101,8 +101,8 @@ impl Addon {
     /// `Baz` - dependencies: [`Foo`]
     ///
     /// If `Baz` is self, we will return [`Foo`, `Bar`, `Baz`]
-    pub fn combined_dependencies(&self, addons: &Vec<Addon>) -> Vec<String> {
-        let addons = &addons.clone();
+    pub fn combined_dependencies(&self, addons: &[Addon]) -> Vec<String> {
+        let addons = &addons.to_owned();
         let mut dependencies: Vec<String> = Vec::new();
 
         // Add own dependency to dependencies.
@@ -110,7 +110,7 @@ impl Addon {
         // Loops dependencies of the target addon.
         for dependency in &self.dependencies {
             // Find the addon.
-            let addon = addons.into_iter().find(|a| &a.id == dependency);
+            let addon = addons.iter().find(|a| &a.id == dependency);
             match addon {
                 Some(addon) => {
                     // If target_addon is a parent, and the dependency addon is a parent

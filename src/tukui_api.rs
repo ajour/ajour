@@ -34,7 +34,6 @@ pub async fn fetch_remote_package(id: &str) -> Result<Package> {
                 "Coudn't fetch details for addon. Server returned: {}",
                 resp.text()?
             )
-            .to_owned(),
         ))
     }
 }

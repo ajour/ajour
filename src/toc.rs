@@ -15,7 +15,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>>
     // If the path does not exists or does not point on a directory we throw an Error.
     if !path.as_ref().is_dir() {
         return Err(ClientError::Custom(
-            format!("Addon directory not found: {:?}", path.as_ref().to_owned()).to_owned(),
+            format!("Addon directory not found: {:?}", path.as_ref().to_owned()),
         ));
     }
 
@@ -30,9 +30,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>>
             let file_extension = get_extension(file_name).await;
             if file_extension == Some("toc") {
                 let addon = parse_toc_entry(entry).await;
-                match addon {
-                    Some(addon) => addons.push(addon),
-                    None => (),
+                if let Some(addon) = addon {
+                    addons.push(addon)
                 }
             }
         }
@@ -42,7 +41,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>>
     // TODO: naming
     link_dependencies_bidirectional(&mut addons);
 
-    return Ok(addons);
+    Ok(addons)
 }
 
 /// Helper function to run through all addons and
@@ -146,14 +145,14 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
         }
     }
 
-    return Some(Addon::new(
+    Some(Addon::new(
         title?,
         version,
         path,
         wowi_id,
         tukui_id,
         dependencies,
-    ));
+    ))
 }
 
 /// Helper function to split a comma seperated string into `Vec<String>`.

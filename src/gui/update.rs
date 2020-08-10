@@ -43,11 +43,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
+            // TODO: maybe this clone can be avoided, since iter does not move the `Vec`
             let addons = &ajour.addons.clone();
-            let target_addon = addons.into_iter().find(|a| a.id == id).unwrap();
+            let target_addon = addons.iter().find(|a| a.id == id).unwrap();
             let combined_dependencies = target_addon.combined_dependencies(addons);
             let addons_to_be_deleted = addons
-                .into_iter()
+                .iter()
                 .filter(|a| combined_dependencies.contains(&a.id))
                 .collect::<Vec<_>>();
 
@@ -180,28 +181,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 async fn get_addon_details(mut addons: Vec<Addon>, tokens: Tokens) -> Result<Vec<Addon>> {
     for addon in &mut addons {
         // Wowinterface.
-        match (&addon.wowi_id, &tokens.wowinterface) {
-            (Some(wowi_id), Some(wowi_token)) => {
-                let packages =
-                    wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token).await?;
-                let package = packages.iter().find(|a| &a.id == wowi_id);
-                match package {
-                    Some(package) => {
-                        addon.apply_wowi_package(package);
-                    }
-                    _ => (),
-                };
+        if let (Some(wowi_id), Some(wowi_token)) = (&addon.wowi_id, &tokens.wowinterface) {
+            let packages =
+                wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token).await?;
+            let package = packages.iter().find(|a| &a.id == wowi_id);
+            if let Some(package) = package {
+                addon.apply_wowi_package(package);
             }
-            _ => (),
         }
 
         // TukUI.
-        match &addon.tukui_id {
-            Some(tukui_id) => {
-                let package = tukui_api::fetch_remote_package(&tukui_id[..]).await?;
-                addon.apply_tukui_package(&package);
-            }
-            _ => (),
+        if let Some(tukui_id) = &addon.tukui_id {
+            let package = tukui_api::fetch_remote_package(&tukui_id[..]).await?;
+            addon.apply_tukui_package(&package);
         }
     }
 

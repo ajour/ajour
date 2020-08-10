@@ -132,11 +132,11 @@ impl Application for Ajour {
             }
 
             // Increment addon count.
-            addon_count = addon_count + 1;
+            addon_count += 1;
 
             let title = addon.title.clone();
-            let version = addon.version.clone().unwrap_or(String::from("-"));
-            let remote_version = addon.remote_version.clone().unwrap_or(String::from("-"));
+            let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
+            let remote_version = addon.remote_version.clone().unwrap_or_else(|| String::from("-"));
 
             let text = Text::new(title).size(12);
             let text_container = Container::new(text)
@@ -165,7 +165,7 @@ impl Application for Ajour {
             let update_button_width = Length::Units(75);
             let update_button_container = match &addon.state {
                 AddonState::Ajour(string) => {
-                    Container::new(Text::new(string.clone().unwrap_or("".to_string())).size(12))
+                    Container::new(Text::new(string.clone().unwrap_or_else(|| "".to_string())).size(12))
                         .height(default_height)
                         .width(update_button_width)
                         .center_y()
