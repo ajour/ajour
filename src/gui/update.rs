@@ -183,7 +183,7 @@ async fn get_addon_details(mut addons: Vec<Addon>, tokens: Tokens) -> Result<Vec
         // Wowinterface.
         if let (Some(wowi_id), Some(wowi_token)) = (&addon.wowi_id, &tokens.wowinterface) {
             let packages =
-                wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token).await?;
+                wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token)?;
             let package = packages.iter().find(|a| &a.id == wowi_id);
             if let Some(package) = package {
                 addon.apply_wowi_package(package);
@@ -192,7 +192,7 @@ async fn get_addon_details(mut addons: Vec<Addon>, tokens: Tokens) -> Result<Vec
 
         // TukUI.
         if let Some(tukui_id) = &addon.tukui_id {
-            let package = tukui_api::fetch_remote_package(&tukui_id[..]).await?;
+            let package = tukui_api::fetch_remote_package(&tukui_id[..])?;
             addon.apply_tukui_package(&package);
         }
     }

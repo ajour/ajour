@@ -15,7 +15,7 @@ pub struct Package {
 /// Function to fetch remote addon packages which contains
 /// information about the addon on the repository.
 /// Note: More packages can be returned for a single `Addon`
-pub async fn fetch_remote_packages(id: &str, token: &str) -> Result<Vec<Package>> {
+pub fn fetch_remote_packages(id: &str, token: &str) -> Result<Vec<Package>> {
     let url = format!("{}/details/{}.json", API_ENDPOINT, id);
     let headers = vec![("x-api-token", token)];
     let mut resp = request(url, headers)?;
