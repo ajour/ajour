@@ -22,7 +22,7 @@ impl fmt::Display for ClientError {
             Self::JsonError(x) => write!(f, "{}", x),
             Self::NetworkError(_) => write!(
                 f,
-                "A network error occured. Please check your internet connection and try again."
+                "A network error occurred. Please check your internet connection and try again."
             ),
             Self::HttpError(x) => write!(f, "{}", x),
             Self::ZipError(x) => write!(f, "{}", x),

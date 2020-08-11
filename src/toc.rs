@@ -156,7 +156,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
     ))
 }
 
-/// Helper function to split a comma seperated string into `Vec<String>`.
+/// Helper function to split a comma separated string into `Vec<String>`.
 fn split_dependencies_into_vec(value: &str) -> Vec<String> {
     value
         .split([','].as_ref())

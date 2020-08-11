@@ -114,7 +114,7 @@ impl Application for Ajour {
 
         // Addons
         //
-        // A scrollable list containg rows.
+        // A scrollable list containing rows.
         // Each row holds information about a single addon.
         let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
 

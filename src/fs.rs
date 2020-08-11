@@ -21,7 +21,7 @@ pub async fn install_addon(
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
 
-    // TODO: Maybe remove old addon here, so we dont replace.
+    // TODO: Maybe remove old addon here, so we don't replace.
 
     for i in 1..archive.len() {
         let mut file = archive.by_index(i)?;

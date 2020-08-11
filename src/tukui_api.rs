@@ -30,7 +30,7 @@ pub async fn fetch_remote_package(id: &str) -> Result<Package> {
         Ok(package)
     } else {
         Err(ClientError::Custom(format!(
-            "Coudn't fetch details for addon. Server returned: {}",
+            "Couldn't fetch details for addon. Server returned: {}",
             resp.text()?
         )))
     }

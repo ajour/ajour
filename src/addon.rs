@@ -85,9 +85,9 @@ impl Addon {
     /// deletion will be deleted. A parent cannot delete
     /// another parent addon.
     ///
-    /// There's an edgecase where a downloaded addon,
-    /// containg multiple folders (addons) can have multiple
-    /// parents because one or more have a version attatched.
+    /// There's an edge case where a downloaded addon,
+    /// containing multiple folders (addons) can have multiple
+    /// parents because one or more have a version attached.
     pub fn is_parent(&self) -> bool {
         self.version.is_some()
     }
@@ -137,7 +137,7 @@ impl Addon {
     }
 
     /// Check if the `Addon` is updatable.
-    /// This is done by a simple comparision, which means it will also flag
+    /// This is done by a simple comparison, which means it will also flag
     /// the addon as updatable if the `remote_version` is LOWER than
     /// `version`.
     fn is_updatable(&self) -> bool {

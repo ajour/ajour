@@ -56,7 +56,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             for addon in addons_to_be_deleted {
                 let _ = delete_addon(addon);
             }
-            // Refreshes the GUI by reparsing the addon directory.
+            // Refreshes the GUI by re-parsing the addon directory.
             let addon_directory = ajour.config.get_addon_directory().unwrap();
             return Ok(Command::perform(
                 read_addon_directory(addon_directory),
@@ -130,7 +130,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .addons
                 .iter_mut()
                 .find(|a| a.id == id)
-                .expect("Expected addon for id to exsist.");
+                .expect("Expected addon for id to exist.");
             match result {
                 Ok(_) => {
                     if addon.state == AddonState::Downloading {
@@ -152,7 +152,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .addons
                 .iter_mut()
                 .find(|a| a.id == id)
-                .expect("Expected addon for id to exsist.");
+                .expect("Expected addon for id to exist.");
             match result {
                 Ok(_) => {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));

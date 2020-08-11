@@ -25,13 +25,13 @@ pub async fn fetch_remote_packages(id: &str, token: &str) -> Result<Vec<Package>
         Ok(addon_details)
     } else {
         Err(ClientError::Custom(format!(
-            "Coudn't fetch details for addon. Server returned: {}",
+            "Couldn't fetch details for addon. Server returned: {}",
             resp.text()?
         )))
     }
 }
 
-/// Return the `remote_url` for a a given `wowi_id`.
+/// Return the `remote_url` for a given `wowi_id`.
 pub fn remote_url(id: &str) -> String {
     format!("{}{}", DL_ENDPOINT, id)
 }
