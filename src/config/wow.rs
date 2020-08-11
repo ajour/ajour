@@ -8,14 +8,14 @@ pub struct Wow {
     #[serde(default = "default_directory")]
     pub directory: Option<PathBuf>,
 
-    #[serde(default = "default_version")]
-    pub version: String,
+    #[serde(default = "default_flavor")]
+    pub flavor: String,
 }
 
 fn default_directory() -> Option<PathBuf> {
     None
 }
 
-fn default_version() -> String {
+fn default_flavor() -> String {
     "retail".to_owned()
 }
