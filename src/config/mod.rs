@@ -123,3 +123,4 @@ pub async fn load_config() -> Config {
         None => Config::default(),
     }
 }
+

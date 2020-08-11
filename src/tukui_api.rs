@@ -21,7 +21,7 @@ fn api_endpoint(id: &str) -> String {
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
-pub async fn fetch_remote_package(id: &str) -> Result<Package> {
+pub fn fetch_remote_package(id: &str) -> Result<Package> {
     let url = api_endpoint(id);
     let mut resp = request(&url, vec![])?;
 
