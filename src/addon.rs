@@ -1,4 +1,4 @@
-use crate::{tukui_api, wowinterface_api};
+use crate::{curse_api, tukui_api, wowinterface_api};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -23,6 +23,7 @@ pub struct Addon {
     pub state: AddonState,
     pub wowi_id: Option<String>,
     pub tukui_id: Option<String>,
+    pub curse_id: Option<u32>,
 
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
@@ -36,6 +37,7 @@ impl Addon {
         path: PathBuf,
         wowi_id: Option<String>,
         tukui_id: Option<String>,
+        curse_id: Option<u32>,
         dependencies: Vec<String>,
     ) -> Self {
         let os_title = path.file_name().unwrap();
@@ -52,6 +54,7 @@ impl Addon {
             state: AddonState::Ajour(None),
             wowi_id,
             tukui_id,
+            curse_id,
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         }
@@ -72,6 +75,23 @@ impl Addon {
     pub fn apply_tukui_package(&mut self, package: &tukui_api::Package) {
         self.remote_version = Some(package.version.clone());
         self.remote_url = Some(package.url.clone());
+
+        if self.is_updatable() {
+            self.state = AddonState::Updatable;
+        }
+    }
+
+    pub fn apply_curse_package(&mut self, package: &curse_api::Package, flavor: &str) {
+        let file = package
+            .latest_files
+            .iter()
+            .find(|f| f.release_type == 1 && f.game_version_flavor == format!("wow_{}", flavor));
+
+        if let Some(file) = file {
+            self.remote_version = Some(file.display_name.clone());
+        }
+        // self.remote_version = Some(package.version.clone());
+        // self.remote_url = Some(package.url.clone());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;

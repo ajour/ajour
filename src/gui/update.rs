@@ -3,6 +3,7 @@ use {
     crate::{
         addon::{Addon, AddonState},
         config::{load_config, Tokens},
+        curse_api,
         error::ClientError,
         fs::{delete_addon, install_addon},
         network::download_addon,
@@ -103,8 +104,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.state = AjourState::FetchingDetails;
 
             let tokens = ajour.config.tokens.clone();
+            let flavor = ajour.config.wow.flavor.clone();
             return Ok(Command::perform(
-                get_addon_details(addons, tokens),
+                get_addon_details(addons, flavor, tokens),
                 Message::PatchedAddons,
             ));
         }
@@ -178,22 +180,32 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 /// Function to fetch remote data (patches) from the different repositories:
 /// - Warcraftinterface
 /// - TukUI
-async fn get_addon_details(mut addons: Vec<Addon>, tokens: Tokens) -> Result<Vec<Addon>> {
+async fn get_addon_details(
+    mut addons: Vec<Addon>,
+    flavor: String,
+    tokens: Tokens,
+) -> Result<Vec<Addon>> {
     for addon in &mut addons {
         // Wowinterface.
-        if let (Some(wowi_id), Some(wowi_token)) = (&addon.wowi_id, &tokens.wowinterface) {
-            let packages =
-                wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token).await?;
-            let package = packages.iter().find(|a| &a.id == wowi_id);
-            if let Some(package) = package {
-                addon.apply_wowi_package(package);
-            }
-        }
+        // if let (Some(wowi_id), Some(wowi_token)) = (&addon.wowi_id, &tokens.wowinterface) {
+        //     let packages =
+        //         wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token).await?;
+        //     let package = packages.iter().find(|a| &a.id == wowi_id);
+        //     if let Some(package) = package {
+        //         addon.apply_wowi_package(package);
+        //     }
+        // }
 
-        // TukUI.
-        if let Some(tukui_id) = &addon.tukui_id {
-            let package = tukui_api::fetch_remote_package(&tukui_id[..]).await?;
-            addon.apply_tukui_package(&package);
+        // // TukUI.
+        // if let Some(tukui_id) = &addon.tukui_id {
+        //     let package = tukui_api::fetch_remote_package(&tukui_id[..]).await?;
+        //     addon.apply_tukui_package(&package);
+        // }
+
+        // Curse.
+        if let Some(curse_id) = &addon.curse_id {
+            let package = curse_api::fetch_remote_package(curse_id)?;
+            addon.apply_curse_package(&package, &flavor);
         }
     }
 

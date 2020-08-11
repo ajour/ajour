@@ -35,12 +35,12 @@ impl Config {
     pub fn get_addon_directory(&self) -> Option<PathBuf> {
         match self.wow.directory.clone() {
             Some(dir) => {
-                // We prepend and append `_` to the client_version so it
+                // We prepend and append `_` to the formatted_client_flavor so it
                 // either becomes _retail_, or _classic_.
-                let formatted_client_version = format!("_{}_", self.wow.version.clone());
+                let formatted_client_flavor = format!("_{}_", self.wow.flavor.clone());
 
                 // The path to the directory containing the addons
-                Some(dir.join(formatted_client_version).join("Interface/AddOns"))
+                Some(dir.join(formatted_client_flavor).join("Interface/AddOns"))
             }
             None => None,
         }
