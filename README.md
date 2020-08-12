@@ -1,6 +1,7 @@
 # Ajour
 
-<a href="https://github.com/casperstorm/ajour/actions?query=Quickstart"><img alt="Quickstart" src="https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg?branch=master"></a>
+![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
+![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
 
 An open source World of Warcraft addon manager written in Rust.  
 It is currently in development. Version 1.0 will be ready for [Shadowlands](https://worldofwarcraft.com/en-us/shadowlands). Late 2020.
