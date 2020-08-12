@@ -1,23 +1,32 @@
-# Ajour
+![](./resources/screenshots/ajour-banner.png)
 
 ![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
 ![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
 
-An open source World of Warcraft addon manager written in Rust.  
-It is currently in development. Version 1.0 will be ready for [Shadowlands](https://worldofwarcraft.com/en-us/shadowlands). Late 2020.
+Ajour is an World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source.
 
-## Audience
+Ajour currently supports macOS and Windows.
 
-This software is for **Windows** and **MacOS**.  
-For **Linux** I would recommend [strongbox](https://github.com/ogri-la/strongbox).
+## Features
 
-## Build
+- Addons from multiple repositories:
+  - [wowinterface.com](https://www.wowinterface.com/addons.php)
+  - [tuk.com](https://www.tukui.org/)
+- Bulk update
+- Remove addon
+- Retail and classic flavor support
+
+## Install from package
+
+Pre-built packages for Windows and macOS will eventually be found on the [Releases](https://github.com/casperstorm/ajour/releases) page.
+
+## Install from source
 
 ```sh
 cargo run
 ```
 
-If you want to wrap the executable into a OS-specific app bundle you can use the following:
+If you want to wrap the executable into a OS-specific app package you can use the following:
 
 ```sh
 # MacOS
@@ -28,14 +37,6 @@ make dmg
 # Windows
 cargo wix -I .\resources\windows\wix\main.wxs
 ```
-
-## Features
-
-- Windows and Mac support
-- [TukUI](https://www.tukui.org/) support
-- [wowinterface](wowinterface.com) support
-- Bulk update
-- Delete addon
 
 ## Configuration
 
@@ -54,12 +55,14 @@ On Windows, the config file should be located at:
 
 ## Screenshots
 
-![](./resources/screenshots/ajour-0.0.1.png)
+<img src="./resources/screenshots/ajour-0.0.1.png" width=200>
 
 ## Other addon managers
+
+[Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated list of other addon managers:
 
 https://ogri-la.github.io/wow-addon-managers/
 
 # License
 
-MIT
+Ajour is released under the [MIT License.](https://github.com/casperstorm/ajour/blob/master/LICENSE)
