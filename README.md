@@ -7,7 +7,7 @@ Ajour is an World of Warcraft addon manager written in Rust with a strong focus 
 
 Ajour currently supports macOS and Windows.
 
-## Features
+# Features
 
 - Addons from multiple repositories:
   - [wowinterface.com](https://www.wowinterface.com/addons.php)
@@ -16,11 +16,11 @@ Ajour currently supports macOS and Windows.
 - Remove addon
 - Retail and classic flavor support
 
-## Install from package
+# Install from package
 
 Pre-built packages for Windows and macOS will eventually be found on the [Releases](https://github.com/casperstorm/ajour/releases) page.
 
-## Install from source
+# Install from source
 
 ```sh
 cargo run
@@ -38,7 +38,7 @@ make dmg
 cargo wix -I .\resources\windows\wix\main.wxs
 ```
 
-## Configuration
+# Configuration
 
 You can find a template configuration file with documentation for all available fields [here](./ajour.yml).
 
@@ -47,21 +47,27 @@ Ajour doesn't create the config file for you, but it looks for one in the follow
 - `$HOME/.config/ajour/ajour.yml`
 - `$HOME/.ajour.yml`
 
-### Windows
+## Windows
 
 On Windows, the config file should be located at:
 
 - `%APPDATA%\ajour\ajour.yml`
 
-## Screenshots
+# Screenshots
 
 <img src="./resources/screenshots/ajour-0.0.1.png" width=200>
 
-## Other addon managers
+# Other addon managers
 
 [Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated list of other addon managers:
 
 https://ogri-la.github.io/wow-addon-managers/
+
+# Acknowledgement
+
+- [Rasmus Nielsen](https://rasmusnielsen.dk/) for the Ajour icon.
+- [mlablah](https://github.com/mlablah) for the architectural discussions.
+- [##rust and the whole community 🦀](https://webchat.freenode.net/?channels=##rust)
 
 # License
 
