@@ -11,8 +11,8 @@ use {
         tukui_api, wowinterface_api, Result,
     },
     iced::Command,
-    std::path::PathBuf,
     rayon::prelude::*,
+    std::path::PathBuf,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -104,33 +104,32 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Fetch packages for addons from the differen repositories.
             let tokens = ajour.config.tokens.clone();
             let flavor = ajour.config.wow.flavor.clone();
-            let pool = rayon::ThreadPoolBuilder::new().num_threads(8).build().unwrap();
+            let num_threads = ajour.config.num_threads;
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(num_threads)
+                .build()
+                .unwrap();
             ajour.addons = addons;
             pool.scope(|_| {
                 ajour.addons.par_iter_mut().for_each(|addon| {
-                    // Wowinterface.
-                    if let (Some(wowi_id), Some(wowi_token)) = (&addon.wowi_id, &tokens.wowinterface) {
+                    if let (Some(wowi_id), Some(wowi_token)) =
+                        (&addon.wowi_id, &tokens.wowinterface)
+                    {
                         let packages =
                             wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token);
                         if let Ok(packages) = packages {
                             addon.apply_wowi_packages(&packages);
                         }
-                    }
-
-                    // TukUI.
-                    if let Some(tukui_id) = &addon.tukui_id {
-                        let package = tukui_api::fetch_remote_package(&tukui_id[..]);
-                        if let Ok(package) = package {
-                            addon.apply_tukui_package(&package);
-                        }
-                    }
-
-                    // // Curse
-                    if let Some(curse_id) = &addon.curse_id {
+                    } else if let Some(curse_id) = &addon.curse_id {
                         let package = curse_api::fetch_remote_package(&curse_id);
                         if let Ok(package) = package {
                             addon.apply_curse_package(&package, &flavor);
                         };
+                    } else if let Some(tukui_id) = &addon.tukui_id {
+                        let package = tukui_api::fetch_remote_package(&tukui_id[..]);
+                        if let Ok(package) = package {
+                            addon.apply_tukui_package(&package);
+                        }
                     }
                 });
             });
@@ -188,8 +187,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::Error(error)
-        | Message::PatchAddons(Err(error)) => {
+        Message::Error(error) | Message::PatchAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
     }

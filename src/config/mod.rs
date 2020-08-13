@@ -18,6 +18,9 @@ pub struct Config {
 
     #[serde(default = "default_tokens")]
     pub tokens: Tokens,
+
+    #[serde(default = "default_num_threads")]
+    pub num_threads: usize,
 }
 
 fn default_wow() -> Wow {
@@ -26,6 +29,10 @@ fn default_wow() -> Wow {
 
 fn default_tokens() -> Tokens {
     Tokens::default()
+}
+
+fn default_num_threads() -> usize {
+    8
 }
 
 impl Config {
