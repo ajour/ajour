@@ -1,6 +1,7 @@
 use crate::{addon::Addon, Result};
 use async_std::{fs::File, prelude::*};
 use isahc::prelude::*;
+use isahc::{config::RedirectPolicy, prelude::*};
 use std::path::PathBuf;
 
 /// Generic request function.
