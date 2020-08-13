@@ -6,7 +6,6 @@ use std::path::PathBuf;
 
 /// Generic request function.
 pub fn request<T: ToString>(url: T, headers: Vec<(&str, &str)>) -> Result<Response<isahc::Body>> {
-    let mut r = Request::get(url.to_string()).timeout(std::time::Duration::from_secs(20));
     let mut r = Request::get(url.to_string())
         .redirect_policy(RedirectPolicy::Follow)
         .timeout(std::time::Duration::from_secs(20));
