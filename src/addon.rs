@@ -61,13 +61,16 @@ impl Addon {
     }
 
     /// TBA
-    pub fn apply_wowi_package(&mut self, package: &wowinterface_api::Package) {
-        let id = self.wowi_id.clone().unwrap();
-        self.remote_version = Some(package.version.clone());
-        self.remote_url = Some(crate::wowinterface_api::remote_url(&id));
+    pub fn apply_wowi_packages(&mut self, packages: &Vec<wowinterface_api::Package>) {
+        let wowi_id = self.wowi_id.clone().unwrap();
+        let package = packages.iter().find(|a| a.id == wowi_id);
+        if let Some(package) = package {
+            self.remote_version = Some(package.version.clone());
+            self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
 
-        if self.is_updatable() {
-            self.state = AddonState::Updatable;
+            if self.is_updatable() {
+                self.state = AddonState::Updatable;
+            }
         }
     }
 
@@ -89,9 +92,8 @@ impl Addon {
 
         if let Some(file) = file {
             self.remote_version = Some(file.display_name.clone());
+            self.remote_url = Some(file.download_url.clone());
         }
-        // self.remote_version = Some(package.version.clone());
-        // self.remote_url = Some(package.url.clone());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;

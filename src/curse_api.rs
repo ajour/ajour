@@ -26,7 +26,6 @@ pub struct File {
 pub fn fetch_remote_package(id: &u32) -> Result<Package> {
     let url = format!("{}/{}", API_ENDPOINT, id);
     let mut resp = request(&url, vec![])?;
-
     if resp.status().is_success() {
         let package: Package = resp.json()?;
         Ok(package)

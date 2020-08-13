@@ -2,7 +2,7 @@ use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
         addon::{Addon, AddonState},
-        config::{load_config, Tokens},
+        config::load_config,
         curse_api,
         error::ClientError,
         fs::{delete_addon, install_addon},
@@ -12,6 +12,7 @@ use {
     },
     iced::Command,
     std::path::PathBuf,
+    rayon::prelude::*,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -26,7 +27,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Some(dir) => {
                     return Ok(Command::perform(
                         read_addon_directory(dir),
-                        Message::ParsedAddons,
+                        Message::PatchAddons,
                     ))
                 }
                 None => {
@@ -38,13 +39,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Refresh) => {
             // Re-parse addons.
-            ajour.state = AjourState::Parsing;
+            ajour.state = AjourState::Loading;
             ajour.addons = Vec::new();
             return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
-            // TODO: maybe this clone can be avoided, since iter does not move the `Vec`
+            // TODO: maybe just rewrite and assume it goes well and remove addon.
             let addons = &ajour.addons.clone();
             let target_addon = addons.iter().find(|a| a.id == id).unwrap();
             let combined_dependencies = target_addon.combined_dependencies(addons);
@@ -58,10 +59,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let _ = delete_addon(addon);
             }
             // Refreshes the GUI by re-parsing the addon directory.
+            // TODO: This can be done prettier.
             let addon_directory = ajour.config.get_addon_directory().unwrap();
             return Ok(Command::perform(
                 read_addon_directory(addon_directory),
-                Message::ParsedAddons,
+                Message::PatchAddons,
             ));
         }
         Message::Interaction(Interaction::Update(id)) => {
@@ -98,23 +100,42 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
             return Ok(Command::batch(commands));
         }
-        Message::ParsedAddons(Ok(addons)) => {
-            // When addons has been parsed, we update state.
-            // Once that is done, we begin fetching patches for addons.
-            ajour.state = AjourState::FetchingDetails;
-
+        Message::PatchAddons(Ok(addons)) => {
+            // Fetch packages for addons from the differen repositories.
             let tokens = ajour.config.tokens.clone();
             let flavor = ajour.config.wow.flavor.clone();
-            return Ok(Command::perform(
-                get_addon_details(addons, flavor, tokens),
-                Message::PatchedAddons,
-            ));
-        }
-        Message::PatchedAddons(Ok(addons)) => {
-            // When addons has been patched, we update state.
-            ajour.state = AjourState::Idle;
+            let pool = rayon::ThreadPoolBuilder::new().num_threads(8).build().unwrap();
             ajour.addons = addons;
+            pool.scope(|_| {
+                ajour.addons.par_iter_mut().for_each(|addon| {
+                    // Wowinterface.
+                    if let (Some(wowi_id), Some(wowi_token)) = (&addon.wowi_id, &tokens.wowinterface) {
+                        let packages =
+                            wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token);
+                        if let Ok(packages) = packages {
+                            addon.apply_wowi_packages(&packages);
+                        }
+                    }
+
+                    // TukUI.
+                    if let Some(tukui_id) = &addon.tukui_id {
+                        let package = tukui_api::fetch_remote_package(&tukui_id[..]);
+                        if let Ok(package) = package {
+                            addon.apply_tukui_package(&package);
+                        }
+                    }
+
+                    // // Curse
+                    if let Some(curse_id) = &addon.curse_id {
+                        let package = curse_api::fetch_remote_package(&curse_id);
+                        if let Ok(package) = package {
+                            addon.apply_curse_package(&package, &flavor);
+                        };
+                    }
+                });
+            });
             ajour.addons.sort();
+            ajour.state = AjourState::Idle;
         }
         Message::DownloadedAddon((id, result)) => {
             // When an addon has been successfully downloaded we begin to
@@ -168,49 +189,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Error(error)
-        | Message::ParsedAddons(Err(error))
-        | Message::PatchedAddons(Err(error)) => {
+        | Message::PatchAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
     }
 
     Ok(Command::none())
-}
-
-/// Function to fetch remote data (patches) from the different repositories:
-/// - Warcraftinterface
-/// - TukUI
-async fn get_addon_details(
-    mut addons: Vec<Addon>,
-    flavor: String,
-    tokens: Tokens,
-) -> Result<Vec<Addon>> {
-    for addon in &mut addons {
-        // Wowinterface.
-        // if let (Some(wowi_id), Some(wowi_token)) = (&addon.wowi_id, &tokens.wowinterface) {
-        //     let packages =
-        //         wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token)?;
-        //     let package = packages.iter().find(|a| &a.id == wowi_id);
-        //     if let Some(package) = package {
-        //         addon.apply_wowi_package(package);
-        //     }
-        // }
-
-        // // TukUI.
-        // if let Some(tukui_id) = &addon.tukui_id {
-        //     let package = tukui_api::fetch_remote_package(&tukui_id[..])?;
-        //     addon.apply_tukui_package(&package);
-        // }
-
-        // Curse.
-        if let Some(curse_id) = &addon.curse_id {
-            let package = curse_api::fetch_remote_package(curse_id)?;
-            addon.apply_curse_package(&package, &flavor);
-        }
-    }
-
-    // Once the patches has been applied, we return the addons.
-    Ok(addons)
 }
 
 /// Downloads the newest version of the addon.
