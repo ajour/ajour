@@ -14,3 +14,11 @@
 #   API token for warcraftinterface.com
 #   Token can be generated here: https://www.wowinterface.com/downloads/filecpl.php?action=apitokens
 #  wowinterface: 42
+
+# Number of threads to be used in threadpools.
+# If you specify a non-zero number of threads
+# then the resulting thread-pools are guaranteed to
+# start at most this number of threads.
+# If `num_threads` is 0, then it will be set automatically.
+#
+#num_threads: 0

@@ -14,8 +14,7 @@ use iced::{
 #[derive(Debug)]
 pub enum AjourState {
     Idle,
-    Parsing,
-    FetchingDetails,
+    Loading,
     Error(ClientError),
 }
 
@@ -30,8 +29,7 @@ pub enum Interaction {
 #[derive(Debug)]
 pub enum Message {
     Parse(Config),
-    ParsedAddons(Result<Vec<Addon>>),
-    PatchedAddons(Result<Vec<Addon>>),
+    PatchAddons(Result<Vec<Addon>>),
     DownloadedAddon((String, Result<()>)),
     UnpackedAddon((String, Result<()>)),
     Interaction(Interaction),
@@ -50,7 +48,7 @@ pub struct Ajour {
 impl Default for Ajour {
     fn default() -> Self {
         Self {
-            state: AjourState::Parsing,
+            state: AjourState::Loading,
             update_all_button_state: Default::default(),
             refresh_button_state: Default::default(),
             addons_scrollable_state: Default::default(),
@@ -248,8 +246,7 @@ impl Application for Ajour {
         // Displays text depending on the state of the app.
         let status_text = match &self.state {
             AjourState::Idle => Text::new(format!("Loaded {:?} addons", addon_count)).size(12),
-            AjourState::Parsing => Text::new("Parsing local addons").size(12),
-            AjourState::FetchingDetails => Text::new("Fetching data from repositories").size(12),
+            AjourState::Loading => Text::new("Loading addons").size(12),
             AjourState::Error(e) => Text::new(e.to_string()).size(12),
         };
         let status_container = Container::new(status_text)

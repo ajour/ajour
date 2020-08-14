@@ -8,6 +8,7 @@ pub struct Wow {
     #[serde(default = "default_directory")]
     pub directory: Option<PathBuf>,
 
+    // TODO: Consider changing this to an enum.
     #[serde(default = "default_flavor")]
     pub flavor: String,
 }

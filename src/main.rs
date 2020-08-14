@@ -5,6 +5,7 @@
 
 mod addon;
 mod config;
+mod curse_api;
 mod error;
 mod fs;
 mod gui;

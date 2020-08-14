@@ -39,7 +39,6 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>>
     }
 
     // Link all dependencies bidirectional
-    // TODO: naming
     link_dependencies_bidirectional(&mut addons);
 
     Ok(addons)
@@ -104,6 +103,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
     let mut dependencies: Vec<String> = Vec::new();
     let mut wowi_id: Option<String> = None;
     let mut tukui_id: Option<String> = None;
+    let mut curse_id: Option<u32> = None;
 
     // It is an anti-pattern to compile the same regular expression in a loop,
     // which is why they are created here.
@@ -141,6 +141,13 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
                 "X-Tukui-ProjectID" => {
                     tukui_id = Some(cap["value"].to_string());
                 }
+                // String - Addon identifier for Curse API.
+                "X-Curse-Project-ID" => {
+                    // Santize the id, so we only get a `u32`.
+                    if let Ok(id) = cap["value"].to_string().parse::<u32>() {
+                        curse_id = Some(id)
+                    }
+                }
                 _ => (),
             }
         }
@@ -152,6 +159,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
         path,
         wowi_id,
         tukui_id,
+        curse_id,
         dependencies,
     ))
 }

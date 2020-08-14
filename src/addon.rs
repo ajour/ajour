@@ -1,4 +1,4 @@
-use crate::{tukui_api, wowinterface_api};
+use crate::{curse_api, tukui_api, wowinterface_api};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -23,6 +23,7 @@ pub struct Addon {
     pub state: AddonState,
     pub wowi_id: Option<String>,
     pub tukui_id: Option<String>,
+    pub curse_id: Option<u32>,
 
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
@@ -36,6 +37,7 @@ impl Addon {
         path: PathBuf,
         wowi_id: Option<String>,
         tukui_id: Option<String>,
+        curse_id: Option<u32>,
         dependencies: Vec<String>,
     ) -> Self {
         let os_title = path.file_name().unwrap();
@@ -52,29 +54,88 @@ impl Addon {
             state: AddonState::Ajour(None),
             wowi_id,
             tukui_id,
+            curse_id,
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         }
     }
 
-    /// TBA
-    pub fn apply_wowi_package(&mut self, package: &wowinterface_api::Package) {
-        let id = self.wowi_id.clone().unwrap();
-        self.remote_version = Some(package.version.clone());
-        self.remote_url = Some(crate::wowinterface_api::remote_url(&id));
+    /// Packages from Wowinterface.
+    ///
+    /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
+    /// It then updates self, with the information from that package.
+    pub fn apply_wowi_packages(&mut self, packages: &Vec<wowinterface_api::Package>) {
+        let wowi_id = self.wowi_id.clone().unwrap();
+        let package = packages.iter().find(|a| a.id == wowi_id);
+        if let Some(package) = package {
+            self.remote_version = Some(package.version.clone());
+            self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
 
-        if self.is_updatable() {
-            self.state = AddonState::Updatable;
+            if self.is_updatable() {
+                self.state = AddonState::Updatable;
+            }
         }
     }
 
-    /// TBA
+    /// Package from Tukui.
+    ///
+    /// This function takes a `Package` and updates self with the information.
     pub fn apply_tukui_package(&mut self, package: &tukui_api::Package) {
         self.remote_version = Some(package.version.clone());
         self.remote_url = Some(package.url.clone());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;
+        }
+    }
+
+    /// Package from Curse.
+    ///
+    /// This function takes a `Package` and updates self with the information.
+    pub fn apply_curse_package(&mut self, package: &curse_api::Package, flavor: &str) {
+        let file = package
+            .latest_files
+            .iter()
+            .find(|f| f.release_type == 1 && f.game_version_flavor == format!("wow_{}", flavor));
+
+        if let Some(file) = file {
+            self.remote_version = Some(file.display_name.clone());
+            self.remote_url = Some(file.download_url.clone());
+        }
+
+        if self.is_updatable() {
+            self.state = AddonState::Updatable;
+        }
+    }
+
+    /// Packages from Curse.
+    ///
+    /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
+    /// This is a slighty more complicated function, because it comes from a search
+    /// result, meaning none of the packages might match.
+    ///
+    /// The following is being done to check if we have a match:
+    /// 1. Loops each packages, and find the `File` which is stable and has right flavor.
+    /// 2. Then we loop each `Module` in the `File` and match filename with `self`.
+    /// 3. If tf we find a `Module` from step 2, we know we can update `self`
+    pub fn apply_curse_packages(&mut self, packages: &Vec<curse_api::Package>, flavor: &str) {
+        for package in packages {
+            let file = package.latest_files.iter().find(|f| {
+                f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
+                    && f.is_alternate == false
+                    && f.game_version_flavor == format!("wow_{}", flavor)
+            });
+            if let Some(file) = file {
+                let module = file.modules.iter().find(|m| m.foldername == self.id);
+                if let Some(_) = module {
+                    self.remote_version = Some(file.display_name.clone());
+                    self.remote_url = Some(file.download_url.clone());
+
+                    if self.is_updatable() {
+                        self.state = AddonState::Updatable;
+                    }
+                }
+            }
         }
     }
 
