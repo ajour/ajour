@@ -39,7 +39,6 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>>
     }
 
     // Link all dependencies bidirectional
-    // TODO: naming
     link_dependencies_bidirectional(&mut addons);
 
     Ok(addons)

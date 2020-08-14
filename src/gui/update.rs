@@ -110,8 +110,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .build()
                 .unwrap();
             ajour.addons = addons;
+
             pool.scope(|_| {
                 ajour.addons.par_iter_mut().for_each(|addon| {
+                    // Currently hardcoding the priority:
+                    //
+                    // Wowinterface
+                    // Curse
+                    // Tukui
+                    // Curse search.
                     if let (Some(wowi_id), Some(wowi_token)) =
                         (&addon.wowi_id, &tokens.wowinterface)
                     {
@@ -129,6 +136,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         let package = tukui_api::fetch_remote_package(&tukui_id[..]);
                         if let Ok(package) = package {
                             addon.apply_tukui_package(&package);
+                        }
+                    } else {
+                        let packages = curse_api::fetch_remote_packages(&addon.title);
+                        if let Ok(packages) = packages {
+                            addon.apply_curse_packages(&packages, &flavor);
                         }
                     }
                 });
