@@ -1,7 +1,7 @@
 use crate::{error::ClientError, network::request, Result};
 use isahc::prelude::*;
-use serde_derive::Deserialize;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+use serde_derive::Deserialize;
 
 const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2/addon";
 

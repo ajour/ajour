@@ -1,4 +1,4 @@
-use crate::{curse_api, tukui_api, wowinterface_api};
+use crate::{curse_api, tukui_api, utility::strip_non_digits, wowinterface_api};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -130,7 +130,6 @@ impl Addon {
                 if let Some(_) = module {
                     self.remote_version = Some(file.display_name.clone());
                     self.remote_url = Some(file.download_url.clone());
-
                     if self.is_updatable() {
                         self.state = AddonState::Updatable;
                     }
@@ -198,13 +197,26 @@ impl Addon {
     }
 
     /// Check if the `Addon` is updatable.
-    /// This is done by a simple comparison, which means it will also flag
-    /// the addon as updatable if the `remote_version` is LOWER than
-    /// `version`.
+    /// We strip both version for non digits, and then
+    /// checks if `remote_version` is a sub_slice of `local_version`.
+    ///
+    /// Eg:
+    /// local_version: 4.10.5 => 4105.
+    /// remote_version: Rematch_4_10_5.zip => 4105.
+    /// Since `4105` is a sub_slice of `4105` it's not updatable.
     fn is_updatable(&self) -> bool {
-        match self.remote_version {
-            Some(_) => self.version != self.remote_version,
-            None => false,
+        match (&self.remote_version, &self.version) {
+            (Some(rv), Some(lv)) => {
+                let srv = strip_non_digits(&rv);
+                let slv = strip_non_digits(&lv);
+
+                if let (Some(srv), Some(slv)) = (srv, slv) {
+                    return !slv.contains(&srv);
+                }
+
+                false
+            }
+            _ => false,
         }
     }
 }

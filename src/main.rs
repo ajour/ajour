@@ -12,6 +12,7 @@ mod gui;
 mod network;
 mod toc;
 mod tukui_api;
+mod utility;
 mod wowinterface_api;
 
 use crate::error::ClientError;
