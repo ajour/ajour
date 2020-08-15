@@ -107,8 +107,15 @@ impl Application for Ajour {
         .style(style::DefaultButton)
         .into();
 
+        let version_text = Text::new(env!("CARGO_PKG_VERSION")).size(12);
+        let version_container = Container::new(version_text)
+            .center_y()
+            .padding(5)
+            .style(style::StatusTextContainer);
+
         controls = controls.push(update_all_button.map(Message::Interaction));
         controls = controls.push(refresh_button.map(Message::Interaction));
+        controls = controls.push(version_container);
 
         // Addons
         //
