@@ -55,7 +55,7 @@ On Windows, the config file should be located at:
 
 # Screenshots
 
-<img src="./resources/screenshots/ajour-0.0.1.png" width=200>
+<img src="./resources/screenshots/ajour-0.1.0.png" width=200>
 
 # Other addon managers
 
