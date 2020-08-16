@@ -3,8 +3,9 @@ mod update;
 use crate::{
     addon::{Addon, AddonState},
     config::{load_config, Config},
+    curse_api,
     error::ClientError,
-    Result,
+    tukui_api, wowinterface_api, Result,
 };
 use iced::{
     button, scrollable, Application, Button, Column, Command, Container, Element,
@@ -32,6 +33,10 @@ pub enum Message {
     PatchAddons(Result<Vec<Addon>>),
     DownloadedAddon((String, Result<()>)),
     UnpackedAddon((String, Result<()>)),
+    CursePackage((String, Result<curse_api::Package>)),
+    CursePackages((String, Result<Vec<curse_api::Package>>)),
+    TukuiPackage((String, Result<tukui_api::Package>)),
+    WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),
     Interaction(Interaction),
     Error(ClientError),
 }

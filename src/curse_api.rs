@@ -1,4 +1,4 @@
-use crate::{error::ClientError, network::request, Result};
+use crate::{error::ClientError, network::request_async, Result};
 use isahc::prelude::*;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_derive::Deserialize;
@@ -32,14 +32,13 @@ pub struct Module {
 }
 
 /// Function to fetch a remote addon package for id.
-pub fn fetch_remote_package(id: &u32) -> Result<Package> {
+pub async fn fetch_remote_package(id: &u32) -> Result<Package> {
     let url = format!("{}/{}", API_ENDPOINT, id);
-    let mut resp = request(&url, vec![])?;
+    let mut resp = request_async(&url, vec![]).await?;
     if resp.status().is_success() {
         let package: Package = resp.json()?;
         Ok(package)
     } else {
-        println!("resp.text()?: {:?}", resp.text()?);
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",
             resp.text()?
@@ -48,21 +47,21 @@ pub fn fetch_remote_package(id: &u32) -> Result<Package> {
 }
 
 /// Function to fetch a remote addon packages for a search string.
-pub fn fetch_remote_packages(search_string: &str) -> Result<Vec<Package>> {
+pub async fn fetch_remote_packages(search_string: &str) -> Result<Vec<Package>> {
     let game_id = 1; // wow
-    let page_size = 10; // capping results
+    let page_size = 20; // capping results
     let search_string = utf8_percent_encode(search_string, NON_ALPHANUMERIC).to_string();
     let url = format!(
         "{}/search?gameId={}&pageSize={}&searchFilter={}",
         API_ENDPOINT, game_id, page_size, search_string
     );
 
-    let mut resp = request(&url, vec![])?;
+    let mut resp = request_async(&url, vec![]).await?;
     if resp.status().is_success() {
         let packages: Vec<Package> = resp.json()?;
         Ok(packages)
     } else {
-        println!("resp.text()?: {:?}", resp.text()?);
+        println!("ERROR!!! {:?}", search_string);
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",
             resp.text()?

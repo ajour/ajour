@@ -1,4 +1,4 @@
-use crate::{error::ClientError, network::request, Result};
+use crate::{error::ClientError, network::request_async, Result};
 use isahc::prelude::*;
 use serde_derive::Deserialize;
 
@@ -15,10 +15,10 @@ pub struct Package {
 /// Function to fetch remote addon packages which contains
 /// information about the addon on the repository.
 /// Note: More packages can be returned for a single `Addon`
-pub fn fetch_remote_packages(id: &str, token: &str) -> Result<Vec<Package>> {
+pub async fn fetch_remote_packages(id: &str, token: &str) -> Result<Vec<Package>> {
     let url = format!("{}/details/{}.json", API_ENDPOINT, id);
     let headers = vec![("x-api-token", token)];
-    let mut resp = request(url, headers)?;
+    let mut resp = request_async(url, headers).await?;
 
     if resp.status().is_success() {
         let addon_details: Vec<Package> = resp.json()?;
