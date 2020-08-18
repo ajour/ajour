@@ -15,7 +15,6 @@ use iced::{
 #[derive(Debug)]
 pub enum AjourState {
     Idle,
-    Loading,
     Error(ClientError),
 }
 
@@ -53,7 +52,7 @@ pub struct Ajour {
 impl Default for Ajour {
     fn default() -> Self {
         Self {
-            state: AjourState::Loading,
+            state: AjourState::Idle,
             update_all_button_state: Default::default(),
             refresh_button_state: Default::default(),
             addons_scrollable_state: Default::default(),
@@ -87,16 +86,16 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-        // General controls
-        //
+        let default_font_size = 14;
+
         // A row contain general controls.
-        let mut controls = Row::new().spacing(1);
+        let mut controls = Row::new().spacing(1).height(Length::Units(35));
 
         let update_all_button: Element<Interaction> = Button::new(
             &mut self.update_all_button_state,
             Text::new("Update All")
                 .horizontal_alignment(HorizontalAlignment::Center)
-                .size(12),
+                .size(default_font_size),
         )
         .on_press(Interaction::UpdateAll)
         .style(style::DefaultButton)
@@ -106,30 +105,30 @@ impl Application for Ajour {
             &mut self.refresh_button_state,
             Text::new("Refresh")
                 .horizontal_alignment(HorizontalAlignment::Center)
-                .size(12),
+                .size(default_font_size),
         )
         .on_press(Interaction::Refresh)
         .style(style::DefaultButton)
         .into();
 
-        let version_text = Text::new(env!("CARGO_PKG_VERSION")).size(12);
-        let version_container = Container::new(version_text)
+        // Displays text depending on the state of the app.
+        let status_text = match &self.state {
+                AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(default_font_size),
+                AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
+        };
+        let status_container = Container::new(status_text)
             .center_y()
             .padding(5)
             .style(style::StatusTextContainer);
 
-        controls = controls.push(update_all_button.map(Message::Interaction));
-        controls = controls.push(refresh_button.map(Message::Interaction));
-        controls = controls.push(version_container);
+        controls = controls
+            .push(update_all_button.map(Message::Interaction))
+            .push(refresh_button.map(Message::Interaction))
+            .push(status_container);
 
-        // Addons
-        //
         // A scrollable list containing rows.
         // Each row holds information about a single addon.
         let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
-
-        // Primitive way to count how many addons we will show.
-        let mut addon_count = 0;
 
         // Loops addons for GUI.
         for addon in &mut self.addons {
@@ -141,9 +140,6 @@ impl Application for Ajour {
                 continue;
             }
 
-            // Increment addon count.
-            addon_count += 1;
-
             let title = addon.title.clone();
             let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
             let remote_version = addon
@@ -151,7 +147,7 @@ impl Application for Ajour {
                 .clone()
                 .unwrap_or_else(|| String::from("-"));
 
-            let text = Text::new(title).size(12);
+            let text = Text::new(title).size(default_font_size);
             let text_container = Container::new(text)
                 .height(default_height)
                 .width(Length::FillPortion(1))
@@ -159,7 +155,7 @@ impl Application for Ajour {
                 .padding(5)
                 .style(style::AddonTextContainer);
 
-            let installed_version = Text::new(version).size(12);
+            let installed_version = Text::new(version).size(default_font_size);
             let installed_version_container = Container::new(installed_version)
                 .height(default_height)
                 .width(Length::Units(125))
@@ -167,7 +163,7 @@ impl Application for Ajour {
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
-            let remote_version = Text::new(remote_version).size(12);
+            let remote_version = Text::new(remote_version).size(default_font_size);
             let remote_version_container = Container::new(remote_version)
                 .height(default_height)
                 .width(Length::Units(125))
@@ -178,7 +174,7 @@ impl Application for Ajour {
             let update_button_width = Length::Units(75);
             let update_button_container = match &addon.state {
                 AddonState::Ajour(string) => Container::new(
-                    Text::new(string.clone().unwrap_or_else(|| "".to_string())).size(12),
+                    Text::new(string.clone().unwrap_or_else(|| "".to_string())).size(default_font_size),
                 )
                 .height(default_height)
                 .width(update_button_width)
@@ -192,7 +188,7 @@ impl Application for Ajour {
                         &mut addon.update_btn_state,
                         Text::new("Update")
                             .horizontal_alignment(HorizontalAlignment::Center)
-                            .size(12),
+                            .size(default_font_size),
                     )
                     .style(style::DefaultButton)
                     .on_press(Interaction::Update(id))
@@ -206,14 +202,14 @@ impl Application for Ajour {
                         .padding(5)
                         .style(style::AddonDescriptionContainer)
                 }
-                AddonState::Downloading => Container::new(Text::new("Downloading").size(12))
+                AddonState::Downloading => Container::new(Text::new("Downloading").size(default_font_size))
                     .height(default_height)
                     .width(update_button_width)
                     .center_y()
                     .center_x()
                     .padding(5)
                     .style(style::AddonDescriptionContainer),
-                AddonState::Unpacking => Container::new(Text::new("Unpacking").size(12))
+                AddonState::Unpacking => Container::new(Text::new("Unpacking").size(default_font_size))
                     .height(default_height)
                     .width(update_button_width)
                     .center_y()
@@ -227,7 +223,7 @@ impl Application for Ajour {
                 Text::new("Delete")
                     .vertical_alignment(VerticalAlignment::Center)
                     .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(12),
+                    .size(default_font_size),
             )
             .on_press(Interaction::Delete(addon.id.clone()))
             .style(style::DeleteButton)
@@ -253,43 +249,11 @@ impl Application for Ajour {
             addons_scrollable = addons_scrollable.push(cell);
         }
 
-        // Status text
-        //
-        // Displays text depending on the state of the app.
-        let status_text = match &self.state {
-            AjourState::Idle => Text::new(format!("Loaded {:?} addons", addon_count)).size(12),
-            AjourState::Loading => Text::new("Loading addons").size(12),
-            AjourState::Error(e) => Text::new(e.to_string()).size(12),
-        };
-        let status_container = Container::new(status_text)
-            .height(Length::Units(35))
-            .width(Length::FillPortion(1))
-            .center_y()
-            .padding(5)
-            .style(style::StatusTextContainer);
-
-        // A little "hack" to make a spacer
-        let spacer_1 = Container::new(Text::new(""))
-            .height(Length::Units(10))
-            .width(Length::Fill);
-
-        // A little "hack" to make a spacer
-        let spacer_2 = Container::new(Text::new(""))
-            .height(Length::Units(10))
-            .width(Length::Fill);
-
-        // Column
-        //
         // This column gathers all the other elements together.
         let content = Column::new()
             .push(controls)
-            .push(spacer_1)
-            .push(status_container)
-            .push(spacer_2)
             .push(addons_scrollable);
 
-        // Container
-        //
         // This container wraps the whole content.
         Container::new(content)
             .width(Length::Fill)

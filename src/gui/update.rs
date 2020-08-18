@@ -38,7 +38,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Refresh) => {
             // Re-parse addons.
-            ajour.state = AjourState::Loading;
             ajour.addons = Vec::new();
             return Ok(Command::perform(load_config(), Message::Parse));
         }
@@ -101,6 +100,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::PatchAddons(Ok(addons)) => {
             ajour.addons = addons;
+            ajour.addons.sort();
 
             let mut commands = Vec::<Command<Message>>::new();
             let addons = ajour.addons.clone();
