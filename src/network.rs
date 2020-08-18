@@ -11,7 +11,7 @@ pub async fn request_async<T: ToString>(
 ) -> Result<Response<isahc::Body>> {
     let mut client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
-        .timeout(std::time::Duration::from_secs(60));
+        .timeout(std::time::Duration::from_secs(20));
 
     for (name, value) in headers {
         client = client.default_header(name, value);

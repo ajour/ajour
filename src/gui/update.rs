@@ -125,8 +125,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             Message::CursePackage,
                         ))
                     } else {
+                        let retries = 4;
                         commands.push(Command::perform(
-                            fetch_curse_packages(addon),
+                            fetch_curse_packages(addon, retries),
                             Message::CursePackages,
                         ))
                     }
@@ -145,14 +146,35 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 addon.apply_curse_package(&package, &ajour.config.wow.flavor);
             }
         }
-        Message::CursePackages((id, result)) => {
+        Message::CursePackages((id, retries, result)) => {
+            let addon = ajour
+                .addons
+                .iter_mut()
+                .find(|a| a.id == id)
+                .expect("Expected addon for id to exist.");
+
             if let Ok(packages) = result {
-                let addon = ajour
-                    .addons
-                    .iter_mut()
-                    .find(|a| a.id == id)
-                    .expect("Expected addon for id to exist.");
                 addon.apply_curse_packages(&packages, &ajour.config.wow.flavor);
+            } else {
+                // FIXME: This could be improved quite a lot.
+                // Idea is that Curse API returns `NetworkError(CouldntResolveHost)` quite often,
+                // if called to quickly. So i've implemented a very basic retry functionallity
+                // which solves the problem for now.
+                let error = result.err().unwrap();
+                match error {
+                    ClientError::NetworkError(err) => match err {
+                        isahc::Error::CouldntResolveHost => {
+                            if retries > 0 {
+                                return Ok(Command::perform(
+                                    fetch_curse_packages(addon.clone(), retries),
+                                    Message::CursePackages,
+                                ));
+                            }
+                        }
+                        _ => (),
+                    },
+                    _ => (),
+                }
             }
         }
         Message::TukuiPackage((id, result)) => {
@@ -220,7 +242,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.version = addon.remote_version.clone();
                 }
                 Err(err) => {
-                    // TODO: Handle when addon fails to unpack.
                     ajour.state = AjourState::Error(err);
                     addon.state = AddonState::Ajour(Some("Error!".to_owned()));
                 }
@@ -244,9 +265,13 @@ async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package
     )
 }
 
-async fn fetch_curse_packages(addon: Addon) -> (String, Result<Vec<curse_api::Package>>) {
+async fn fetch_curse_packages(
+    addon: Addon,
+    retries: u32,
+) -> (String, u32, Result<Vec<curse_api::Package>>) {
     (
         addon.id.clone(),
+        retries - 1,
         curse_api::fetch_remote_packages(&addon.title).await,
     )
 }

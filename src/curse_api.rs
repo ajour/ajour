@@ -61,7 +61,6 @@ pub async fn fetch_remote_packages(search_string: &str) -> Result<Vec<Package>> 
         let packages: Vec<Package> = resp.json()?;
         Ok(packages)
     } else {
-        println!("ERROR!!! {:?}", search_string);
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",
             resp.text()?

@@ -33,7 +33,7 @@ pub enum Message {
     DownloadedAddon((String, Result<()>)),
     UnpackedAddon((String, Result<()>)),
     CursePackage((String, Result<curse_api::Package>)),
-    CursePackages((String, Result<Vec<curse_api::Package>>)),
+    CursePackages((String, u32, Result<Vec<curse_api::Package>>)),
     TukuiPackage((String, Result<tukui_api::Package>)),
     WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),
     Interaction(Interaction),
@@ -113,8 +113,8 @@ impl Application for Ajour {
 
         // Displays text depending on the state of the app.
         let status_text = match &self.state {
-                AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(default_font_size),
-                AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
+            AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(default_font_size),
+            AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
         };
         let status_container = Container::new(status_text)
             .center_y()
@@ -174,7 +174,8 @@ impl Application for Ajour {
             let update_button_width = Length::Units(75);
             let update_button_container = match &addon.state {
                 AddonState::Ajour(string) => Container::new(
-                    Text::new(string.clone().unwrap_or_else(|| "".to_string())).size(default_font_size),
+                    Text::new(string.clone().unwrap_or_else(|| "".to_string()))
+                        .size(default_font_size),
                 )
                 .height(default_height)
                 .width(update_button_width)
@@ -202,20 +203,24 @@ impl Application for Ajour {
                         .padding(5)
                         .style(style::AddonDescriptionContainer)
                 }
-                AddonState::Downloading => Container::new(Text::new("Downloading").size(default_font_size))
-                    .height(default_height)
-                    .width(update_button_width)
-                    .center_y()
-                    .center_x()
-                    .padding(5)
-                    .style(style::AddonDescriptionContainer),
-                AddonState::Unpacking => Container::new(Text::new("Unpacking").size(default_font_size))
-                    .height(default_height)
-                    .width(update_button_width)
-                    .center_y()
-                    .center_x()
-                    .padding(5)
-                    .style(style::AddonDescriptionContainer),
+                AddonState::Downloading => {
+                    Container::new(Text::new("Downloading").size(default_font_size))
+                        .height(default_height)
+                        .width(update_button_width)
+                        .center_y()
+                        .center_x()
+                        .padding(5)
+                        .style(style::AddonDescriptionContainer)
+                }
+                AddonState::Unpacking => {
+                    Container::new(Text::new("Unpacking").size(default_font_size))
+                        .height(default_height)
+                        .width(update_button_width)
+                        .center_y()
+                        .center_x()
+                        .padding(5)
+                        .style(style::AddonDescriptionContainer)
+                }
             };
 
             let delete_button: Element<Interaction> = Button::new(
@@ -250,9 +255,7 @@ impl Application for Ajour {
         }
 
         // This column gathers all the other elements together.
-        let content = Column::new()
-            .push(controls)
-            .push(addons_scrollable);
+        let content = Column::new().push(controls).push(addons_scrollable);
 
         // This container wraps the whole content.
         Container::new(content)
