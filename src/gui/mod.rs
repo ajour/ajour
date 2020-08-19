@@ -127,8 +127,7 @@ impl Application for Ajour {
             .padding(5)
             .style(style::StatusTextContainer);
 
-        let spacer = Container::new(Text::new(""))
-            .width(Length::Units(2));
+        let spacer = Container::new(Text::new("")).width(Length::Units(2));
 
         controls = controls
             .push(update_all_button.map(Message::Interaction))

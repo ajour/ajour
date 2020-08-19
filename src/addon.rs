@@ -148,13 +148,13 @@ impl Addon {
             Some(_) => {
                 for dependency in &self.dependencies {
                     if self.id.contains(dependency) {
-                       return false;
+                        return false;
                     }
                 }
 
                 true
-            },
-            None => false
+            }
+            None => false,
         }
     }
 
