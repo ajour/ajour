@@ -22,7 +22,7 @@ impl ColorPalette {
             ColorPalette::Surface => Color::from_rgb(0.12, 0.12, 0.12),
             ColorPalette::OnSurface => Color::from_rgb(0.88, 0.88, 0.88),
             ColorPalette::Background => Color::from_rgb(0.07, 0.07, 0.07),
-            ColorPalette::Error => Color::from_rgb(0.81, 0.4, 0.47),
+            ColorPalette::Error => Color::from_rgb(0.94, 0.61, 0.63),
             ColorPalette::OnError => Color::from_rgb(0.68, 0.0, 0.13),
         }
     }

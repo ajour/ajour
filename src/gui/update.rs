@@ -11,7 +11,6 @@ use {
         tukui_api, wowinterface_api, Result,
     },
     iced::Command,
-    rayon::prelude::*,
     std::path::PathBuf,
 };
 
@@ -39,7 +38,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Refresh) => {
             // Re-parse addons.
-            ajour.state = AjourState::Loading;
             ajour.addons = Vec::new();
             return Ok(Command::perform(load_config(), Message::Parse));
         }
@@ -101,52 +99,99 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::batch(commands));
         }
         Message::PatchAddons(Ok(addons)) => {
-            // Fetch packages for addons from the differen repositories.
-            let tokens = ajour.config.tokens.clone();
-            let flavor = ajour.config.wow.flavor.clone();
-            let num_threads = ajour.config.num_threads;
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(num_threads)
-                .build()
-                .unwrap();
             ajour.addons = addons;
-
-            pool.scope(|_| {
-                ajour.addons.par_iter_mut().for_each(|addon| {
-                    // Currently hardcoding the priority:
-                    //
-                    // Wowinterface
-                    // Curse
-                    // Tukui
-                    // Curse search.
-                    if let (Some(wowi_id), Some(wowi_token)) =
-                        (&addon.wowi_id, &tokens.wowinterface)
-                    {
-                        let packages =
-                            wowinterface_api::fetch_remote_packages(&wowi_id[..], &wowi_token);
-                        if let Ok(packages) = packages {
-                            addon.apply_wowi_packages(&packages);
-                        }
-                    } else if let Some(curse_id) = &addon.curse_id {
-                        let package = curse_api::fetch_remote_package(&curse_id);
-                        if let Ok(package) = package {
-                            addon.apply_curse_package(&package, &flavor);
-                        };
-                    } else if let Some(tukui_id) = &addon.tukui_id {
-                        let package = tukui_api::fetch_remote_package(&tukui_id[..]);
-                        if let Ok(package) = package {
-                            addon.apply_tukui_package(&package);
-                        }
-                    } else {
-                        let packages = curse_api::fetch_remote_packages(&addon.title);
-                        if let Ok(packages) = packages {
-                            addon.apply_curse_packages(&packages, &flavor);
-                        }
-                    }
-                });
-            });
             ajour.addons.sort();
-            ajour.state = AjourState::Idle;
+
+            let mut commands = Vec::<Command<Message>>::new();
+            let addons = ajour.addons.clone();
+            for addon in addons {
+                // TODO: filter this instead of this if.
+                if addon.is_parent() {
+                    if let (Some(_), Some(token)) =
+                        (&addon.wowi_id, &ajour.config.tokens.wowinterface)
+                    {
+                        commands.push(Command::perform(
+                            fetch_wowinterface_packages(addon, token.to_string()),
+                            Message::WowinterfacePackages,
+                        ))
+                    } else if addon.tukui_id.is_some() {
+                        commands.push(Command::perform(
+                            fetch_tukui_package(addon),
+                            Message::TukuiPackage,
+                        ))
+                    } else if addon.curse_id.is_some() {
+                        commands.push(Command::perform(
+                            fetch_curse_package(addon),
+                            Message::CursePackage,
+                        ))
+                    } else {
+                        let retries = 4;
+                        commands.push(Command::perform(
+                            fetch_curse_packages(addon, retries),
+                            Message::CursePackages,
+                        ))
+                    }
+                }
+            }
+
+            return Ok(Command::batch(commands));
+        }
+        Message::CursePackage((id, result)) => {
+            if let Ok(package) = result {
+                let addon = ajour
+                    .addons
+                    .iter_mut()
+                    .find(|a| a.id == id)
+                    .expect("Expected addon for id to exist.");
+                addon.apply_curse_package(&package, &ajour.config.wow.flavor);
+            }
+        }
+        Message::CursePackages((id, retries, result)) => {
+            let addon = ajour
+                .addons
+                .iter_mut()
+                .find(|a| a.id == id)
+                .expect("Expected addon for id to exist.");
+
+            if let Ok(packages) = result {
+                addon.apply_curse_packages(&packages, &ajour.config.wow.flavor);
+            } else {
+                // FIXME: This could be improved quite a lot.
+                // Idea is that Curse API returns `NetworkError(CouldntResolveHost)` quite often,
+                // if called to quickly. So i've implemented a very basic retry functionallity
+                // which solves the problem for now.
+                let error = result.err().unwrap();
+                if matches!(
+                    error,
+                    ClientError::NetworkError(isahc::Error::CouldntResolveHost)
+                ) && retries > 0
+                {
+                    return Ok(Command::perform(
+                        fetch_curse_packages(addon.clone(), retries),
+                        Message::CursePackages,
+                    ));
+                }
+            }
+        }
+        Message::TukuiPackage((id, result)) => {
+            if let Ok(package) = result {
+                let addon = ajour
+                    .addons
+                    .iter_mut()
+                    .find(|a| a.id == id)
+                    .expect("Expected addon for id to exist.");
+                addon.apply_tukui_package(&package);
+            }
+        }
+        Message::WowinterfacePackages((id, result)) => {
+            if let Ok(packages) = result {
+                let addon = ajour
+                    .addons
+                    .iter_mut()
+                    .find(|a| a.id == id)
+                    .expect("Expected addon for id to exist.");
+                addon.apply_wowi_packages(&packages);
+            }
         }
         Message::DownloadedAddon((id, result)) => {
             // When an addon has been successfully downloaded we begin to
@@ -193,7 +238,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.version = addon.remote_version.clone();
                 }
                 Err(err) => {
-                    // TODO: Handle when addon fails to unpack.
                     ajour.state = AjourState::Error(err);
                     addon.state = AddonState::Ajour(Some("Error!".to_owned()));
                 }
@@ -205,6 +249,53 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
     }
 
     Ok(Command::none())
+}
+
+async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package>) {
+    (
+        addon.id.clone(),
+        curse_api::fetch_remote_package(
+            &addon.curse_id.expect("Expected to have curse_id on Addon."),
+        )
+        .await,
+    )
+}
+
+async fn fetch_curse_packages(
+    addon: Addon,
+    retries: u32,
+) -> (String, u32, Result<Vec<curse_api::Package>>) {
+    (
+        addon.id.clone(),
+        retries - 1,
+        curse_api::fetch_remote_packages(&addon.title).await,
+    )
+}
+
+async fn fetch_tukui_package(addon: Addon) -> (String, Result<tukui_api::Package>) {
+    (
+        addon.id.clone(),
+        tukui_api::fetch_remote_package(
+            &addon.tukui_id.expect("Expected to have tukui_id on Addon."),
+        )
+        .await,
+    )
+}
+
+async fn fetch_wowinterface_packages(
+    addon: Addon,
+    token: String,
+) -> (String, Result<Vec<wowinterface_api::Package>>) {
+    (
+        addon.id.clone(),
+        wowinterface_api::fetch_remote_packages(
+            &addon
+                .wowi_id
+                .expect("Expected to have wowinterface_id on Addon."),
+            &token,
+        )
+        .await,
+    )
 }
 
 /// Downloads the newest version of the addon.

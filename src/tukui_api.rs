@@ -1,4 +1,4 @@
-use crate::{error::ClientError, network::request, Result};
+use crate::{error::ClientError, network::request_async, Result};
 use isahc::prelude::*;
 use serde_derive::Deserialize;
 
@@ -21,9 +21,9 @@ fn api_endpoint(id: &str) -> String {
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
-pub fn fetch_remote_package(id: &str) -> Result<Package> {
+pub async fn fetch_remote_package(id: &str) -> Result<Package> {
     let url = api_endpoint(id);
-    let mut resp = request(&url, vec![])?;
+    let mut resp = request_async(&url, vec![]).await?;
 
     if resp.status().is_success() {
         let package: Package = resp.json()?;
