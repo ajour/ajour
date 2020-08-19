@@ -86,7 +86,7 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-        let default_font_size = 14;
+        let default_font_size = 13;
 
         // A row contain general controls.
         let mut controls = Row::new().spacing(1).height(Length::Units(35));
