@@ -113,7 +113,7 @@ impl Application for Ajour {
 
         // Displays text depending on the state of the app.
         let status_text = match &self.state {
-            AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(default_font_size),
+            AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(12),
             AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
         };
         let status_container = Container::new(status_text)
@@ -125,6 +125,42 @@ impl Application for Ajour {
             .push(update_all_button.map(Message::Interaction))
             .push(refresh_button.map(Message::Interaction))
             .push(status_container);
+
+        // A row containing titles above the addon rows.
+        let row_title_font_size = 12;
+        let mut row_titles = Row::new().spacing(1).height(Length::Units(20));
+
+        let addon_row_text = Text::new("Addon").size(row_title_font_size);
+        let addon_row_container = Container::new(addon_row_text)
+            .width(Length::FillPortion(1))
+            .style(style::StatusTextContainer);
+
+        let local_version_text = Text::new("Local version").size(row_title_font_size);
+        let local_version_container = Container::new(local_version_text)
+            .width(Length::Units(125))
+            .style(style::StatusTextContainer);
+
+        let remote_version_text = Text::new("Remote version").size(row_title_font_size);
+        let remote_version_container = Container::new(remote_version_text)
+            .width(Length::Units(125))
+            .style(style::StatusTextContainer);
+
+        let status_row_text = Text::new("Status").size(row_title_font_size);
+        let status_row_container = Container::new(status_row_text)
+            .width(Length::Units(75))
+            .style(style::StatusTextContainer);
+
+        let delete_row_text = Text::new("Delete").size(row_title_font_size);
+        let delete_row_container = Container::new(delete_row_text)
+            .width(Length::Units(65))
+            .style(style::StatusTextContainer);
+
+        row_titles = row_titles
+            .push(addon_row_container)
+            .push(local_version_container)
+            .push(remote_version_container)
+            .push(status_row_container)
+            .push(delete_row_container);
 
         // A scrollable list containing rows.
         // Each row holds information about a single addon.
@@ -255,7 +291,10 @@ impl Application for Ajour {
         }
 
         // This column gathers all the other elements together.
-        let content = Column::new().push(controls).push(addons_scrollable);
+        let content = Column::new()
+            .push(controls)
+            .push(row_titles)
+            .push(addons_scrollable);
 
         // This container wraps the whole content.
         Container::new(content)
