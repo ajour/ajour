@@ -64,7 +64,7 @@ impl Addon {
     ///
     /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
     /// It then updates self, with the information from that package.
-    pub fn apply_wowi_packages(&mut self, packages: &Vec<wowinterface_api::Package>) {
+    pub fn apply_wowi_packages(&mut self, packages: &[wowinterface_api::Package]) {
         let wowi_id = self.wowi_id.clone().unwrap();
         let package = packages.iter().find(|a| a.id == wowi_id);
         if let Some(package) = package {
@@ -118,16 +118,16 @@ impl Addon {
     /// 1. Loops each packages, and find the `File` which is stable and has right flavor.
     /// 2. Then we loop each `Module` in the `File` and match filename with `self`.
     /// 3. If tf we find a `Module` from step 2, we know we can update `self`
-    pub fn apply_curse_packages(&mut self, packages: &Vec<curse_api::Package>, flavor: &str) {
+    pub fn apply_curse_packages(&mut self, packages: &[curse_api::Package], flavor: &str) {
         for package in packages {
             let file = package.latest_files.iter().find(|f| {
                 f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
-                    && f.is_alternate == false
+                    && !f.is_alternate
                     && f.game_version_flavor == format!("wow_{}", flavor)
             });
             if let Some(file) = file {
                 let module = file.modules.iter().find(|m| m.foldername == self.id);
-                if let Some(_) = module {
+                if module.is_some() {
                     self.remote_version = Some(file.display_name.clone());
                     self.remote_url = Some(file.download_url.clone());
                     if self.is_updatable() {

@@ -114,12 +114,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             fetch_wowinterface_packages(addon, token.to_string()),
                             Message::WowinterfacePackages,
                         ))
-                    } else if let Some(_) = &addon.tukui_id {
+                    } else if addon.tukui_id.is_some() {
                         commands.push(Command::perform(
                             fetch_tukui_package(addon),
                             Message::TukuiPackage,
                         ))
-                    } else if let Some(_) = &addon.curse_id {
+                    } else if addon.curse_id.is_some() {
                         commands.push(Command::perform(
                             fetch_curse_package(addon),
                             Message::CursePackage,
@@ -161,19 +161,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // if called to quickly. So i've implemented a very basic retry functionallity
                 // which solves the problem for now.
                 let error = result.err().unwrap();
-                match error {
-                    ClientError::NetworkError(err) => match err {
-                        isahc::Error::CouldntResolveHost => {
-                            if retries > 0 {
-                                return Ok(Command::perform(
-                                    fetch_curse_packages(addon.clone(), retries),
-                                    Message::CursePackages,
-                                ));
-                            }
-                        }
-                        _ => (),
-                    },
-                    _ => (),
+                if matches!(
+                    error,
+                    ClientError::NetworkError(isahc::Error::CouldntResolveHost)
+                ) && retries > 0
+                {
+                    return Ok(Command::perform(
+                        fetch_curse_packages(addon.clone(), retries),
+                        Message::CursePackages,
+                    ));
                 }
             }
         }

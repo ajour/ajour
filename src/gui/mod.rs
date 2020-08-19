@@ -109,7 +109,7 @@ impl Application for Ajour {
 
         // Enable update_all_button and refresh_button,
         // if we have any Addons.
-        if self.addons.len() > 0 {
+        if !self.addons.is_empty() {
             update_all_button = update_all_button.on_press(Interaction::UpdateAll);
             refresh_button = refresh_button.on_press(Interaction::Refresh);
         }
