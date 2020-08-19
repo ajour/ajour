@@ -17,26 +17,23 @@ pub async fn install_addon(
     to_directory: &PathBuf,
 ) -> Result<()> {
     let zip_path = from_directory.join(addon.id.clone());
-    // TODO: This sometimes fails: No such file or directory (os error 2).
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
 
     // TODO: Maybe remove old addon here, so we don't replace.
-
-    for i in 1..archive.len() {
+    for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
         let path = to_directory.join(file.sanitized_name());
-
-        if file.is_dir() {
-            std::fs::create_dir_all(path)?;
+        if (&*file.name()).ends_with('/') {
+            std::fs::create_dir_all(&path).unwrap();
         } else {
-            let mut target = std::fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(path)?;
-
-            std::io::copy(&mut file, &mut target)?;
+            if let Some(p) = path.parent() {
+                if !p.exists() {
+                    std::fs::create_dir_all(&p).unwrap();
+                }
+            }
+            let mut outfile = std::fs::File::create(&path).unwrap();
+            std::io::copy(&mut file, &mut outfile).unwrap();
         }
     }
 
