@@ -11,7 +11,8 @@ Ajour currently supports macOS and Windows.
 
 - Addons from multiple repositories:
   - [wowinterface.com](https://www.wowinterface.com/addons.php)
-  - [tuk.com](https://www.tukui.org/)
+  - [tukui.org](https://www.tukui.org/)
+  - [curse](https://www.curseforge.com/wow/addons)
 - Bulk update
 - Remove addon
 - Retail and classic flavor support
