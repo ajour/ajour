@@ -140,12 +140,12 @@ impl Application for Ajour {
             .width(Length::FillPortion(1))
             .style(style::StatusTextContainer);
 
-        let local_version_text = Text::new("Local version").size(default_font_size);
+        let local_version_text = Text::new("Local").size(default_font_size);
         let local_version_container = Container::new(local_version_text)
             .width(Length::Units(125))
             .style(style::StatusTextContainer);
 
-        let remote_version_text = Text::new("Remote version").size(default_font_size);
+        let remote_version_text = Text::new("Remote").size(default_font_size);
         let remote_version_container = Container::new(remote_version_text)
             .width(Length::Units(125))
             .style(style::StatusTextContainer);
