@@ -30,9 +30,16 @@ pub async fn read_addon_directory<P: AsRef<Path>>(path: P) -> Result<Vec<Addon>>
             let file_name = entry.file_name();
             let file_extension = get_extension(file_name).await;
             if file_extension == Some("toc") {
-                let addon = parse_toc_entry(entry).await;
-                if let Some(addon) = addon {
-                    addons.push(addon)
+                // We only look at the .toc file if it has the same name as the current folder.
+                // This is because an Addon can have multiple toc files, for development purpose.
+                let parent_path = entry.path().parent().expect("Expected to have parent.");
+                let parent_path_folder_name = parent_path.file_name().expect("Expected folder to have name.");
+                let toc_file_stem = entry.path().file_stem().expect("Expected .toc file to have name.");
+                if parent_path_folder_name == toc_file_stem {
+                    let addon = parse_toc_entry(entry).await;
+                    if let Some(addon) = addon {
+                        addons.push(addon)
+                    }
                 }
             }
         }
