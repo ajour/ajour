@@ -138,22 +138,27 @@ impl Addon {
         }
     }
 
-    /// Function returns a `bool` which indicates
-    /// if a addon is a parent.
+    /// Function returns a `bool` which indicates if a addon is a parent.
+    /// For now we have the following requirements to be a parent `Addon`:
     ///
-    /// A parent addon can have dependencies which upon
-    /// deletion will be deleted. A parent cannot delete
-    /// another parent addon.
-    ///
-    /// There's an edge case where a downloaded addon,
-    /// containing multiple folders (addons) can have multiple
-    /// parents because one or more have a version attached.
+    /// - Has to have a version.
+    /// - None of its dependency addons have titles that are substrings of its own title.
     pub fn is_parent(&self) -> bool {
-        self.version.is_some()
+        match self.version {
+            Some(_) => {
+                for dependency in &self.dependencies {
+                    if self.id.contains(dependency) {
+                       return false;
+                    }
+                }
+
+                true
+            },
+            None => false
+        }
     }
 
-    /// Function returns a `Vec<String>` which contains
-    /// all combined dependencies.
+    /// Function returns a `Vec<String>` which contains all combined dependencies.
     ///
     /// Example:
     /// `Foo` - dependencies: [`Bar`, `Baz`]
