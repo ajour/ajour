@@ -86,7 +86,7 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Self::Message> {
-        let default_font_size = 13;
+        let default_font_size = 14;
 
         // A row contain general controls.
         let mut controls = Row::new().spacing(1).height(Length::Units(35));
@@ -142,22 +142,22 @@ impl Application for Ajour {
 
         let local_version_text = Text::new("Local").size(default_font_size);
         let local_version_container = Container::new(local_version_text)
-            .width(Length::Units(125))
+            .width(Length::Units(150))
             .style(style::StatusTextContainer);
 
         let remote_version_text = Text::new("Remote").size(default_font_size);
         let remote_version_container = Container::new(remote_version_text)
-            .width(Length::Units(125))
+            .width(Length::Units(150))
             .style(style::StatusTextContainer);
 
         let status_row_text = Text::new("Status").size(default_font_size);
         let status_row_container = Container::new(status_row_text)
-            .width(Length::Units(75))
+            .width(Length::Units(85))
             .style(style::StatusTextContainer);
 
         let delete_row_text = Text::new("Delete").size(default_font_size);
         let delete_row_container = Container::new(delete_row_text)
-            .width(Length::Units(65))
+            .width(Length::Units(70))
             .style(style::StatusTextContainer);
 
         row_titles = row_titles
@@ -199,7 +199,7 @@ impl Application for Ajour {
             let installed_version = Text::new(version).size(default_font_size);
             let installed_version_container = Container::new(installed_version)
                 .height(default_height)
-                .width(Length::Units(125))
+                .width(Length::Units(150))
                 .center_y()
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
@@ -207,12 +207,12 @@ impl Application for Ajour {
             let remote_version = Text::new(remote_version).size(default_font_size);
             let remote_version_container = Container::new(remote_version)
                 .height(default_height)
-                .width(Length::Units(125))
+                .width(Length::Units(150))
                 .center_y()
                 .padding(5)
                 .style(style::AddonDescriptionContainer);
 
-            let update_button_width = Length::Units(75);
+            let update_button_width = Length::Units(85);
             let update_button_container = match &addon.state {
                 AddonState::Ajour(string) => Container::new(
                     Text::new(string.clone().unwrap_or_else(|| "".to_string()))
@@ -277,7 +277,7 @@ impl Application for Ajour {
 
             let delete_button_container = Container::new(delete_button.map(Message::Interaction))
                 .height(default_height)
-                .width(Length::Units(65))
+                .width(Length::Units(70))
                 .center_y()
                 .center_x()
                 .padding(5)
