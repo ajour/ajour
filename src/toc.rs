@@ -109,7 +109,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
     // which is why they are created here.
     //
     // https://docs.rs/regex/1.3.9/regex/#example-avoid-compiling-the-same-regex-in-a-loop
-    let re_toc = Regex::new(r"##\s(?P<key>.*?):\s?(?P<value>.*)").unwrap();
+    let re_toc = Regex::new(r"^##\s(?P<key>.*?):\s?(?P<value>.*)").unwrap();
     let re_title = Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?").unwrap();
 
     for line in reader.lines() {
