@@ -19,7 +19,7 @@ Ajour currently supports macOS and Windows.
 
 # Install from package
 
-Pre-built packages for Windows and macOS will eventually be found on the [Releases](https://github.com/casperstorm/ajour/releases) page.
+Pre-built packages for Windows and macOS can be found on the [Releases](https://github.com/casperstorm/ajour/releases) page.
 
 # Install from source
 
