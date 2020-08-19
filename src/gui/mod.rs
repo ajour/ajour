@@ -91,29 +91,35 @@ impl Application for Ajour {
         // A row contain general controls.
         let mut controls = Row::new().spacing(1).height(Length::Units(35));
 
-        let update_all_button: Element<Interaction> = Button::new(
+        let mut update_all_button = Button::new(
             &mut self.update_all_button_state,
             Text::new("Update All")
                 .horizontal_alignment(HorizontalAlignment::Center)
                 .size(default_font_size),
         )
-        .on_press(Interaction::UpdateAll)
-        .style(style::DefaultButton)
-        .into();
+        .style(style::DefaultButton);
 
-        let refresh_button: Element<Interaction> = Button::new(
+        let mut refresh_button = Button::new(
             &mut self.refresh_button_state,
             Text::new("Refresh")
                 .horizontal_alignment(HorizontalAlignment::Center)
                 .size(default_font_size),
         )
-        .on_press(Interaction::Refresh)
-        .style(style::DefaultButton)
-        .into();
+        .style(style::DefaultButton);
+
+        // Enable update_all_button and refresh_button,
+        // if we have any Addons.
+        if self.addons.len() > 0 {
+            update_all_button = update_all_button.on_press(Interaction::UpdateAll);
+            refresh_button = refresh_button.on_press(Interaction::Refresh);
+        }
+
+        let update_all_button: Element<Interaction> = update_all_button.into();
+        let refresh_button: Element<Interaction> = refresh_button.into();
 
         // Displays text depending on the state of the app.
         let status_text = match &self.state {
-            AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(12),
+            AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(default_font_size),
             AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
         };
         let status_container = Container::new(status_text)
@@ -127,30 +133,29 @@ impl Application for Ajour {
             .push(status_container);
 
         // A row containing titles above the addon rows.
-        let row_title_font_size = 12;
         let mut row_titles = Row::new().spacing(1).height(Length::Units(20));
 
-        let addon_row_text = Text::new("Addon").size(row_title_font_size);
+        let addon_row_text = Text::new("Addon").size(default_font_size);
         let addon_row_container = Container::new(addon_row_text)
             .width(Length::FillPortion(1))
             .style(style::StatusTextContainer);
 
-        let local_version_text = Text::new("Local version").size(row_title_font_size);
+        let local_version_text = Text::new("Local version").size(default_font_size);
         let local_version_container = Container::new(local_version_text)
             .width(Length::Units(125))
             .style(style::StatusTextContainer);
 
-        let remote_version_text = Text::new("Remote version").size(row_title_font_size);
+        let remote_version_text = Text::new("Remote version").size(default_font_size);
         let remote_version_container = Container::new(remote_version_text)
             .width(Length::Units(125))
             .style(style::StatusTextContainer);
 
-        let status_row_text = Text::new("Status").size(row_title_font_size);
+        let status_row_text = Text::new("Status").size(default_font_size);
         let status_row_container = Container::new(status_row_text)
             .width(Length::Units(75))
             .style(style::StatusTextContainer);
 
-        let delete_row_text = Text::new("Delete").size(row_title_font_size);
+        let delete_row_text = Text::new("Delete").size(default_font_size);
         let delete_row_container = Container::new(delete_row_text)
             .width(Length::Units(65))
             .style(style::StatusTextContainer);
