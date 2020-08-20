@@ -23,6 +23,14 @@ Pre-built packages for Windows and macOS can be found on the [Releases](https://
 
 # Install from source
 
+On Ubuntu / Debian derivatives, install the following dependencies:
+
+```sh
+sudo apt install build-essential cmake libxft-dev libssl-dev libx11-dev
+```
+
+To build:
+
 ```sh
 cargo run
 ```
