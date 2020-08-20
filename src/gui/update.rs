@@ -248,7 +248,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Ok(_) => {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
                     // Re-parse the single addon.
-                    return Ok(Command::perform(read_addon_directory(addon.path.clone()), Message::PartialParsedAddons))
+                    return Ok(Command::perform(
+                        read_addon_directory(addon.path.clone()),
+                        Message::PartialParsedAddons,
+                    ));
                 }
                 Err(err) => {
                     ajour.state = AjourState::Error(err);
