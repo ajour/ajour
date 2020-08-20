@@ -176,14 +176,9 @@ impl Application for Ajour {
         let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
 
         // Loops addons for GUI.
-        for addon in &mut self.addons {
+        for addon in &mut self.addons.iter_mut().filter(|a| a.is_parent()) {
             // Default element height
             let default_height = Length::Units(35);
-
-            // We filter away addons which isn't parent.
-            if !addon.is_parent() {
-                continue;
-            }
 
             let title = addon.title.clone();
             let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
