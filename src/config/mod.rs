@@ -1,4 +1,5 @@
 use serde_derive::Deserialize;
+#[cfg(not(windows))]
 use std::env;
 use std::fs;
 use std::path::PathBuf;
