@@ -119,11 +119,23 @@ impl Application for Ajour {
         let refresh_button: Element<Interaction> = refresh_button.into();
 
         // Displays text depending on the state of the app.
+        let parent_addons_count = self.addons.clone().iter().filter(|a| a.is_parent()).count();
         let status_text = match &self.state {
-            AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(default_font_size),
+            AjourState::Idle => {
+                Text::new(format!("{} addons loaded", parent_addons_count)).size(default_font_size)
+            }
             AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
         };
         let status_container = Container::new(status_text)
+            .center_y()
+            .padding(5)
+            .width(Length::FillPortion(1))
+            .style(style::StatusTextContainer);
+
+        let version_text = Text::new(env!("CARGO_PKG_VERSION"))
+            .size(default_font_size)
+            .horizontal_alignment(HorizontalAlignment::Right);
+        let version_container = Container::new(version_text)
             .center_y()
             .padding(5)
             .style(style::StatusTextContainer);
@@ -134,7 +146,8 @@ impl Application for Ajour {
             .push(update_all_button.map(Message::Interaction))
             .push(spacer)
             .push(refresh_button.map(Message::Interaction))
-            .push(status_container);
+            .push(status_container)
+            .push(version_container);
 
         // A row containing titles above the addon rows.
         let mut row_titles = Row::new().spacing(1).height(Length::Units(20));
