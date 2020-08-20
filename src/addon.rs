@@ -209,7 +209,7 @@ impl Addon {
         self.dependencies = other.dependencies.clone();
         self.wowi_id = other.wowi_id.clone();
         self.tukui_id = other.tukui_id.clone();
-        self.curse_id = other.curse_id.clone();
+        self.curse_id = other.curse_id;
     }
 
     /// Check if the `Addon` is updatable.
