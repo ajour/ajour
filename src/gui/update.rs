@@ -26,7 +26,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Some(dir) => {
                     return Ok(Command::perform(
                         read_addon_directory(dir),
-                        Message::PatchAddons,
+                        Message::ParsedAddons,
                     ))
                 }
                 None => {
@@ -61,7 +61,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addon_directory = ajour.config.get_addon_directory().unwrap();
             return Ok(Command::perform(
                 read_addon_directory(addon_directory),
-                Message::PatchAddons,
+                Message::ParsedAddons,
             ));
         }
         Message::Interaction(Interaction::Update(id)) => {
@@ -98,7 +98,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
             return Ok(Command::batch(commands));
         }
-        Message::PatchAddons(Ok(addons)) => {
+        Message::PartialParsedAddons(Ok(addons)) => {
+            if let Some(updated_addon) = addons.first() {
+                let addon = ajour
+                    .addons
+                    .iter_mut()
+                    .find(|a| a.id == updated_addon.id)
+                    .expect("Expected addon for id to exist.");
+
+                // Update the addon with the newly parsed information.
+                addon.update_addon(updated_addon);
+            }
+        }
+        Message::ParsedAddons(Ok(addons)) => {
             ajour.addons = addons;
             ajour.addons.sort();
 
@@ -235,7 +247,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             match result {
                 Ok(_) => {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
-                    addon.version = addon.remote_version.clone();
+                    // Re-parse the single addon.
+                    return Ok(Command::perform(read_addon_directory(addon.path.clone()), Message::PartialParsedAddons))
                 }
                 Err(err) => {
                     ajour.state = AjourState::Error(err);
@@ -243,7 +256,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::Error(error) | Message::PatchAddons(Err(error)) => {
+        Message::Error(error)
+        | Message::ParsedAddons(Err(error))
+        | Message::PartialParsedAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
     }

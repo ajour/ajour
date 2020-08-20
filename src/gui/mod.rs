@@ -29,7 +29,8 @@ pub enum Interaction {
 #[derive(Debug)]
 pub enum Message {
     Parse(Config),
-    PatchAddons(Result<Vec<Addon>>),
+    ParsedAddons(Result<Vec<Addon>>),
+    PartialParsedAddons(Result<Vec<Addon>>),
     DownloadedAddon((String, Result<()>)),
     UnpackedAddon((String, Result<()>)),
     CursePackage((String, Result<curse_api::Package>)),

@@ -201,6 +201,17 @@ impl Addon {
         dependencies
     }
 
+    /// Takes a `Addon` and updates self.
+    /// Used when we reparse a single `Addon`.
+    pub fn update_addon(&mut self, other: &Addon) {
+        self.title = other.title.clone();
+        self.version = other.version.clone();
+        self.dependencies = other.dependencies.clone();
+        self.wowi_id = other.wowi_id.clone();
+        self.tukui_id = other.tukui_id.clone();
+        self.curse_id = other.curse_id.clone();
+    }
+
     /// Check if the `Addon` is updatable.
     /// We strip both version for non digits, and then
     /// checks if `remote_version` is a sub_slice of `local_version`.
