@@ -195,45 +195,39 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .config
                 .get_addon_directory()
                 .expect("Expected a valid path");
-            let addon = ajour
-                .addons
-                .iter_mut()
-                .find(|a| a.id == id)
-                .expect("Expected addon for id to exist.");
-            match result {
-                Ok(_) => {
-                    if addon.state == AddonState::Downloading {
-                        addon.state = AddonState::Unpacking;
-                        let addon = addon.clone();
-                        return Ok(Command::perform(
-                            perform_unpack_addon(addon, from_directory, to_directory),
-                            Message::UnpackedAddon,
-                        ));
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                match result {
+                    Ok(_) => {
+                        if addon.state == AddonState::Downloading {
+                            addon.state = AddonState::Unpacking;
+                            let addon = addon.clone();
+                            return Ok(Command::perform(
+                                perform_unpack_addon(addon, from_directory, to_directory),
+                                Message::UnpackedAddon,
+                            ));
+                        }
                     }
-                }
-                Err(err) => {
-                    ajour.state = AjourState::Error(err);
+                    Err(err) => {
+                        ajour.state = AjourState::Error(err);
+                    }
                 }
             }
         }
         Message::UnpackedAddon((id, result)) => {
-            let addon = ajour
-                .addons
-                .iter_mut()
-                .find(|a| a.id == id)
-                .expect("Expected addon for id to exist.");
-            match result {
-                Ok(_) => {
-                    addon.state = AddonState::Ajour(Some("Completed".to_owned()));
-                    // Re-parse the single addon.
-                    return Ok(Command::perform(
-                        read_addon_directory(addon.path.clone()),
-                        Message::PartialParsedAddons,
-                    ));
-                }
-                Err(err) => {
-                    ajour.state = AjourState::Error(err);
-                    addon.state = AddonState::Ajour(Some("Error!".to_owned()));
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                match result {
+                    Ok(_) => {
+                        addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                        // Re-parse the single addon.
+                        return Ok(Command::perform(
+                            read_addon_directory(addon.path.clone()),
+                            Message::PartialParsedAddons,
+                        ));
+                    }
+                    Err(err) => {
+                        ajour.state = AjourState::Error(err);
+                        addon.state = AddonState::Ajour(Some("Error!".to_owned()));
+                    }
                 }
             }
         }
