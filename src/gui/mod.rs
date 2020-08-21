@@ -88,7 +88,7 @@ impl Application for Ajour {
 
     fn view(&mut self) -> Element<Self::Message> {
         let default_font_size = 14;
-        let default_padding = 15;
+        let default_padding = 10;
 
         // A row contain general controls.
         let mut controls = Row::new().spacing(1).height(Length::Units(35));
@@ -141,7 +141,7 @@ impl Application for Ajour {
             .padding(5)
             .style(style::StatusTextContainer);
 
-        let spacer = Space::new(Length::Units(2), Length::Units(0));
+        let spacer = Space::new(Length::Units(7), Length::Units(0));
         // Not using default padding, just to make it look prettier UI wise
         let top_spacer = Space::new(Length::Units(0), Length::Units(5));
         let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
@@ -203,6 +203,7 @@ impl Application for Ajour {
         // Each row holds information about a single addon.
         let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state)
             .spacing(1)
+            .height(Length::FillPortion(1))
             .style(style::Scrollable);
 
         // Loops addons for GUI.
@@ -312,7 +313,7 @@ impl Application for Ajour {
                 .style(style::AddonDescriptionContainer);
 
             let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
-            let right_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+            let right_spacer = Space::new(Length::Units(default_padding + 5), Length::Units(0));
 
             let row = Row::new()
                 .push(left_spacer)
@@ -328,19 +329,13 @@ impl Application for Ajour {
             addons_scrollable = addons_scrollable.push(cell);
         }
 
-        // We add a final cell to act as "bottom padding"
-        let row = Row::new().push(Space::new(
-            Length::FillPortion(1),
-            Length::Units(default_padding),
-        ));
-        let cell = Container::new(row).width(Length::Fill).style(style::Cell);
-        addons_scrollable = addons_scrollable.push(cell);
-
+        let bottom_space = Space::new(Length::FillPortion(1), Length::Units(default_padding));
         // This column gathers all the other elements together.
         let content = Column::new()
             .push(controls_container)
             .push(row_titles)
             .push(addons_scrollable)
+            .push(bottom_space)
             .padding(3); // small padding to make scrollbar fit better.
 
         // This container wraps the whole content.
