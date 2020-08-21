@@ -36,7 +36,7 @@ make app
 make dmg
 
 # Windows
-cargo wix -I .\resources\windows\wix\main.wxs
+cargo build --release
 ```
 
 # Configuration
