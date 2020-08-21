@@ -102,8 +102,7 @@ fn installed_config() -> Option<PathBuf> {
 
     let fallback = std::env::current_exe();
     if let Ok(fallback) = fallback.as_ref().map(|p| p.parent()) {
-        if let Some(fallback) = fallback {
-            let fallback = fallback.join("ajour.yml");
+        if let Some(fallback) = fallback.map(|f| f.join("ajour.yml")) {
             if fallback.exists() {
                 return Some(fallback);
             }
