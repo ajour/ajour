@@ -26,7 +26,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Some(dir) => {
                     return Ok(Command::perform(
                         read_addon_directory(dir),
-                        Message::PatchAddons,
+                        Message::ParsedAddons,
                     ))
                 }
                 None => {
@@ -61,7 +61,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addon_directory = ajour.config.get_addon_directory().unwrap();
             return Ok(Command::perform(
                 read_addon_directory(addon_directory),
-                Message::PatchAddons,
+                Message::ParsedAddons,
             ));
         }
         Message::Interaction(Interaction::Update(id)) => {
@@ -84,53 +84,56 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let mut commands = Vec::<Command<Message>>::new();
             for addon in &mut ajour.addons {
                 if addon.state == AddonState::Updatable {
-                    let to_directory = ajour
-                        .config
-                        .get_temporary_addon_directory()
-                        .expect("Expected a valid path");
-                    addon.state = AddonState::Downloading;
-                    let addon = addon.clone();
-                    commands.push(Command::perform(
-                        perform_download_addon(addon, to_directory),
-                        Message::DownloadedAddon,
-                    ))
+                    if let Some(to_directory) = ajour.config.get_temporary_addon_directory() {
+                        addon.state = AddonState::Downloading;
+                        let addon = addon.clone();
+                        commands.push(Command::perform(
+                            perform_download_addon(addon, to_directory),
+                            Message::DownloadedAddon,
+                        ))
+                    }
                 }
             }
             return Ok(Command::batch(commands));
         }
-        Message::PatchAddons(Ok(addons)) => {
+        Message::PartialParsedAddons(Ok(addons)) => {
+            if let Some(updated_addon) = addons.first() {
+                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == updated_addon.id) {
+                    // Update the addon with the newly parsed information.
+                    addon.update_addon(updated_addon);
+                }
+            }
+        }
+        Message::ParsedAddons(Ok(addons)) => {
             ajour.addons = addons;
             ajour.addons.sort();
 
             let mut commands = Vec::<Command<Message>>::new();
             let addons = ajour.addons.clone();
-            for addon in addons {
-                // TODO: filter this instead of this if.
-                if addon.is_parent() {
-                    if let (Some(_), Some(token)) =
-                        (&addon.wowi_id, &ajour.config.tokens.wowinterface)
-                    {
-                        commands.push(Command::perform(
-                            fetch_wowinterface_packages(addon, token.to_string()),
-                            Message::WowinterfacePackages,
-                        ))
-                    } else if addon.tukui_id.is_some() {
-                        commands.push(Command::perform(
-                            fetch_tukui_package(addon),
-                            Message::TukuiPackage,
-                        ))
-                    } else if addon.curse_id.is_some() {
-                        commands.push(Command::perform(
-                            fetch_curse_package(addon),
-                            Message::CursePackage,
-                        ))
-                    } else {
-                        let retries = 4;
-                        commands.push(Command::perform(
-                            fetch_curse_packages(addon, retries),
-                            Message::CursePackages,
-                        ))
-                    }
+            for addon in addons.iter().filter(|a| a.is_parent()) {
+                let addon = addon.to_owned();
+                if let (Some(_), Some(token)) = (&addon.wowi_id, &ajour.config.tokens.wowinterface)
+                {
+                    commands.push(Command::perform(
+                        fetch_wowinterface_packages(addon, token.to_string()),
+                        Message::WowinterfacePackages,
+                    ))
+                } else if addon.tukui_id.is_some() {
+                    commands.push(Command::perform(
+                        fetch_tukui_package(addon),
+                        Message::TukuiPackage,
+                    ))
+                } else if addon.curse_id.is_some() {
+                    commands.push(Command::perform(
+                        fetch_curse_package(addon),
+                        Message::CursePackage,
+                    ))
+                } else {
+                    let retries = 4;
+                    commands.push(Command::perform(
+                        fetch_curse_packages(addon, retries),
+                        Message::CursePackages,
+                    ))
                 }
             }
 
@@ -138,59 +141,46 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::CursePackage((id, result)) => {
             if let Ok(package) = result {
-                let addon = ajour
-                    .addons
-                    .iter_mut()
-                    .find(|a| a.id == id)
-                    .expect("Expected addon for id to exist.");
-                addon.apply_curse_package(&package, &ajour.config.wow.flavor);
+                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                    addon.apply_curse_package(&package, &ajour.config.wow.flavor);
+                }
             }
         }
         Message::CursePackages((id, retries, result)) => {
-            let addon = ajour
-                .addons
-                .iter_mut()
-                .find(|a| a.id == id)
-                .expect("Expected addon for id to exist.");
-
-            if let Ok(packages) = result {
-                addon.apply_curse_packages(&packages, &ajour.config.wow.flavor);
-            } else {
-                // FIXME: This could be improved quite a lot.
-                // Idea is that Curse API returns `NetworkError(CouldntResolveHost)` quite often,
-                // if called to quickly. So i've implemented a very basic retry functionallity
-                // which solves the problem for now.
-                let error = result.err().unwrap();
-                if matches!(
-                    error,
-                    ClientError::NetworkError(isahc::Error::CouldntResolveHost)
-                ) && retries > 0
-                {
-                    return Ok(Command::perform(
-                        fetch_curse_packages(addon.clone(), retries),
-                        Message::CursePackages,
-                    ));
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                if let Ok(packages) = result {
+                    addon.apply_curse_packages(&packages, &ajour.config.wow.flavor);
+                } else {
+                    // FIXME: This could be improved quite a lot.
+                    // Idea is that Curse API returns `NetworkError(CouldntResolveHost)` quite often,
+                    // if called to quickly. So i've implemented a very basic retry functionallity
+                    // which solves the problem for now.
+                    let error = result.err().unwrap();
+                    if matches!(
+                        error,
+                        ClientError::NetworkError(isahc::Error::CouldntResolveHost)
+                    ) && retries > 0
+                    {
+                        return Ok(Command::perform(
+                            fetch_curse_packages(addon.clone(), retries),
+                            Message::CursePackages,
+                        ));
+                    }
                 }
             }
         }
         Message::TukuiPackage((id, result)) => {
             if let Ok(package) = result {
-                let addon = ajour
-                    .addons
-                    .iter_mut()
-                    .find(|a| a.id == id)
-                    .expect("Expected addon for id to exist.");
-                addon.apply_tukui_package(&package);
+                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                    addon.apply_tukui_package(&package);
+                }
             }
         }
         Message::WowinterfacePackages((id, result)) => {
             if let Ok(packages) = result {
-                let addon = ajour
-                    .addons
-                    .iter_mut()
-                    .find(|a| a.id == id)
-                    .expect("Expected addon for id to exist.");
-                addon.apply_wowi_packages(&packages);
+                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                    addon.apply_wowi_packages(&packages);
+                }
             }
         }
         Message::DownloadedAddon((id, result)) => {
@@ -205,45 +195,45 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .config
                 .get_addon_directory()
                 .expect("Expected a valid path");
-            let addon = ajour
-                .addons
-                .iter_mut()
-                .find(|a| a.id == id)
-                .expect("Expected addon for id to exist.");
-            match result {
-                Ok(_) => {
-                    if addon.state == AddonState::Downloading {
-                        addon.state = AddonState::Unpacking;
-                        let addon = addon.clone();
-                        return Ok(Command::perform(
-                            perform_unpack_addon(addon, from_directory, to_directory),
-                            Message::UnpackedAddon,
-                        ));
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                match result {
+                    Ok(_) => {
+                        if addon.state == AddonState::Downloading {
+                            addon.state = AddonState::Unpacking;
+                            let addon = addon.clone();
+                            return Ok(Command::perform(
+                                perform_unpack_addon(addon, from_directory, to_directory),
+                                Message::UnpackedAddon,
+                            ));
+                        }
                     }
-                }
-                Err(err) => {
-                    ajour.state = AjourState::Error(err);
+                    Err(err) => {
+                        ajour.state = AjourState::Error(err);
+                    }
                 }
             }
         }
         Message::UnpackedAddon((id, result)) => {
-            let addon = ajour
-                .addons
-                .iter_mut()
-                .find(|a| a.id == id)
-                .expect("Expected addon for id to exist.");
-            match result {
-                Ok(_) => {
-                    addon.state = AddonState::Ajour(Some("Completed".to_owned()));
-                    addon.version = addon.remote_version.clone();
-                }
-                Err(err) => {
-                    ajour.state = AjourState::Error(err);
-                    addon.state = AddonState::Ajour(Some("Error!".to_owned()));
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                match result {
+                    Ok(_) => {
+                        addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                        // Re-parse the single addon.
+                        return Ok(Command::perform(
+                            read_addon_directory(addon.path.clone()),
+                            Message::PartialParsedAddons,
+                        ));
+                    }
+                    Err(err) => {
+                        ajour.state = AjourState::Error(err);
+                        addon.state = AddonState::Ajour(Some("Error!".to_owned()));
+                    }
                 }
             }
         }
-        Message::Error(error) | Message::PatchAddons(Err(error)) => {
+        Message::Error(error)
+        | Message::ParsedAddons(Err(error))
+        | Message::PartialParsedAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
     }

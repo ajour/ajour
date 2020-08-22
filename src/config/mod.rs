@@ -1,4 +1,5 @@
 use serde_derive::Deserialize;
+#[cfg(not(windows))]
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -89,11 +90,26 @@ fn installed_config() -> Option<PathBuf> {
 /// according to the following order:
 ///
 /// 1. %APPDATA%\ajour\ajour.yml
+/// 2. In the same directory as the executable
 #[cfg(windows)]
 fn installed_config() -> Option<PathBuf> {
-    dirs::config_dir()
+    let fallback = dirs::config_dir()
         .map(|path| path.join("ajour\\ajour.yml"))
-        .filter(|new| new.exists())
+        .filter(|new| new.exists());
+    if let Some(fallback) = fallback {
+        return Some(fallback);
+    }
+
+    let fallback = std::env::current_exe();
+    if let Ok(fallback) = fallback.as_ref().map(|p| p.parent()) {
+        if let Some(fallback) = fallback.map(|f| f.join("ajour.yml")) {
+            if fallback.exists() {
+                return Some(fallback);
+            }
+        }
+    }
+
+    None
 }
 
 /// Returns the config after the content of the file

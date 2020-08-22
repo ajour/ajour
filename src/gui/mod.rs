@@ -9,7 +9,7 @@ use crate::{
 };
 use iced::{
     button, scrollable, Application, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Settings, Text, VerticalAlignment,
+    HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text, VerticalAlignment,
 };
 
 #[derive(Debug)]
@@ -29,7 +29,8 @@ pub enum Interaction {
 #[derive(Debug)]
 pub enum Message {
     Parse(Config),
-    PatchAddons(Result<Vec<Addon>>),
+    ParsedAddons(Result<Vec<Addon>>),
+    PartialParsedAddons(Result<Vec<Addon>>),
     DownloadedAddon((String, Result<()>)),
     UnpackedAddon((String, Result<()>)),
     CursePackage((String, Result<curse_api::Package>)),
@@ -87,6 +88,7 @@ impl Application for Ajour {
 
     fn view(&mut self) -> Element<Self::Message> {
         let default_font_size = 14;
+        let default_padding = 10;
 
         // A row contain general controls.
         let mut controls = Row::new().spacing(1).height(Length::Units(35));
@@ -118,25 +120,50 @@ impl Application for Ajour {
         let refresh_button: Element<Interaction> = refresh_button.into();
 
         // Displays text depending on the state of the app.
+        let parent_addons_count = self.addons.clone().iter().filter(|a| a.is_parent()).count();
         let status_text = match &self.state {
-            AjourState::Idle => Text::new(env!("CARGO_PKG_VERSION")).size(default_font_size),
+            AjourState::Idle => {
+                Text::new(format!("{} addons loaded", parent_addons_count)).size(default_font_size)
+            }
             AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
         };
         let status_container = Container::new(status_text)
             .center_y()
             .padding(5)
+            .width(Length::FillPortion(1))
             .style(style::StatusTextContainer);
 
-        let spacer = Container::new(Text::new("")).width(Length::Units(2));
+        let version_text = Text::new(env!("CARGO_PKG_VERSION"))
+            .size(default_font_size)
+            .horizontal_alignment(HorizontalAlignment::Right);
+        let version_container = Container::new(version_text)
+            .center_y()
+            .padding(5)
+            .style(style::StatusTextContainer);
+
+        let spacer = Space::new(Length::Units(7), Length::Units(0));
+        // Not using default padding, just to make it look prettier UI wise
+        let top_spacer = Space::new(Length::Units(0), Length::Units(5));
+        let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+        let right_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
 
         controls = controls
+            .push(left_spacer)
             .push(update_all_button.map(Message::Interaction))
             .push(spacer)
             .push(refresh_button.map(Message::Interaction))
-            .push(status_container);
+            .push(status_container)
+            .push(version_container)
+            .push(right_spacer);
+
+        let controls_column = Column::new().push(top_spacer).push(controls);
+        let controls_container = Container::new(controls_column);
 
         // A row containing titles above the addon rows.
         let mut row_titles = Row::new().spacing(1).height(Length::Units(20));
+
+        let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+        let right_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
 
         let addon_row_text = Text::new("Addon").size(default_font_size);
         let addon_row_container = Container::new(addon_row_text)
@@ -164,25 +191,25 @@ impl Application for Ajour {
             .style(style::StatusTextContainer);
 
         row_titles = row_titles
+            .push(left_spacer)
             .push(addon_row_container)
             .push(local_version_container)
             .push(remote_version_container)
             .push(status_row_container)
-            .push(delete_row_container);
+            .push(delete_row_container)
+            .push(right_spacer);
 
         // A scrollable list containing rows.
         // Each row holds information about a single addon.
-        let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state).spacing(1);
+        let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state)
+            .spacing(1)
+            .height(Length::FillPortion(1))
+            .style(style::Scrollable);
 
         // Loops addons for GUI.
-        for addon in &mut self.addons {
+        for addon in &mut self.addons.iter_mut().filter(|a| a.is_parent()) {
             // Default element height
             let default_height = Length::Units(35);
-
-            // We filter away addons which isn't parent.
-            if !addon.is_parent() {
-                continue;
-            }
 
             let title = addon.title.clone();
             let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
@@ -283,33 +310,39 @@ impl Application for Ajour {
                 .width(Length::Units(70))
                 .center_y()
                 .center_x()
-                .padding(5)
                 .style(style::AddonDescriptionContainer);
 
+            let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+            let right_spacer = Space::new(Length::Units(default_padding + 5), Length::Units(0));
+
             let row = Row::new()
+                .push(left_spacer)
                 .push(text_container)
                 .push(installed_version_container)
                 .push(remote_version_container)
                 .push(update_button_container)
                 .push(delete_button_container)
+                .push(right_spacer)
                 .spacing(1);
 
             let cell = Container::new(row).width(Length::Fill).style(style::Cell);
             addons_scrollable = addons_scrollable.push(cell);
         }
 
+        let bottom_space = Space::new(Length::FillPortion(1), Length::Units(default_padding));
         // This column gathers all the other elements together.
         let content = Column::new()
-            .push(controls)
+            .push(controls_container)
             .push(row_titles)
-            .push(addons_scrollable);
+            .push(addons_scrollable)
+            .push(bottom_space)
+            .padding(3); // small padding to make scrollbar fit better.
 
         // This container wraps the whole content.
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .style(style::Content)
-            .padding(10)
             .into()
     }
 }

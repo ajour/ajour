@@ -1,4 +1,4 @@
-use iced::{button, container, Background, Color};
+use iced::{button, container, scrollable, Background, Color};
 
 enum ColorPalette {
     Primary,
@@ -145,6 +145,41 @@ impl container::StyleSheet for Cell {
         container::Style {
             background: Some(Background::Color(ColorPalette::Background.rgb())),
             ..container::Style::default()
+        }
+    }
+}
+
+pub struct Scrollable;
+impl scrollable::StyleSheet for Scrollable {
+    fn active(&self) -> scrollable::Scrollbar {
+        scrollable::Scrollbar {
+            background: Some(Background::Color(ColorPalette::Background.rgb())),
+            border_radius: 0,
+            border_width: 0,
+            border_color: Color::TRANSPARENT,
+            scroller: scrollable::Scroller {
+                color: ColorPalette::Surface.rgb(),
+                border_radius: 2,
+                border_width: 0,
+                border_color: Color::TRANSPARENT,
+            },
+        }
+    }
+
+    fn hovered(&self) -> scrollable::Scrollbar {
+        let active = self.active();
+
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..active.scroller },
+            ..active
+        }
+    }
+
+    fn dragging(&self) -> scrollable::Scrollbar {
+        let hovered = self.hovered();
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..hovered.scroller },
+            ..hovered
         }
     }
 }

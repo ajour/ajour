@@ -44,7 +44,7 @@ make app
 make dmg
 
 # Windows
-cargo wix -I .\resources\windows\wix\main.wxs
+cargo build --release
 ```
 
 # Configuration
@@ -58,9 +58,11 @@ Ajour doesn't create the config file for you, but it looks for one in the follow
 
 ## Windows
 
-On Windows, the config file should be located at:
+On Windows, it looks for a config file in the following locations:
 
 - `%APPDATA%\ajour\ajour.yml`
+- `In the same directory as the executable`
+
 
 # Screenshots
 
