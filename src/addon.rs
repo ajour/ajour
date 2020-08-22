@@ -133,6 +133,9 @@ impl Addon {
                     if self.is_updatable() {
                         self.state = AddonState::Updatable;
                     }
+
+                    // Breaks out on first hit.
+                    break;
                 }
             }
         }
