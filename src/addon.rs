@@ -171,7 +171,7 @@ impl Addon {
     }
 
     /// Function returns a `bool` indicating if the user has manually hidden the addon.
-    pub fn is_hidden(&self, hidden: &Vec<String>) -> bool {
+    pub fn is_hidden(&self, hidden: &[String]) -> bool {
         hidden.iter().any(|i| i == &self.id)
     }
 
