@@ -122,8 +122,6 @@ impl Application for Ajour {
         let update_all_button: Element<Interaction> = update_all_button.into();
         let refresh_button: Element<Interaction> = refresh_button.into();
 
-        // println!("ADDON STATE IN DRAW {:?}", self.state);
-
         // Displays text depending on the state of the app.
         let parent_addons_count = self.addons.clone().iter().filter(|a| a.is_parent()).count();
         let loading_addons = self
