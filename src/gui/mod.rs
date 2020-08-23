@@ -12,6 +12,9 @@ use iced::{
     HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text,
 };
 
+use image::ImageFormat;
+static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
+
 #[derive(Debug)]
 pub enum AjourState {
     Idle,
@@ -441,7 +444,15 @@ impl Application for Ajour {
 pub fn run() {
     let mut settings = Settings::default();
     settings.window.size = (900, 620);
-    // Enforce the usage of dedicated gpu if available
+    // Enforce the usage of dedicated gpu if available.
     settings.antialiasing = true;
+
+    // Sets the Window icon.
+    let image = image::load_from_memory_with_format(WINDOW_ICON, ImageFormat::Ico)
+        .expect("loading icon")
+        .to_rgba();
+    let (width, height) = image.dimensions();
+    let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
+    settings.window.icon = Some(icon.unwrap());
     Ajour::run(settings);
 }
