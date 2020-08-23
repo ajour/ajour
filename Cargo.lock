@@ -33,7 +33,7 @@ dependencies = [
 
 [[package]]
 name = "ajour"
-version = "0.1.0-beta4"
+version = "0.1.0-beta5"
 dependencies = [
  "async-std",
  "dirs 3.0.1",
