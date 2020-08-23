@@ -41,6 +41,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons = Vec::new();
             return Ok(Command::perform(load_config(), Message::Parse));
         }
+        Message::Interaction(Interaction::Expand(id)) => {
+            // Expand a addon.
+            // If it's already expanded, we collapse it again.
+            if let Some(addon) = ajour.addons.iter().find(|a| a.id == id) {
+                if let Some(is_addon_expanded) =
+                    &ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
+                {
+                    if is_addon_expanded.clone() {
+                        ajour.expanded_addon = None;
+                        return Ok(Command::none());
+                    }
+                }
+
+                ajour.expanded_addon = Some(addon.clone());
+            }
+        }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
             // TODO: maybe just rewrite and assume it goes well and remove addon.
