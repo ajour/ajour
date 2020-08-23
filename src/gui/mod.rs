@@ -235,7 +235,7 @@ impl Application for Ajour {
         // Loops addons for GUI.
         for addon in &mut self.addons.iter_mut().filter(|a| a.is_parent()) {
             // Default element height
-            let default_height = Length::Units(27);
+            let default_height = Length::Units(26);
             // Check if current addon is expanded.
             let is_addon_expanded = match &self.expanded_addon {
                 Some(expanded_addon) => addon.id == expanded_addon.id,
