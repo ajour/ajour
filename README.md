@@ -1,9 +1,9 @@
 <h1 align="center">Ajour</h1>
+
 ![](./resources/screenshots/ajour-banner.png)
 
-Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source.
+Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
 
-Ajour currently supports macOS and Windows.
 <p align="center">
   <img width="600"
        alt="Ajour"
@@ -13,7 +13,7 @@ Ajour currently supports macOS and Windows.
 ![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
 ![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
 
-# Features
+## Features
 
 - Addons from multiple repositories:
   - [wowinterface.com](https://www.wowinterface.com/addons.php)
@@ -23,11 +23,11 @@ Ajour currently supports macOS and Windows.
 - Remove addon
 - Retail and classic flavor support
 
-# Install from package
+## Install from package
 
 Pre-built packages for Windows and macOS can be found on the [Releases](https://github.com/casperstorm/ajour/releases) page.
 
-# Install from source
+## Install from source
 
 On Ubuntu / Debian derivatives, install the following dependencies:
 
@@ -53,7 +53,7 @@ make dmg
 cargo build --release
 ```
 
-# Configuration
+## Configuration
 
 You can find a template configuration file with documentation for all available fields [here](./ajour.yml).
 
@@ -62,25 +62,25 @@ Ajour doesn't create the config file for you, but it looks for one in the follow
 - `$HOME/.config/ajour/ajour.yml`
 - `$HOME/.ajour.yml`
 
-## Windows
+### Windows
 
 On Windows, it looks for a config file in the following locations:
 
 - `%APPDATA%\ajour\ajour.yml`
 - `In the same directory as the executable`
 
-# Other addon managers
+## Other addon managers
 
 [Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated list of other addon managers:
 
 https://ogri-la.github.io/wow-addon-managers/
 
-# Acknowledgement
+## Acknowledgement
 
 - [Rasmus Nielsen](https://rasmusnielsen.dk/) for the Ajour icon.
 - [mlablah](https://github.com/mlablah) for the architectural discussions.
 - [##rust and the whole community 🦀](https://webchat.freenode.net/?channels=##rust)
 
-# License
+## License
 
 Ajour is released under the [MIT License.](https://github.com/casperstorm/ajour/blob/master/LICENSE)
