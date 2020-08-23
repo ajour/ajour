@@ -123,7 +123,13 @@ impl Application for Ajour {
         let refresh_button: Element<Interaction> = refresh_button.into();
 
         // Displays text depending on the state of the app.
-        let parent_addons_count = self.addons.clone().iter().filter(|a| a.is_parent()).count();
+        let ignored_addons = self.config.addons.ignore.as_ref();
+        let parent_addons_count = self
+            .addons
+            .clone()
+            .iter()
+            .filter(|a| a.is_parent() && !a.is_ignored(&ignored_addons))
+            .count();
         let loading_addons = self
             .addons
             .iter()
@@ -150,6 +156,7 @@ impl Application for Ajour {
 
         let error_container = Container::new(error_text)
             .center_y()
+            .center_x()
             .padding(5)
             .width(Length::FillPortion(1))
             .style(style::StatusErrorTextContainer);
@@ -233,7 +240,12 @@ impl Application for Ajour {
             .style(style::Scrollable);
 
         // Loops addons for GUI.
-        for addon in &mut self.addons.iter_mut().filter(|a| a.is_parent()) {
+        let ignored_addons = self.config.addons.ignore.as_ref();
+        for addon in &mut self
+            .addons
+            .iter_mut()
+            .filter(|a| a.is_parent() && !a.is_ignored(&ignored_addons))
+        {
             // Default element height
             let default_height = Length::Units(26);
             // Check if current addon is expanded.

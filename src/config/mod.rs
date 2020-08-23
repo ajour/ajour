@@ -4,11 +4,13 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+mod addons;
 mod tokens;
 mod wow;
 
 use crate::{error::ClientError, Result};
 
+pub use crate::config::addons::Addons;
 pub use crate::config::tokens::Tokens;
 pub use crate::config::wow::Wow;
 
@@ -17,6 +19,9 @@ pub use crate::config::wow::Wow;
 pub struct Config {
     #[serde(default = "default_wow")]
     pub wow: Wow,
+
+    #[serde(default = "default_addons")]
+    pub addons: Addons,
 
     #[serde(default = "default_tokens")]
     pub tokens: Tokens,
@@ -28,6 +33,10 @@ fn default_wow() -> Wow {
 
 fn default_tokens() -> Tokens {
     Tokens::default()
+}
+
+fn default_addons() -> Addons {
+    Addons::default()
 }
 
 impl Config {

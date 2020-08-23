@@ -170,6 +170,12 @@ impl Addon {
         }
     }
 
+    /// Function returns a `bool` indicating if the user has manually
+    /// ignored the addon.
+    pub fn is_ignored(&self, ignored: &Vec<String>) -> bool {
+        ignored.iter().any(|i| i == &self.id)
+    }
+
     /// Function returns a `Vec<String>` which contains all combined dependencies.
     ///
     /// Example:
