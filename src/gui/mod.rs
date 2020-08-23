@@ -124,17 +124,30 @@ impl Application for Ajour {
 
         // Displays text depending on the state of the app.
         let parent_addons_count = self.addons.clone().iter().filter(|a| a.is_parent()).count();
-        let status_text = match &self.state {
-            AjourState::Idle => {
-                Text::new(format!("{} addons loaded", parent_addons_count)).size(default_font_size)
-            }
-            AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
-        };
+        let status_text =
+            Text::new(format!("{} addons loaded", parent_addons_count)).size(default_font_size);
+        // let status_text = if let AjourState::Idle = &self.state {
+        //     println!("we are idling...!");
+        // }
+        // if let AjourState::Error(e) = &self.state {}
+
         let status_container = Container::new(status_text)
             .center_y()
             .padding(5)
-            .width(Length::FillPortion(1))
             .style(style::StatusTextContainer);
+
+        let error_text = if let AjourState::Error(e) = &self.state {
+            Text::new(e.to_string()).size(default_font_size)
+        } else {
+            // Display nothing.
+            Text::new("")
+        };
+
+        let error_container = Container::new(error_text)
+            .center_y()
+            .padding(5)
+            .width(Length::FillPortion(1))
+            .style(style::StatusErrorTextContainer);
 
         let version_text = Text::new(env!("CARGO_PKG_VERSION"))
             .size(default_font_size)
@@ -156,6 +169,7 @@ impl Application for Ajour {
             .push(spacer)
             .push(refresh_button.map(Message::Interaction))
             .push(status_container)
+            .push(error_container)
             .push(version_container)
             .push(right_spacer);
 
@@ -194,14 +208,17 @@ impl Application for Ajour {
             .width(Length::Units(70))
             .style(style::StatusTextContainer);
 
-        row_titles = row_titles
-            .push(left_spacer)
-            .push(addon_row_container)
-            .push(local_version_container)
-            .push(remote_version_container)
-            .push(status_row_container)
-            .push(delete_row_container)
-            .push(right_spacer);
+        // Only shows row titles if we have any addons.
+        if !self.addons.is_empty() {
+            row_titles = row_titles
+                .push(left_spacer)
+                .push(addon_row_container)
+                .push(local_version_container)
+                .push(remote_version_container)
+                .push(status_row_container)
+                .push(delete_row_container)
+                .push(right_spacer);
+        }
 
         // A scrollable list containing rows.
         // Each row holds information about a single addon.

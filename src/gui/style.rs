@@ -68,6 +68,20 @@ impl button::StyleSheet for DefaultBoxedButton {
             ..self.active()
         }
     }
+
+    fn disabled(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.01,
+                ..ColorPalette::Primary.rgb()
+            })),
+            text_color: Color {
+                a: 0.1,
+                ..ColorPalette::Primary.rgb()
+            },
+            ..self.active()
+        }
+    }
 }
 
 pub struct SecondaryButton;
@@ -154,6 +168,19 @@ impl container::StyleSheet for StatusTextContainer {
             text_color: Some(Color {
                 a: 0.4,
                 ..ColorPalette::OnSurface.rgb()
+            }),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct StatusErrorTextContainer;
+impl container::StyleSheet for StatusErrorTextContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            text_color: Some(Color {
+                a: 0.8,
+                ..ColorPalette::Error.rgb()
             }),
             ..container::Style::default()
         }
