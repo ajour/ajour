@@ -260,7 +260,7 @@ impl PartialOrd for Addon {
                 .cmp(&other.is_updatable())
                 .then_with(|| self.remote_version.cmp(&other.remote_version))
                 .reverse()
-                .then_with(|| self.id.cmp(&other.id)),
+                .then_with(|| self.title.cmp(&other.title)),
         )
     }
 }
@@ -271,7 +271,7 @@ impl Ord for Addon {
             .cmp(&other.is_updatable())
             .then_with(|| self.remote_version.cmp(&other.remote_version))
             .reverse()
-            .then_with(|| self.id.cmp(&other.id))
+            .then_with(|| self.title.cmp(&other.title))
     }
 }
 
