@@ -128,18 +128,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addons = ajour.addons.clone();
             for addon in addons.iter().filter(|a| a.is_parent()) {
                 let addon = addon.to_owned();
-                if let (Some(_), Some(token)) = (&addon.wowi_id, &ajour.config.tokens.wowinterface)
-                {
+                if let (Some(_), Some(token)) = (
+                    &addon.repository_identifiers.wowi,
+                    &ajour.config.tokens.wowinterface,
+                ) {
                     commands.push(Command::perform(
                         fetch_wowinterface_packages(addon, token.to_string()),
                         Message::WowinterfacePackages,
                     ))
-                } else if addon.tukui_id.is_some() {
+                } else if addon.repository_identifiers.tukui.is_some() {
                     commands.push(Command::perform(
                         fetch_tukui_package(addon),
                         Message::TukuiPackage,
                     ))
-                } else if addon.curse_id.is_some() {
+                } else if addon.repository_identifiers.curse.is_some() {
                     commands.push(Command::perform(
                         fetch_curse_package(addon),
                         Message::CursePackage,
@@ -261,7 +263,10 @@ async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package
     (
         addon.id.clone(),
         curse_api::fetch_remote_package(
-            &addon.curse_id.expect("Expected to have curse_id on Addon."),
+            &addon
+                .repository_identifiers
+                .curse
+                .expect("Expected to have curse identifier on Addon."),
         )
         .await,
     )
@@ -282,7 +287,10 @@ async fn fetch_tukui_package(addon: Addon) -> (String, Result<tukui_api::Package
     (
         addon.id.clone(),
         tukui_api::fetch_remote_package(
-            &addon.tukui_id.expect("Expected to have tukui_id on Addon."),
+            &addon
+                .repository_identifiers
+                .tukui
+                .expect("Expected to have tukui identifier on Addon."),
         )
         .await,
     )
@@ -296,8 +304,9 @@ async fn fetch_wowinterface_packages(
         addon.id.clone(),
         wowinterface_api::fetch_remote_packages(
             &addon
-                .wowi_id
-                .expect("Expected to have wowinterface_id on Addon."),
+                .repository_identifiers
+                .wowi
+                .expect("Expected to have wowinterface identifier on Addon."),
             &token,
         )
         .await,

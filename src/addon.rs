@@ -22,14 +22,19 @@ pub struct Addon {
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
-    pub wowi_id: Option<String>,
-    pub tukui_id: Option<String>,
-    pub curse_id: Option<u32>,
+    pub repository_identifiers: RepositoryIdentifiers,
 
     // States for GUI
     pub details_btn_state: iced::button::State,
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
+}
+
+#[derive(Debug, Clone)]
+pub struct RepositoryIdentifiers {
+    pub wowi: Option<String>,
+    pub tukui: Option<String>,
+    pub curse: Option<u32>,
 }
 
 impl Addon {
@@ -39,10 +44,8 @@ impl Addon {
         notes: Option<String>,
         version: Option<String>,
         path: PathBuf,
-        wowi_id: Option<String>,
-        tukui_id: Option<String>,
-        curse_id: Option<u32>,
         dependencies: Vec<String>,
+        repository_identifiers: RepositoryIdentifiers,
     ) -> Self {
         let os_title = path.file_name().unwrap();
         let str_title = os_title.to_str().unwrap();
@@ -57,9 +60,7 @@ impl Addon {
             path,
             dependencies,
             state: AddonState::Ajour(None),
-            wowi_id,
-            tukui_id,
-            curse_id,
+            repository_identifiers,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
@@ -71,8 +72,8 @@ impl Addon {
     /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
     /// It then updates self, with the information from that package.
     pub fn apply_wowi_packages(&mut self, packages: &[wowinterface_api::Package]) {
-        let wowi_id = self.wowi_id.clone().unwrap();
-        let package = packages.iter().find(|a| a.id == wowi_id);
+        let wowi_id = self.repository_identifiers.wowi.as_ref().unwrap();
+        let package = packages.iter().find(|a| &a.id == wowi_id);
         if let Some(package) = package {
             self.remote_version = Some(package.version.clone());
             self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
@@ -216,9 +217,7 @@ impl Addon {
         self.title = other.title.clone();
         self.version = other.version.clone();
         self.dependencies = other.dependencies.clone();
-        self.wowi_id = other.wowi_id.clone();
-        self.tukui_id = other.tukui_id.clone();
-        self.curse_id = other.curse_id;
+        self.repository_identifiers = other.repository_identifiers.clone();
     }
 
     /// Check if the `Addon` is updatable.
