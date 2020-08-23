@@ -15,8 +15,8 @@ addons:
   # A collection of ignored addons.
   # Key is the Addon foldername.
   ignored:
-#   - DataStore
-#   - ElvUI
+    - # DataStore
+    - # ElvUI
 
 # Tokens for repositories
 #tokens:
