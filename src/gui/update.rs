@@ -41,6 +41,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons = Vec::new();
             return Ok(Command::perform(load_config(), Message::Parse));
         }
+        Message::Interaction(Interaction::Expand(id)) => {
+            // Expand a addon.
+            // If it's already expanded, we collapse it again.
+            if let Some(addon) = ajour.addons.iter().find(|a| a.id == id) {
+                if let Some(is_addon_expanded) =
+                    &ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
+                {
+                    if *is_addon_expanded {
+                        ajour.expanded_addon = None;
+                        return Ok(Command::none());
+                    }
+                }
+
+                ajour.expanded_addon = Some(addon.clone());
+            }
+        }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
             // TODO: maybe just rewrite and assume it goes well and remove addon.
@@ -109,21 +125,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons.sort();
 
             let mut commands = Vec::<Command<Message>>::new();
-            let addons = ajour.addons.clone();
-            for addon in addons.iter().filter(|a| a.is_parent()) {
+            // let addons = ajour.addons.clone();
+            for addon in &mut ajour.addons.iter_mut().filter(|a| a.is_parent()) {
+                addon.state = AddonState::Loading;
                 let addon = addon.to_owned();
-                if let (Some(_), Some(token)) = (&addon.wowi_id, &ajour.config.tokens.wowinterface)
-                {
+                if let (Some(_), Some(token)) = (
+                    &addon.repository_identifiers.wowi,
+                    &ajour.config.tokens.wowinterface,
+                ) {
                     commands.push(Command::perform(
                         fetch_wowinterface_packages(addon, token.to_string()),
                         Message::WowinterfacePackages,
                     ))
-                } else if addon.tukui_id.is_some() {
+                } else if addon.repository_identifiers.tukui.is_some() {
                     commands.push(Command::perform(
                         fetch_tukui_package(addon),
                         Message::TukuiPackage,
                     ))
-                } else if addon.curse_id.is_some() {
+                } else if addon.repository_identifiers.curse.is_some() {
                     commands.push(Command::perform(
                         fetch_curse_package(addon),
                         Message::CursePackage,
@@ -140,14 +159,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::batch(commands));
         }
         Message::CursePackage((id, result)) => {
-            if let Ok(package) = result {
-                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                addon.state = AddonState::Ajour(None);
+                if let Ok(package) = result {
                     addon.apply_curse_package(&package, &ajour.config.wow.flavor);
                 }
             }
         }
         Message::CursePackages((id, retries, result)) => {
             if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                addon.state = AddonState::Ajour(None);
                 if let Ok(packages) = result {
                     addon.apply_curse_packages(&packages, &ajour.config.wow.flavor);
                 } else {
@@ -170,22 +191,23 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::TukuiPackage((id, result)) => {
-            if let Ok(package) = result {
-                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                addon.state = AddonState::Ajour(None);
+                if let Ok(package) = result {
                     addon.apply_tukui_package(&package);
                 }
             }
         }
         Message::WowinterfacePackages((id, result)) => {
-            if let Ok(packages) = result {
-                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                addon.state = AddonState::Ajour(None);
+                if let Ok(packages) = result {
                     addon.apply_wowi_packages(&packages);
                 }
             }
         }
         Message::DownloadedAddon((id, result)) => {
-            // When an addon has been successfully downloaded we begin to
-            // unpack it.
+            // When an addon has been successfully downloaded we begin to unpack it.
             // If it for some reason fails to download, we handle the error.
             let from_directory = ajour
                 .config
@@ -226,7 +248,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                     Err(err) => {
                         ajour.state = AjourState::Error(err);
-                        addon.state = AddonState::Ajour(Some("Error!".to_owned()));
+                        addon.state = AddonState::Ajour(Some("Error".to_owned()));
                     }
                 }
             }
@@ -245,7 +267,10 @@ async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package
     (
         addon.id.clone(),
         curse_api::fetch_remote_package(
-            &addon.curse_id.expect("Expected to have curse_id on Addon."),
+            &addon
+                .repository_identifiers
+                .curse
+                .expect("Expected to have curse identifier on Addon."),
         )
         .await,
     )
@@ -266,7 +291,10 @@ async fn fetch_tukui_package(addon: Addon) -> (String, Result<tukui_api::Package
     (
         addon.id.clone(),
         tukui_api::fetch_remote_package(
-            &addon.tukui_id.expect("Expected to have tukui_id on Addon."),
+            &addon
+                .repository_identifiers
+                .tukui
+                .expect("Expected to have tukui identifier on Addon."),
         )
         .await,
     )
@@ -280,8 +308,9 @@ async fn fetch_wowinterface_packages(
         addon.id.clone(),
         wowinterface_api::fetch_remote_packages(
             &addon
-                .wowi_id
-                .expect("Expected to have wowinterface_id on Addon."),
+                .repository_identifiers
+                .wowi
+                .expect("Expected to have wowinterface identifier on Addon."),
             &token,
         )
         .await,

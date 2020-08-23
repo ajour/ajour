@@ -5,9 +5,18 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AddonState {
     Ajour(Option<String>),
+    Loading,
     Updatable,
     Downloading,
     Unpacking,
+}
+
+#[derive(Debug, Clone)]
+/// Struct which stores identifiers for the different repositories.
+pub struct RepositoryIdentifiers {
+    pub wowi: Option<String>,
+    pub tukui: Option<String>,
+    pub curse: Option<u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -15,16 +24,17 @@ pub enum AddonState {
 pub struct Addon {
     pub id: String,
     pub title: String,
+    pub notes: Option<String>,
     pub version: Option<String>,
     pub remote_version: Option<String>,
     pub remote_url: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
-    pub wowi_id: Option<String>,
-    pub tukui_id: Option<String>,
-    pub curse_id: Option<u32>,
+    pub repository_identifiers: RepositoryIdentifiers,
 
+    // States for GUI
+    pub details_btn_state: iced::button::State,
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
 }
@@ -33,12 +43,11 @@ impl Addon {
     /// Creates a new Addon
     pub fn new(
         title: String,
+        notes: Option<String>,
         version: Option<String>,
         path: PathBuf,
-        wowi_id: Option<String>,
-        tukui_id: Option<String>,
-        curse_id: Option<u32>,
         dependencies: Vec<String>,
+        repository_identifiers: RepositoryIdentifiers,
     ) -> Self {
         let os_title = path.file_name().unwrap();
         let str_title = os_title.to_str().unwrap();
@@ -46,15 +55,15 @@ impl Addon {
         Addon {
             id: str_title.to_string(),
             title,
+            notes,
             version,
             remote_version: None,
             remote_url: None,
             path,
             dependencies,
             state: AddonState::Ajour(None),
-            wowi_id,
-            tukui_id,
-            curse_id,
+            repository_identifiers,
+            details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         }
@@ -65,8 +74,8 @@ impl Addon {
     /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
     /// It then updates self, with the information from that package.
     pub fn apply_wowi_packages(&mut self, packages: &[wowinterface_api::Package]) {
-        let wowi_id = self.wowi_id.clone().unwrap();
-        let package = packages.iter().find(|a| a.id == wowi_id);
+        let wowi_id = self.repository_identifiers.wowi.as_ref().unwrap();
+        let package = packages.iter().find(|a| &a.id == wowi_id);
         if let Some(package) = package {
             self.remote_version = Some(package.version.clone());
             self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
@@ -133,6 +142,9 @@ impl Addon {
                     if self.is_updatable() {
                         self.state = AddonState::Updatable;
                     }
+
+                    // Breaks out on first hit.
+                    break;
                 }
             }
         }
@@ -207,9 +219,7 @@ impl Addon {
         self.title = other.title.clone();
         self.version = other.version.clone();
         self.dependencies = other.dependencies.clone();
-        self.wowi_id = other.wowi_id.clone();
-        self.tukui_id = other.tukui_id.clone();
-        self.curse_id = other.curse_id;
+        self.repository_identifiers = other.repository_identifiers.clone();
     }
 
     /// Check if the `Addon` is updatable.

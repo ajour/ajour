@@ -9,7 +9,7 @@ use crate::{
 };
 use iced::{
     button, scrollable, Application, Button, Column, Command, Container, Element,
-    HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text, VerticalAlignment,
+    HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text,
 };
 
 #[derive(Debug)]
@@ -24,6 +24,7 @@ pub enum Interaction {
     UpdateAll,
     Update(String),
     Delete(String),
+    Expand(String),
 }
 
 #[derive(Debug)]
@@ -48,6 +49,7 @@ pub struct Ajour {
     addons_scrollable_state: scrollable::State,
     addons: Vec<Addon>,
     config: Config,
+    expanded_addon: Option<Addon>,
 }
 
 impl Default for Ajour {
@@ -59,6 +61,7 @@ impl Default for Ajour {
             addons_scrollable_state: Default::default(),
             addons: Vec::new(),
             config: Config::default(),
+            expanded_addon: None,
         }
     }
 }
@@ -99,7 +102,7 @@ impl Application for Ajour {
                 .horizontal_alignment(HorizontalAlignment::Center)
                 .size(default_font_size),
         )
-        .style(style::DefaultButton);
+        .style(style::DefaultBoxedButton);
 
         let mut refresh_button = Button::new(
             &mut self.refresh_button_state,
@@ -107,7 +110,7 @@ impl Application for Ajour {
                 .horizontal_alignment(HorizontalAlignment::Center)
                 .size(default_font_size),
         )
-        .style(style::DefaultButton);
+        .style(style::DefaultBoxedButton);
 
         // Enable update_all_button and refresh_button,
         // if we have any Addons.
@@ -121,17 +124,35 @@ impl Application for Ajour {
 
         // Displays text depending on the state of the app.
         let parent_addons_count = self.addons.clone().iter().filter(|a| a.is_parent()).count();
-        let status_text = match &self.state {
-            AjourState::Idle => {
-                Text::new(format!("{} addons loaded", parent_addons_count)).size(default_font_size)
-            }
-            AjourState::Error(e) => Text::new(e.to_string()).size(default_font_size),
+        let loading_addons = self
+            .addons
+            .iter()
+            .filter(|a| a.state == AddonState::Loading)
+            .count();
+        let status_text = if loading_addons != 0 {
+            Text::new(format!("Fetching data for {} addons", loading_addons))
+                .size(default_font_size)
+        } else {
+            Text::new(format!("{} addons loaded", parent_addons_count)).size(default_font_size)
         };
+
         let status_container = Container::new(status_text)
             .center_y()
             .padding(5)
-            .width(Length::FillPortion(1))
             .style(style::StatusTextContainer);
+
+        let error_text = if let AjourState::Error(e) = &self.state {
+            Text::new(e.to_string()).size(default_font_size)
+        } else {
+            // Display nothing.
+            Text::new("")
+        };
+
+        let error_container = Container::new(error_text)
+            .center_y()
+            .padding(5)
+            .width(Length::FillPortion(1))
+            .style(style::StatusErrorTextContainer);
 
         let version_text = Text::new(env!("CARGO_PKG_VERSION"))
             .size(default_font_size)
@@ -153,6 +174,7 @@ impl Application for Ajour {
             .push(spacer)
             .push(refresh_button.map(Message::Interaction))
             .push(status_container)
+            .push(error_container)
             .push(version_container)
             .push(right_spacer);
 
@@ -162,7 +184,8 @@ impl Application for Ajour {
         // A row containing titles above the addon rows.
         let mut row_titles = Row::new().spacing(1).height(Length::Units(20));
 
-        let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+        // We add some margin left to adjust for inner-marigin in cell.
+        let left_spacer = Space::new(Length::Units(default_padding + 5), Length::Units(0));
         let right_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
 
         let addon_row_text = Text::new("Addon").size(default_font_size);
@@ -185,19 +208,22 @@ impl Application for Ajour {
             .width(Length::Units(85))
             .style(style::StatusTextContainer);
 
-        let delete_row_text = Text::new("Delete").size(default_font_size);
+        let delete_row_text = Text::new("Details").size(default_font_size);
         let delete_row_container = Container::new(delete_row_text)
             .width(Length::Units(70))
             .style(style::StatusTextContainer);
 
-        row_titles = row_titles
-            .push(left_spacer)
-            .push(addon_row_container)
-            .push(local_version_container)
-            .push(remote_version_container)
-            .push(status_row_container)
-            .push(delete_row_container)
-            .push(right_spacer);
+        // Only shows row titles if we have any addons.
+        if !self.addons.is_empty() {
+            row_titles = row_titles
+                .push(left_spacer)
+                .push(addon_row_container)
+                .push(local_version_container)
+                .push(remote_version_container)
+                .push(status_row_container)
+                .push(delete_row_container)
+                .push(right_spacer);
+        }
 
         // A scrollable list containing rows.
         // Each row holds information about a single addon.
@@ -209,22 +235,25 @@ impl Application for Ajour {
         // Loops addons for GUI.
         for addon in &mut self.addons.iter_mut().filter(|a| a.is_parent()) {
             // Default element height
-            let default_height = Length::Units(35);
-
-            let title = addon.title.clone();
+            let default_height = Length::Units(26);
+            // Check if current addon is expanded.
+            let is_addon_expanded = match &self.expanded_addon {
+                Some(expanded_addon) => addon.id == expanded_addon.id,
+                None => false,
+            };
             let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
             let remote_version = addon
                 .remote_version
                 .clone()
                 .unwrap_or_else(|| String::from("-"));
 
-            let text = Text::new(title).size(default_font_size);
-            let text_container = Container::new(text)
+            let title = Text::new(&addon.title).size(default_font_size);
+            let title_container = Container::new(title)
                 .height(default_height)
                 .width(Length::FillPortion(1))
                 .center_y()
                 .padding(5)
-                .style(style::AddonTextContainer);
+                .style(style::AddonRowDefaultTextContainer);
 
             let installed_version = Text::new(version).size(default_font_size);
             let installed_version_container = Container::new(installed_version)
@@ -232,7 +261,7 @@ impl Application for Ajour {
                 .width(Length::Units(150))
                 .center_y()
                 .padding(5)
-                .style(style::AddonDescriptionContainer);
+                .style(style::AddonRowSecondaryTextContainer);
 
             let remote_version = Text::new(remote_version).size(default_font_size);
             let remote_version_container = Container::new(remote_version)
@@ -240,7 +269,7 @@ impl Application for Ajour {
                 .width(Length::Units(150))
                 .center_y()
                 .padding(5)
-                .style(style::AddonDescriptionContainer);
+                .style(style::AddonRowSecondaryTextContainer);
 
             let update_button_width = Length::Units(85);
             let update_button_container = match &addon.state {
@@ -252,8 +281,7 @@ impl Application for Ajour {
                 .width(update_button_width)
                 .center_y()
                 .center_x()
-                .padding(5)
-                .style(style::AddonDescriptionContainer),
+                .style(style::AddonRowSecondaryTextContainer),
                 AddonState::Updatable => {
                     let id = addon.id.clone();
                     let update_button: Element<Interaction> = Button::new(
@@ -262,7 +290,7 @@ impl Application for Ajour {
                             .horizontal_alignment(HorizontalAlignment::Center)
                             .size(default_font_size),
                     )
-                    .style(style::DefaultButton)
+                    .style(style::SecondaryButton)
                     .on_press(Interaction::Update(id))
                     .into();
 
@@ -271,8 +299,7 @@ impl Application for Ajour {
                         .width(update_button_width)
                         .center_y()
                         .center_x()
-                        .padding(5)
-                        .style(style::AddonDescriptionContainer)
+                        .style(style::AddonRowDefaultTextContainer)
                 }
                 AddonState::Downloading => {
                     Container::new(Text::new("Downloading").size(default_font_size))
@@ -281,7 +308,7 @@ impl Application for Ajour {
                         .center_y()
                         .center_x()
                         .padding(5)
-                        .style(style::AddonDescriptionContainer)
+                        .style(style::AddonRowSecondaryTextContainer)
                 }
                 AddonState::Unpacking => {
                     Container::new(Text::new("Unpacking").size(default_font_size))
@@ -290,43 +317,93 @@ impl Application for Ajour {
                         .center_y()
                         .center_x()
                         .padding(5)
-                        .style(style::AddonDescriptionContainer)
+                        .style(style::AddonRowSecondaryTextContainer)
                 }
+                AddonState::Loading => Container::new(Text::new("Loading").size(default_font_size))
+                    .height(default_height)
+                    .width(update_button_width)
+                    .center_y()
+                    .center_x()
+                    .padding(5)
+                    .style(style::AddonRowSecondaryTextContainer),
             };
 
-            let delete_button: Element<Interaction> = Button::new(
-                &mut addon.delete_btn_state,
-                Text::new("Delete")
-                    .vertical_alignment(VerticalAlignment::Center)
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(default_font_size),
+            let details_button_text = match is_addon_expanded {
+                true => "Close",
+                false => "Details",
+            };
+
+            let details_button: Element<Interaction> = Button::new(
+                &mut addon.details_btn_state,
+                Text::new(details_button_text).size(default_font_size),
             )
-            .on_press(Interaction::Delete(addon.id.clone()))
-            .style(style::DeleteButton)
+            .on_press(Interaction::Expand(addon.id.clone()))
+            .style(style::DefaultButton)
             .into();
 
-            let delete_button_container = Container::new(delete_button.map(Message::Interaction))
+            let details_button_container = Container::new(details_button.map(Message::Interaction))
                 .height(default_height)
                 .width(Length::Units(70))
                 .center_y()
                 .center_x()
-                .style(style::AddonDescriptionContainer);
+                .style(style::AddonRowSecondaryTextContainer);
 
             let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
             let right_spacer = Space::new(Length::Units(default_padding + 5), Length::Units(0));
 
             let row = Row::new()
                 .push(left_spacer)
-                .push(text_container)
+                .push(title_container)
                 .push(installed_version_container)
                 .push(remote_version_container)
                 .push(update_button_container)
-                .push(delete_button_container)
+                .push(details_button_container)
                 .push(right_spacer)
                 .spacing(1);
 
-            let cell = Container::new(row).width(Length::Fill).style(style::Cell);
+            let cell = Container::new(row).width(Length::Fill).style(style::Row);
             addons_scrollable = addons_scrollable.push(cell);
+
+            // Expanding cell
+            if is_addon_expanded {
+                let notes = addon
+                    .notes
+                    .clone()
+                    .unwrap_or_else(|| "No description for addon.".to_string());
+                let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+                let right_spacer = Space::new(Length::Units(default_padding + 5), Length::Units(0));
+                let space = Space::new(Length::Units(0), Length::Units(default_padding * 2));
+                let bottom_space = Space::new(Length::Units(0), Length::Units(4));
+                let notes_text = Text::new(notes).size(default_font_size);
+
+                let delete_button: Element<Interaction> = Button::new(
+                    &mut addon.delete_btn_state,
+                    Text::new("Delete").size(default_font_size),
+                )
+                .on_press(Interaction::Delete(addon.id.clone()))
+                .style(style::DeleteBoxedButton)
+                .into();
+
+                let row = Row::new().push(delete_button.map(Message::Interaction));
+                let column = Column::new()
+                    .push(notes_text)
+                    .push(space)
+                    .push(row)
+                    .push(bottom_space);
+                let details_container = Container::new(column)
+                    .width(Length::Fill)
+                    .padding(5)
+                    .style(style::AddonRowSecondaryTextContainer);
+
+                let row = Row::new()
+                    .push(left_spacer)
+                    .push(details_container)
+                    .push(right_spacer)
+                    .spacing(1);
+
+                let cell = Container::new(row).width(Length::Fill).style(style::Row);
+                addons_scrollable = addons_scrollable.push(cell);
+            }
         }
 
         let bottom_space = Space::new(Length::FillPortion(1), Length::Units(default_padding));
