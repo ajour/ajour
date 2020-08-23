@@ -454,5 +454,7 @@ pub fn run() {
     let (width, height) = image.dimensions();
     let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
     settings.window.icon = Some(icon.unwrap());
+
+    // Runs the GUI.
     Ajour::run(settings);
 }
