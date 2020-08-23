@@ -125,11 +125,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons.sort();
 
             let mut commands = Vec::<Command<Message>>::new();
-            let ignored_addons = &ajour.config.addons.ignore;
+            let hidden_addons = &ajour.config.addons.hidden;
             for addon in &mut ajour
                 .addons
                 .iter_mut()
-                .filter(|a| a.is_parent() && !a.is_ignored(ignored_addons))
+                .filter(|a| a.is_parent() && !a.is_hidden(hidden_addons))
             {
                 addon.state = AddonState::Loading;
                 let addon = addon.to_owned();

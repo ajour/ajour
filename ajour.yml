@@ -12,9 +12,9 @@ wow:
 
 # Addons related settings
 addons:
-  # A collection of ignored addons.
+  # A collection of hidden addons.
   # Key is the Addon foldername.
-  ignored:
+  hidden:
     - # DataStore
     - # ElvUI
 

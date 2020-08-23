@@ -4,10 +4,10 @@ use serde_derive::Deserialize;
 #[serde(default)]
 #[derive(Deserialize, Clone, Default, Debug, PartialEq, Eq)]
 pub struct Addons {
-    #[serde(default = "default_ignore")]
-    pub ignore: Vec<String>,
+    #[serde(default = "default_hidden")]
+    pub hidden: Vec<String>,
 }
 
-fn default_ignore() -> Vec<String> {
+fn default_hidden() -> Vec<String> {
     vec![]
 }

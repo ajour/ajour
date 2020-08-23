@@ -123,12 +123,12 @@ impl Application for Ajour {
         let refresh_button: Element<Interaction> = refresh_button.into();
 
         // Displays text depending on the state of the app.
-        let ignored_addons = self.config.addons.ignore.as_ref();
+        let hidden_addons = self.config.addons.hidden.as_ref();
         let parent_addons_count = self
             .addons
             .clone()
             .iter()
-            .filter(|a| a.is_parent() && !a.is_ignored(&ignored_addons))
+            .filter(|a| a.is_parent() && !a.is_hidden(&hidden_addons))
             .count();
         let loading_addons = self
             .addons
@@ -240,11 +240,11 @@ impl Application for Ajour {
             .style(style::Scrollable);
 
         // Loops addons for GUI.
-        let ignored_addons = self.config.addons.ignore.as_ref();
+        let hidden_addons = self.config.addons.hidden.as_ref();
         for addon in &mut self
             .addons
             .iter_mut()
-            .filter(|a| a.is_parent() && !a.is_ignored(&ignored_addons))
+            .filter(|a| a.is_parent() && !a.is_hidden(&hidden_addons))
         {
             // Default element height
             let default_height = Length::Units(26);
