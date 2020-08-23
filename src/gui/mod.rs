@@ -24,6 +24,7 @@ pub enum Interaction {
     UpdateAll,
     Update(String),
     Delete(String),
+    Expand(String),
 }
 
 #[derive(Debug)]
@@ -48,6 +49,7 @@ pub struct Ajour {
     addons_scrollable_state: scrollable::State,
     addons: Vec<Addon>,
     config: Config,
+    expanded_addon: Option<Addon>,
 }
 
 impl Default for Ajour {
@@ -59,6 +61,7 @@ impl Default for Ajour {
             addons_scrollable_state: Default::default(),
             addons: Vec::new(),
             config: Config::default(),
+            expanded_addon: None,
         }
     }
 }
@@ -210,16 +213,19 @@ impl Application for Ajour {
         for addon in &mut self.addons.iter_mut().filter(|a| a.is_parent()) {
             // Default element height
             let default_height = Length::Units(35);
-
-            let title = addon.title.clone();
+            // Check if current addon is expanded.
+            let is_addon_expanded = match &self.expanded_addon {
+                Some(expanded_addon) => addon.id == expanded_addon.id,
+                None => false,
+            };
             let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
             let remote_version = addon
                 .remote_version
                 .clone()
                 .unwrap_or_else(|| String::from("-"));
 
-            let text = Text::new(title).size(default_font_size);
-            let text_container = Container::new(text)
+            let title = Text::new(&addon.title).size(default_font_size);
+            let title_container = Container::new(title)
                 .height(default_height)
                 .width(Length::FillPortion(1))
                 .center_y()
@@ -294,18 +300,23 @@ impl Application for Ajour {
                 }
             };
 
-            let delete_button: Element<Interaction> = Button::new(
-                &mut addon.delete_btn_state,
-                Text::new("Delete")
+            let details_button_text = match is_addon_expanded {
+                true => "Close",
+                false => "Details",
+            };
+
+            let details_button: Element<Interaction> = Button::new(
+                &mut addon.details_btn_state,
+                Text::new(details_button_text)
                     .vertical_alignment(VerticalAlignment::Center)
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(default_font_size),
             )
-            .on_press(Interaction::Delete(addon.id.clone()))
-            .style(style::DeleteButton)
+            .on_press(Interaction::Expand(addon.id.clone()))
+            .style(style::SecondaryButton)
             .into();
 
-            let delete_button_container = Container::new(delete_button.map(Message::Interaction))
+            let details_button_container = Container::new(details_button.map(Message::Interaction))
                 .height(default_height)
                 .width(Length::Units(70))
                 .center_y()
@@ -317,16 +328,60 @@ impl Application for Ajour {
 
             let row = Row::new()
                 .push(left_spacer)
-                .push(text_container)
+                .push(title_container)
                 .push(installed_version_container)
                 .push(remote_version_container)
                 .push(update_button_container)
-                .push(delete_button_container)
+                .push(details_button_container)
                 .push(right_spacer)
                 .spacing(1);
 
             let cell = Container::new(row).width(Length::Fill).style(style::Cell);
             addons_scrollable = addons_scrollable.push(cell);
+
+            // Expanding cell
+            if is_addon_expanded {
+                let notes = addon
+                    .notes
+                    .clone()
+                    .unwrap_or_else(|| "No description for addon.".to_string());
+                let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+                let right_spacer = Space::new(Length::Units(default_padding + 5), Length::Units(0));
+                let space = Space::new(Length::Units(0), Length::Units(default_padding * 2));
+                let bottom_space = Space::new(Length::Units(0), Length::Units(4));
+                let notes_text = Text::new(notes).size(default_font_size);
+
+                let delete_button: Element<Interaction> = Button::new(
+                    &mut addon.delete_btn_state,
+                    Text::new("Delete")
+                        .vertical_alignment(VerticalAlignment::Center)
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .size(default_font_size),
+                )
+                .on_press(Interaction::Delete(addon.id.clone()))
+                .style(style::DeleteButton)
+                .into();
+
+                let row = Row::new().push(delete_button.map(Message::Interaction));
+                let column = Column::new()
+                    .push(notes_text)
+                    .push(space)
+                    .push(row)
+                    .push(bottom_space);
+                let details_container = Container::new(column)
+                    .width(Length::Fill)
+                    .padding(5)
+                    .style(style::AddonDescriptionContainer);
+
+                let row = Row::new()
+                    .push(left_spacer)
+                    .push(details_container)
+                    .push(right_spacer)
+                    .spacing(1);
+
+                let cell = Container::new(row).width(Length::Fill).style(style::Cell);
+                addons_scrollable = addons_scrollable.push(cell);
+            }
         }
 
         let bottom_space = Space::new(Length::FillPortion(1), Length::Units(default_padding));

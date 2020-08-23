@@ -15,6 +15,7 @@ pub enum AddonState {
 pub struct Addon {
     pub id: String,
     pub title: String,
+    pub notes: Option<String>,
     pub version: Option<String>,
     pub remote_version: Option<String>,
     pub remote_url: Option<String>,
@@ -25,6 +26,8 @@ pub struct Addon {
     pub tukui_id: Option<String>,
     pub curse_id: Option<u32>,
 
+    // States for GUI
+    pub details_btn_state: iced::button::State,
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
 }
@@ -33,6 +36,7 @@ impl Addon {
     /// Creates a new Addon
     pub fn new(
         title: String,
+        notes: Option<String>,
         version: Option<String>,
         path: PathBuf,
         wowi_id: Option<String>,
@@ -46,6 +50,7 @@ impl Addon {
         Addon {
             id: str_title.to_string(),
             title,
+            notes,
             version,
             remote_version: None,
             remote_url: None,
@@ -55,6 +60,7 @@ impl Addon {
             wowi_id,
             tukui_id,
             curse_id,
+            details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         }
