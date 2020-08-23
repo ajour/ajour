@@ -11,6 +11,14 @@ pub enum AddonState {
 }
 
 #[derive(Debug, Clone)]
+/// Struct which stores identifiers for the different repositories.
+pub struct RepositoryIdentifiers {
+    pub wowi: Option<String>,
+    pub tukui: Option<String>,
+    pub curse: Option<u32>,
+}
+
+#[derive(Debug, Clone)]
 /// Struct which stores information about a single Addon.
 pub struct Addon {
     pub id: String,
@@ -28,13 +36,6 @@ pub struct Addon {
     pub details_btn_state: iced::button::State,
     pub update_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
-}
-
-#[derive(Debug, Clone)]
-pub struct RepositoryIdentifiers {
-    pub wowi: Option<String>,
-    pub tukui: Option<String>,
-    pub curse: Option<u32>,
 }
 
 impl Addon {
