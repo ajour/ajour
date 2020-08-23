@@ -151,7 +151,10 @@ pub struct StatusTextContainer;
 impl container::StyleSheet for StatusTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
-            text_color: Some(ColorPalette::OnSurface.rgb()),
+            text_color: Some(Color {
+                a: 0.4,
+                ..ColorPalette::OnSurface.rgb()
+            }),
             ..container::Style::default()
         }
     }

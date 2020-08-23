@@ -165,7 +165,8 @@ impl Application for Ajour {
         // A row containing titles above the addon rows.
         let mut row_titles = Row::new().spacing(1).height(Length::Units(20));
 
-        let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+        // We add some margin left to adjust for inner-marigin in cell.
+        let left_spacer = Space::new(Length::Units(default_padding + 5), Length::Units(0));
         let right_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
 
         let addon_row_text = Text::new("Addon").size(default_font_size);
@@ -188,7 +189,7 @@ impl Application for Ajour {
             .width(Length::Units(85))
             .style(style::StatusTextContainer);
 
-        let delete_row_text = Text::new("Delete").size(default_font_size);
+        let delete_row_text = Text::new("Details").size(default_font_size);
         let delete_row_container = Container::new(delete_row_text)
             .width(Length::Units(70))
             .style(style::StatusTextContainer);
