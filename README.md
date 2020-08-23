@@ -66,7 +66,8 @@ On Windows, it looks for a config file in the following locations:
 
 # Screenshots
 
-<img src="./resources/screenshots/ajour-0.1.0.png" width=200>
+<img src="./resources/screenshots/ajour-0.1.0-1.png" width=200>
+<img src="./resources/screenshots/ajour-0.1.0-2.png" width=200>
 
 # Other addon managers
 
