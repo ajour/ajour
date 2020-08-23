@@ -125,8 +125,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons.sort();
 
             let mut commands = Vec::<Command<Message>>::new();
-            let addons = ajour.addons.clone();
-            for addon in addons.iter().filter(|a| a.is_parent()) {
+            // let addons = ajour.addons.clone();
+            for addon in &mut ajour.addons.iter_mut().filter(|a| a.is_parent()) {
+                addon.state = AddonState::Loading;
                 let addon = addon.to_owned();
                 if let (Some(_), Some(token)) = (
                     &addon.repository_identifiers.wowi,
@@ -158,14 +159,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::batch(commands));
         }
         Message::CursePackage((id, result)) => {
-            if let Ok(package) = result {
-                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                addon.state = AddonState::Ajour(None);
+                if let Ok(package) = result {
                     addon.apply_curse_package(&package, &ajour.config.wow.flavor);
                 }
             }
         }
         Message::CursePackages((id, retries, result)) => {
             if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                addon.state = AddonState::Ajour(None);
                 if let Ok(packages) = result {
                     addon.apply_curse_packages(&packages, &ajour.config.wow.flavor);
                 } else {
@@ -188,22 +191,23 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::TukuiPackage((id, result)) => {
-            if let Ok(package) = result {
-                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                addon.state = AddonState::Ajour(None);
+                if let Ok(package) = result {
                     addon.apply_tukui_package(&package);
                 }
             }
         }
         Message::WowinterfacePackages((id, result)) => {
-            if let Ok(packages) = result {
-                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                addon.state = AddonState::Ajour(None);
+                if let Ok(packages) = result {
                     addon.apply_wowi_packages(&packages);
                 }
             }
         }
         Message::DownloadedAddon((id, result)) => {
-            // When an addon has been successfully downloaded we begin to
-            // unpack it.
+            // When an addon has been successfully downloaded we begin to unpack it.
             // If it for some reason fails to download, we handle the error.
             let from_directory = ajour
                 .config
@@ -244,7 +248,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                     Err(err) => {
                         ajour.state = AjourState::Error(err);
-                        addon.state = AddonState::Ajour(Some("Error!".to_owned()));
+                        addon.state = AddonState::Ajour(Some("Error".to_owned()));
                     }
                 }
             }

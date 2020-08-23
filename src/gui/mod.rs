@@ -122,14 +122,21 @@ impl Application for Ajour {
         let update_all_button: Element<Interaction> = update_all_button.into();
         let refresh_button: Element<Interaction> = refresh_button.into();
 
+        // println!("ADDON STATE IN DRAW {:?}", self.state);
+
         // Displays text depending on the state of the app.
         let parent_addons_count = self.addons.clone().iter().filter(|a| a.is_parent()).count();
-        let status_text =
-            Text::new(format!("{} addons loaded", parent_addons_count)).size(default_font_size);
-        // let status_text = if let AjourState::Idle = &self.state {
-        //     println!("we are idling...!");
-        // }
-        // if let AjourState::Error(e) = &self.state {}
+        let loading_addons = self
+            .addons
+            .iter()
+            .filter(|a| a.state == AddonState::Loading)
+            .count();
+        let status_text = if loading_addons != 0 {
+            Text::new(format!("Fetching data for {} addons", loading_addons))
+                .size(default_font_size)
+        } else {
+            Text::new(format!("{} addons loaded", parent_addons_count)).size(default_font_size)
+        };
 
         let status_container = Container::new(status_text)
             .center_y()
@@ -248,7 +255,7 @@ impl Application for Ajour {
                 .width(Length::FillPortion(1))
                 .center_y()
                 .padding(5)
-                .style(style::AddonRowTextContainer);
+                .style(style::AddonRowDefaultTextContainer);
 
             let installed_version = Text::new(version).size(default_font_size);
             let installed_version_container = Container::new(installed_version)
@@ -256,7 +263,7 @@ impl Application for Ajour {
                 .width(Length::Units(150))
                 .center_y()
                 .padding(5)
-                .style(style::AddonRowTextContainer);
+                .style(style::AddonRowSecondaryTextContainer);
 
             let remote_version = Text::new(remote_version).size(default_font_size);
             let remote_version_container = Container::new(remote_version)
@@ -264,7 +271,7 @@ impl Application for Ajour {
                 .width(Length::Units(150))
                 .center_y()
                 .padding(5)
-                .style(style::AddonRowTextContainer);
+                .style(style::AddonRowSecondaryTextContainer);
 
             let update_button_width = Length::Units(85);
             let update_button_container = match &addon.state {
@@ -276,7 +283,7 @@ impl Application for Ajour {
                 .width(update_button_width)
                 .center_y()
                 .center_x()
-                .style(style::AddonRowTextContainer),
+                .style(style::AddonRowSecondaryTextContainer),
                 AddonState::Updatable => {
                     let id = addon.id.clone();
                     let update_button: Element<Interaction> = Button::new(
@@ -294,7 +301,7 @@ impl Application for Ajour {
                         .width(update_button_width)
                         .center_y()
                         .center_x()
-                        .style(style::AddonRowTextContainer)
+                        .style(style::AddonRowDefaultTextContainer)
                 }
                 AddonState::Downloading => {
                     Container::new(Text::new("Downloading").size(default_font_size))
@@ -303,7 +310,7 @@ impl Application for Ajour {
                         .center_y()
                         .center_x()
                         .padding(5)
-                        .style(style::AddonRowTextContainer)
+                        .style(style::AddonRowSecondaryTextContainer)
                 }
                 AddonState::Unpacking => {
                     Container::new(Text::new("Unpacking").size(default_font_size))
@@ -312,8 +319,15 @@ impl Application for Ajour {
                         .center_y()
                         .center_x()
                         .padding(5)
-                        .style(style::AddonRowTextContainer)
+                        .style(style::AddonRowSecondaryTextContainer)
                 }
+                AddonState::Loading => Container::new(Text::new("Loading").size(default_font_size))
+                    .height(default_height)
+                    .width(update_button_width)
+                    .center_y()
+                    .center_x()
+                    .padding(5)
+                    .style(style::AddonRowSecondaryTextContainer),
             };
 
             let details_button_text = match is_addon_expanded {
@@ -334,7 +348,7 @@ impl Application for Ajour {
                 .width(Length::Units(70))
                 .center_y()
                 .center_x()
-                .style(style::AddonRowTextContainer);
+                .style(style::AddonRowSecondaryTextContainer);
 
             let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
             let right_spacer = Space::new(Length::Units(default_padding + 5), Length::Units(0));
@@ -381,7 +395,7 @@ impl Application for Ajour {
                 let details_container = Container::new(column)
                     .width(Length::Fill)
                     .padding(5)
-                    .style(style::AddonRowTextContainer);
+                    .style(style::AddonRowSecondaryTextContainer);
 
                 let row = Row::new()
                     .push(left_spacer)

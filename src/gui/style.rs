@@ -150,12 +150,26 @@ impl container::StyleSheet for Content {
     }
 }
 
-pub struct AddonRowTextContainer;
-impl container::StyleSheet for AddonRowTextContainer {
+pub struct AddonRowDefaultTextContainer;
+impl container::StyleSheet for AddonRowDefaultTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
             background: Some(Background::Color(ColorPalette::Surface.rgb())),
             text_color: Some(ColorPalette::OnSurface.rgb()),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct AddonRowSecondaryTextContainer;
+impl container::StyleSheet for AddonRowSecondaryTextContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(ColorPalette::Surface.rgb())),
+            text_color: Some(Color {
+                a: 0.4,
+                ..ColorPalette::OnSurface.rgb()
+            }),
             ..container::Style::default()
         }
     }

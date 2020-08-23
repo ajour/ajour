@@ -5,6 +5,7 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AddonState {
     Ajour(Option<String>),
+    Loading,
     Updatable,
     Downloading,
     Unpacking,
