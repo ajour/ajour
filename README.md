@@ -1,4 +1,10 @@
+
 ![](./resources/screenshots/ajour-banner.png)
+<p align="center">
+  <img width="600"
+       alt="Ajour"
+       src="./resources/screenshots/ajour-0.1.0-1.png">
+</p>
 
 ![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
 ![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
@@ -62,12 +68,6 @@ On Windows, it looks for a config file in the following locations:
 
 - `%APPDATA%\ajour\ajour.yml`
 - `In the same directory as the executable`
-
-
-# Screenshots
-
-<img src="./resources/screenshots/ajour-0.1.0-1.png" width=200>
-<img src="./resources/screenshots/ajour-0.1.0-2.png" width=200>
 
 # Other addon managers
 
