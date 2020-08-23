@@ -48,7 +48,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if let Some(is_addon_expanded) =
                     &ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
                 {
-                    if is_addon_expanded.clone() {
+                    if *is_addon_expanded {
                         ajour.expanded_addon = None;
                         return Ok(Command::none());
                     }
