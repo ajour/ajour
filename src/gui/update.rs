@@ -20,7 +20,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
-            println!("ajour.config {:?}", ajour.config);
             let addon_directory = ajour.config.get_addon_directory();
 
             match addon_directory {
