@@ -32,7 +32,7 @@ pub enum Interaction {
 
 #[derive(Debug)]
 pub enum Message {
-    Parse(Config),
+    Parse(Result<Config>),
     ParsedAddons(Result<Vec<Addon>>),
     PartialParsedAddons(Result<Vec<Addon>>),
     DownloadedAddon((String, Result<()>)),

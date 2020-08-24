@@ -3,20 +3,21 @@ use std::path::PathBuf;
 
 /// Struct for settings related to World of Warcraft.
 #[serde(default)]
-#[derive(Deserialize, Serialize, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct Wow {
-    #[serde(default = "default_directory")]
+    #[serde(default)]
     pub directory: Option<PathBuf>,
 
     // TODO: Consider changing this to an enum.
-    #[serde(default = "default_flavor")]
+    #[serde(default)]
     pub flavor: String,
 }
 
-fn default_directory() -> Option<PathBuf> {
-    None
-}
-
-fn default_flavor() -> String {
-    "retail".to_owned()
+impl Default for Wow {
+    fn default() -> Self {
+        Wow {
+            directory: None,
+            flavor: "retail".to_owned(),
+        }
+    }
 }

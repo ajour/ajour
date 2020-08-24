@@ -16,7 +16,7 @@ use {
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
-        Message::Parse(config) => {
+        Message::Parse(Ok(config)) => {
             // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
@@ -258,6 +258,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Error(error)
+        | Message::Parse(Err(error))
         | Message::ParsedAddons(Err(error))
         | Message::PartialParsedAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);

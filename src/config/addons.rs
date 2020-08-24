@@ -2,12 +2,14 @@ use serde_derive::{Deserialize, Serialize};
 
 /// Struct for addons specific settings.
 #[serde(default)]
-#[derive(Deserialize, Serialize, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct Addons {
-    #[serde(default = "default_hidden")]
+    #[serde(default)]
     pub hidden: Vec<String>,
 }
 
-fn default_hidden() -> Vec<String> {
-    vec![]
+impl Default for Addons {
+    fn default() -> Self {
+        Addons { hidden: vec![] }
+    }
 }
