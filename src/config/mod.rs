@@ -1,4 +1,4 @@
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 #[cfg(not(windows))]
 use std::env;
 use std::fs;
@@ -15,7 +15,7 @@ pub use crate::config::tokens::Tokens;
 pub use crate::config::wow::Wow;
 
 /// Config struct.
-#[derive(Debug, PartialEq, Default, Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct Config {
     #[serde(default = "default_wow")]
     pub wow: Wow,

@@ -1,8 +1,8 @@
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 
 /// Struct for tokens to different repositories.
 #[serde(default)]
-#[derive(Deserialize, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug, PartialEq, Eq)]
 pub struct Tokens {
     #[serde(default = "default_wowinterface")]
     pub wowinterface: Option<String>,

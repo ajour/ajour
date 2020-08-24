@@ -1,9 +1,9 @@
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Struct for settings related to World of Warcraft.
 #[serde(default)]
-#[derive(Deserialize, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug, PartialEq, Eq)]
 pub struct Wow {
     #[serde(default = "default_directory")]
     pub directory: Option<PathBuf>,
