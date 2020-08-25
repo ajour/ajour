@@ -1,33 +1,30 @@
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 #[cfg(not(windows))]
 use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+mod addons;
 mod tokens;
 mod wow;
 
 use crate::{error::ClientError, Result};
 
+pub use crate::config::addons::Addons;
 pub use crate::config::tokens::Tokens;
 pub use crate::config::wow::Wow;
 
 /// Config struct.
-#[derive(Debug, PartialEq, Default, Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
 pub struct Config {
-    #[serde(default = "default_wow")]
+    #[serde(default)]
     pub wow: Wow,
 
-    #[serde(default = "default_tokens")]
+    #[serde(default)]
+    pub addons: Addons,
+
+    #[serde(default)]
     pub tokens: Tokens,
-}
-
-fn default_wow() -> Wow {
-    Wow::default()
-}
-
-fn default_tokens() -> Tokens {
-    Tokens::default()
 }
 
 impl Config {
@@ -63,27 +60,49 @@ impl Config {
     }
 }
 
+/// Creates file at location, and copies default `Config` into it.
+/// This is used if user does not have a config file, Ajour will
+/// autogenerate it.
+fn create_default_config<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
+    // Ensure we have folders created for the file.
+    let parent = path.as_ref().parent().expect("parent for config not found");
+    fs::create_dir_all(parent)?;
+
+    // Create the config file.
+    fs::File::create(&path)?;
+
+    // Default serialized config content.
+    let config = Config::default();
+    let default_config_content = serde_yaml::to_string(&config)?;
+
+    // Write to config.
+    fs::write(&path, &default_config_content)?;
+
+    Ok(path.as_ref().to_path_buf())
+}
+
 /// Returns the location of the first found config file paths
 /// according to the following order:
 ///
 /// 1. $HOME/.config/ajour/ajour.yml
 /// 2. $HOME/.ajour.yml
 #[cfg(not(windows))]
-fn installed_config() -> Option<PathBuf> {
-    if let Ok(home) = env::var("HOME") {
-        // Fallback path: $HOME/.config/ajour/ajour.yml.
-        let fallback = PathBuf::from(&home).join(".config/ajour/ajour.yml");
-        if fallback.exists() {
-            return Some(fallback);
-        }
-        // Fallback path: $HOME/.ajour.yml.
-        let fallback = PathBuf::from(&home).join(".ajour.yml");
-        if fallback.exists() {
-            return Some(fallback);
-        }
+fn find_or_create_config() -> Result<PathBuf> {
+    let home = env::var("HOME").expect("user home directory not found.");
+
+    // Primary location path: $HOME/.config/ajour/ajour.yml.
+    let pri_location = PathBuf::from(&home).join(".config/ajour/ajour.yml");
+    if pri_location.exists() {
+        return Ok(pri_location);
+    }
+    // Secondary location path: $HOME/.ajour.yml.
+    let sec_location = PathBuf::from(&home).join(".ajour.yml");
+    if sec_location.exists() {
+        return Ok(sec_location);
     }
 
-    None
+    // If no configuration file found, we create it.
+    Ok(create_default_config(&pri_location)?)
 }
 
 /// Returns the location of the first found config file paths
@@ -92,24 +111,27 @@ fn installed_config() -> Option<PathBuf> {
 /// 1. %APPDATA%\ajour\ajour.yml
 /// 2. In the same directory as the executable
 #[cfg(windows)]
-fn installed_config() -> Option<PathBuf> {
-    let fallback = dirs::config_dir()
+fn find_or_create_config() -> Result<PathBuf> {
+    // Primary location path: %APPDATA%\ajour\ajour.yml.
+    let pri_location = dirs::config_dir()
         .map(|path| path.join("ajour\\ajour.yml"))
-        .filter(|new| new.exists());
-    if let Some(fallback) = fallback {
-        return Some(fallback);
+        .expect("user home directory not found.");
+    if pri_location.exists() {
+        return Ok(pri_location);
     }
 
-    let fallback = std::env::current_exe();
-    if let Ok(fallback) = fallback.as_ref().map(|p| p.parent()) {
-        if let Some(fallback) = fallback.map(|f| f.join("ajour.yml")) {
-            if fallback.exists() {
-                return Some(fallback);
+    // Secondary location path: relative to the executable.
+    let sec_location = std::env::current_exe();
+    if let Ok(sec_location) = sec_location.as_ref().map(|p| p.parent()) {
+        if let Some(sec_location) = sec_location.map(|f| f.join("ajour.yml")) {
+            if sec_location.exists() {
+                return Ok(sec_location);
             }
         }
     }
 
-    None
+    // If no configuration file found, we create it.
+    Ok(create_default_config(&pri_location)?)
 }
 
 /// Returns the config after the content of the file
@@ -132,10 +154,7 @@ fn parse_config(path: &PathBuf) -> Result<Config> {
 /// Returns a Config.
 ///
 /// This functions handles the initialization of a Config.
-pub async fn load_config() -> Config {
-    let path = installed_config();
-    match path {
-        Some(p) => parse_config(&p).unwrap_or_default(),
-        None => Config::default(),
-    }
+pub async fn load_config() -> Result<Config> {
+    let path = find_or_create_config()?;
+    Ok(parse_config(&path)?)
 }

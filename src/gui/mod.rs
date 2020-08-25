@@ -12,6 +12,9 @@ use iced::{
     HorizontalAlignment, Length, Row, Scrollable, Settings, Space, Text,
 };
 
+use image::ImageFormat;
+static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
+
 #[derive(Debug)]
 pub enum AjourState {
     Idle,
@@ -29,7 +32,7 @@ pub enum Interaction {
 
 #[derive(Debug)]
 pub enum Message {
-    Parse(Config),
+    Parse(Result<Config>),
     ParsedAddons(Result<Vec<Addon>>),
     PartialParsedAddons(Result<Vec<Addon>>),
     DownloadedAddon((String, Result<()>)),
@@ -123,7 +126,13 @@ impl Application for Ajour {
         let refresh_button: Element<Interaction> = refresh_button.into();
 
         // Displays text depending on the state of the app.
-        let parent_addons_count = self.addons.clone().iter().filter(|a| a.is_parent()).count();
+        let hidden_addons = self.config.addons.hidden.as_ref();
+        let parent_addons_count = self
+            .addons
+            .clone()
+            .iter()
+            .filter(|a| a.is_parent() && !a.is_hidden(&hidden_addons))
+            .count();
         let loading_addons = self
             .addons
             .iter()
@@ -150,6 +159,7 @@ impl Application for Ajour {
 
         let error_container = Container::new(error_text)
             .center_y()
+            .center_x()
             .padding(5)
             .width(Length::FillPortion(1))
             .style(style::StatusErrorTextContainer);
@@ -233,7 +243,12 @@ impl Application for Ajour {
             .style(style::Scrollable);
 
         // Loops addons for GUI.
-        for addon in &mut self.addons.iter_mut().filter(|a| a.is_parent()) {
+        let hidden_addons = self.config.addons.hidden.as_ref();
+        for addon in &mut self
+            .addons
+            .iter_mut()
+            .filter(|a| a.is_parent() && !a.is_hidden(&hidden_addons))
+        {
             // Default element height
             let default_height = Length::Units(26);
             // Check if current addon is expanded.
@@ -429,7 +444,17 @@ impl Application for Ajour {
 pub fn run() {
     let mut settings = Settings::default();
     settings.window.size = (900, 620);
-    // Enforce the usage of dedicated gpu if available
+    // Enforce the usage of dedicated gpu if available.
     settings.antialiasing = true;
+
+    // Sets the Window icon.
+    let image = image::load_from_memory_with_format(WINDOW_ICON, ImageFormat::Ico)
+        .expect("loading icon")
+        .to_rgba();
+    let (width, height) = image.dimensions();
+    let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
+    settings.window.icon = Some(icon.unwrap());
+
+    // Runs the GUI.
     Ajour::run(settings);
 }

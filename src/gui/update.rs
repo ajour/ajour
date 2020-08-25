@@ -16,7 +16,7 @@ use {
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
-        Message::Parse(config) => {
+        Message::Parse(Ok(config)) => {
             // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
@@ -31,7 +31,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 None => {
                     return Err(ClientError::Custom(
-                        "World of Warcraft directory is not set.".to_owned(),
+                        "Error reading ajour.yml file".to_owned(),
                     ))
                 }
             }
@@ -125,8 +125,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons.sort();
 
             let mut commands = Vec::<Command<Message>>::new();
-            // let addons = ajour.addons.clone();
-            for addon in &mut ajour.addons.iter_mut().filter(|a| a.is_parent()) {
+            let hidden_addons = &ajour.config.addons.hidden;
+            for addon in &mut ajour
+                .addons
+                .iter_mut()
+                .filter(|a| a.is_parent() && !a.is_hidden(hidden_addons))
+            {
                 addon.state = AddonState::Loading;
                 let addon = addon.to_owned();
                 if let (Some(_), Some(token)) = (
@@ -254,6 +258,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Error(error)
+        | Message::Parse(Err(error))
         | Message::ParsedAddons(Err(error))
         | Message::PartialParsedAddons(Err(error)) => {
             ajour.state = AjourState::Error(error);

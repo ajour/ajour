@@ -1,15 +1,15 @@
 use serde_derive::{Deserialize, Serialize};
 
-/// Struct for tokens to different repositories.
+/// Struct for addons specific settings.
 #[serde(default)]
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
-pub struct Tokens {
+pub struct Addons {
     #[serde(default)]
-    pub wowinterface: Option<String>,
+    pub hidden: Vec<String>,
 }
 
-impl Default for Tokens {
+impl Default for Addons {
     fn default() -> Self {
-        Tokens { wowinterface: None }
+        Addons { hidden: vec![] }
     }
 }

@@ -10,6 +10,14 @@ wow:
   # - classic
   flavor: retail
 
+# Addons related settings
+addons:
+  # A collection of hidden addons.
+  # Key is the Addon foldername.
+  hidden:
+    - # DataStore
+    - # ElvUI
+
 # Tokens for repositories
 #tokens:
 #   Optional

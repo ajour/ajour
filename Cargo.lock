@@ -23,6 +23,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee2a4ec343196209d6594e19543ae87a39f96d5534d7174822a3ad825dd6ed7e"
 
 [[package]]
+name = "adler32"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234"
+
+[[package]]
 name = "aho-corasick"
 version = "0.7.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -33,13 +39,14 @@ dependencies = [
 
 [[package]]
 name = "ajour"
-version = "0.1.0-beta4"
+version = "0.1.0-beta5"
 dependencies = [
  "async-std",
  "dirs 3.0.1",
  "embed-resource",
  "iced",
  "iced_futures",
+ "image",
  "isahc",
  "percent-encoding",
  "regex",
@@ -370,6 +377,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "color_quant"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0dbbb57365263e881e805dc77d94697c9118fd94d8da011240555aa7b23445bd"
+
+[[package]]
 name = "concurrent-queue"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -581,6 +594,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "deflate"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73770f8e1fe7d64df17ca66ad28994a0a623ea497fa69486e14984e715c5d174"
+dependencies = [
+ "adler32",
+ "byteorder",
+]
+
+[[package]]
 name = "derivative"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -741,7 +764,7 @@ dependencies = [
  "cfg-if",
  "crc32fast",
  "libc",
- "miniz_oxide",
+ "miniz_oxide 0.4.0",
 ]
 
 [[package]]
@@ -1104,6 +1127,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gif"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "471d90201b3b223f3451cd4ad53e34295f16a1df17b1edf3736d47761c3981af"
+dependencies = [
+ "color_quant",
+ "lzw",
+]
+
+[[package]]
 name = "glam"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1203,7 +1236,7 @@ dependencies = [
 [[package]]
 name = "iced"
 version = "0.1.1"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1215,12 +1248,12 @@ dependencies = [
 [[package]]
 name = "iced_core"
 version = "0.2.1"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 
 [[package]]
 name = "iced_futures"
 version = "0.1.2"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 dependencies = [
  "async-std",
  "futures",
@@ -1231,7 +1264,7 @@ dependencies = [
 [[package]]
 name = "iced_graphics"
 version = "0.1.0"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 dependencies = [
  "bytemuck",
  "font-kit",
@@ -1244,7 +1277,7 @@ dependencies = [
 [[package]]
 name = "iced_native"
 version = "0.2.2"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1256,7 +1289,7 @@ dependencies = [
 [[package]]
 name = "iced_style"
 version = "0.1.0"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 dependencies = [
  "iced_core",
 ]
@@ -1264,7 +1297,7 @@ dependencies = [
 [[package]]
 name = "iced_web"
 version = "0.2.1"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 dependencies = [
  "dodrio",
  "iced_core",
@@ -1280,7 +1313,7 @@ dependencies = [
 [[package]]
 name = "iced_wgpu"
 version = "0.2.2"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 dependencies = [
  "bytemuck",
  "gfx-memory",
@@ -1298,7 +1331,7 @@ dependencies = [
 [[package]]
 name = "iced_winit"
 version = "0.1.1"
-source = "git+https://github.com/hecrj/iced.git?rev=2ce5df084456a92ed1a228738816cf8398b2e918#2ce5df084456a92ed1a228738816cf8398b2e918"
+source = "git+https://github.com/hecrj/iced.git?rev=fb015a85d22a7c4632bd251127a89259bfd0c346#fb015a85d22a7c4632bd251127a89259bfd0c346"
 dependencies = [
  "iced_graphics",
  "iced_native",
@@ -1317,6 +1350,24 @@ dependencies = [
  "matches",
  "unicode-bidi",
  "unicode-normalization",
+]
+
+[[package]]
+name = "image"
+version = "0.23.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "543904170510c1b5fb65140485d84de4a57fddb2ed685481e9020ce3d2c9f64c"
+dependencies = [
+ "bytemuck",
+ "byteorder",
+ "gif",
+ "jpeg-decoder",
+ "num-iter",
+ "num-rational",
+ "num-traits",
+ "png",
+ "scoped_threadpool",
+ "tiff",
 ]
 
 [[package]]
@@ -1372,6 +1423,16 @@ name = "jni-sys"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8eaf4bc02d17cbdd7ff4c7438cafcdf7fb9a4613313ad11b4f8fefe7d3fa0130"
+
+[[package]]
+name = "jpeg-decoder"
+version = "0.1.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc797adac5f083b8ff0ca6f6294a999393d76e197c36488e2ef732c4715f6fa3"
+dependencies = [
+ "byteorder",
+ "rayon",
+]
 
 [[package]]
 name = "js-sys"
@@ -1500,6 +1561,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3bd0dd2cd90571056fdb71f6275fada10131182f84899f4b2a916e565d81d86"
 
 [[package]]
+name = "lzw"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d947cbb889ed21c2a84be6ffbaebf5b4e0f4340638cba0444907e38b56be084"
+
+[[package]]
 name = "malloc_buf"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1564,6 +1631,15 @@ name = "mime"
 version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
+
+[[package]]
+name = "miniz_oxide"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "791daaae1ed6889560f8c4359194f56648355540573244a5448a83ba1ecc7435"
+dependencies = [
+ "adler32",
+]
 
 [[package]]
 name = "miniz_oxide"
@@ -1670,6 +1746,38 @@ dependencies = [
  "cfg-if",
  "libc",
  "void",
+]
+
+[[package]]
+name = "num-integer"
+version = "0.1.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d59457e662d541ba17869cf51cf177c0b5f0cbf476c66bdc90bf1edac4f875b"
+dependencies = [
+ "autocfg",
+ "num-traits",
+]
+
+[[package]]
+name = "num-iter"
+version = "0.1.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a6e6b7c748f995c4c29c5f5ae0248536e04a5739927c74ec0fa564805094b9f"
+dependencies = [
+ "autocfg",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-rational"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5b4d7360f362cfb50dde8143501e6940b22f644be75a4cc90b2d81968908138"
+dependencies = [
+ "autocfg",
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
@@ -1909,6 +2017,18 @@ name = "pkg-config"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
+
+[[package]]
+name = "png"
+version = "0.16.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfe7f9f1c730833200b134370e1d5098964231af8450bce9b78ee3ab5278b970"
+dependencies = [
+ "bitflags",
+ "crc32fast",
+ "deflate",
+ "miniz_oxide 0.3.7",
+]
 
 [[package]]
 name = "podio"
@@ -2174,6 +2294,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea6a9290e3c9cf0f18145ef7ffa62d68ee0bf5fcd651017e586dc7fd5da448c2"
 
 [[package]]
+name = "scoped_threadpool"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d51f5df5af43ab3f1360b429fa5e0152ac5ce8c0bd6485cae490332e96846a8"
+
+[[package]]
 name = "scopeguard"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2419,6 +2545,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d40c6d1b69745a6ec6fb1ca717914848da4b44ae29d9b3080cbee91d72a69b14"
 dependencies = [
  "lazy_static",
+]
+
+[[package]]
+name = "tiff"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f3b8a87c4da944c3f27e5943289171ac71a6150a79ff6bacfff06d159dfff2f"
+dependencies = [
+ "byteorder",
+ "lzw",
+ "miniz_oxide 0.3.7",
 ]
 
 [[package]]

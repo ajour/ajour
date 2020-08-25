@@ -170,6 +170,11 @@ impl Addon {
         }
     }
 
+    /// Function returns a `bool` indicating if the user has manually hidden the addon.
+    pub fn is_hidden(&self, hidden: &[String]) -> bool {
+        hidden.iter().any(|i| i == &self.id)
+    }
+
     /// Function returns a `Vec<String>` which contains all combined dependencies.
     ///
     /// Example:
@@ -260,7 +265,7 @@ impl PartialOrd for Addon {
                 .cmp(&other.is_updatable())
                 .then_with(|| self.remote_version.cmp(&other.remote_version))
                 .reverse()
-                .then_with(|| self.id.cmp(&other.id)),
+                .then_with(|| self.title.cmp(&other.title)),
         )
     }
 }
@@ -271,7 +276,7 @@ impl Ord for Addon {
             .cmp(&other.is_updatable())
             .then_with(|| self.remote_version.cmp(&other.remote_version))
             .reverse()
-            .then_with(|| self.id.cmp(&other.id))
+            .then_with(|| self.title.cmp(&other.title))
     }
 }
 
