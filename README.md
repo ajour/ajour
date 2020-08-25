@@ -57,7 +57,7 @@ cargo build --release
 
 You can find a template configuration file with documentation for all available fields [here](./ajour.yml).
 
-Ajour doesn't create the config file for you, but it looks for one in the following locations:
+Ajour looks for a configuration file in the following locations:
 
 - `$HOME/.config/ajour/ajour.yml`
 - `$HOME/.ajour.yml`
@@ -68,6 +68,8 @@ On Windows, it looks for a config file in the following locations:
 
 - `%APPDATA%\ajour\ajour.yml`
 - `In the same directory as the executable`
+
+If no configuration file is found, Ajour creates one by it self at the first location with. 
 
 ## Other addon managers
 
