@@ -218,8 +218,8 @@ impl Application for Ajour {
             .width(Length::Units(85))
             .style(style::StatusTextContainer);
 
-        let delete_row_text = Text::new("Details").size(default_font_size);
-        let delete_row_container = Container::new(delete_row_text)
+        let details_row_text = Text::new("Details").size(default_font_size);
+        let details_row_container = Container::new(details_row_text)
             .width(Length::Units(70))
             .style(style::StatusTextContainer);
 
@@ -231,7 +231,7 @@ impl Application for Ajour {
                 .push(local_version_container)
                 .push(remote_version_container)
                 .push(status_row_container)
-                .push(delete_row_container)
+                .push(details_row_container)
                 .push(right_spacer);
         }
 
