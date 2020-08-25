@@ -101,6 +101,7 @@ fn find_or_create_config() -> Result<PathBuf> {
         return Ok(sec_location);
     }
 
+    // If no configuration file found, we create it.
     Ok(create_default_config(&pri_location)?)
 }
 
@@ -111,13 +112,15 @@ fn find_or_create_config() -> Result<PathBuf> {
 /// 2. In the same directory as the executable
 #[cfg(windows)]
 fn find_or_create_config() -> Result<PathBuf> {
+    // Primary location path: %APPDATA%\ajour\ajour.yml.
     let pri_location = dirs::config_dir()
         .map(|path| path.join("ajour\\ajour.yml"))
-        .filter(|new| new.exists());
-    if let Some(pri_location) = pri_location {
+        .expect("user home directory not found.");
+    if pri_location.exists() {
         return Ok(pri_location);
     }
 
+    // Secondary location path: relative to the executable.
     let sec_location = std::env::current_exe();
     if let Ok(sec_location) = sec_location.as_ref().map(|p| p.parent()) {
         if let Some(sec_location) = sec_location.map(|f| f.join("ajour.yml")) {
@@ -127,9 +130,8 @@ fn find_or_create_config() -> Result<PathBuf> {
         }
     }
 
-    // TODO: Fix this method for windows.
-    // pri_location is option, because we filter pri_location for now.
-    // Ok(create_default_config(&pri_location.expect(msg))?)
+    // If no configuration file found, we create it.
+    Ok(create_default_config(&pri_location)?)
 }
 
 /// Returns the config after the content of the file
