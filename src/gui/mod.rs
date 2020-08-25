@@ -391,6 +391,23 @@ impl Application for Ajour {
                 let bottom_space = Space::new(Length::Units(0), Length::Units(4));
                 let notes_text = Text::new(notes).size(default_font_size);
 
+                let mut force_download_button = Button::new(
+                    &mut addon.force_btn_state,
+                    Text::new("Force update").size(default_font_size),
+                )
+                .style(style::DefaultBoxedButton);
+
+                // If we have remote version on addon, enable force update.
+                if addon.remote_version.is_some() {
+                    force_download_button =
+                        force_download_button.on_press(Interaction::Update(addon.id.clone()));
+                }
+
+                let force_download_button: Element<Interaction> = force_download_button.into();
+
+                // Space between buttons.
+                let button_space = Space::new(Length::Units(5), Length::Units(0));
+
                 let delete_button: Element<Interaction> = Button::new(
                     &mut addon.delete_btn_state,
                     Text::new("Delete").size(default_font_size),
@@ -399,12 +416,17 @@ impl Application for Ajour {
                 .style(style::DeleteBoxedButton)
                 .into();
 
-                let row = Row::new().push(delete_button.map(Message::Interaction));
+                let row = Row::new()
+                    .push(force_download_button.map(Message::Interaction))
+                    .push(button_space)
+                    .push(delete_button.map(Message::Interaction));
+
                 let column = Column::new()
                     .push(notes_text)
                     .push(space)
                     .push(row)
                     .push(bottom_space);
+
                 let details_container = Container::new(column)
                     .width(Length::Fill)
                     .padding(5)

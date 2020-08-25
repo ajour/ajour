@@ -36,6 +36,7 @@ pub struct Addon {
     // States for GUI
     pub details_btn_state: iced::button::State,
     pub update_btn_state: iced::button::State,
+    pub force_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
 }
 
@@ -65,6 +66,7 @@ impl Addon {
             repository_identifiers,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
+            force_btn_state: Default::default(),
             delete_btn_state: Default::default(),
         }
     }
