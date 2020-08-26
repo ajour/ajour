@@ -65,7 +65,7 @@ pub fn settings_container<'a>(
 pub fn addon_data_cell<'a>(
     addon: &'a mut Addon,
     is_addon_expanded: bool,
-) -> Container<'a, Message> {
+) -> Container<'_, Message> {
     let default_height = Length::Units(26);
 
     // Check if current addon is expanded.
@@ -411,7 +411,7 @@ pub fn menu_container<'a>(
     Container::new(settings_column)
 }
 
-pub fn addon_scrollable<'a>(state: &'a mut scrollable::State) -> Scrollable<'a, Message> {
+pub fn addon_scrollable<'a>(state: &'a mut scrollable::State) -> Scrollable<'_, Message> {
     Scrollable::new(state)
         .spacing(1)
         .height(Length::FillPortion(1))

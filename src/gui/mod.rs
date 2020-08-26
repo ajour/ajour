@@ -129,7 +129,7 @@ impl Application for Ajour {
             .filter(|a| a.is_parent() && !a.is_hidden(&hidden_addons))
         {
             let is_addon_expanded = match &self.expanded_addon {
-                Some(expanded_addon) => &addon.id == &expanded_addon.id,
+                Some(expanded_addon) => addon.id == expanded_addon.id,
                 None => false,
             };
 
