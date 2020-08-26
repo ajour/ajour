@@ -8,6 +8,7 @@ homepage = "https://github.com/casperstorm/ajour"
 edition = "2018"
 
 [dependencies]
+iced_native = { git = "https://github.com/hecrj/iced.git", rev = "fb015a85d22a7c4632bd251127a89259bfd0c346" }
 iced = { git = "https://github.com/hecrj/iced.git", features = ["debug"], rev = "fb015a85d22a7c4632bd251127a89259bfd0c346" }
 iced_futures = { git = "https://github.com/hecrj/iced.git", features = ["async-std"], rev = "fb015a85d22a7c4632bd251127a89259bfd0c346" }
 walkdir = "2.3.1"

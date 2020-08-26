@@ -46,6 +46,7 @@ dependencies = [
  "embed-resource",
  "iced",
  "iced_futures",
+ "iced_native",
  "image",
  "isahc",
  "percent-encoding",

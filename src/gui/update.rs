@@ -41,6 +41,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons = Vec::new();
             return Ok(Command::perform(load_config(), Message::Parse));
         }
+        Message::Interaction(Interaction::Settings) => {
+            ajour.is_showing_settings = !ajour.is_showing_settings;
+        }
         Message::Interaction(Interaction::Expand(id)) => {
             // Expand a addon.
             // If it's already expanded, we collapse it again.
@@ -112,6 +115,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
             return Ok(Command::batch(commands));
         }
+        Message::InputChanged(value) => {
+            println!("value: {:?}", value);
+        }
+        Message::SubmitPath => {}
         Message::PartialParsedAddons(Ok(addons)) => {
             if let Some(updated_addon) = addons.first() {
                 if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == updated_addon.id) {
