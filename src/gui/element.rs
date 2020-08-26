@@ -1,27 +1,60 @@
 use {
     super::{style, Addon, AddonState, AjourState, Config, Interaction, Message},
     iced::{
-        button, Button, Column, Container, Element, HorizontalAlignment, Length, Row, Space, Text,
+        button, scrollable, Button, Column, Container, Element, HorizontalAlignment, Length, Row,
+        Scrollable, Space, Text, VerticalAlignment,
     },
 };
 
-// pub fn gui_container<'a>(input_state: &'a mut text_input::State) -> Container<'a, Message> {
-//     let text_input = TextInput::new(
-//         input_state,
-//         "Type something...",
-//         "Hello",
-//         Message::InputChanged,
-//     )
-//     .padding(10)
-//     .size(30);
+pub fn settings_container<'a>(
+    wow_path_button_state: &'a mut button::State,
+    config: &Config,
+) -> Container<'a, Message> {
+    let default_font_size = 14;
+    let default_padding = 10;
 
-//     // let path_row = Row::new().push(text_input);
+    let wow_directory_info_text = Text::new("World of Warcraft directory").size(14);
+    let wow_title_row = Row::new()
+        .push(wow_directory_info_text)
+        .padding(default_padding);
 
-//     // Container::new(path_row)
-//     //     .width(Length::FillPortion(1))
-//     //     .height(Length::Units(200))
-// }
-//
+    let path_str = config
+        .wow
+        .directory
+        .as_ref()
+        .and_then(|p| p.to_str())
+        .unwrap_or("No path set.");
+    let open_directory: Element<Interaction> = Button::new(
+        wow_path_button_state,
+        Text::new("Select Directory").size(default_font_size),
+    )
+    .style(style::DefaultBoxedButton)
+    .on_press(Interaction::OpenDirectory)
+    .into();
+
+    // We add some margin left to adjust for inner-marigin in cell.
+    let left_spacer = Space::new(Length::Units(default_padding), Length::Units(0));
+
+    let wow_directory_data_text = Text::new(path_str)
+        .size(14)
+        .vertical_alignment(VerticalAlignment::Center);
+
+    let wow_directory_data_text_container = Container::new(wow_directory_data_text)
+        .center_y()
+        .padding(5)
+        .style(style::StatusTextContainer);
+
+    let path_data_row = Row::new()
+        .push(left_spacer)
+        .push(open_directory.map(Message::Interaction))
+        .push(wow_directory_data_text_container);
+
+    let column = Column::new().push(wow_title_row).push(path_data_row);
+    Container::new(column)
+        .width(Length::Fill)
+        .height(Length::Units(200))
+        .style(style::StatusTextContainer)
+}
 
 pub fn addon_data_cell<'a>(
     addon: &'a mut Addon,
@@ -358,4 +391,11 @@ pub fn menu_container<'a>(
 
     // Wraps it in a container.
     Container::new(settings_column)
+}
+
+pub fn addon_scrollable<'a>(state: &'a mut scrollable::State) -> Scrollable<'a, Message> {
+    Scrollable::new(state)
+        .spacing(1)
+        .height(Length::FillPortion(1))
+        .style(style::Scrollable)
 }

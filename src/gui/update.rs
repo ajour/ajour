@@ -11,6 +11,7 @@ use {
         tukui_api, wowinterface_api, Result,
     },
     iced::Command,
+    native_dialog::*,
     std::path::PathBuf,
 };
 
@@ -43,6 +44,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Settings) => {
             ajour.is_showing_settings = !ajour.is_showing_settings;
+        }
+        Message::Interaction(Interaction::OpenDirectory) => {
+            return Ok(Command::perform(
+                open_directory(),
+                Message::ChoseAddonDirectory,
+            ));
+        }
+        Message::ChoseAddonDirectory(path) => {
+            println!("path: {:?}", path);
         }
         Message::Interaction(Interaction::Expand(id)) => {
             // Expand a addon.
@@ -115,10 +125,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
             return Ok(Command::batch(commands));
         }
-        Message::InputChanged(value) => {
-            println!("value: {:?}", value);
-        }
-        Message::SubmitPath => {}
         Message::PartialParsedAddons(Ok(addons)) => {
             if let Some(updated_addon) = addons.first() {
                 if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == updated_addon.id) {
@@ -273,6 +279,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
     }
 
     Ok(Command::none())
+}
+
+async fn open_directory() -> PathBuf {
+    // Should we use task::spawn_blocking here?
+    let dialog = OpenSingleDir { dir: None };
+    let result = dialog.show().unwrap();
+    result.expect("No directory")
 }
 
 async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package>) {

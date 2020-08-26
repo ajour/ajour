@@ -10,9 +10,9 @@ use crate::{
     tukui_api, wowinterface_api, Result,
 };
 use iced::{
-    button, scrollable, text_input, Application, Column, Command, Container, Element, Length,
-    Scrollable, Settings, Space,
+    button, scrollable, Application, Column, Command, Container, Element, Length, Settings, Space,
 };
+use std::path::PathBuf;
 
 use image::ImageFormat;
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
@@ -25,6 +25,7 @@ pub enum AjourState {
 
 #[derive(Debug, Clone)]
 pub enum Interaction {
+    OpenDirectory,
     Settings,
     Refresh,
     UpdateAll,
@@ -46,9 +47,8 @@ pub enum Message {
     WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),
     Interaction(Interaction),
     Error(ClientError),
-    // TBA
-    InputChanged(String),
-    SubmitPath,
+    // Naming?
+    ChoseAddonDirectory(PathBuf),
 }
 
 pub struct Ajour {
@@ -56,14 +56,12 @@ pub struct Ajour {
     update_all_button_state: button::State,
     refresh_button_state: button::State,
     settings_button_state: button::State,
+    wow_path_button_state: button::State,
     addons_scrollable_state: scrollable::State,
-    wow_path_input_state: text_input::State,
     addons: Vec<Addon>,
     config: Config,
     expanded_addon: Option<Addon>,
     is_showing_settings: bool,
-    // TBA
-    value: String,
 }
 
 impl Default for Ajour {
@@ -73,13 +71,12 @@ impl Default for Ajour {
             update_all_button_state: Default::default(),
             settings_button_state: Default::default(),
             refresh_button_state: Default::default(),
+            wow_path_button_state: Default::default(),
             addons_scrollable_state: Default::default(),
-            wow_path_input_state: text_input::State::new(),
             addons: Vec::new(),
             config: Config::default(),
             expanded_addon: None,
             is_showing_settings: false,
-            value: "Hello".to_string(),
         }
     }
 }
@@ -107,8 +104,7 @@ impl Application for Ajour {
         }
     }
 
-    fn view(&mut self) -> Element<Self::Message> {
-        let default_font_size = 14;
+    fn view(&mut self) -> Element<Message> {
         let default_padding = 10;
 
         let menu_container = element::menu_container(
@@ -124,10 +120,7 @@ impl Application for Ajour {
 
         // A scrollable list containing rows.
         // Each row holds information about a single addon.
-        let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state)
-            .spacing(1)
-            .height(Length::FillPortion(1))
-            .style(style::Scrollable);
+        let mut addons_scrollable = element::addon_scrollable(&mut self.addons_scrollable_state);
 
         // Loops addons for GUI.
         let hidden_addons = self.config.addons.hidden.as_ref();
@@ -150,6 +143,12 @@ impl Application for Ajour {
         // This column gathers all the other elements together.
         // let mut content = Column::new().push(controls_container);
         let mut content = Column::new().push(menu_container);
+
+        if self.is_showing_settings {
+            let settings_container =
+                element::settings_container(&mut self.wow_path_button_state, &self.config);
+            content = content.push(settings_container);
+        }
 
         content = content
             .push(addon_row_titles)
