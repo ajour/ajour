@@ -140,13 +140,13 @@ impl Application for Ajour {
         let bottom_space = Space::new(Length::FillPortion(1), Length::Units(default_padding));
 
         // This column gathers all the other elements together.
-        // let mut content = Column::new().push(controls_container);
         let mut content = Column::new().push(menu_container);
 
         if self.is_showing_settings {
             let settings_container =
                 element::settings_container(&mut self.wow_path_button_state, &self.config);
-            content = content.push(settings_container);
+            let space = Space::new(Length::Fill, Length::Units(10));
+            content = content.push(settings_container).push(space);
         }
 
         content = content

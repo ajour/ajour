@@ -56,7 +56,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.config.wow.directory = path;
                 // Persist the newly updated config.
                 let _ = persist_config(&ajour.config);
-
                 // Reload config.
                 return Ok(Command::perform(load_config(), Message::Parse));
             }
