@@ -10,23 +10,18 @@ use {
 static DEFAULT_FONT_SIZE: u16 = 14;
 static DEFAULT_PADDING: u16 = 10;
 
+/// Container for settings.
 pub fn settings_container<'a>(
     directory_button_state: &'a mut button::State,
     config: &Config,
 ) -> Container<'a, Message> {
-    // Title row
-    let wow_directory_info_text = Text::new("World of Warcraft directory").size(14);
-    let wow_title_row = Row::new()
-        .push(wow_directory_info_text)
+    // Title for the World of Warcraft directory selection.
+    let directory_info_text = Text::new("World of Warcraft directory").size(14);
+    let directory_info_row = Row::new()
+        .push(directory_info_text)
         .padding(DEFAULT_PADDING);
 
-    // Data row
-    let path_str = config
-        .wow
-        .directory
-        .as_ref()
-        .and_then(|p| p.to_str())
-        .unwrap_or("No path set.");
+    // Directory button for World of Warcraft directory selection.
     let directory_button: Element<Interaction> = Button::new(
         directory_button_state,
         Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
@@ -35,28 +30,41 @@ pub fn settings_container<'a>(
     .on_press(Interaction::OpenDirectory)
     .into();
 
-    // We add some margin left to adjust for inner-marigin in cell.
+    // We add some margin left to adjust to the rest of the content.
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
 
+    // Directory text, written next to directory button to let the user
+    // know what has been selected..
+    let path_str = config
+        .wow
+        .directory
+        .as_ref()
+        .and_then(|p| p.to_str())
+        .unwrap_or("No path set.");
     let directory_data_text = Text::new(path_str)
         .size(14)
         .vertical_alignment(VerticalAlignment::Center);
-
     let directory_data_text_container = Container::new(directory_data_text)
         .center_y()
         .padding(5)
         .style(style::SecondaryTextContainer);
 
+    // Data row for the World of Warcraft directory selection.
     let path_data_row = Row::new()
         .push(left_spacer)
         .push(directory_button.map(Message::Interaction))
         .push(directory_data_text_container);
 
+    // Small space below content.
     let bottom_space = Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
+
+    // Colum wrapping all the settings content.
     let column = Column::new()
-        .push(wow_title_row)
+        .push(directory_info_row)
         .push(path_data_row)
         .push(bottom_space);
+
+    // Container wrapping colum.
     Container::new(column)
         .width(Length::Fill)
         .style(style::AddonRowDefaultTextContainer)
