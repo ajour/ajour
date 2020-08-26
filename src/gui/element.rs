@@ -64,10 +64,22 @@ pub fn settings_container<'a>(
         .push(path_data_row)
         .push(bottom_space);
 
+    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
+
     // Container wrapping colum.
-    Container::new(column)
+    let directory_container = Container::new(column)
         .width(Length::Fill)
-        .style(style::AddonRowDefaultTextContainer)
+        .style(style::AddonRowDefaultTextContainer);
+
+    // Row to wrap each section.
+    let row = Row::new()
+        .push(left_spacer)
+        .push(directory_container)
+        .push(right_spacer);
+
+    // Returns the final container.
+    Container::new(row)
 }
 
 pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Container<'_, Message> {
