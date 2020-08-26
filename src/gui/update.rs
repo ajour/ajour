@@ -291,9 +291,7 @@ async fn open_directory() -> Option<PathBuf> {
     // Should we use task::spawn_blocking here?
     // TODO: We should maybe make sure we can't spawn multiple windows here.
     let dialog = OpenSingleDir { dir: None };
-    let result = dialog.show().unwrap();
-
-    result
+    dialog.show().unwrap()
 }
 
 async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package>) {
