@@ -47,8 +47,7 @@ pub enum Message {
     WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),
     Interaction(Interaction),
     Error(ClientError),
-    // Naming?
-    ChoseAddonDirectory(PathBuf),
+    UpdateDirectory(Option<PathBuf>),
 }
 
 pub struct Ajour {

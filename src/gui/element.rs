@@ -13,11 +13,13 @@ pub fn settings_container<'a>(
     let default_font_size = 14;
     let default_padding = 10;
 
+    // Title row
     let wow_directory_info_text = Text::new("World of Warcraft directory").size(14);
     let wow_title_row = Row::new()
         .push(wow_directory_info_text)
         .padding(default_padding);
 
+    // Data row
     let path_str = config
         .wow
         .directory
@@ -42,18 +44,21 @@ pub fn settings_container<'a>(
     let wow_directory_data_text_container = Container::new(wow_directory_data_text)
         .center_y()
         .padding(5)
-        .style(style::StatusTextContainer);
+        .style(style::SecondaryTextContainer);
 
     let path_data_row = Row::new()
         .push(left_spacer)
         .push(open_directory.map(Message::Interaction))
         .push(wow_directory_data_text_container);
 
-    let column = Column::new().push(wow_title_row).push(path_data_row);
+    let bottom_space = Space::new(Length::FillPortion(1), Length::Units(default_padding + 10));
+    let column = Column::new()
+        .push(wow_title_row)
+        .push(path_data_row)
+        .push(bottom_space);
     Container::new(column)
         .width(Length::Fill)
-        .height(Length::Units(200))
-        .style(style::StatusTextContainer)
+        .style(style::DefaultTextContainer)
 }
 
 pub fn addon_data_cell<'a>(
@@ -241,27 +246,27 @@ pub fn addon_row_titles<'a>(addons: &[Addon]) -> Row<'a, Message> {
     let addon_row_text = Text::new("Addon").size(default_font_size);
     let addon_row_container = Container::new(addon_row_text)
         .width(Length::FillPortion(1))
-        .style(style::StatusTextContainer);
+        .style(style::SecondaryTextContainer);
 
     let local_version_text = Text::new("Local").size(default_font_size);
     let local_version_container = Container::new(local_version_text)
         .width(Length::Units(150))
-        .style(style::StatusTextContainer);
+        .style(style::SecondaryTextContainer);
 
     let remote_version_text = Text::new("Remote").size(default_font_size);
     let remote_version_container = Container::new(remote_version_text)
         .width(Length::Units(150))
-        .style(style::StatusTextContainer);
+        .style(style::SecondaryTextContainer);
 
     let status_row_text = Text::new("Status").size(default_font_size);
     let status_row_container = Container::new(status_row_text)
         .width(Length::Units(85))
-        .style(style::StatusTextContainer);
+        .style(style::SecondaryTextContainer);
 
     let delete_row_text = Text::new("Details").size(default_font_size);
     let delete_row_container = Container::new(delete_row_text)
         .width(Length::Units(70))
-        .style(style::StatusTextContainer);
+        .style(style::SecondaryTextContainer);
 
     // Only shows row titles if we have any addons.
     if !addons.is_empty() {
@@ -333,7 +338,7 @@ pub fn menu_container<'a>(
     let status_container = Container::new(status_text)
         .center_y()
         .padding(5)
-        .style(style::StatusTextContainer);
+        .style(style::SecondaryTextContainer);
 
     // Displays an error, if any has occured.
     let error_text = if let AjourState::Error(e) = state {
