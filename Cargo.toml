@@ -23,7 +23,6 @@ zip = "0.5.6"
 percent-encoding = "2.1.0"
 image = "0.23.8"
 native-dialog = "0.4.1"
-nfd2 = "0.2.1"
 
 [build-dependencies]
 embed-resource = "1.3.3"
