@@ -34,7 +34,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 None => {
                     return Err(ClientError::Custom(
-                        "Error reading ajour.yml file".to_owned(),
+                        "Please open settings to set a path for World of Warcraft.".to_owned(),
                     ))
                 }
             }
