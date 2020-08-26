@@ -11,7 +11,7 @@ static DEFAULT_FONT_SIZE: u16 = 14;
 static DEFAULT_PADDING: u16 = 10;
 
 pub fn settings_container<'a>(
-    wow_path_button_state: &'a mut button::State,
+    directory_button_state: &'a mut button::State,
     config: &Config,
 ) -> Container<'a, Message> {
     // Title row
@@ -27,8 +27,8 @@ pub fn settings_container<'a>(
         .as_ref()
         .and_then(|p| p.to_str())
         .unwrap_or("No path set.");
-    let open_directory: Element<Interaction> = Button::new(
-        wow_path_button_state,
+    let directory_button: Element<Interaction> = Button::new(
+        directory_button_state,
         Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultBoxedButton)
@@ -38,19 +38,19 @@ pub fn settings_container<'a>(
     // We add some margin left to adjust for inner-marigin in cell.
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
 
-    let wow_directory_data_text = Text::new(path_str)
+    let directory_data_text = Text::new(path_str)
         .size(14)
         .vertical_alignment(VerticalAlignment::Center);
 
-    let wow_directory_data_text_container = Container::new(wow_directory_data_text)
+    let directory_data_text_container = Container::new(directory_data_text)
         .center_y()
         .padding(5)
         .style(style::SecondaryTextContainer);
 
     let path_data_row = Row::new()
         .push(left_spacer)
-        .push(open_directory.map(Message::Interaction))
-        .push(wow_directory_data_text_container);
+        .push(directory_button.map(Message::Interaction))
+        .push(directory_data_text_container);
 
     let bottom_space = Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
     let column = Column::new()

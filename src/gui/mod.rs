@@ -55,7 +55,7 @@ pub struct Ajour {
     update_all_button_state: button::State,
     refresh_button_state: button::State,
     settings_button_state: button::State,
-    wow_path_button_state: button::State,
+    directory_button_state: button::State,
     addons_scrollable_state: scrollable::State,
     addons: Vec<Addon>,
     config: Config,
@@ -70,7 +70,7 @@ impl Default for Ajour {
             update_all_button_state: Default::default(),
             settings_button_state: Default::default(),
             refresh_button_state: Default::default(),
-            wow_path_button_state: Default::default(),
+            directory_button_state: Default::default(),
             addons_scrollable_state: Default::default(),
             addons: Vec::new(),
             config: Config::default(),
@@ -144,7 +144,7 @@ impl Application for Ajour {
 
         if self.is_showing_settings {
             let settings_container =
-                element::settings_container(&mut self.wow_path_button_state, &self.config);
+                element::settings_container(&mut self.directory_button_state, &self.config);
             let space = Space::new(Length::Fill, Length::Units(10));
             content = content.push(settings_container).push(space);
         }
