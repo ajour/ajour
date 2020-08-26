@@ -62,10 +62,7 @@ pub fn settings_container<'a>(
         .style(style::AddonRowDefaultTextContainer)
 }
 
-pub fn addon_data_cell<'a>(
-    addon: &'a mut Addon,
-    is_addon_expanded: bool,
-) -> Container<'_, Message> {
+pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Container<'_, Message> {
     let default_height = Length::Units(26);
 
     // Check if current addon is expanded.
@@ -151,9 +148,10 @@ pub fn addon_data_cell<'a>(
             .style(style::AddonRowSecondaryTextContainer),
     };
 
-    let details_button_text = match is_addon_expanded {
-        true => "Close",
-        false => "Details",
+    let details_button_text = if is_addon_expanded {
+        "Close"
+    } else {
+        "Details"
     };
 
     let details_button: Element<Interaction> = Button::new(
@@ -411,7 +409,7 @@ pub fn menu_container<'a>(
     Container::new(settings_column)
 }
 
-pub fn addon_scrollable<'a>(state: &'a mut scrollable::State) -> Scrollable<'_, Message> {
+pub fn addon_scrollable(state: &'_ mut scrollable::State) -> Scrollable<'_, Message> {
     Scrollable::new(state)
         .spacing(1)
         .height(Length::FillPortion(1))
