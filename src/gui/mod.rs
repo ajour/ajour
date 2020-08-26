@@ -104,8 +104,8 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Message> {
-        let default_padding = 10;
-
+        // Menu container at the top of the applications.
+        // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
             &mut self.update_all_button_state,
             &mut self.refresh_button_state,
@@ -115,47 +115,63 @@ impl Application for Ajour {
             &self.config,
         );
 
+        // Addon row titles is a row of titles above the addon scrollable.
+        // This is to add titles above each section of the addon row, to let
+        // the user easily identify what the value is.
         let addon_row_titles = element::addon_row_titles(&self.addons);
 
         // A scrollable list containing rows.
-        // Each row holds information about a single addon.
+        // Each row holds data about a single addon.
         let mut addons_scrollable = element::addon_scrollable(&mut self.addons_scrollable_state);
 
-        // Loops addons for GUI.
+        // Loops though the addons.
         let hidden_addons = self.config.addons.hidden.as_ref();
         for addon in &mut self
             .addons
             .iter_mut()
             .filter(|a| a.is_parent() && !a.is_hidden(&hidden_addons))
         {
+            // Checks if the current addon is expanded.
             let is_addon_expanded = match &self.expanded_addon {
                 Some(expanded_addon) => addon.id == expanded_addon.id,
                 None => false,
             };
 
+            // A container cell which has all data about the current addon.
+            // If the addon is expanded, then this is also included in this container.
             let addon_data_cell = element::addon_data_cell(addon, is_addon_expanded);
+
+            // Adds the addon data cell to the scrollable.
             addons_scrollable = addons_scrollable.push(addon_data_cell);
         }
 
-        let bottom_space = Space::new(Length::FillPortion(1), Length::Units(default_padding));
+        // Bottom space below the scrollable.
+        let bottom_space = Space::new(Length::FillPortion(1), Length::Units(10));
 
         // This column gathers all the other elements together.
         let mut content = Column::new().push(menu_container);
 
+        // This ensure we only draw settings, when we need to.
         if self.is_showing_settings {
+            // Settings container, containing all data releated to settings.
             let settings_container =
                 element::settings_container(&mut self.directory_button_state, &self.config);
+
+            // Space below settings.
             let space = Space::new(Length::Fill, Length::Units(10));
+
+            // Adds the settings container.
             content = content.push(settings_container).push(space);
         }
 
+        // Adds the rest of the elements to the content column.
         content = content
             .push(addon_row_titles)
             .push(addons_scrollable)
             .push(bottom_space)
             .padding(3); // small padding to make scrollbar fit better.
 
-        // This container wraps the whole content.
+        // Finally wraps everything in a container.
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
