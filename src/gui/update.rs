@@ -2,7 +2,7 @@ use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
         addon::{Addon, AddonState},
-        config::load_config,
+        config::{load_config, persist_config},
         curse_api,
         error::ClientError,
         fs::{delete_addon, install_addon},
@@ -11,6 +11,7 @@ use {
         tukui_api, wowinterface_api, Result,
     },
     iced::Command,
+    native_dialog::*,
     std::path::PathBuf,
 };
 
@@ -20,6 +21,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
+            // Reset state
+            ajour.state = AjourState::Idle;
             let addon_directory = ajour.config.get_addon_directory();
 
             match addon_directory {
@@ -31,7 +34,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 None => {
                     return Err(ClientError::Custom(
-                        "Error reading ajour.yml file".to_owned(),
+                        "Please open settings to set a path for World of Warcraft.".to_owned(),
                     ))
                 }
             }
@@ -40,6 +43,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Re-parse addons.
             ajour.addons = Vec::new();
             return Ok(Command::perform(load_config(), Message::Parse));
+        }
+        Message::Interaction(Interaction::Settings) => {
+            ajour.is_showing_settings = !ajour.is_showing_settings;
+        }
+        Message::Interaction(Interaction::OpenDirectory) => {
+            return Ok(Command::perform(open_directory(), Message::UpdateDirectory));
+        }
+        Message::UpdateDirectory(path) => {
+            if path.is_some() {
+                // Update the path for World of Warcraft.
+                ajour.config.wow.directory = path;
+                // Persist the newly updated config.
+                let _ = persist_config(&ajour.config);
+                // Reload config.
+                return Ok(Command::perform(load_config(), Message::Parse));
+            }
         }
         Message::Interaction(Interaction::Expand(id)) => {
             // Expand a addon.
@@ -266,6 +285,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
     }
 
     Ok(Command::none())
+}
+
+async fn open_directory() -> Option<PathBuf> {
+    // Should we use task::spawn_blocking here?
+    // TODO: We should maybe make sure we can't spawn multiple windows here.
+    let dialog = OpenSingleDir { dir: None };
+    dialog.show().unwrap()
 }
 
 async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package>) {

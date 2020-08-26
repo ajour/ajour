@@ -175,14 +175,24 @@ impl container::StyleSheet for AddonRowSecondaryTextContainer {
     }
 }
 
-pub struct StatusTextContainer;
-impl container::StyleSheet for StatusTextContainer {
+pub struct SecondaryTextContainer;
+impl container::StyleSheet for SecondaryTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
             text_color: Some(Color {
                 a: 0.4,
                 ..ColorPalette::OnSurface.rgb()
             }),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct DefaultTextContainer;
+impl container::StyleSheet for DefaultTextContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            text_color: Some(ColorPalette::OnSurface.rgb()),
             ..container::Style::default()
         }
     }

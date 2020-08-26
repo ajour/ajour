@@ -87,7 +87,7 @@ fn create_default_config<P: AsRef<Path>>(path: P) -> Result<PathBuf> {
 /// 1. $HOME/.config/ajour/ajour.yml
 /// 2. $HOME/.ajour.yml
 #[cfg(not(windows))]
-fn find_or_create_config() -> Result<PathBuf> {
+pub fn find_or_create_config() -> Result<PathBuf> {
     let home = env::var("HOME").expect("user home directory not found.");
 
     // Primary location path: $HOME/.config/ajour/ajour.yml.
@@ -111,7 +111,7 @@ fn find_or_create_config() -> Result<PathBuf> {
 /// 1. %APPDATA%\ajour\ajour.yml
 /// 2. In the same directory as the executable
 #[cfg(windows)]
-fn find_or_create_config() -> Result<PathBuf> {
+pub fn find_or_create_config() -> Result<PathBuf> {
     // Primary location path: %APPDATA%\ajour\ajour.yml.
     let pri_location = dirs::config_dir()
         .map(|path| path.join("ajour\\ajour.yml"))
@@ -149,6 +149,22 @@ fn parse_config(path: &PathBuf) -> Result<Config> {
         }
         Ok(config) => Ok(config),
     }
+}
+
+/// This function will save the current `Config` to disk.
+/// This is used if we have updated the `Config` from the application,
+/// and want to make sure it persist.
+pub fn persist_config(config: &Config) -> Result<()> {
+    // Find the used config.
+    let path = find_or_create_config()?;
+
+    // Serialize the config
+    let default_config_content = serde_yaml::to_string(config)?;
+
+    // Write to config.
+    fs::write(&path, &default_config_content)?;
+
+    Ok(())
 }
 
 /// Returns a Config.
