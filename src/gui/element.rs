@@ -1,8 +1,8 @@
 use {
-    super::{style, Addon, AddonState, AjourState, Config, Interaction, Message},
+    super::{style, Addon, AddonState, AjourState, Config, Flavor, Interaction, Message},
     iced::{
-        button, scrollable, Button, Column, Container, Element, HorizontalAlignment, Length, Row,
-        Scrollable, Space, Text, VerticalAlignment,
+        button, pick_list, scrollable, Button, Column, Container, Element, HorizontalAlignment,
+        Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
 };
 
@@ -13,6 +13,7 @@ static DEFAULT_PADDING: u16 = 10;
 /// Container for settings.
 pub fn settings_container<'a>(
     directory_button_state: &'a mut button::State,
+    flavor_list_state: &'a mut pick_list::State<Flavor>,
     config: &Config,
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
@@ -55,6 +56,27 @@ pub fn settings_container<'a>(
         .push(directory_button.map(Message::Interaction))
         .push(directory_data_text_container);
 
+    // Title for the flavor pick list.
+    let flavor_info_text = Text::new("Flavor").size(14);
+    let flavor_info_row = Row::new().push(flavor_info_text).padding(DEFAULT_PADDING);
+
+    // We add some margin left to adjust to the rest of the content.
+    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+
+    let flavors = &Flavor::ALL[..];
+    let flavor_pick_list = PickList::new(
+        flavor_list_state,
+        flavors,
+        Some(config.wow.flavor),
+        Message::FlavorSelected,
+    )
+    .text_size(14)
+    .width(Length::Units(100))
+    .style(style::PickList);
+
+    // Data row for flavor picker list.
+    let flavor_data_row = Row::new().push(left_spacer).push(flavor_pick_list);
+
     // Small space below content.
     let bottom_space = Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
@@ -62,6 +84,8 @@ pub fn settings_container<'a>(
     let column = Column::new()
         .push(directory_info_row)
         .push(path_data_row)
+        .push(flavor_info_row)
+        .push(flavor_data_row)
         .push(bottom_space);
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));

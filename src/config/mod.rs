@@ -12,7 +12,7 @@ use crate::{error::ClientError, Result};
 
 pub use crate::config::addons::Addons;
 pub use crate::config::tokens::Tokens;
-pub use crate::config::wow::Wow;
+pub use crate::config::wow::{Flavor, Wow};
 
 /// Config struct.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
@@ -35,7 +35,7 @@ impl Config {
             Some(dir) => {
                 // We prepend and append `_` to the formatted_client_flavor so it
                 // either becomes _retail_, or _classic_.
-                let formatted_client_flavor = format!("_{}_", self.wow.flavor.clone());
+                let formatted_client_flavor = format!("_{}_", self.wow.flavor.to_string());
 
                 // The path to the directory containing the addons
                 Some(dir.join(formatted_client_flavor).join("Interface/AddOns"))

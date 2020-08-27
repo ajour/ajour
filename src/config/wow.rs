@@ -8,16 +8,46 @@ pub struct Wow {
     #[serde(default)]
     pub directory: Option<PathBuf>,
 
-    // TODO: Consider changing this to an enum.
     #[serde(default)]
-    pub flavor: String,
+    pub flavor: Flavor,
 }
 
 impl Default for Wow {
     fn default() -> Self {
         Wow {
             directory: None,
-            flavor: "retail".to_owned(),
+            flavor: Flavor::Retail,
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum Flavor {
+    #[serde(alias = "retail")]
+    Retail,
+    #[serde(alias = "classic")]
+    Classic,
+}
+
+impl Flavor {
+    pub const ALL: [Flavor; 2] = [Flavor::Retail, Flavor::Classic];
+}
+
+impl Default for Flavor {
+    fn default() -> Flavor {
+        Flavor::Retail
+    }
+}
+
+impl std::fmt::Display for Flavor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Flavor::Retail => "retail",
+                Flavor::Classic => "classic",
+            }
+        )
     }
 }

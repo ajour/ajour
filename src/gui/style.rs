@@ -1,4 +1,4 @@
-use iced::{button, container, scrollable, Background, Color};
+use iced::{button, container, pick_list, scrollable, Background, Color};
 
 enum ColorPalette {
     Primary,
@@ -253,5 +253,43 @@ impl scrollable::StyleSheet for Scrollable {
             scroller: scrollable::Scroller { ..hovered.scroller },
             ..hovered
         }
+    }
+}
+
+pub struct PickList;
+
+impl pick_list::StyleSheet for PickList {
+    fn menu(&self) -> pick_list::Menu {
+        pick_list::Menu {
+            text_color: ColorPalette::OnSurface.rgb(),
+            background: Background::Color(ColorPalette::Background.rgb()),
+            border_width: 1,
+            border_color: ColorPalette::Surface.rgb(),
+            selected_background: Color {
+                a: 0.1,
+                ..ColorPalette::Primary.rgb()
+            }
+            .into(),
+            selected_text_color: ColorPalette::Primary.rgb(),
+        }
+    }
+
+    fn active(&self) -> pick_list::Style {
+        pick_list::Style {
+            text_color: ColorPalette::OnSurface.rgb(),
+            background: Background::Color(ColorPalette::Background.rgb()),
+            border_width: 1,
+            border_color: Color {
+                a: 1.0,
+                ..ColorPalette::Background.rgb()
+            },
+            border_radius: 2,
+            icon_size: 0.5,
+        }
+    }
+
+    fn hovered(&self) -> pick_list::Style {
+        let active = self.active();
+        pick_list::Style { ..active }
     }
 }
