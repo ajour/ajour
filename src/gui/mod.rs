@@ -4,13 +4,14 @@ mod update;
 
 use crate::{
     addon::{Addon, AddonState},
-    config::{load_config, Config},
+    config::{load_config, Config, Flavor},
     curse_api,
     error::ClientError,
     tukui_api, wowinterface_api, Result,
 };
 use iced::{
-    button, scrollable, Application, Column, Command, Container, Element, Length, Settings, Space,
+    button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
+    Settings, Space,
 };
 use std::path::PathBuf;
 
@@ -48,6 +49,7 @@ pub enum Message {
     Interaction(Interaction),
     Error(ClientError),
     UpdateDirectory(Option<PathBuf>),
+    FlavorSelected(Flavor),
 }
 
 pub struct Ajour {
@@ -57,6 +59,7 @@ pub struct Ajour {
     settings_button_state: button::State,
     directory_button_state: button::State,
     addons_scrollable_state: scrollable::State,
+    flavor_list_state: pick_list::State<Flavor>,
     addons: Vec<Addon>,
     config: Config,
     expanded_addon: Option<Addon>,
@@ -72,6 +75,7 @@ impl Default for Ajour {
             refresh_button_state: Default::default(),
             directory_button_state: Default::default(),
             addons_scrollable_state: Default::default(),
+            flavor_list_state: Default::default(),
             addons: Vec::new(),
             config: Config::default(),
             expanded_addon: None,
@@ -154,8 +158,11 @@ impl Application for Ajour {
         // This ensure we only draw settings, when we need to.
         if self.is_showing_settings {
             // Settings container, containing all data releated to settings.
-            let settings_container =
-                element::settings_container(&mut self.directory_button_state, &self.config);
+            let settings_container = element::settings_container(
+                &mut self.directory_button_state,
+                &mut self.flavor_list_state,
+                &self.config,
+            );
 
             // Space below settings.
             let space = Space::new(Length::Fill, Length::Units(10));

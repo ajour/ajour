@@ -60,6 +60,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 return Ok(Command::perform(load_config(), Message::Parse));
             }
         }
+        Message::FlavorSelected(flavor) => {
+            // Update the game flavor
+            ajour.config.wow.flavor = flavor;
+            // Persist the newly updated config.
+            let _ = persist_config(&ajour.config);
+            // Reload config.
+            return Ok(Command::perform(load_config(), Message::Parse));
+        }
         Message::Interaction(Interaction::Expand(id)) => {
             // Expand a addon.
             // If it's already expanded, we collapse it again.

@@ -1,4 +1,4 @@
-use crate::{curse_api, tukui_api, utility::strip_non_digits, wowinterface_api};
+use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits, wowinterface_api};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -103,11 +103,10 @@ impl Addon {
     /// Package from Curse.
     ///
     /// This function takes a `Package` and updates self with the information.
-    pub fn apply_curse_package(&mut self, package: &curse_api::Package, flavor: &str) {
-        let file = package
-            .latest_files
-            .iter()
-            .find(|f| f.release_type == 1 && f.game_version_flavor == format!("wow_{}", flavor));
+    pub fn apply_curse_package(&mut self, package: &curse_api::Package, flavor: &Flavor) {
+        let file = package.latest_files.iter().find(|f| {
+            f.release_type == 1 && f.game_version_flavor == format!("wow_{}", flavor.to_string())
+        });
 
         if let Some(file) = file {
             self.remote_version = Some(file.display_name.clone());
@@ -129,12 +128,12 @@ impl Addon {
     /// 1. Loops each packages, and find the `File` which is stable and has right flavor.
     /// 2. Then we loop each `Module` in the `File` and match filename with `self`.
     /// 3. If tf we find a `Module` from step 2, we know we can update `self`
-    pub fn apply_curse_packages(&mut self, packages: &[curse_api::Package], flavor: &str) {
+    pub fn apply_curse_packages(&mut self, packages: &[curse_api::Package], flavor: &Flavor) {
         for package in packages {
             let file = package.latest_files.iter().find(|f| {
                 f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
                     && !f.is_alternate
-                    && f.game_version_flavor == format!("wow_{}", flavor)
+                    && f.game_version_flavor == format!("wow_{}", flavor.to_string())
             });
             if let Some(file) = file {
                 let module = file.modules.iter().find(|m| m.foldername == self.id);
