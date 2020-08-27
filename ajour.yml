@@ -6,9 +6,9 @@ wow:
   # Directory.
   directory: /Applications/World of Warcraft
   # Flavor:
-  # - retail (default)
-  # - classic
-  flavor: retail
+  # - Retail (default)
+  # - Classic
+  flavor: Retail
 
 # Addons related settings
 addons:
