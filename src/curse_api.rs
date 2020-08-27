@@ -34,7 +34,8 @@ pub struct Module {
 /// Function to fetch a remote addon package for id.
 pub async fn fetch_remote_package(id: &u32) -> Result<Package> {
     let url = format!("{}/{}", API_ENDPOINT, id);
-    let mut resp = request_async(&url, vec![]).await?;
+    let timeout = Some(30);
+    let mut resp = request_async(&url, vec![], timeout).await?;
     if resp.status().is_success() {
         let package: Package = resp.json()?;
         Ok(package)
@@ -50,13 +51,14 @@ pub async fn fetch_remote_package(id: &u32) -> Result<Package> {
 pub async fn fetch_remote_packages(search_string: &str) -> Result<Vec<Package>> {
     let game_id = 1; // wow
     let page_size = 20; // capping results
+    let timeout = Some(15);
     let search_string = utf8_percent_encode(search_string, NON_ALPHANUMERIC).to_string();
     let url = format!(
         "{}/search?gameId={}&pageSize={}&searchFilter={}",
         API_ENDPOINT, game_id, page_size, search_string
     );
 
-    let mut resp = request_async(&url, vec![]).await?;
+    let mut resp = request_async(&url, vec![], timeout).await?;
     if resp.status().is_success() {
         let packages: Vec<Package> = resp.json()?;
         Ok(packages)
