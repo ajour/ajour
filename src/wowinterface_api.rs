@@ -18,7 +18,8 @@ pub struct Package {
 pub async fn fetch_remote_packages(id: &str, token: &str) -> Result<Vec<Package>> {
     let url = format!("{}/details/{}.json", API_ENDPOINT, id);
     let headers = vec![("x-api-token", token)];
-    let mut resp = request_async(url, headers).await?;
+    let timeout = Some(30);
+    let mut resp = request_async(url, headers, timeout).await?;
 
     if resp.status().is_success() {
         let addon_details: Vec<Package> = resp.json()?;
