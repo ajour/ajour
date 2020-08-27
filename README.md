@@ -55,7 +55,7 @@ cargo build --release
 
 ## Configuration
 
-Ajour will generate a configuration file for you:
+Ajour will generate a configuration file for you, unless it finds one in one of the following directories:
 
 macOS / Linux:
 - `$HOME/.config/ajour/ajour.yml`
