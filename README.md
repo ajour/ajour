@@ -55,19 +55,41 @@ cargo build --release
 
 ## Configuration
 
-You can find a template configuration file with documentation for all available fields [here](./ajour.yml).
+Ajour will generate a configuration file for you:
 
-Ajour looks for a configuration file in the following locations:
-
+macOS / Linux:
 - `$HOME/.config/ajour/ajour.yml`
 - `$HOME/.ajour.yml`
 
-On Windows, it looks for a config file in the following locations:
+Windows:
 
 - `%APPDATA%\ajour\ajour.yml`
 - `In the same directory as the executable`
 
-**Note**: If no configuration file is found, Ajour creates one by itself at the first location specificed. 
+## FAQ
+
+**_When will you release Ajour / be feature complete?_**
+
+The plan is to have a stable, polished release in time for the Shadowlands launch. 10.27.20.
+
+
+**_When can we expect a Linux version?_**
+
+Ajour is being developed and tested on macOS and Windows, but should work on Linux if installed from source.
+
+**_After updating an addon, it still says it can be updated. What gives?_**
+
+Ajour does a "best effort" attempt at comparing the local addon version, with the latest version available online. Sometimes Addon Authors specify different versions when uploading their addon to a repository than what they have written in the addon itself. If the numbers don't match, Ajour will say an update is available every time the list is refreshed.
+
+**_I'm using addon XYZ but I don't see it in Ajour. Why is that?_**
+
+Ajour parses through the AddOns folder and uses a couple of rules to determine what to show (main addons) and not to show (dependencies). For example: If an addon does not specify a version in its .toc file, Ajour cannot determine if a newer version of it is available, and so we assume it's a dependency of another addon and hide it. 
+
+If you are using an addon that Ajour doesn't list, we encourage you to raise an issue and tell us about it! We want Ajour to handle as many edge cases as possible.
+
+**_Why Rust?_**
+
+We wanted to create an application which natively compiles to both Windows, Linux and macOS while at the same time is as performant and reliable as possible.
 
 ## Other addon managers
 
