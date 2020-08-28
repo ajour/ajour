@@ -1,8 +1,8 @@
 use {
     super::{style, Addon, AddonState, AjourState, Config, Flavor, Interaction, Message},
     iced::{
-        button, pick_list, scrollable, Align, Button, Column, Container, Element,
-        HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
+        button, pick_list, scrollable, Button, Column, Container, Element, HorizontalAlignment,
+        Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
 };
 
