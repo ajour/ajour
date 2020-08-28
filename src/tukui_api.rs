@@ -21,10 +21,10 @@ fn api_endpoint(id: &str) -> String {
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
-pub async fn fetch_remote_package(id: &str) -> Result<Package> {
+pub async fn fetch_remote_package(shared_client: &HttpClient, id: &str) -> Result<Package> {
     let url = api_endpoint(id);
     let timeout = Some(30);
-    let mut resp = request_async(&url, vec![], timeout).await?;
+    let mut resp = request_async(shared_client, &url, vec![], timeout).await?;
 
     if resp.status().is_success() {
         let package: Package = resp.json()?;
