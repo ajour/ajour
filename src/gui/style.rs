@@ -256,6 +256,41 @@ impl scrollable::StyleSheet for Scrollable {
     }
 }
 
+pub struct SecondaryScrollable;
+impl scrollable::StyleSheet for SecondaryScrollable {
+    fn active(&self) -> scrollable::Scrollbar {
+        scrollable::Scrollbar {
+            background: Some(Background::Color(ColorPalette::Surface.rgb())),
+            border_radius: 0,
+            border_width: 0,
+            border_color: Color::TRANSPARENT,
+            scroller: scrollable::Scroller {
+                color: ColorPalette::Background.rgb(),
+                border_radius: 2,
+                border_width: 0,
+                border_color: Color::TRANSPARENT,
+            },
+        }
+    }
+
+    fn hovered(&self) -> scrollable::Scrollbar {
+        let active = self.active();
+
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..active.scroller },
+            ..active
+        }
+    }
+
+    fn dragging(&self) -> scrollable::Scrollbar {
+        let hovered = self.hovered();
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..hovered.scroller },
+            ..hovered
+        }
+    }
+}
+
 pub struct PickList;
 
 impl pick_list::StyleSheet for PickList {
