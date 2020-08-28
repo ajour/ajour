@@ -56,10 +56,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let ignored_strings = &ajour.config.addons.ignored;
                 ajour.ignored_addons = ajour
                     .addons
-                    .clone()
-                    .into_iter()
+                    .iter()
                     .filter(|a| ignored_strings.into_iter().any(|i| i == &a.id))
-                    .map(|a| (a, button::State::new()))
+                    .map(|a| (a.clone(), button::State::new()))
                     .collect::<Vec<(Addon, button::State)>>();
             } else {
                 ajour.ignored_addons = vec![];
