@@ -207,16 +207,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Check if we have curse id.
                 if let Some(id) = &addon.repository_identifiers.curse {
                     // We check if another addon has already been added with the same id.
-                    let is_added = addons.iter().any(|a| {
-                        a.repository_identifiers.curse == Some(id.clone()) && a.id != addon.id
-                    });
+                    let is_added = addons
+                        .iter()
+                        .any(|a| a.repository_identifiers.curse == Some(*id) && a.id != addon.id);
 
                     // If another addon is already added, we find that addon and mark it as
                     // `is_bundle`. Else we add it to the array.
                     if is_added {
                         let addon = addons
                             .iter_mut()
-                            .find(|a| a.repository_identifiers.curse == Some(id.clone()));
+                            .find(|a| a.repository_identifiers.curse == Some(*id));
                         if let Some(addon) = addon {
                             addon.is_bundle = true;
                             continue;
