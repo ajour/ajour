@@ -38,6 +38,8 @@ pub enum Interaction {
     Update(String),
     Delete(String),
     Expand(String),
+    Ignore(String),
+    Unignore(String),
 }
 
 #[derive(Debug)]
@@ -59,15 +61,17 @@ pub enum Message {
 
 pub struct Ajour {
     state: AjourState,
-    update_all_button_state: button::State,
-    refresh_button_state: button::State,
-    settings_button_state: button::State,
-    directory_button_state: button::State,
+    update_all_btn_state: button::State,
+    refresh_btn_state: button::State,
+    settings_btn_state: button::State,
+    directory_btn_state: button::State,
     addons_scrollable_state: scrollable::State,
+    ignored_addons_scrollable_state: scrollable::State,
     flavor_list_state: pick_list::State<Flavor>,
     addons: Vec<Addon>,
     config: Config,
     expanded_addon: Option<Addon>,
+    ignored_addons: Vec<(Addon, button::State)>,
     is_showing_settings: bool,
     shared_client: Arc<HttpClient>,
 }
@@ -76,15 +80,17 @@ impl Default for Ajour {
     fn default() -> Self {
         Self {
             state: AjourState::Idle,
-            update_all_button_state: Default::default(),
-            settings_button_state: Default::default(),
-            refresh_button_state: Default::default(),
-            directory_button_state: Default::default(),
+            update_all_btn_state: Default::default(),
+            settings_btn_state: Default::default(),
+            refresh_btn_state: Default::default(),
+            directory_btn_state: Default::default(),
             addons_scrollable_state: Default::default(),
+            ignored_addons_scrollable_state: Default::default(),
             flavor_list_state: Default::default(),
             addons: Vec::new(),
             config: Config::default(),
             expanded_addon: None,
+            ignored_addons: Vec::new(),
             is_showing_settings: false,
             shared_client: Arc::new(
                 HttpClient::builder()
@@ -121,12 +127,21 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Message> {
+        // Ignored addons.
+        // We find the  corresponding `Addon` from the ignored strings.
+        let ignored_strings = &self.config.addons.ignored;
+        // let mut ignored_addons = self
+        //     .addons
+        //     .into_iter()
+        //     .filter(|a| ignored_strings.into_iter().any(|i| i == &a.id))
+        //     .collect::<Vec<Addon>>();
+
         // Menu container at the top of the applications.
         // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
-            &mut self.update_all_button_state,
-            &mut self.refresh_button_state,
-            &mut self.settings_button_state,
+            &mut self.update_all_btn_state,
+            &mut self.refresh_btn_state,
+            &mut self.settings_btn_state,
             &self.state,
             &self.addons,
             &self.config,
@@ -142,11 +157,10 @@ impl Application for Ajour {
         let mut addons_scrollable = element::addon_scrollable(&mut self.addons_scrollable_state);
 
         // Loops though the addons.
-        let hidden_addons = self.config.addons.hidden.as_ref();
         for addon in &mut self
             .addons
             .iter_mut()
-            .filter(|a| a.is_parent() && !a.is_hidden(&hidden_addons))
+            .filter(|a| a.is_parent() && !a.is_ignored(&ignored_strings))
         {
             // Checks if the current addon is expanded.
             let is_addon_expanded = match &self.expanded_addon {
@@ -172,8 +186,10 @@ impl Application for Ajour {
         if self.is_showing_settings {
             // Settings container, containing all data releated to settings.
             let settings_container = element::settings_container(
-                &mut self.directory_button_state,
+                &mut self.directory_btn_state,
                 &mut self.flavor_list_state,
+                &mut self.ignored_addons_scrollable_state,
+                &mut self.ignored_addons,
                 &self.config,
             );
 

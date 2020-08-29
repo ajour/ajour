@@ -14,6 +14,8 @@ static DEFAULT_PADDING: u16 = 10;
 pub fn settings_container<'a>(
     directory_button_state: &'a mut button::State,
     flavor_list_state: &'a mut pick_list::State<Flavor>,
+    ignored_addons_scrollable_state: &'a mut scrollable::State,
+    ignored_addons: &'a mut Vec<(Addon, button::State)>,
     config: &Config,
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
@@ -81,7 +83,7 @@ pub fn settings_container<'a>(
     let bottom_space = Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
     // Colum wrapping all the settings content.
-    let column = Column::new()
+    let left_column = Column::new()
         .push(directory_info_row)
         .push(path_data_row)
         .push(flavor_info_row)
@@ -92,18 +94,72 @@ pub fn settings_container<'a>(
     let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
 
     // Container wrapping colum.
-    let directory_container = Container::new(column)
-        .width(Length::Fill)
+    let left_container = Container::new(left_column)
+        .width(Length::FillPortion(1))
+        .style(style::AddonRowDefaultTextContainer);
+
+    // Title for the ignored addons scrollable.
+    let ignored_addons_title = Text::new("Ignored addons").size(14);
+    let ignored_addons_title_row = Row::new()
+        .push(ignored_addons_title)
+        .padding(DEFAULT_PADDING);
+    let mut scrollable =
+        ignored_addon_scrollable(ignored_addons_scrollable_state).width(Length::Fill);
+
+    if ignored_addons.is_empty() {
+        let title =
+            Text::new("If you tell Ajour to ignore an addon, it will only appear in this list.")
+                .size(14);
+        let title_container = Container::new(title)
+            .center_x()
+            .center_y()
+            .style(style::AddonRowSecondaryTextContainer);
+        let row = Row::new()
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(title_container);
+        scrollable = scrollable.push(row);
+    }
+
+    for (addon, state) in ignored_addons {
+        let unignore_button: Element<Interaction> =
+            Button::new(state, Text::new("Unignore").size(DEFAULT_FONT_SIZE))
+                .style(style::DefaultBoxedButton)
+                .on_press(Interaction::Unignore(addon.id.clone()))
+                .into();
+
+        let title = Text::new(addon.title.clone()).size(14);
+        let title_container = Container::new(title)
+            .height(Length::Units(26))
+            .width(Length::FillPortion(1))
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer);
+        let row = Row::new()
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(unignore_button.map(Message::Interaction))
+            .push(title_container);
+
+        scrollable = scrollable.push(row);
+    }
+
+    let right_column = Column::new()
+        .push(ignored_addons_title_row)
+        .push(scrollable)
+        .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
+    let right_container = Container::new(right_column)
+        .width(Length::FillPortion(1))
+        .height(Length::Fill)
         .style(style::AddonRowDefaultTextContainer);
 
     // Row to wrap each section.
     let row = Row::new()
         .push(left_spacer)
-        .push(directory_container)
+        .push(left_container)
+        .push(right_container)
         .push(right_spacer);
 
     // Returns the final container.
-    Container::new(row)
+    Container::new(row).height(Length::Units(125))
 }
 
 pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Container<'_, Message> {
@@ -253,8 +309,13 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
 
         let force_download_button: Element<Interaction> = force_download_button.into();
 
-        // Space between buttons.
-        let button_space = Space::new(Length::Units(5), Length::Units(0));
+        let ignore_button: Element<Interaction> = Button::new(
+            &mut addon.ignore_btn_state,
+            Text::new("Ignore").size(DEFAULT_FONT_SIZE),
+        )
+        .on_press(Interaction::Ignore(addon.id.clone()))
+        .style(style::DefaultBoxedButton)
+        .into();
 
         let delete_button: Element<Interaction> = Button::new(
             &mut addon.delete_btn_state,
@@ -266,7 +327,9 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
 
         let row = Row::new()
             .push(force_download_button.map(Message::Interaction))
-            .push(button_space)
+            .push(Space::new(Length::Units(5), Length::Units(0)))
+            .push(ignore_button.map(Message::Interaction))
+            .push(Space::new(Length::Units(5), Length::Units(0)))
             .push(delete_button.map(Message::Interaction));
         let column = Column::new()
             .push(notes_text)
@@ -375,10 +438,10 @@ pub fn menu_container<'a>(
     let refresh_button: Element<Interaction> = refresh_button.into();
 
     // Displays text depending on the state of the app.
-    let hidden_addons = config.addons.hidden.as_ref();
+    let ignored_addons = config.addons.ignored.as_ref();
     let parent_addons_count = addons
         .iter()
-        .filter(|a| a.is_parent() && !a.is_hidden(&hidden_addons))
+        .filter(|a| a.is_parent() && !a.is_ignored(&ignored_addons))
         .count();
     let loading_addons = addons
         .iter()
@@ -458,4 +521,11 @@ pub fn addon_scrollable(state: &'_ mut scrollable::State) -> Scrollable<'_, Mess
         .spacing(1)
         .height(Length::FillPortion(1))
         .style(style::Scrollable)
+}
+
+pub fn ignored_addon_scrollable(state: &'_ mut scrollable::State) -> Scrollable<'_, Message> {
+    Scrollable::new(state)
+        .spacing(1)
+        .height(Length::FillPortion(1))
+        .style(style::SecondaryScrollable)
 }

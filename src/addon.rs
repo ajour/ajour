@@ -38,6 +38,8 @@ pub struct Addon {
     pub update_btn_state: iced::button::State,
     pub force_btn_state: iced::button::State,
     pub delete_btn_state: iced::button::State,
+    pub ignore_btn_state: iced::button::State,
+    pub unignore_btn_state: iced::button::State,
 }
 
 impl Addon {
@@ -68,6 +70,8 @@ impl Addon {
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),
             delete_btn_state: Default::default(),
+            ignore_btn_state: Default::default(),
+            unignore_btn_state: Default::default(),
         }
     }
 
@@ -171,9 +175,9 @@ impl Addon {
         }
     }
 
-    /// Function returns a `bool` indicating if the user has manually hidden the addon.
-    pub fn is_hidden(&self, hidden: &[String]) -> bool {
-        hidden.iter().any(|i| i == &self.id)
+    /// Function returns a `bool` indicating if the user has manually ignored the addon.
+    pub fn is_ignored(&self, ignored: &[String]) -> bool {
+        ignored.iter().any(|i| i == &self.id)
     }
 
     /// Function returns a `Vec<String>` which contains all combined dependencies.

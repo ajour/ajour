@@ -11,7 +11,7 @@ use {
         tukui_api, wowinterface_api, Result,
     },
     async_std::sync::Arc,
-    iced::Command,
+    iced::{button, Command},
     isahc::HttpClient,
     native_dialog::*,
     std::path::PathBuf,
@@ -25,6 +25,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config = config;
             // Reset state
             ajour.state = AjourState::Idle;
+
             let addon_directory = ajour.config.get_addon_directory();
 
             match addon_directory {
@@ -47,7 +48,48 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
+            // Toggle state.
             ajour.is_showing_settings = !ajour.is_showing_settings;
+
+            // Prepare ignore_addons data.
+            // We need to find the corresponding addons, and then save it to
+            // the ajour state, with a new button::State attatched.
+            if ajour.is_showing_settings {
+                let ignored_strings = &ajour.config.addons.ignored;
+                ajour.ignored_addons = ajour
+                    .addons
+                    .iter()
+                    .filter(|a| ignored_strings.iter().any(|i| i == &a.id))
+                    .map(|a| (a.clone(), button::State::new()))
+                    .collect::<Vec<(Addon, button::State)>>();
+            } else {
+                ajour.ignored_addons = vec![];
+            }
+        }
+        Message::Interaction(Interaction::Ignore(id)) => {
+            let addon = ajour.addons.iter().find(|a| a.id == id);
+            if let Some(addon) = addon {
+                // Update ajour state
+                ajour
+                    .ignored_addons
+                    .push((addon.clone(), button::State::new()));
+
+                // Update the config.
+                ajour.config.addons.ignored.push(addon.id.clone());
+
+                // Persist the newly updated config.
+                let _ = persist_config(&ajour.config);
+            }
+        }
+        Message::Interaction(Interaction::Unignore(id)) => {
+            // Update ajour state.
+            ajour.ignored_addons.retain(|(a, _)| a.id != id);
+
+            // Update the config.
+            ajour.config.addons.ignored.retain(|i| i != &id);
+
+            // Persist the newly updated config.
+            let _ = persist_config(&ajour.config);
         }
         Message::Interaction(Interaction::OpenDirectory) => {
             return Ok(Command::perform(open_directory(), Message::UpdateDirectory));
@@ -162,11 +204,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.addons.sort();
 
             let mut commands = Vec::<Command<Message>>::new();
-            let hidden_addons = &ajour.config.addons.hidden;
+            let ignored_addons = &ajour.config.addons.ignored;
             for addon in &mut ajour
                 .addons
                 .iter_mut()
-                .filter(|a| a.is_parent() && !a.is_hidden(hidden_addons))
+                .filter(|a| a.is_parent() && !a.is_ignored(ignored_addons))
             {
                 addon.state = AddonState::Loading;
                 let addon = addon.to_owned();
