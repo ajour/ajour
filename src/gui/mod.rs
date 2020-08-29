@@ -42,6 +42,7 @@ pub enum Interaction {
     Expand(String),
     Ignore(String),
     Unignore(String),
+    OpenLink(String),
 }
 
 #[derive(Debug)]
@@ -78,6 +79,7 @@ pub struct Ajour {
     is_showing_settings: bool,
     shared_client: Arc<HttpClient>,
     needs_update: Option<String>,
+    new_release_button_state: button::State,
 }
 
 impl Default for Ajour {
@@ -104,6 +106,7 @@ impl Default for Ajour {
                     .unwrap(),
             ),
             needs_update: None,
+            new_release_button_state: Default::default(),
         }
     }
 }
@@ -148,6 +151,7 @@ impl Application for Ajour {
             &self.addons,
             &self.config,
             self.needs_update.as_deref(),
+            &mut self.new_release_button_state,
         );
 
         // Addon row titles is a row of titles above the addon scrollable.

@@ -94,6 +94,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::OpenDirectory) => {
             return Ok(Command::perform(open_directory(), Message::UpdateDirectory));
         }
+        Message::Interaction(Interaction::OpenLink(link)) => {
+            let _ = opener::open(link);
+        }
         Message::UpdateDirectory(path) => {
             if path.is_some() {
                 // Update the path for World of Warcraft.

@@ -419,6 +419,7 @@ pub fn addon_row_titles<'a>(addons: &[Addon]) -> Row<'a, Message> {
     row_titles
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn menu_container<'a>(
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
@@ -427,6 +428,7 @@ pub fn menu_container<'a>(
     addons: &[Addon],
     config: &Config,
     needs_update: Option<&'a str>,
+    new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
     let mut settings_row = Row::new().spacing(1).height(Length::Units(35));
@@ -527,7 +529,28 @@ pub fn menu_container<'a>(
         .push(refresh_button.map(Message::Interaction))
         .push(status_container)
         .push(error_container)
-        .push(version_container)
+        .push(version_container);
+
+    if needs_update.is_some() {
+        let mut new_release_button = Button::new(
+            new_release_button_state,
+            Text::new("Download").size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::SecondaryButton);
+
+        new_release_button = new_release_button.on_press(Interaction::OpenLink(
+            "https://github.com/casperstorm/ajour/releases/latest".to_owned(),
+        ));
+
+        let new_release_button: Element<Interaction> = new_release_button.into();
+
+        let spacer = Space::new(Length::Units(3), Length::Units(0));
+
+        settings_row = settings_row.push(new_release_button.map(Message::Interaction));
+        settings_row = settings_row.push(spacer);
+    }
+
+    settings_row = settings_row
         .push(settings_button.map(Message::Interaction))
         .push(right_spacer);
 
