@@ -24,6 +24,7 @@ pub struct RepositoryIdentifiers {
 pub struct Addon {
     pub id: String,
     pub title: String,
+    pub author: Option<String>,
     pub notes: Option<String>,
     pub version: Option<String>,
     pub remote_version: Option<String>,
@@ -46,6 +47,7 @@ impl Addon {
     /// Creates a new Addon
     pub fn new(
         title: String,
+        author: Option<String>,
         notes: Option<String>,
         version: Option<String>,
         path: PathBuf,
@@ -58,6 +60,7 @@ impl Addon {
         Addon {
             id: str_title.to_string(),
             title,
+            author,
             notes,
             version,
             remote_version: None,

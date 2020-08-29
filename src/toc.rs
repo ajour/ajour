@@ -115,6 +115,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
 
     let path = toc_entry.path().parent()?.to_path_buf();
     let mut title: Option<String> = None;
+    let mut author: Option<String> = None;
     let mut notes: Option<String> = None;
     let mut version: Option<String> = None;
     let mut dependencies: Vec<String> = Vec::new();
@@ -143,6 +144,8 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
                 // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
                 // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
                 "Title" => title = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
+                // String - Author
+                "Author" => author = Some(cap["value"].to_string()),
                 // String - Notes
                 "Notes" => notes = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
                 // String - The AddOn version
@@ -176,6 +179,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
 
     Some(Addon::new(
         title?,
+        author,
         notes,
         version,
         path,
