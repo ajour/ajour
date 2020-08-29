@@ -155,7 +155,7 @@ impl Application for Ajour {
         for addon in &mut self
             .addons
             .iter_mut()
-            .filter(|a| a.is_parent() && !a.is_ignored(&ignored_strings))
+            .filter(|a| !a.is_ignored(&ignored_strings))
         {
             // Checks if the current addon is expanded.
             let is_addon_expanded = match &self.expanded_addon {

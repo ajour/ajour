@@ -2,9 +2,15 @@ use crate::{addon::Addon, Result};
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
 
-/// Deletes an Addon from disk.
-pub fn delete_addon(addon: &Addon) -> Result<()> {
-    remove_dir_all(addon.path.to_path_buf())?;
+/// Deletes an Addon and all dependencies from disk.
+pub fn delete_addons(path: &PathBuf, dependencies: &Vec<String>) -> Result<()> {
+    for dependency in dependencies {
+        let path = path.join(dependency);
+        if path.exists() {
+            remove_dir_all(path)?;
+        }
+    }
+
     Ok(())
 }
 

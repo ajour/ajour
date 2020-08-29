@@ -33,6 +33,11 @@ pub struct Addon {
     pub dependencies: Vec<String>,
     pub state: AddonState,
     pub repository_identifiers: RepositoryIdentifiers,
+    // If an addon consists of multiple folders, and all of them has a version all will be
+    // shown. We try to bundle them together as one, in that case. See: https://github.com/casperstorm/ajour/issues/39
+    // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
+    // get a name representing the bundle as a whole.
+    pub is_bundle: bool,
 
     // States for GUI
     pub details_btn_state: iced::button::State,
@@ -68,6 +73,7 @@ impl Addon {
             dependencies,
             state: AddonState::Ajour(None),
             repository_identifiers,
+            is_bundle: false,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),
