@@ -289,11 +289,13 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
             .notes
             .clone()
             .unwrap_or_else(|| "No description for addon.".to_string());
+        let author = addon.author.clone().unwrap_or_else(|| "-".to_string());
         let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
         let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
         let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
         let bottom_space = Space::new(Length::Units(0), Length::Units(4));
-        let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
+        let notes_text = Text::new(format!("Summary: {}", notes)).size(DEFAULT_FONT_SIZE);
+        let author_text = Text::new(format!("Author(s): {}", author)).size(DEFAULT_FONT_SIZE);
 
         let mut force_download_button = Button::new(
             &mut addon.force_btn_state,
@@ -332,6 +334,8 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
             .push(Space::new(Length::Units(5), Length::Units(0)))
             .push(delete_button.map(Message::Interaction));
         let column = Column::new()
+            .push(author_text)
+            .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(notes_text)
             .push(space)
             .push(row)
