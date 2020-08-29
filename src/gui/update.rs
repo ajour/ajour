@@ -57,7 +57,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.ignored_addons = ajour
                     .addons
                     .iter()
-                    .filter(|a| ignored_strings.into_iter().any(|i| i == &a.id))
+                    .filter(|a| ignored_strings.iter().any(|i| i == &a.id))
                     .map(|a| (a.clone(), button::State::new()))
                     .collect::<Vec<(Addon, button::State)>>();
             } else {
