@@ -10,7 +10,9 @@ use {
         toc::read_addon_directory,
         tukui_api, wowinterface_api, Result,
     },
-    iced::{button, Command},
+    async_std::sync::Arc,
+    iced::{Command, button},
+    isahc::HttpClient,
     native_dialog::*,
     std::path::PathBuf,
 };
@@ -158,7 +160,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if addon.id == id {
                     addon.state = AddonState::Downloading;
                     return Ok(Command::perform(
-                        perform_download_addon(addon.clone(), to_directory),
+                        perform_download_addon(
+                            ajour.shared_client.clone(),
+                            addon.clone(),
+                            to_directory,
+                        ),
                         Message::DownloadedAddon,
                     ));
                 }
@@ -173,7 +179,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon.state = AddonState::Downloading;
                         let addon = addon.clone();
                         commands.push(Command::perform(
-                            perform_download_addon(addon, to_directory),
+                            perform_download_addon(
+                                ajour.shared_client.clone(),
+                                addon,
+                                to_directory,
+                            ),
                             Message::DownloadedAddon,
                         ))
                     }
@@ -207,23 +217,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     &ajour.config.tokens.wowinterface,
                 ) {
                     commands.push(Command::perform(
-                        fetch_wowinterface_packages(addon, token.to_string()),
+                        fetch_wowinterface_packages(
+                            ajour.shared_client.clone(),
+                            addon,
+                            token.to_string(),
+                        ),
                         Message::WowinterfacePackages,
                     ))
                 } else if addon.repository_identifiers.tukui.is_some() {
                     commands.push(Command::perform(
-                        fetch_tukui_package(addon),
+                        fetch_tukui_package(ajour.shared_client.clone(), addon),
                         Message::TukuiPackage,
                     ))
                 } else if addon.repository_identifiers.curse.is_some() {
                     commands.push(Command::perform(
-                        fetch_curse_package(addon),
+                        fetch_curse_package(ajour.shared_client.clone(), addon),
                         Message::CursePackage,
                     ))
                 } else {
                     let retries = 4;
                     commands.push(Command::perform(
-                        fetch_curse_packages(addon, retries),
+                        fetch_curse_packages(ajour.shared_client.clone(), addon, retries),
                         Message::CursePackages,
                     ))
                 }
@@ -256,7 +270,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ) && retries > 0
                     {
                         return Ok(Command::perform(
-                            fetch_curse_packages(addon.clone(), retries),
+                            fetch_curse_packages(
+                                ajour.shared_client.clone(),
+                                addon.clone(),
+                                retries,
+                            ),
                             Message::CursePackages,
                         ));
                     }
@@ -344,10 +362,14 @@ async fn open_directory() -> Option<PathBuf> {
     dialog.show().unwrap()
 }
 
-async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package>) {
+async fn fetch_curse_package(
+    shared_client: Arc<HttpClient>,
+    addon: Addon,
+) -> (String, Result<curse_api::Package>) {
     (
         addon.id.clone(),
         curse_api::fetch_remote_package(
+            &shared_client,
             &addon
                 .repository_identifiers
                 .curse
@@ -358,20 +380,25 @@ async fn fetch_curse_package(addon: Addon) -> (String, Result<curse_api::Package
 }
 
 async fn fetch_curse_packages(
+    shared_client: Arc<HttpClient>,
     addon: Addon,
     retries: u32,
 ) -> (String, u32, Result<Vec<curse_api::Package>>) {
     (
         addon.id.clone(),
         retries - 1,
-        curse_api::fetch_remote_packages(&addon.title).await,
+        curse_api::fetch_remote_packages(&shared_client, &addon.title).await,
     )
 }
 
-async fn fetch_tukui_package(addon: Addon) -> (String, Result<tukui_api::Package>) {
+async fn fetch_tukui_package(
+    shared_client: Arc<HttpClient>,
+    addon: Addon,
+) -> (String, Result<tukui_api::Package>) {
     (
         addon.id.clone(),
         tukui_api::fetch_remote_package(
+            &shared_client,
             &addon
                 .repository_identifiers
                 .tukui
@@ -382,12 +409,14 @@ async fn fetch_tukui_package(addon: Addon) -> (String, Result<tukui_api::Package
 }
 
 async fn fetch_wowinterface_packages(
+    shared_client: Arc<HttpClient>,
     addon: Addon,
     token: String,
 ) -> (String, Result<Vec<wowinterface_api::Package>>) {
     (
         addon.id.clone(),
         wowinterface_api::fetch_remote_packages(
+            &shared_client,
             &addon
                 .repository_identifiers
                 .wowi
@@ -400,10 +429,16 @@ async fn fetch_wowinterface_packages(
 
 /// Downloads the newest version of the addon.
 /// This is for now only downloading from warcraftinterface.
-async fn perform_download_addon(addon: Addon, to_directory: PathBuf) -> (String, Result<()>) {
+async fn perform_download_addon(
+    shared_client: Arc<HttpClient>,
+    addon: Addon,
+    to_directory: PathBuf,
+) -> (String, Result<()>) {
     (
         addon.id.clone(),
-        download_addon(&addon, &to_directory).await.map(|_| ()),
+        download_addon(&shared_client, &addon, &to_directory)
+            .await
+            .map(|_| ()),
     )
 }
 
