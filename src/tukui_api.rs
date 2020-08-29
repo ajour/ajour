@@ -6,6 +6,7 @@ use serde_derive::Deserialize;
 /// Struct for applying tukui details to an `Addon`.
 pub struct Package {
     pub id: i32,
+    pub name: String,
     pub version: String,
     pub url: String,
 }

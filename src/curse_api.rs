@@ -10,6 +10,7 @@ const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2/addon";
 /// Struct for applying curse details to an `Addon`.
 pub struct Package {
     pub id: u32,
+    pub name: String,
     pub latest_files: Vec<File>,
 }
 

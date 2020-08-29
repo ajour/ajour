@@ -28,6 +28,7 @@ pub struct Addon {
     pub version: Option<String>,
     pub remote_version: Option<String>,
     pub remote_url: Option<String>,
+    pub remote_title: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
@@ -62,6 +63,7 @@ impl Addon {
             version,
             remote_version: None,
             remote_url: None,
+            remote_title: None,
             path,
             dependencies,
             state: AddonState::Ajour(None),
@@ -85,6 +87,7 @@ impl Addon {
         if let Some(package) = package {
             self.remote_version = Some(package.version.clone());
             self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
+            self.remote_title = Some(package.title.clone());
 
             if self.is_updatable() {
                 self.state = AddonState::Updatable;
@@ -98,6 +101,7 @@ impl Addon {
     pub fn apply_tukui_package(&mut self, package: &tukui_api::Package) {
         self.remote_version = Some(package.version.clone());
         self.remote_url = Some(package.url.clone());
+        self.remote_title = Some(package.name.clone());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;
@@ -115,6 +119,7 @@ impl Addon {
         if let Some(file) = file {
             self.remote_version = Some(file.display_name.clone());
             self.remote_url = Some(file.download_url.clone());
+            self.remote_title = Some(package.name.clone());
         }
 
         if self.is_updatable() {
@@ -144,6 +149,7 @@ impl Addon {
                 if module.is_some() {
                     self.remote_version = Some(file.display_name.clone());
                     self.remote_url = Some(file.download_url.clone());
+                    self.remote_title = Some(package.name.clone());
                     if self.is_updatable() {
                         self.state = AddonState::Updatable;
                     }

@@ -9,6 +9,7 @@ const DL_ENDPOINT: &str = "https://cdn.wowinterface.com/downloads/getfile.php?id
 /// Struct for applying tukui details to an `Addon`.
 pub struct Package {
     pub id: String,
+    pub title: String,
     pub version: String,
 }
 
