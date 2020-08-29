@@ -9,9 +9,14 @@ use crate::{
     error::ClientError,
     tukui_api, wowinterface_api, Result,
 };
+use async_std::sync::Arc;
 use iced::{
     button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
     Settings, Space,
+};
+use isahc::{
+    config::{Configurable, RedirectPolicy},
+    HttpClient,
 };
 use std::path::PathBuf;
 
@@ -64,6 +69,7 @@ pub struct Ajour {
     config: Config,
     expanded_addon: Option<Addon>,
     is_showing_settings: bool,
+    shared_client: Arc<HttpClient>,
 }
 
 impl Default for Ajour {
@@ -80,6 +86,13 @@ impl Default for Ajour {
             config: Config::default(),
             expanded_addon: None,
             is_showing_settings: false,
+            shared_client: Arc::new(
+                HttpClient::builder()
+                    .redirect_policy(RedirectPolicy::Follow)
+                    .max_connections_per_host(6)
+                    .build()
+                    .unwrap(),
+            ),
         }
     }
 }
