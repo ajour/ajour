@@ -133,6 +133,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addons = &ajour.addons.clone();
             let addon = addons.iter().find(|a| a.id == id).unwrap();
             let combined_dependencies = addon.combined_dependencies(addons);
+            println!("combined_dependencies: {:?}", combined_dependencies);
+
             let addon_directory = ajour
                 .config
                 .get_addon_directory()
@@ -214,11 +216,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // If another addon is already added, we find that addon and mark it as
                     // `is_bundle`. Else we add it to the array.
                     if is_added {
-                        let addon = addons
+                        let find_addon = addons
                             .iter_mut()
                             .find(|a| a.repository_identifiers.curse == Some(*id));
-                        if let Some(addon) = addon {
-                            addon.is_bundle = true;
+                        if let Some(find_addon) = find_addon {
+                            find_addon.bundled_ids.push(addon.id.clone());
+                            find_addon.bundled_ids.dedup();
                             continue;
                         }
                     } else {
@@ -237,11 +240,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // If another addon is already added, we find that addon and mark it as
                     // `is_bundle`. Else we add it to the array.
                     if is_added {
-                        let addon = addons
+                        let find_addon = addons
                             .iter_mut()
                             .find(|a| a.repository_identifiers.tukui == Some(id.clone()));
-                        if let Some(addon) = addon {
-                            addon.is_bundle = true;
+                        if let Some(find_addon) = find_addon {
+                            find_addon.bundled_ids.push(addon.id.clone());
+                            find_addon.bundled_ids.dedup();
                             continue;
                         }
                     } else {
@@ -260,11 +264,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // If another addon is already added, we find that addon and mark it as
                     // `is_bundle`. Else we add it to the array.
                     if is_added {
-                        let addon = addons
+                        let find_addon = addons
                             .iter_mut()
                             .find(|a| a.repository_identifiers.wowi == Some(id.clone()));
-                        if let Some(addon) = addon {
-                            addon.is_bundle = true;
+                        if let Some(find_addon) = find_addon {
+                            find_addon.bundled_ids.push(addon.id.clone());
+                            find_addon.bundled_ids.dedup();
                             continue;
                         }
                     } else {

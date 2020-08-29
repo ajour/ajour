@@ -37,7 +37,7 @@ pub struct Addon {
     // shown. We try to bundle them together as one, in that case. See: https://github.com/casperstorm/ajour/issues/39
     // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
     // get a name representing the bundle as a whole.
-    pub is_bundle: bool,
+    pub bundled_ids: Vec<String>,
 
     // States for GUI
     pub details_btn_state: iced::button::State,
@@ -73,7 +73,7 @@ impl Addon {
             dependencies,
             state: AddonState::Ajour(None),
             repository_identifiers,
-            is_bundle: false,
+            bundled_ids: vec![],
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),
@@ -228,6 +228,11 @@ impl Addon {
                 // If we can't find the addon, we will just skip it.
                 None => continue,
             };
+        }
+
+        // Add dependencies to bundled addons.
+        for id in &self.bundled_ids {
+            dependencies.push(id.clone());
         }
 
         dependencies.sort();
