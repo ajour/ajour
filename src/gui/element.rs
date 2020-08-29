@@ -1,5 +1,6 @@
 use {
     super::{style, Addon, AddonState, AjourState, Config, Flavor, Interaction, Message},
+    crate::VERSION,
     iced::{
         button, pick_list, scrollable, Button, Column, Container, Element, HorizontalAlignment,
         Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
@@ -425,6 +426,7 @@ pub fn menu_container<'a>(
     state: &AjourState,
     addons: &[Addon],
     config: &Config,
+    needs_update: Option<&'a str>,
 ) -> Container<'a, Message> {
     // A row contain general settings.
     let mut settings_row = Row::new().spacing(1).height(Length::Units(35));
@@ -486,13 +488,20 @@ pub fn menu_container<'a>(
         .width(Length::FillPortion(1))
         .style(style::StatusErrorTextContainer);
 
-    let version_text = Text::new(env!("CARGO_PKG_VERSION"))
-        .size(DEFAULT_FONT_SIZE)
-        .horizontal_alignment(HorizontalAlignment::Right);
-    let version_container = Container::new(version_text)
-        .center_y()
-        .padding(5)
-        .style(style::SecondaryTextContainer);
+    let version_text = Text::new(if let Some(new_version) = needs_update {
+        format!("New version available {} -> {}", VERSION, new_version)
+    } else {
+        VERSION.to_owned()
+    })
+    .size(DEFAULT_FONT_SIZE)
+    .horizontal_alignment(HorizontalAlignment::Right);
+
+    let mut version_container = Container::new(version_text).center_y().padding(5);
+    if needs_update.is_some() {
+        version_container = version_container.style(style::StatusErrorTextContainer);
+    } else {
+        version_container = version_container.style(style::SecondaryTextContainer);
+    }
 
     let settings_button: Element<Interaction> = Button::new(
         settings_button_state,

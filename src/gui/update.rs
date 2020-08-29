@@ -401,10 +401,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
+        Message::NeedsUpdate(Ok(newer_version)) => {
+            ajour.needs_update = newer_version;
+        }
         Message::Error(error)
         | Message::Parse(Err(error))
         | Message::ParsedAddons(Err(error))
-        | Message::PartialParsedAddons(Err(error)) => {
+        | Message::PartialParsedAddons(Err(error))
+        | Message::NeedsUpdate(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
     }
