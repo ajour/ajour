@@ -130,11 +130,6 @@ impl Application for Ajour {
         // Ignored addons.
         // We find the  corresponding `Addon` from the ignored strings.
         let ignored_strings = &self.config.addons.ignored;
-        // let mut ignored_addons = self
-        //     .addons
-        //     .into_iter()
-        //     .filter(|a| ignored_strings.into_iter().any(|i| i == &a.id))
-        //     .collect::<Vec<Addon>>();
 
         // Menu container at the top of the applications.
         // This has all global buttons, such as Settings, Update All, etc.
