@@ -11,7 +11,7 @@ use {
         tukui_api, wowinterface_api, Result,
     },
     async_std::sync::Arc,
-    iced::{Command, button},
+    iced::{button, Command},
     isahc::HttpClient,
     native_dialog::*,
     std::path::PathBuf,
