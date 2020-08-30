@@ -172,7 +172,16 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
         .clone()
         .unwrap_or_else(|| String::from("-"));
 
-    let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
+    // If addon is_bundle we use remote_title.
+    let title = if addon.is_bundle {
+        let title = addon
+            .remote_title
+            .clone()
+            .unwrap_or_else(|| String::from("-"));
+        Text::new(title).size(DEFAULT_FONT_SIZE)
+    } else {
+        Text::new(&addon.title).size(DEFAULT_FONT_SIZE)
+    };
     let title_container = Container::new(title)
         .height(default_height)
         .width(Length::FillPortion(1))
@@ -445,7 +454,7 @@ pub fn menu_container<'a>(
     let ignored_addons = config.addons.ignored.as_ref();
     let parent_addons_count = addons
         .iter()
-        .filter(|a| a.is_parent() && !a.is_ignored(&ignored_addons))
+        .filter(|a| !a.is_ignored(&ignored_addons))
         .count();
     let loading_addons = addons
         .iter()
