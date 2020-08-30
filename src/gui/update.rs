@@ -137,7 +137,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .expect("has to have addon directory");
             let _ = delete_addons(
                 &addon_directory,
-                &[&addon.dependencies[..], &vec![addon.id.clone()]].concat(),
+                &[&addon.dependencies[..], &[addon.id.clone()]].concat(),
             );
 
             return Ok(Command::perform(
