@@ -5,7 +5,7 @@ use {
         config::{load_config, persist_config},
         curse_api,
         error::ClientError,
-        fs::{delete_addon, install_addon},
+        fs::{delete_addons, install_addon},
         network::download_addon,
         toc::read_addon_directory,
         tukui_api, wowinterface_api, Result,
@@ -130,22 +130,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
-            // TODO: maybe just rewrite and assume it goes well and remove addon.
-            let addons = &ajour.addons.clone();
-            let target_addon = addons.iter().find(|a| a.id == id).unwrap();
-            let combined_dependencies = target_addon.combined_dependencies(addons);
-            let addons_to_be_deleted = addons
-                .iter()
-                .filter(|a| combined_dependencies.contains(&a.id))
-                .collect::<Vec<_>>();
+            let addon = ajour.addons.iter().find(|a| a.id == id).unwrap();
+            let addon_directory = ajour
+                .config
+                .get_addon_directory()
+                .expect("has to have addon directory");
+            let _ = delete_addons(
+                &addon_directory,
+                &[&addon.dependencies[..], &[addon.id.clone()]].concat(),
+            );
 
-            // Loops the addons marked for deletion and remove them one by one.
-            for addon in addons_to_be_deleted {
-                let _ = delete_addon(addon);
-            }
-            // Refreshes the GUI by re-parsing the addon directory.
-            // TODO: This can be done prettier.
-            let addon_directory = ajour.config.get_addon_directory().unwrap();
             return Ok(Command::perform(
                 read_addon_directory(addon_directory),
                 Message::ParsedAddons,
@@ -199,17 +193,76 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::ParsedAddons(Ok(addons)) => {
+        Message::ParsedAddons(Ok(mut unfiltred_addons)) => {
+            let mut addons: Vec<Addon> = vec![];
+
+            // We are filtering out in the addons here.
+            // First we filter so we only have `is_parent`
+            let unfilted_addons_clone = unfiltred_addons.clone();
+            for addon in unfiltred_addons.iter_mut().collect::<Vec<&mut Addon>>() {
+                // Ensure we have bidirectional dependencies from unfilrted list.
+                addon.dependencies =
+                    bidirectional_addon_dependencies(addon, &unfilted_addons_clone);
+
+                // Checks if a addon with same id already exsist in the Vec<Addon>.
+                let curse_id_exist = addons.iter().any(|a| {
+                    a.repository_identifiers.curse.is_some()
+                        && a.repository_identifiers.curse == addon.repository_identifiers.curse
+                        && a.id != addon.id
+                });
+
+                let tukui_id_exist = addons.iter().any(|a| {
+                    a.repository_identifiers.tukui.is_some()
+                        && a.repository_identifiers.tukui == addon.repository_identifiers.tukui
+                        && a.id != addon.id
+                });
+
+                let wowi_id_exist = addons.iter().any(|a| {
+                    a.repository_identifiers.wowi.is_some()
+                        && a.repository_identifiers.wowi == addon.repository_identifiers.wowi
+                        && a.id != addon.id
+                });
+
+                // If we have a match, we find the addon.
+                let target_addon: Option<&mut Addon> = if curse_id_exist {
+                    addons.iter_mut().find(|a| {
+                        a.repository_identifiers.curse == addon.repository_identifiers.curse
+                    })
+                } else if tukui_id_exist {
+                    addons.iter_mut().find(|a| {
+                        a.repository_identifiers.tukui == addon.repository_identifiers.tukui
+                    })
+                } else if wowi_id_exist {
+                    addons.iter_mut().find(|a| {
+                        a.repository_identifiers.wowi == addon.repository_identifiers.wowi
+                    })
+                } else {
+                    None
+                };
+
+                // With the addon we tag the current addon as a bundle.
+                if let Some(target_addon) = target_addon {
+                    target_addon.dependencies.push(addon.id.clone());
+                    target_addon.is_bundle = true;
+                    continue;
+                } else {
+                    addons.push(addon.clone());
+                }
+            }
+
+            // Lastly we remove non-parents.
+            let addons = addons
+                .into_iter()
+                .filter(|a| a.is_parent())
+                .collect::<Vec<Addon>>();
+
+            // Once filtred, we set state.
             ajour.addons = addons;
             ajour.addons.sort();
 
+            // Create a `Vec` of commands for fetching remote packages for each addon.
             let mut commands = Vec::<Command<Message>>::new();
-            let ignored_addons = &ajour.config.addons.ignored;
-            for addon in &mut ajour
-                .addons
-                .iter_mut()
-                .filter(|a| a.is_parent() && !a.is_ignored(ignored_addons))
-            {
+            for addon in &mut ajour.addons {
                 addon.state = AddonState::Loading;
                 let addon = addon.to_owned();
                 if let (Some(_), Some(token)) = (
@@ -353,6 +406,47 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
     }
 
     Ok(Command::none())
+}
+
+/// Function returns a `Vec<String>` which contains all combined dependencies.
+///
+/// Example:
+/// `Foo` - dependencies: [`Bar`, `Baz`]
+/// `Bar` - dependencies: [`Foo`]
+/// `Baz` - dependencies: [`Foo`]
+///
+/// If `Baz` is self, we will return [`Foo`, `Bar`, `Baz`]
+pub fn bidirectional_addon_dependencies(addon: &mut Addon, addons: &[Addon]) -> Vec<String> {
+    let addons = &addons.to_owned();
+    let mut dependencies: Vec<String> = Vec::new();
+
+    // Loops dependencies of the target addon.
+    for dependency in &addon.dependencies {
+        // Find the addon.
+        let target_addon = addons.iter().find(|a| &a.id == dependency);
+        match target_addon {
+            Some(target_addon) => {
+                // If target_addon is a parent, and the dependency addon is a parent
+                // we skip it.
+                if addon.is_parent() && target_addon.is_parent() {
+                    continue;
+                }
+
+                // Add dependency to dependencies.
+                dependencies.push(dependency.clone());
+                // Loops the dependencies of the found addon.
+                for dependency in &addon.dependencies {
+                    dependencies.push(dependency.clone());
+                }
+            }
+            // If we can't find the addon, we will just skip it.
+            None => continue,
+        };
+    }
+
+    dependencies.sort();
+    dependencies.dedup();
+    dependencies
 }
 
 async fn open_directory() -> Option<PathBuf> {
