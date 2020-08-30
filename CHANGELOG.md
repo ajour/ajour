@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+
+## [0.2.3] - 2020-08-30
 ### Added
 - New logic for bundling together addons
 - Author information in addon details
