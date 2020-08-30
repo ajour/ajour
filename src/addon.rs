@@ -37,7 +37,7 @@ pub struct Addon {
     // shown. We try to bundle them together as one, in that case. See: https://github.com/casperstorm/ajour/issues/39
     // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
     // get a name representing the bundle as a whole.
-    pub bundled_ids: Vec<String>,
+    pub is_bundle: bool,
 
     // States for GUI
     pub details_btn_state: iced::button::State,
@@ -73,7 +73,7 @@ impl Addon {
             dependencies,
             state: AddonState::Ajour(None),
             repository_identifiers,
-            bundled_ids: vec![],
+            is_bundle: false,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),
@@ -190,54 +190,6 @@ impl Addon {
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
     pub fn is_ignored(&self, ignored: &[String]) -> bool {
         ignored.iter().any(|i| i == &self.id)
-    }
-
-    /// Function returns a `Vec<String>` which contains all combined dependencies.
-    ///
-    /// Example:
-    /// `Foo` - dependencies: [`Bar`, `Baz`]
-    /// `Bar` - dependencies: [`Foo`]
-    /// `Baz` - dependencies: [`Foo`]
-    ///
-    /// If `Baz` is self, we will return [`Foo`, `Bar`, `Baz`]
-    pub fn combined_dependencies(&self, addons: &[Addon]) -> Vec<String> {
-        let addons = &addons.to_owned();
-        let mut dependencies: Vec<String> = Vec::new();
-
-        // Add own dependency to dependencies.
-        dependencies.push(self.id.clone());
-        // Loops dependencies of the target addon.
-        for dependency in &self.dependencies {
-            // Find the addon.
-            let addon = addons.iter().find(|a| &a.id == dependency);
-            match addon {
-                Some(addon) => {
-                    // If target_addon is a parent, and the dependency addon is a parent
-                    // we skip it.
-                    if self.is_parent() && addon.is_parent() {
-                        continue;
-                    }
-
-                    // Add dependency to dependencies.
-                    dependencies.push(dependency.clone());
-                    // Loops the dependencies of the found addon.
-                    for dependency in &addon.dependencies {
-                        dependencies.push(dependency.clone());
-                    }
-                }
-                // If we can't find the addon, we will just skip it.
-                None => continue,
-            };
-        }
-
-        // Add dependencies to bundled addons.
-        for id in &self.bundled_ids {
-            dependencies.push(id.clone());
-        }
-
-        dependencies.sort();
-        dependencies.dedup();
-        dependencies
     }
 
     /// Takes a `Addon` and updates self.

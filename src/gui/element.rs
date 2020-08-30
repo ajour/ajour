@@ -173,7 +173,7 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
         .unwrap_or_else(|| String::from("-"));
 
     // If addon is_bundle we use remote_title.
-    let title = if !addon.bundled_ids.is_empty() {
+    let title = if addon.is_bundle {
         let title = addon
             .remote_title
             .clone()
