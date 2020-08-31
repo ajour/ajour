@@ -282,7 +282,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         fetch_tukui_package(
                             ajour.shared_client.clone(),
                             addon,
-                            ajour.config.wow.flavor.clone(),
+                            ajour.config.wow.flavor,
                         ),
                         Message::TukuiPackage,
                     ))
