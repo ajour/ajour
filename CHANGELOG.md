@@ -8,6 +8,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Added
+- Ajour checks itself for updates (by [tarkah](https://github.com/tarkah))
 - Tukui now handle classic flavor
 ### Fixed
 - Parsing issue with Tukui addons.
