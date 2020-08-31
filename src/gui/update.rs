@@ -2,7 +2,7 @@ use {
     super::{Ajour, AjourState, Interaction, Message},
     crate::{
         addon::{Addon, AddonState},
-        config::{load_config, persist_config},
+        config::{load_config, persist_config, Flavor},
         curse_api,
         error::ClientError,
         fs::{delete_addons, install_addon},
@@ -279,7 +279,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ))
                 } else if addon.repository_identifiers.tukui.is_some() {
                     commands.push(Command::perform(
-                        fetch_tukui_package(ajour.shared_client.clone(), addon),
+                        fetch_tukui_package(
+                            ajour.shared_client.clone(),
+                            addon,
+                            ajour.config.wow.flavor,
+                        ),
                         Message::TukuiPackage,
                     ))
                 } else if addon.repository_identifiers.curse.is_some() {
@@ -488,6 +492,7 @@ async fn fetch_curse_packages(
 async fn fetch_tukui_package(
     shared_client: Arc<HttpClient>,
     addon: Addon,
+    flavor: Flavor,
 ) -> (String, Result<tukui_api::Package>) {
     (
         addon.id.clone(),
@@ -497,6 +502,7 @@ async fn fetch_tukui_package(
                 .repository_identifiers
                 .tukui
                 .expect("Expected to have tukui identifier on Addon."),
+            &flavor,
         )
         .await,
     )

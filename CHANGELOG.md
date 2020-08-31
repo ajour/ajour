@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Added
+- Tukui now handle classic flavor
+### Fixed
+- Parsing issue with Tukui addons.
 
 ## [0.2.3] - 2020-08-30
 ### Added
