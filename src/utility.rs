@@ -20,7 +20,10 @@ struct Release {
 }
 
 pub async fn needs_update() -> Result<Option<String>> {
+    let client = HttpClient::new()?;
+
     let mut resp = request_async(
+        &client,
         "https://api.github.com/repos/casperstorm/ajour/releases/latest",
         vec![],
         None,
