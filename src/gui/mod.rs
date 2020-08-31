@@ -61,6 +61,7 @@ pub enum Message {
     UpdateDirectory(Option<PathBuf>),
     FlavorSelected(Flavor),
     NeedsUpdate(Result<Option<String>>),
+    None(()),
 }
 
 pub struct Ajour {
