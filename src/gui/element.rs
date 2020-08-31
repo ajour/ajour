@@ -1,5 +1,6 @@
 use {
     super::{style, Addon, AddonState, AjourState, Config, Flavor, Interaction, Message},
+    crate::VERSION,
     iced::{
         button, pick_list, scrollable, Button, Column, Container, Element, HorizontalAlignment,
         Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
@@ -418,6 +419,7 @@ pub fn addon_row_titles<'a>(addons: &[Addon]) -> Row<'a, Message> {
     row_titles
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn menu_container<'a>(
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
@@ -425,6 +427,8 @@ pub fn menu_container<'a>(
     state: &AjourState,
     addons: &[Addon],
     config: &Config,
+    needs_update: Option<&'a str>,
+    new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
     let mut settings_row = Row::new().spacing(1).height(Length::Units(35));
@@ -486,13 +490,20 @@ pub fn menu_container<'a>(
         .width(Length::FillPortion(1))
         .style(style::StatusErrorTextContainer);
 
-    let version_text = Text::new(env!("CARGO_PKG_VERSION"))
-        .size(DEFAULT_FONT_SIZE)
-        .horizontal_alignment(HorizontalAlignment::Right);
-    let version_container = Container::new(version_text)
-        .center_y()
-        .padding(5)
-        .style(style::SecondaryTextContainer);
+    let version_text = Text::new(if let Some(new_version) = needs_update {
+        format!("New Ajour version available {} -> {}", VERSION, new_version)
+    } else {
+        VERSION.to_owned()
+    })
+    .size(DEFAULT_FONT_SIZE)
+    .horizontal_alignment(HorizontalAlignment::Right);
+
+    let mut version_container = Container::new(version_text).center_y().padding(5);
+    if needs_update.is_some() {
+        version_container = version_container.style(style::StatusErrorTextContainer);
+    } else {
+        version_container = version_container.style(style::SecondaryTextContainer);
+    }
 
     let settings_button: Element<Interaction> = Button::new(
         settings_button_state,
@@ -518,7 +529,29 @@ pub fn menu_container<'a>(
         .push(refresh_button.map(Message::Interaction))
         .push(status_container)
         .push(error_container)
-        .push(version_container)
+        .push(version_container);
+
+    // Add download button to latest github release page if Ajour update is available.
+    if needs_update.is_some() {
+        let mut new_release_button = Button::new(
+            new_release_button_state,
+            Text::new("Download").size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::SecondaryButton);
+
+        new_release_button = new_release_button.on_press(Interaction::OpenLink(
+            "https://github.com/casperstorm/ajour/releases/latest".to_owned(),
+        ));
+
+        let new_release_button: Element<Interaction> = new_release_button.into();
+
+        let spacer = Space::new(Length::Units(3), Length::Units(0));
+
+        settings_row = settings_row.push(new_release_button.map(Message::Interaction));
+        settings_row = settings_row.push(spacer);
+    }
+
+    settings_row = settings_row
         .push(settings_button.map(Message::Interaction))
         .push(right_spacer);
 

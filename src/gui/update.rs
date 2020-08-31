@@ -94,6 +94,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::OpenDirectory) => {
             return Ok(Command::perform(open_directory(), Message::UpdateDirectory));
         }
+        Message::Interaction(Interaction::OpenLink(link)) => {
+            return Ok(Command::perform(
+                async {
+                    let _ = opener::open(link);
+                },
+                Message::None,
+            ));
+        }
         Message::UpdateDirectory(path) => {
             if path.is_some() {
                 // Update the path for World of Warcraft.
@@ -401,12 +409,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
+        Message::NeedsUpdate(Ok(newer_version)) => {
+            ajour.needs_update = newer_version;
+        }
         Message::Error(error)
         | Message::Parse(Err(error))
         | Message::ParsedAddons(Err(error))
-        | Message::PartialParsedAddons(Err(error)) => {
+        | Message::PartialParsedAddons(Err(error))
+        | Message::NeedsUpdate(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
+        Message::None(_) => {}
     }
 
     Ok(Command::none())

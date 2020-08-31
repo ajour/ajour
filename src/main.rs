@@ -17,6 +17,8 @@ mod wowinterface_api;
 
 use crate::error::ClientError;
 
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 pub type Result<T> = std::result::Result<T, ClientError>;
 pub fn main() {
     // Start the GUI

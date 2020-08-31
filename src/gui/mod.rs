@@ -7,7 +7,9 @@ use crate::{
     config::{load_config, Config, Flavor},
     curse_api,
     error::ClientError,
-    tukui_api, wowinterface_api, Result,
+    tukui_api,
+    utility::needs_update,
+    wowinterface_api, Result,
 };
 use async_std::sync::Arc;
 use iced::{
@@ -40,6 +42,7 @@ pub enum Interaction {
     Expand(String),
     Ignore(String),
     Unignore(String),
+    OpenLink(String),
 }
 
 #[derive(Debug)]
@@ -57,6 +60,8 @@ pub enum Message {
     Error(ClientError),
     UpdateDirectory(Option<PathBuf>),
     FlavorSelected(Flavor),
+    NeedsUpdate(Result<Option<String>>),
+    None(()),
 }
 
 pub struct Ajour {
@@ -74,6 +79,8 @@ pub struct Ajour {
     ignored_addons: Vec<(Addon, button::State)>,
     is_showing_settings: bool,
     shared_client: Arc<HttpClient>,
+    needs_update: Option<String>,
+    new_release_button_state: button::State,
 }
 
 impl Default for Ajour {
@@ -99,6 +106,8 @@ impl Default for Ajour {
                     .build()
                     .unwrap(),
             ),
+            needs_update: None,
+            new_release_button_state: Default::default(),
         }
     }
 }
@@ -109,10 +118,12 @@ impl Application for Ajour {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        (
-            Ajour::default(),
+        let init_commands = vec![
             Command::perform(load_config(), Message::Parse),
-        )
+            Command::perform(needs_update(), Message::NeedsUpdate),
+        ];
+
+        (Ajour::default(), Command::batch(init_commands))
     }
 
     fn title(&self) -> String {
@@ -140,6 +151,8 @@ impl Application for Ajour {
             &self.state,
             &self.addons,
             &self.config,
+            self.needs_update.as_deref(),
+            &mut self.new_release_button_state,
         );
 
         // Addon row titles is a row of titles above the addon scrollable.
