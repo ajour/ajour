@@ -23,35 +23,11 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 - Remove addon
 - Retail and classic flavor support
 
-## Install from package
+## Install 
 
-Pre-built packages for Windows and macOS can be found on the [Releases](https://github.com/casperstorm/ajour/releases) page.
+Prebuilt binaries for macOS and Windows can be downloaded from [GitHub releases page](https://github.com/casperstorm/ajour/releases) page.
 
-## Install from source
-
-On Ubuntu / Debian derivatives, install the following dependencies:
-
-```sh
-sudo apt install build-essential cmake libxft-dev libssl-dev libx11-dev
-```
-
-To build:
-
-```sh
-cargo run
-```
-
-If you want to wrap the executable into a OS-specific app package you can use the following:
-
-```sh
-# MacOS
-make binary
-make app
-make dmg
-
-# Windows
-cargo build --release
-```
+For everyone else, a detailed instruction can be found [here](https://github.com/casperstorm/ajour/blob/master/INSTALL.md).
 
 ## Configuration
 
