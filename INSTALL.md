@@ -5,7 +5,7 @@
     2. [Rust Compiler](#install-the-rust-compiler-with-rustup)
     3. [Dependencies](#dependencies)
         1. [Debian/Ubuntu](#debianubuntu)
-        16. [Other](#other)
+        2. [Other](#other)
 2. [Building](#building)
     1. [Linux/Windows](#linux--windows)
     2. [macOS](#macos)
