@@ -17,7 +17,7 @@ mod wowinterface_api;
 
 use crate::error::ClientError;
 
-pub const VERSION: &str = "0.2.1"; //env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub type Result<T> = std::result::Result<T, ClientError>;
 pub fn main() {

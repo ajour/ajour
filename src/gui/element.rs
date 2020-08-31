@@ -491,7 +491,7 @@ pub fn menu_container<'a>(
         .style(style::StatusErrorTextContainer);
 
     let version_text = Text::new(if let Some(new_version) = needs_update {
-        format!("New version available {} -> {}", VERSION, new_version)
+        format!("New Ajour version available {} -> {}", VERSION, new_version)
     } else {
         VERSION.to_owned()
     })
@@ -531,6 +531,7 @@ pub fn menu_container<'a>(
         .push(error_container)
         .push(version_container);
 
+    // Add download button to latest github release page if Ajour update is available.
     if needs_update.is_some() {
         let mut new_release_button = Button::new(
             new_release_button_state,
