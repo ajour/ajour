@@ -25,7 +25,7 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 
 ## Install 
 
-Prebuilt binaries for macOS and Windows can be downloaded from [GitHub releases page](https://github.com/casperstorm/ajour/releases) page.
+Prebuilt binaries for macOS and Windows can be downloaded from the [GitHub releases](https://github.com/casperstorm/ajour/releases) page.
 
 For everyone else, a detailed instruction can be found [here](https://github.com/casperstorm/ajour/blob/master/INSTALL.md).
 
@@ -48,14 +48,13 @@ Windows:
 
 The plan is to have a stable, polished release in time for the Shadowlands launch. 10.27.20.
 
-
 **_When can we expect a Linux version?_**
 
 Ajour is being developed and tested on macOS and Windows, but should work on Linux if installed from source.
 
 **_After updating an addon, it still says it can be updated. What gives?_**
 
-Ajour does a "best effort" attempt at comparing the local addon version, with the latest version available online. Sometimes Addon Authors specify different versions when uploading their addon to a repository than what they have written in the addon itself. If the numbers don't match, Ajour will say an update is available every time the list is refreshed.
+Ajour does a "best effort" attempt at comparing the local addon version, with the latest version available online. Sometimes addon authors specify different versions when uploading their addon to a repository than what they have written in the addon itself. If the numbers don't match, Ajour will say an update is available every time the list is refreshed.
 
 **_I'm using addon XYZ but I don't see it in Ajour. Why is that?_**
 
