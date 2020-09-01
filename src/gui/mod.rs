@@ -33,72 +33,72 @@ pub enum AjourState {
 
 #[derive(Debug, Clone)]
 pub enum Interaction {
-    OpenDirectory,
-    Settings,
-    Refresh,
-    UpdateAll,
-    Update(String),
     Delete(String),
     Expand(String),
     Ignore(String),
-    Unignore(String),
+    OpenDirectory,
     OpenLink(String),
+    Refresh,
+    Settings,
+    Unignore(String),
+    Update(String),
+    UpdateAll,
 }
 
 #[derive(Debug)]
 pub enum Message {
+    CursePackage((String, Result<curse_api::Package>)),
+    CursePackages((String, u32, Result<Vec<curse_api::Package>>)),
+    DownloadedAddon((String, Result<()>)),
+    Error(ClientError),
+    FlavorSelected(Flavor),
+    Interaction(Interaction),
+    NeedsUpdate(Result<Option<String>>),
+    None(()),
     Parse(Result<Config>),
     ParsedAddons(Result<Vec<Addon>>),
     PartialParsedAddons(Result<Vec<Addon>>),
-    DownloadedAddon((String, Result<()>)),
-    UnpackedAddon((String, Result<()>)),
-    CursePackage((String, Result<curse_api::Package>)),
-    CursePackages((String, u32, Result<Vec<curse_api::Package>>)),
     TukuiPackage((String, Result<tukui_api::Package>)),
-    WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),
-    Interaction(Interaction),
-    Error(ClientError),
+    UnpackedAddon((String, Result<()>)),
     UpdateDirectory(Option<PathBuf>),
-    FlavorSelected(Flavor),
-    NeedsUpdate(Result<Option<String>>),
-    None(()),
+    WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),
 }
 
 pub struct Ajour {
-    state: AjourState,
-    update_all_btn_state: button::State,
-    refresh_btn_state: button::State,
-    settings_btn_state: button::State,
-    directory_btn_state: button::State,
-    addons_scrollable_state: scrollable::State,
-    ignored_addons_scrollable_state: scrollable::State,
-    flavor_list_state: pick_list::State<Flavor>,
     addons: Vec<Addon>,
+    addons_scrollable_state: scrollable::State,
     config: Config,
+    directory_btn_state: button::State,
     expanded_addon: Option<Addon>,
+    flavor_list_state: pick_list::State<Flavor>,
     ignored_addons: Vec<(Addon, button::State)>,
+    ignored_addons_scrollable_state: scrollable::State,
     is_showing_settings: bool,
-    shared_client: Arc<HttpClient>,
     needs_update: Option<String>,
     new_release_button_state: button::State,
+    refresh_btn_state: button::State,
+    settings_btn_state: button::State,
+    shared_client: Arc<HttpClient>,
+    state: AjourState,
+    update_all_btn_state: button::State,
 }
 
 impl Default for Ajour {
     fn default() -> Self {
         Self {
-            state: AjourState::Idle,
-            update_all_btn_state: Default::default(),
-            settings_btn_state: Default::default(),
-            refresh_btn_state: Default::default(),
-            directory_btn_state: Default::default(),
-            addons_scrollable_state: Default::default(),
-            ignored_addons_scrollable_state: Default::default(),
-            flavor_list_state: Default::default(),
             addons: Vec::new(),
+            addons_scrollable_state: Default::default(),
             config: Config::default(),
+            directory_btn_state: Default::default(),
             expanded_addon: None,
+            flavor_list_state: Default::default(),
             ignored_addons: Vec::new(),
+            ignored_addons_scrollable_state: Default::default(),
             is_showing_settings: false,
+            needs_update: None,
+            new_release_button_state: Default::default(),
+            refresh_btn_state: Default::default(),
+            settings_btn_state: Default::default(),
             shared_client: Arc::new(
                 HttpClient::builder()
                     .redirect_policy(RedirectPolicy::Follow)
@@ -106,8 +106,9 @@ impl Default for Ajour {
                     .build()
                     .unwrap(),
             ),
-            needs_update: None,
-            new_release_button_state: Default::default(),
+
+            state: AjourState::Idle,
+            update_all_btn_state: Default::default(),
         }
     }
 }
