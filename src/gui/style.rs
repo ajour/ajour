@@ -21,6 +21,24 @@ impl ColorPalette {
         }
     }
 }
+pub struct TextButton;
+impl button::StyleSheet for TextButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            text_color: ColorPalette::OnSurface.rgb(),
+            border_radius: 2,
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color::TRANSPARENT)),
+            text_color: ColorPalette::Primary.rgb(),
+            ..self.active()
+        }
+    }
+}
 
 pub struct DefaultButton;
 impl button::StyleSheet for DefaultButton {

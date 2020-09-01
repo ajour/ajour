@@ -164,7 +164,7 @@ pub fn settings_container<'a>(
 }
 
 pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Container<'_, Message> {
-    let default_height = Length::Units(26);
+    let default_height = Length::Units(28);
 
     // Check if current addon is expanded.
     let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
@@ -183,11 +183,15 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
     } else {
         Text::new(&addon.title).size(DEFAULT_FONT_SIZE)
     };
-    let title_container = Container::new(title)
+    let title_button: Element<Interaction> = Button::new(&mut addon.details_btn_state, title)
+        .on_press(Interaction::Expand(addon.id.clone()))
+        .style(style::TextButton)
+        .into();
+
+    let title_container = Container::new(title_button.map(Message::Interaction))
         .height(default_height)
         .width(Length::FillPortion(1))
         .center_y()
-        .padding(5)
         .style(style::AddonRowDefaultTextContainer);
 
     let installed_version = Text::new(version).size(DEFAULT_FONT_SIZE);
@@ -258,27 +262,6 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
             .style(style::AddonRowSecondaryTextContainer),
     };
 
-    let details_button_text = if is_addon_expanded {
-        "Close"
-    } else {
-        "Details"
-    };
-
-    let details_button: Element<Interaction> = Button::new(
-        &mut addon.details_btn_state,
-        Text::new(details_button_text).size(DEFAULT_FONT_SIZE),
-    )
-    .on_press(Interaction::Expand(addon.id.clone()))
-    .style(style::DefaultButton)
-    .into();
-
-    let details_button_container = Container::new(details_button.map(Message::Interaction))
-        .height(default_height)
-        .width(Length::Units(70))
-        .center_y()
-        .center_x()
-        .style(style::AddonRowSecondaryTextContainer);
-
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
     let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
 
@@ -288,7 +271,6 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
         .push(installed_version_container)
         .push(remote_version_container)
         .push(update_button_container)
-        .push(details_button_container)
         .push(right_spacer)
         .spacing(1);
 

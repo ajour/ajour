@@ -10,6 +10,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Added
 - Ajour checks itself for updates (by [tarkah](https://github.com/tarkah))
 - Tukui now handle classic flavor
+### Changed
+- Removed details button. Title is now clickable.
 ### Fixed
 - Parsing issue with Tukui addons.
 
