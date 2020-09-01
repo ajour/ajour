@@ -122,19 +122,22 @@ pub fn settings_container<'a>(
     }
 
     for (addon, state) in ignored_addons {
-        let unignore_button: Element<Interaction> =
-            Button::new(state, Text::new("Unignore").size(DEFAULT_FONT_SIZE))
-                .style(style::DefaultBoxedButton)
-                .on_press(Interaction::Unignore(addon.id.clone()))
-                .into();
-
-        let title = Text::new(addon.title.clone()).size(14);
-        let title_container = Container::new(title)
+        let title = addon
+            .remote_title
+            .clone()
+            .unwrap_or_else(|| addon.title.clone());
+        let title_text = Text::new(title).size(14);
+        let title_container = Container::new(title_text)
             .height(Length::Units(26))
             .width(Length::FillPortion(1))
             .center_y()
             .padding(5)
             .style(style::AddonRowSecondaryTextContainer);
+        let unignore_button: Element<Interaction> =
+            Button::new(state, Text::new("Unignore").size(DEFAULT_FONT_SIZE))
+                .style(style::DefaultBoxedButton)
+                .on_press(Interaction::Unignore(addon.id.clone()))
+                .into();
         let row = Row::new()
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(unignore_button.map(Message::Interaction))
@@ -381,11 +384,6 @@ pub fn addon_row_titles<'a>(addons: &[Addon]) -> Row<'a, Message> {
         .width(Length::Units(85))
         .style(style::SecondaryTextContainer);
 
-    let delete_row_text = Text::new("Details").size(DEFAULT_FONT_SIZE);
-    let delete_row_container = Container::new(delete_row_text)
-        .width(Length::Units(70))
-        .style(style::SecondaryTextContainer);
-
     // Only shows row titles if we have any addons.
     if !addons.is_empty() {
         row_titles = row_titles
@@ -394,7 +392,6 @@ pub fn addon_row_titles<'a>(addons: &[Addon]) -> Row<'a, Message> {
             .push(local_version_container)
             .push(remote_version_container)
             .push(status_row_container)
-            .push(delete_row_container)
             .push(right_spacer);
     }
 
