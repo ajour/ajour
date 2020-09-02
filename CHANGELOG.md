@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Added
+- Make columns sortable (by [tarkah](https://github.com/tarkah))
 ### Fixed
 - UTF-8 issue in .toc file
 ## [0.2.4] - 2020-09-02
