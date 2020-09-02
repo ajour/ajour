@@ -52,6 +52,7 @@ pub struct Addon {
 impl Addon {
     /// Creates a new Addon
     pub fn new(
+        id: String,
         title: String,
         author: Option<String>,
         notes: Option<String>,
@@ -60,11 +61,8 @@ impl Addon {
         dependencies: Vec<String>,
         repository_identifiers: RepositoryIdentifiers,
     ) -> Self {
-        let os_title = path.file_name().unwrap();
-        let str_title = os_title.to_str().unwrap();
-
         Addon {
-            id: str_title.to_string(),
+            id,
             title,
             author,
             notes,
