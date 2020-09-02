@@ -51,6 +51,7 @@ pub struct Addon {
 
 impl Addon {
     /// Creates a new Addon
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
         title: String,
