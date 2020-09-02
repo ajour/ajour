@@ -14,6 +14,14 @@ pub fn strip_non_digits(string: &str) -> Option<String> {
     Some(stripped)
 }
 
+/// Truncates a string.
+pub fn truncate(s: &str, max_chars: usize) -> &str {
+    match s.char_indices().nth(max_chars) {
+        None => s,
+        Some((idx, _)) => &s[..idx],
+    }
+}
+
 #[derive(Deserialize)]
 struct Release {
     tag_name: String,

@@ -167,12 +167,15 @@ pub fn settings_container<'a>(
 }
 
 pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Container<'_, Message> {
-    let default_height = Length::Units(25);
+    let default_height = Length::Units(26);
 
     // Check if current addon is expanded.
-    let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
+    let version = addon
+        .readable_local_version
+        .clone()
+        .unwrap_or_else(|| String::from("-"));
     let remote_version = addon
-        .remote_version
+        .readable_remote_version
         .clone()
         .unwrap_or_else(|| String::from("-"));
 

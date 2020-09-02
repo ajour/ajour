@@ -1,4 +1,9 @@
-use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits, wowinterface_api};
+use crate::{
+    config::Flavor,
+    curse_api, tukui_api,
+    utility::{strip_non_digits, truncate},
+    wowinterface_api,
+};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -40,6 +45,10 @@ pub struct Addon {
     // get a name representing the bundle as a whole.
     pub is_bundle: bool,
 
+    // Readable strings. Truncated to look better in the UI.
+    pub readable_local_version: Option<String>,
+    pub readable_remote_version: Option<String>,
+
     // States for GUI
     pub details_btn_state: iced::button::State,
     pub update_btn_state: iced::button::State,
@@ -63,6 +72,11 @@ impl Addon {
         let os_title = path.file_name().unwrap();
         let str_title = os_title.to_str().unwrap();
 
+        // Converts version to a readable truncated string.
+        let readable_local_version = version
+            .clone()
+            .and_then(|v| Some(truncate_version(&v).to_string()));
+
         Addon {
             id: str_title.to_string(),
             title,
@@ -77,6 +91,8 @@ impl Addon {
             state: AddonState::Ajour(None),
             repository_identifiers,
             is_bundle: false,
+            readable_local_version,
+            readable_remote_version: None,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),
@@ -94,9 +110,13 @@ impl Addon {
         if let Some(wowi_id) = self.repository_identifiers.wowi.as_ref() {
             let package = packages.iter().find(|a| &a.id == wowi_id);
             if let Some(package) = package {
-                self.remote_version = Some(package.version.clone());
                 self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
                 self.remote_title = Some(package.title.clone());
+                self.remote_version = Some(package.version.clone());
+                self.readable_remote_version = self
+                    .remote_version
+                    .clone()
+                    .and_then(|v| Some(truncate_version(&v).to_string()));
 
                 if self.is_updatable() {
                     self.state = AddonState::Updatable;
@@ -109,9 +129,13 @@ impl Addon {
     ///
     /// This function takes a `Package` and updates self with the information.
     pub fn apply_tukui_package(&mut self, package: &tukui_api::Package) {
-        self.remote_version = Some(package.version.clone());
         self.remote_url = Some(package.url.clone());
         self.remote_title = Some(package.name.clone());
+        self.remote_version = Some(package.version.clone());
+        self.readable_remote_version = self
+            .remote_version
+            .clone()
+            .and_then(|v| Some(truncate_version(&v).to_string()));
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;
@@ -127,9 +151,13 @@ impl Addon {
         });
 
         if let Some(file) = file {
-            self.remote_version = Some(file.display_name.clone());
             self.remote_url = Some(file.download_url.clone());
             self.remote_title = Some(package.name.clone());
+            self.remote_version = Some(file.display_name.clone());
+            self.readable_remote_version = self
+                .remote_version
+                .clone()
+                .and_then(|v| Some(truncate_version(&v).to_string()));
         }
 
         if self.is_updatable() {
@@ -157,9 +185,13 @@ impl Addon {
             if let Some(file) = file {
                 let module = file.modules.iter().find(|m| m.foldername == self.id);
                 if module.is_some() {
-                    self.remote_version = Some(file.display_name.clone());
                     self.remote_url = Some(file.download_url.clone());
                     self.remote_title = Some(package.name.clone());
+                    self.remote_version = Some(file.display_name.clone());
+                    self.readable_remote_version = self
+                        .remote_version
+                        .clone()
+                        .and_then(|v| Some(truncate_version(&v).to_string()));
                     if self.is_updatable() {
                         self.state = AddonState::Updatable;
                     }
@@ -228,6 +260,12 @@ impl Addon {
             _ => false,
         }
     }
+}
+
+/// Used to truncate version label to be presented in the GUI.
+fn truncate_version(version: &str) -> &str {
+    // Hardcoded a number which fits the width of local and remote container.
+    truncate(version, 26)
 }
 
 impl PartialEq for Addon {
