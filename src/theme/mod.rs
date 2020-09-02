@@ -82,7 +82,7 @@ mod de {
 
 #[cfg(test)]
 mod tests {
-    use super::de::deserialize_color_hex_string;
+    use super::{de::deserialize_color_hex_string, Theme};
     use serde::de::value::{Error, StrDeserializer};
     use serde::de::IntoDeserializer;
 
@@ -103,5 +103,19 @@ mod tests {
                 assert!(color.is_ok());
             }
         }
+    }
+
+    #[test]
+    fn test_theme_yml_deser() {
+        let theme_str = "---
+        primary: '#ABCDEF'
+        secondary: '#000000'
+        surface: '#FFFFFF'
+        on_surface: '#012345'
+        background: '#543210'
+        error: '#FEDCBA'
+        ";
+
+        serde_yaml::from_str::<Theme>(theme_str).unwrap();
     }
 }
