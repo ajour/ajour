@@ -73,9 +73,7 @@ impl Addon {
         let str_title = os_title.to_str().unwrap();
 
         // Converts version to a readable truncated string.
-        let readable_local_version = version
-            .clone()
-            .and_then(|v| Some(truncate_version(&v).to_string()));
+        let readable_local_version = version.clone().map(|v| truncate_version(&v).to_string());
 
         Addon {
             id: str_title.to_string(),
@@ -116,7 +114,7 @@ impl Addon {
                 self.readable_remote_version = self
                     .remote_version
                     .clone()
-                    .and_then(|v| Some(truncate_version(&v).to_string()));
+                    .map(|v| truncate_version(&v).to_string());
 
                 if self.is_updatable() {
                     self.state = AddonState::Updatable;
@@ -135,7 +133,7 @@ impl Addon {
         self.readable_remote_version = self
             .remote_version
             .clone()
-            .and_then(|v| Some(truncate_version(&v).to_string()));
+            .map(|v| truncate_version(&v).to_string());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;
@@ -157,7 +155,7 @@ impl Addon {
             self.readable_remote_version = self
                 .remote_version
                 .clone()
-                .and_then(|v| Some(truncate_version(&v).to_string()));
+                .map(|v| truncate_version(&v).to_string());
         }
 
         if self.is_updatable() {
@@ -191,7 +189,8 @@ impl Addon {
                     self.readable_remote_version = self
                         .remote_version
                         .clone()
-                        .and_then(|v| Some(truncate_version(&v).to_string()));
+                        .map(|v| truncate_version(&v).to_string());
+
                     if self.is_updatable() {
                         self.state = AddonState::Updatable;
                     }
