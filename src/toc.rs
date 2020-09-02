@@ -110,7 +110,11 @@ async fn get_extension(filename: &OsStr) -> Option<&str> {
 /// TOC format summary:
 /// https://wowwiki.fandom.com/wiki/TOC_format
 async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
-    let file = File::open(toc_entry.path()).unwrap();
+    let file = if let Ok(file) = File::open(toc_entry.path()) {
+        file
+    } else {
+        return None;
+    };
     let reader = BufReader::new(file);
 
     let path = toc_entry.path().parent()?.to_path_buf();

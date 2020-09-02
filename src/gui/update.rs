@@ -138,20 +138,21 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
-            let addon = ajour.addons.iter().find(|a| a.id == id).unwrap();
-            let addon_directory = ajour
-                .config
-                .get_addon_directory()
-                .expect("has to have addon directory");
-            let _ = delete_addons(
-                &addon_directory,
-                &[&addon.dependencies[..], &[addon.id.clone()]].concat(),
-            );
+            if let Some(addon) = ajour.addons.iter().find(|a| a.id == id) {
+                let addon_directory = ajour
+                    .config
+                    .get_addon_directory()
+                    .expect("has to have addon directory");
+                let _ = delete_addons(
+                    &addon_directory,
+                    &[&addon.dependencies[..], &[addon.id.clone()]].concat(),
+                );
 
-            return Ok(Command::perform(
-                read_addon_directory(addon_directory),
-                Message::ParsedAddons,
-            ));
+                return Ok(Command::perform(
+                    read_addon_directory(addon_directory),
+                    Message::ParsedAddons,
+                ));
+            }
         }
         Message::Interaction(Interaction::Update(id)) => {
             let to_directory = ajour
@@ -467,10 +468,12 @@ pub fn bidirectional_addon_dependencies(addon: &mut Addon, addons: &[Addon]) -> 
 }
 
 async fn open_directory() -> Option<PathBuf> {
-    // Should we use task::spawn_blocking here?
-    // TODO: We should maybe make sure we can't spawn multiple windows here.
     let dialog = OpenSingleDir { dir: None };
-    dialog.show().unwrap()
+    if let Ok(show) = dialog.show() {
+        return show;
+    }
+
+    None
 }
 
 async fn fetch_curse_package(

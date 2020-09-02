@@ -91,15 +91,16 @@ impl Addon {
     /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
     /// It then updates self, with the information from that package.
     pub fn apply_wowi_packages(&mut self, packages: &[wowinterface_api::Package]) {
-        let wowi_id = self.repository_identifiers.wowi.as_ref().unwrap();
-        let package = packages.iter().find(|a| &a.id == wowi_id);
-        if let Some(package) = package {
-            self.remote_version = Some(package.version.clone());
-            self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
-            self.remote_title = Some(package.title.clone());
+        if let Some(wowi_id) = self.repository_identifiers.wowi.as_ref() {
+            let package = packages.iter().find(|a| &a.id == wowi_id);
+            if let Some(package) = package {
+                self.remote_version = Some(package.version.clone());
+                self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
+                self.remote_title = Some(package.title.clone());
 
-            if self.is_updatable() {
-                self.state = AddonState::Updatable;
+                if self.is_updatable() {
+                    self.state = AddonState::Updatable;
+                }
             }
         }
     }

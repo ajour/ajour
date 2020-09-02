@@ -35,28 +35,29 @@ pub async fn download_addon(
     addon: &Addon,
     to_directory: &PathBuf,
 ) -> Result<()> {
-    let url = addon.remote_url.clone().unwrap();
-    let mut resp = request_async(shared_client, url, vec![], None).await?;
-    let body = resp.body_mut();
-    let zip_path = to_directory.join(&addon.id);
-    let mut buffer = [0; 8000]; // 8KB
-    let mut file = File::create(&zip_path)
-        .await
-        .expect("failed to create file for download!");
+    if let Some(url) = addon.remote_url.clone() {
+        let mut resp = request_async(shared_client, url, vec![], None).await?;
+        let body = resp.body_mut();
+        let zip_path = to_directory.join(&addon.id);
+        let mut buffer = [0; 8000]; // 8KB
+        let mut file = File::create(&zip_path)
+            .await
+            .expect("failed to create file for download!");
 
-    loop {
-        match body.read(&mut buffer).await {
-            Ok(0) => {
-                break;
-            }
-            Ok(x) => {
-                file.write_all(&buffer[0..x])
-                    .await
-                    .expect("TODO: error handling");
-            }
-            Err(e) => {
-                println!("error: {:?}", e);
-                break;
+        loop {
+            match body.read(&mut buffer).await {
+                Ok(0) => {
+                    break;
+                }
+                Ok(x) => {
+                    file.write_all(&buffer[0..x])
+                        .await
+                        .expect("TODO: error handling");
+                }
+                Err(e) => {
+                    println!("error: {:?}", e);
+                    break;
+                }
             }
         }
     }
