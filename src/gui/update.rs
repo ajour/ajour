@@ -610,30 +610,53 @@ async fn perform_unpack_addon(
 }
 
 fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: SortKey) {
-    match sort_key {
-        SortKey::Title => {
+    match (sort_key, sort_direction) {
+        (SortKey::Title, SortDirection::Asc) => {
             addons.sort();
         }
-        SortKey::LocalVersion => {
+        (SortKey::Title, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.title
+                    .cmp(&b.title)
+                    .reverse()
+                    .then_with(|| a.remote_version.cmp(&b.remote_version))
+            });
+        }
+        (SortKey::LocalVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
                 a.version
                     .cmp(&b.version)
                     .then_with(|| a.title.cmp(&b.title))
             });
         }
-        SortKey::RemoteVersion => {
+        (SortKey::LocalVersion, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.version
+                    .cmp(&b.version)
+                    .reverse()
+                    .then_with(|| a.title.cmp(&b.title))
+            });
+        }
+        (SortKey::RemoteVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
                 a.remote_version
                     .cmp(&b.remote_version)
                     .then_with(|| a.cmp(&b))
             });
         }
-        SortKey::Status => {
+        (SortKey::RemoteVersion, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.remote_version
+                    .cmp(&b.remote_version)
+                    .reverse()
+                    .then_with(|| a.cmp(&b))
+            });
+        }
+        (SortKey::Status, SortDirection::Asc) => {
             addons.sort_by(|a, b| a.state.cmp(&b.state).then_with(|| a.cmp(&b)));
         }
-    }
-
-    if sort_direction == SortDirection::Desc {
-        addons.reverse();
+        (SortKey::Status, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.state.cmp(&b.state).reverse().then_with(|| a.cmp(&b)));
+        }
     }
 }
