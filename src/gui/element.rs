@@ -1,7 +1,7 @@
 use {
     super::{
         style, Addon, AddonState, AjourState, Config, Flavor, Interaction, Message, SortKey,
-        SortState, Theme,
+        SortState, Theme, ThemeState,
     },
     crate::VERSION,
     iced::{
@@ -22,6 +22,7 @@ pub fn settings_container<'a>(
     ignored_addons_scrollable_state: &'a mut scrollable::State,
     ignored_addons: &'a mut Vec<(Addon, button::State)>,
     config: &Config,
+    theme_state: &'a mut ThemeState,
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
@@ -84,6 +85,27 @@ pub fn settings_container<'a>(
     // Data row for flavor picker list.
     let flavor_data_row = Row::new().push(left_spacer).push(flavor_pick_list);
 
+    // Title for the theme pick list.
+    let theme_info_text = Text::new("Theme").size(14);
+    let theme_info_row = Row::new().push(theme_info_text).padding(DEFAULT_PADDING);
+
+    // We add some margin left to adjust to the rest of the content.
+    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+
+    let theme_names = theme_state.themes.keys().cloned().collect::<Vec<_>>();
+    let theme_pick_list = PickList::new(
+        &mut theme_state.pick_list_state,
+        theme_names,
+        Some(theme_state.current_theme_name.clone()),
+        Message::ThemeSelected,
+    )
+    .text_size(14)
+    .width(Length::Units(100))
+    .style(style::PickList(theme));
+
+    // Data row for theme picker list.
+    let theme_data_row = Row::new().push(left_spacer).push(theme_pick_list);
+
     // Small space below content.
     let bottom_space = Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
@@ -93,6 +115,8 @@ pub fn settings_container<'a>(
         .push(path_data_row)
         .push(flavor_info_row)
         .push(flavor_data_row)
+        .push(theme_info_row)
+        .push(theme_data_row)
         .push(bottom_space);
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
@@ -167,7 +191,7 @@ pub fn settings_container<'a>(
         .push(right_spacer);
 
     // Returns the final container.
-    Container::new(row).height(Length::Units(125))
+    Container::new(row).height(Length::Units(185))
 }
 
 pub fn addon_data_cell(

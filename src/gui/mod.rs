@@ -21,7 +21,7 @@ use isahc::{
     config::{Configurable, RedirectPolicy},
     HttpClient,
 };
-use std::path::PathBuf;
+use std::{collections::BTreeMap, path::PathBuf};
 
 use image::ImageFormat;
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
@@ -54,6 +54,7 @@ pub enum Message {
     DownloadedAddon((String, Result<()>)),
     Error(ClientError),
     FlavorSelected(Flavor),
+    ThemeSelected(String),
     Interaction(Interaction),
     NeedsUpdate(Result<Option<String>>),
     None(()),
@@ -84,11 +85,15 @@ pub struct Ajour {
     state: AjourState,
     update_all_btn_state: button::State,
     sort_state: SortState,
-    theme: Theme,
+    theme_state: ThemeState,
 }
 
 impl Default for Ajour {
     fn default() -> Self {
+        let mut themes = BTreeMap::new();
+        themes.insert("Dark".to_string(), Theme::DARK);
+        themes.insert("Light".to_string(), Theme::LIGHT);
+
         Self {
             addons: Vec::new(),
             addons_scrollable_state: Default::default(),
@@ -113,7 +118,7 @@ impl Default for Ajour {
             state: AjourState::Idle,
             update_all_btn_state: Default::default(),
             sort_state: Default::default(),
-            theme: Theme::default(),
+            theme_state: Default::default(),
         }
     }
 }
@@ -151,10 +156,17 @@ impl Application for Ajour {
         // We find the  corresponding `Addon` from the ignored strings.
         let ignored_strings = &self.config.addons.ignored;
 
+        // Get theme of chosen theme name, shouldn't panic
+        let current_theme = *self
+            .theme_state
+            .themes
+            .get(&self.theme_state.current_theme_name)
+            .unwrap();
+
         // Menu container at the top of the applications.
         // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
-            self.theme,
+            current_theme,
             &mut self.update_all_btn_state,
             &mut self.refresh_btn_state,
             &mut self.settings_btn_state,
@@ -169,12 +181,12 @@ impl Application for Ajour {
         // This is to add titles above each section of the addon row, to let
         // the user easily identify what the value is.
         let addon_row_titles =
-            element::addon_row_titles(self.theme, &self.addons, &mut self.sort_state);
+            element::addon_row_titles(current_theme, &self.addons, &mut self.sort_state);
 
         // A scrollable list containing rows.
         // Each row holds data about a single addon.
         let mut addons_scrollable =
-            element::addon_scrollable(self.theme, &mut self.addons_scrollable_state);
+            element::addon_scrollable(current_theme, &mut self.addons_scrollable_state);
 
         // Loops though the addons.
         for addon in &mut self
@@ -190,7 +202,7 @@ impl Application for Ajour {
 
             // A container cell which has all data about the current addon.
             // If the addon is expanded, then this is also included in this container.
-            let addon_data_cell = element::addon_data_cell(self.theme, addon, is_addon_expanded);
+            let addon_data_cell = element::addon_data_cell(current_theme, addon, is_addon_expanded);
 
             // Adds the addon data cell to the scrollable.
             addons_scrollable = addons_scrollable.push(addon_data_cell);
@@ -206,12 +218,13 @@ impl Application for Ajour {
         if self.is_showing_settings {
             // Settings container, containing all data releated to settings.
             let settings_container = element::settings_container(
-                self.theme,
+                current_theme,
                 &mut self.directory_btn_state,
                 &mut self.flavor_list_state,
                 &mut self.ignored_addons_scrollable_state,
                 &mut self.ignored_addons,
                 &self.config,
+                &mut self.theme_state,
             );
 
             // Space below settings.
@@ -246,7 +259,7 @@ impl Application for Ajour {
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .style(style::Content(self.theme))
+            .style(style::Content(current_theme))
             .into()
     }
 }
@@ -302,4 +315,24 @@ pub struct SortState {
     local_version_btn_state: button::State,
     remote_version_btn_state: button::State,
     status_btn_state: button::State,
+}
+
+pub struct ThemeState {
+    themes: BTreeMap<String, Theme>,
+    current_theme_name: String,
+    pick_list_state: pick_list::State<String>,
+}
+
+impl Default for ThemeState {
+    fn default() -> Self {
+        let mut themes = BTreeMap::new();
+        themes.insert("Dark".to_string(), Theme::DARK);
+        themes.insert("Light".to_string(), Theme::LIGHT);
+
+        ThemeState {
+            themes,
+            current_theme_name: "Dark".to_string(),
+            pick_list_state: Default::default(),
+        }
+    }
 }

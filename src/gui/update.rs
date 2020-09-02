@@ -116,6 +116,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Reload config.
             return Ok(Command::perform(load_config(), Message::Parse));
         }
+        Message::ThemeSelected(theme_name) => {
+            ajour.theme_state.current_theme_name = theme_name;
+        }
         Message::Interaction(Interaction::Expand(id)) => {
             // Expand a addon.
             // If it's already expanded, we collapse it again.

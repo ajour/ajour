@@ -1,7 +1,7 @@
 use de::deserialize_color_hex_string;
 use serde::Deserialize;
 
-#[derive(Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 pub struct Theme {
     #[serde(deserialize_with = "deserialize_color_hex_string")]
     pub primary: iced::Color,
@@ -17,17 +17,24 @@ pub struct Theme {
     pub error: iced::Color,
 }
 
-impl Default for Theme {
-    fn default() -> Self {
-        Theme {
-            primary: iced::Color::from_rgb(0.73, 0.52, 0.99),
-            secondary: iced::Color::from_rgb(0.88, 0.74, 0.28),
-            surface: iced::Color::from_rgb(0.12, 0.12, 0.12),
-            on_surface: iced::Color::from_rgb(0.88, 0.88, 0.88),
-            background: iced::Color::from_rgb(0.07, 0.07, 0.07),
-            error: iced::Color::from_rgb(0.76, 0.19, 0.28),
-        }
-    }
+impl Theme {
+    pub const DARK: Theme = Theme {
+        primary: iced::Color::from_rgb(0.73, 0.52, 0.99),
+        secondary: iced::Color::from_rgb(0.88, 0.74, 0.28),
+        surface: iced::Color::from_rgb(0.12, 0.12, 0.12),
+        on_surface: iced::Color::from_rgb(0.88, 0.88, 0.88),
+        background: iced::Color::from_rgb(0.07, 0.07, 0.07),
+        error: iced::Color::from_rgb(0.76, 0.19, 0.28),
+    };
+
+    pub const LIGHT: Theme = Theme {
+        primary: iced::Color::from_rgb(0.39, 0.0, 0.93),
+        secondary: iced::Color::from_rgb(0.0, 0.85, 0.77),
+        surface: iced::Color::from_rgb(0.96, 0.96, 0.96),
+        on_surface: iced::Color::from_rgb(0.0, 0.0, 0.0),
+        background: iced::Color::from_rgb(1.0, 1.0, 1.0),
+        error: iced::Color::from_rgb(0.68, 0.0, 0.12),
+    };
 }
 
 // Newtype on iced::Color so we can impl Deserialzer for it
