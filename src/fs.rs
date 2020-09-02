@@ -31,15 +31,15 @@ pub async fn install_addon(
         let mut file = archive.by_index(i)?;
         let path = to_directory.join(file.sanitized_name());
         if (&*file.name()).ends_with('/') {
-            std::fs::create_dir_all(&path).unwrap();
+            std::fs::create_dir_all(&path)?;
         } else {
             if let Some(p) = path.parent() {
                 if !p.exists() {
-                    std::fs::create_dir_all(&p).unwrap();
+                    std::fs::create_dir_all(&p)?;
                 }
             }
-            let mut outfile = std::fs::File::create(&path).unwrap();
-            std::io::copy(&mut file, &mut outfile).unwrap();
+            let mut outfile = std::fs::File::create(&path)?;
+            std::io::copy(&mut file, &mut outfile)?;
         }
     }
 
