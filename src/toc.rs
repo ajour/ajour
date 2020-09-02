@@ -132,9 +132,8 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
     let re_toc = Regex::new(r"^##\s(?P<key>.*?):\s?(?P<value>.*)").unwrap();
     let re_title = Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?").unwrap();
 
-    for line in reader.lines() {
-        let l = line.unwrap();
-        for cap in re_toc.captures_iter(l.as_str()) {
+    for line in reader.lines().filter_map(|l| l.ok()) {
+        for cap in re_toc.captures_iter(line.as_str()) {
             match &cap["key"] {
                 // String - The title to display.
                 //
