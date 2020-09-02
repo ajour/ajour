@@ -7,6 +7,7 @@ use crate::{
     config::{load_config, Config, Flavor},
     curse_api,
     error::ClientError,
+    theme::Theme,
     tukui_api,
     utility::needs_update,
     wowinterface_api, Result,
@@ -83,6 +84,7 @@ pub struct Ajour {
     state: AjourState,
     update_all_btn_state: button::State,
     sort_state: SortState,
+    theme: Theme,
 }
 
 impl Default for Ajour {
@@ -108,10 +110,10 @@ impl Default for Ajour {
                     .build()
                     .unwrap(),
             ),
-
             state: AjourState::Idle,
             update_all_btn_state: Default::default(),
             sort_state: Default::default(),
+            theme: Theme::default(),
         }
     }
 }
@@ -152,6 +154,7 @@ impl Application for Ajour {
         // Menu container at the top of the applications.
         // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
+            self.theme,
             &mut self.update_all_btn_state,
             &mut self.refresh_btn_state,
             &mut self.settings_btn_state,
@@ -165,11 +168,13 @@ impl Application for Ajour {
         // Addon row titles is a row of titles above the addon scrollable.
         // This is to add titles above each section of the addon row, to let
         // the user easily identify what the value is.
-        let addon_row_titles = element::addon_row_titles(&self.addons, &mut self.sort_state);
+        let addon_row_titles =
+            element::addon_row_titles(self.theme, &self.addons, &mut self.sort_state);
 
         // A scrollable list containing rows.
         // Each row holds data about a single addon.
-        let mut addons_scrollable = element::addon_scrollable(&mut self.addons_scrollable_state);
+        let mut addons_scrollable =
+            element::addon_scrollable(self.theme, &mut self.addons_scrollable_state);
 
         // Loops though the addons.
         for addon in &mut self
@@ -185,7 +190,7 @@ impl Application for Ajour {
 
             // A container cell which has all data about the current addon.
             // If the addon is expanded, then this is also included in this container.
-            let addon_data_cell = element::addon_data_cell(addon, is_addon_expanded);
+            let addon_data_cell = element::addon_data_cell(self.theme, addon, is_addon_expanded);
 
             // Adds the addon data cell to the scrollable.
             addons_scrollable = addons_scrollable.push(addon_data_cell);
@@ -201,6 +206,7 @@ impl Application for Ajour {
         if self.is_showing_settings {
             // Settings container, containing all data releated to settings.
             let settings_container = element::settings_container(
+                self.theme,
                 &mut self.directory_btn_state,
                 &mut self.flavor_list_state,
                 &mut self.ignored_addons_scrollable_state,
@@ -226,6 +232,7 @@ impl Application for Ajour {
         // If we have no addons, and no path we assume onboarding.
         if !has_addons && !has_wow_path {
             let status_container = element::status_container(
+                self.theme,
                 "Welcome to Ajour!",
                 "To get started, go to Settings and select your World of Warcraft directory.",
             );
@@ -239,7 +246,7 @@ impl Application for Ajour {
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .style(style::Content)
+            .style(style::Content(self.theme))
             .into()
     }
 }

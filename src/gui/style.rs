@@ -1,31 +1,11 @@
+use crate::theme::Theme;
 use iced::{button, container, pick_list, scrollable, Background, Color};
 
-enum ColorPalette {
-    Primary,
-    Secondary,
-    Error,
-    Surface,
-    OnSurface,
-    Background,
-}
-
-impl ColorPalette {
-    fn rgb(&self) -> Color {
-        match self {
-            ColorPalette::Primary => Color::from_rgb(0.73, 0.52, 0.99),
-            ColorPalette::Secondary => Color::from_rgb(0.88, 0.74, 0.28),
-            ColorPalette::Surface => Color::from_rgb(0.12, 0.12, 0.12),
-            ColorPalette::OnSurface => Color::from_rgb(0.88, 0.88, 0.88),
-            ColorPalette::Background => Color::from_rgb(0.07, 0.07, 0.07),
-            ColorPalette::Error => Color::from_rgb(0.76, 0.19, 0.28),
-        }
-    }
-}
-pub struct TextButton;
+pub struct TextButton(pub Theme);
 impl button::StyleSheet for TextButton {
     fn active(&self) -> button::Style {
         button::Style {
-            text_color: ColorPalette::OnSurface.rgb(),
+            text_color: self.0.on_surface,
             border_radius: 2,
             ..button::Style::default()
         }
@@ -34,17 +14,17 @@ impl button::StyleSheet for TextButton {
     fn hovered(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color::TRANSPARENT)),
-            text_color: ColorPalette::Primary.rgb(),
+            text_color: self.0.primary,
             ..self.active()
         }
     }
 }
 
-pub struct DefaultButton;
+pub struct DefaultButton(pub Theme);
 impl button::StyleSheet for DefaultButton {
     fn active(&self) -> button::Style {
         button::Style {
-            text_color: ColorPalette::Primary.rgb(),
+            text_color: self.0.primary,
             border_radius: 2,
             ..button::Style::default()
         }
@@ -54,23 +34,23 @@ impl button::StyleSheet for DefaultButton {
         button::Style {
             background: Some(Background::Color(Color {
                 a: 0.1,
-                ..ColorPalette::Primary.rgb()
+                ..self.0.primary
             })),
-            text_color: ColorPalette::Primary.rgb(),
+            text_color: self.0.primary,
             ..self.active()
         }
     }
 }
 
-pub struct DefaultBoxedButton;
+pub struct DefaultBoxedButton(pub Theme);
 impl button::StyleSheet for DefaultBoxedButton {
     fn active(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color {
                 a: 0.03,
-                ..ColorPalette::Primary.rgb()
+                ..self.0.primary
             })),
-            text_color: ColorPalette::Primary.rgb(),
+            text_color: self.0.primary,
             border_radius: 2,
             ..button::Style::default()
         }
@@ -80,9 +60,9 @@ impl button::StyleSheet for DefaultBoxedButton {
         button::Style {
             background: Some(Background::Color(Color {
                 a: 0.1,
-                ..ColorPalette::Primary.rgb()
+                ..self.0.primary
             })),
-            text_color: ColorPalette::Primary.rgb(),
+            text_color: self.0.primary,
             ..self.active()
         }
     }
@@ -91,22 +71,22 @@ impl button::StyleSheet for DefaultBoxedButton {
         button::Style {
             background: Some(Background::Color(Color {
                 a: 0.01,
-                ..ColorPalette::Primary.rgb()
+                ..self.0.primary
             })),
             text_color: Color {
                 a: 0.1,
-                ..ColorPalette::Primary.rgb()
+                ..self.0.primary
             },
             ..self.active()
         }
     }
 }
 
-pub struct SecondaryButton;
+pub struct SecondaryButton(pub Theme);
 impl button::StyleSheet for SecondaryButton {
     fn active(&self) -> button::Style {
         button::Style {
-            text_color: ColorPalette::Secondary.rgb(),
+            text_color: self.0.secondary,
             border_radius: 2,
             ..button::Style::default()
         }
@@ -116,31 +96,31 @@ impl button::StyleSheet for SecondaryButton {
         button::Style {
             background: Some(Background::Color(Color {
                 a: 0.1,
-                ..ColorPalette::Secondary.rgb()
+                ..self.0.secondary
             })),
-            text_color: ColorPalette::Secondary.rgb(),
+            text_color: self.0.secondary,
             ..self.active()
         }
     }
 
     fn disabled(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(ColorPalette::Secondary.rgb())),
-            text_color: ColorPalette::Secondary.rgb(),
+            background: Some(Background::Color(self.0.secondary)),
+            text_color: self.0.secondary,
             ..self.active()
         }
     }
 }
 
-pub struct DeleteBoxedButton;
+pub struct DeleteBoxedButton(pub Theme);
 impl button::StyleSheet for DeleteBoxedButton {
     fn active(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color {
                 a: 0.03,
-                ..ColorPalette::Error.rgb()
+                ..self.0.error
             })),
-            text_color: ColorPalette::Error.rgb(),
+            text_color: self.0.error,
             border_radius: 2,
             ..button::Style::default()
         }
@@ -150,22 +130,22 @@ impl button::StyleSheet for DeleteBoxedButton {
         button::Style {
             background: Some(Background::Color(Color {
                 a: 0.1,
-                ..ColorPalette::Error.rgb()
+                ..self.0.error
             })),
-            text_color: ColorPalette::Error.rgb(),
+            text_color: self.0.error,
             ..self.active()
         }
     }
 }
 
-pub struct ColumnHeaderButton;
+pub struct ColumnHeaderButton(pub Theme);
 impl button::StyleSheet for ColumnHeaderButton {
     fn active(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(ColorPalette::Background.rgb())),
+            background: Some(Background::Color(self.0.background)),
             text_color: Color {
                 a: 0.4,
-                ..ColorPalette::OnSurface.rgb()
+                ..self.0.on_surface
             },
             border_radius: 2,
             ..button::Style::default()
@@ -176,105 +156,105 @@ impl button::StyleSheet for ColumnHeaderButton {
         button::Style {
             background: Some(Background::Color(Color {
                 a: 0.1,
-                ..ColorPalette::Primary.rgb()
+                ..self.0.primary
             })),
-            text_color: ColorPalette::Primary.rgb(),
+            text_color: self.0.primary,
             ..self.active()
         }
     }
 }
 
-pub struct Content;
+pub struct Content(pub Theme);
 impl container::StyleSheet for Content {
     fn style(&self) -> container::Style {
         container::Style {
-            background: Some(Background::Color(ColorPalette::Background.rgb())),
+            background: Some(Background::Color(self.0.background)),
             ..container::Style::default()
         }
     }
 }
 
-pub struct AddonRowDefaultTextContainer;
+pub struct AddonRowDefaultTextContainer(pub Theme);
 impl container::StyleSheet for AddonRowDefaultTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
-            background: Some(Background::Color(ColorPalette::Surface.rgb())),
-            text_color: Some(ColorPalette::OnSurface.rgb()),
+            background: Some(Background::Color(self.0.surface)),
+            text_color: Some(self.0.on_surface),
             ..container::Style::default()
         }
     }
 }
 
-pub struct AddonRowSecondaryTextContainer;
+pub struct AddonRowSecondaryTextContainer(pub Theme);
 impl container::StyleSheet for AddonRowSecondaryTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
-            background: Some(Background::Color(ColorPalette::Surface.rgb())),
+            background: Some(Background::Color(self.0.surface)),
             text_color: Some(Color {
                 a: 0.4,
-                ..ColorPalette::OnSurface.rgb()
+                ..self.0.on_surface
             }),
             ..container::Style::default()
         }
     }
 }
 
-pub struct SecondaryTextContainer;
+pub struct SecondaryTextContainer(pub Theme);
 impl container::StyleSheet for SecondaryTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
             text_color: Some(Color {
                 a: 0.4,
-                ..ColorPalette::OnSurface.rgb()
+                ..self.0.on_surface
             }),
             ..container::Style::default()
         }
     }
 }
 
-pub struct DefaultTextContainer;
+pub struct DefaultTextContainer(pub Theme);
 impl container::StyleSheet for DefaultTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
-            text_color: Some(ColorPalette::OnSurface.rgb()),
+            text_color: Some(self.0.on_surface),
             ..container::Style::default()
         }
     }
 }
 
-pub struct StatusErrorTextContainer;
+pub struct StatusErrorTextContainer(pub Theme);
 impl container::StyleSheet for StatusErrorTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
             text_color: Some(Color {
                 a: 0.8,
-                ..ColorPalette::Error.rgb()
+                ..self.0.error
             }),
             ..container::Style::default()
         }
     }
 }
 
-pub struct Row;
+pub struct Row(pub Theme);
 impl container::StyleSheet for Row {
     fn style(&self) -> container::Style {
         container::Style {
-            background: Some(Background::Color(ColorPalette::Background.rgb())),
+            background: Some(Background::Color(self.0.background)),
             ..container::Style::default()
         }
     }
 }
 
-pub struct Scrollable;
+pub struct Scrollable(pub Theme);
 impl scrollable::StyleSheet for Scrollable {
     fn active(&self) -> scrollable::Scrollbar {
         scrollable::Scrollbar {
-            background: Some(Background::Color(ColorPalette::Background.rgb())),
+            background: Some(Background::Color(self.0.background)),
             border_radius: 0,
             border_width: 0,
             border_color: Color::TRANSPARENT,
             scroller: scrollable::Scroller {
-                color: ColorPalette::Surface.rgb(),
+                color: self.0.surface,
                 border_radius: 2,
                 border_width: 0,
                 border_color: Color::TRANSPARENT,
@@ -300,16 +280,16 @@ impl scrollable::StyleSheet for Scrollable {
     }
 }
 
-pub struct SecondaryScrollable;
+pub struct SecondaryScrollable(pub Theme);
 impl scrollable::StyleSheet for SecondaryScrollable {
     fn active(&self) -> scrollable::Scrollbar {
         scrollable::Scrollbar {
-            background: Some(Background::Color(ColorPalette::Surface.rgb())),
+            background: Some(Background::Color(self.0.surface)),
             border_radius: 0,
             border_width: 0,
             border_color: Color::TRANSPARENT,
             scroller: scrollable::Scroller {
-                color: ColorPalette::Background.rgb(),
+                color: self.0.background,
                 border_radius: 2,
                 border_width: 0,
                 border_color: Color::TRANSPARENT,
@@ -335,32 +315,31 @@ impl scrollable::StyleSheet for SecondaryScrollable {
     }
 }
 
-pub struct PickList;
-
+pub struct PickList(pub Theme);
 impl pick_list::StyleSheet for PickList {
     fn menu(&self) -> pick_list::Menu {
         pick_list::Menu {
-            text_color: ColorPalette::OnSurface.rgb(),
-            background: Background::Color(ColorPalette::Background.rgb()),
+            text_color: self.0.on_surface,
+            background: Background::Color(self.0.background),
             border_width: 1,
-            border_color: ColorPalette::Surface.rgb(),
+            border_color: self.0.surface,
             selected_background: Color {
                 a: 0.1,
-                ..ColorPalette::Primary.rgb()
+                ..self.0.primary
             }
             .into(),
-            selected_text_color: ColorPalette::Primary.rgb(),
+            selected_text_color: self.0.primary,
         }
     }
 
     fn active(&self) -> pick_list::Style {
         pick_list::Style {
-            text_color: ColorPalette::OnSurface.rgb(),
-            background: Background::Color(ColorPalette::Background.rgb()),
+            text_color: self.0.on_surface,
+            background: Background::Color(self.0.background),
             border_width: 1,
             border_color: Color {
                 a: 1.0,
-                ..ColorPalette::Background.rgb()
+                ..self.0.background
             },
             border_radius: 2,
             icon_size: 0.5,
