@@ -2,13 +2,13 @@ use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits, wow
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
-    Ajour(Option<String>),
-    Loading,
     Updatable,
+    Loading,
     Downloading,
     Unpacking,
+    Ajour(Option<String>),
 }
 
 #[derive(Debug, Clone)]
@@ -239,22 +239,18 @@ impl PartialEq for Addon {
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(
-            self.is_updatable()
-                .cmp(&other.is_updatable())
-                .then_with(|| self.remote_version.cmp(&other.remote_version))
-                .reverse()
-                .then_with(|| self.title.cmp(&other.title)),
+            self.title
+                .cmp(&other.title)
+                .then_with(|| self.remote_version.cmp(&other.remote_version).reverse()),
         )
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.is_updatable()
-            .cmp(&other.is_updatable())
-            .then_with(|| self.remote_version.cmp(&other.remote_version))
-            .reverse()
-            .then_with(|| self.title.cmp(&other.title))
+        self.title
+            .cmp(&other.title)
+            .then_with(|| self.remote_version.cmp(&other.remote_version).reverse())
     }
 }
 

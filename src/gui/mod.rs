@@ -43,6 +43,7 @@ pub enum Interaction {
     Unignore(String),
     Update(String),
     UpdateAll,
+    SortColumn(SortKey),
 }
 
 #[derive(Debug)]
@@ -81,6 +82,7 @@ pub struct Ajour {
     shared_client: Arc<HttpClient>,
     state: AjourState,
     update_all_btn_state: button::State,
+    sort_state: SortState,
 }
 
 impl Default for Ajour {
@@ -109,6 +111,7 @@ impl Default for Ajour {
 
             state: AjourState::Idle,
             update_all_btn_state: Default::default(),
+            sort_state: Default::default(),
         }
     }
 }
@@ -159,7 +162,7 @@ impl Application for Ajour {
         // Addon row titles is a row of titles above the addon scrollable.
         // This is to add titles above each section of the addon row, to let
         // the user easily identify what the value is.
-        let addon_row_titles = element::addon_row_titles(&self.addons);
+        let addon_row_titles = element::addon_row_titles(&self.addons, &mut self.sort_state);
 
         // A scrollable list containing rows.
         // Each row holds data about a single addon.
@@ -243,4 +246,37 @@ pub fn run() {
 
     // Runs the GUI.
     Ajour::run(settings);
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SortKey {
+    Title,
+    LocalVersion,
+    RemoteVersion,
+    Status,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SortDirection {
+    Asc,
+    Desc,
+}
+
+impl SortDirection {
+    fn toggle(self) -> SortDirection {
+        match self {
+            SortDirection::Asc => SortDirection::Desc,
+            SortDirection::Desc => SortDirection::Asc,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct SortState {
+    previous_sort_key: Option<SortKey>,
+    previous_sort_direction: Option<SortDirection>,
+    title_btn_state: button::State,
+    local_version_btn_state: button::State,
+    remote_version_btn_state: button::State,
+    status_btn_state: button::State,
 }

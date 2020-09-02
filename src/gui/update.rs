@@ -1,5 +1,5 @@
 use {
-    super::{Ajour, AjourState, Interaction, Message},
+    super::{Ajour, AjourState, Interaction, Message, SortDirection, SortKey},
     crate::{
         addon::{Addon, AddonState},
         config::{load_config, persist_config, Flavor},
@@ -267,7 +267,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Once filtred, we set state.
             ajour.addons = addons;
-            ajour.addons.sort();
+
+            // Sort with state if sorting has been applied by user, otherwise use
+            // default sort.
+            if ajour.sort_state.previous_sort_key.is_some()
+                && ajour.sort_state.previous_sort_direction.is_some()
+            {
+                let sort_key = ajour.sort_state.previous_sort_key.unwrap();
+                let sort_direction = ajour.sort_state.previous_sort_direction.unwrap();
+
+                sort_addons(&mut ajour.addons, sort_direction, sort_key);
+            } else {
+                ajour.addons.sort();
+            }
 
             // Create a `Vec` of commands for fetching remote packages for each addon.
             let mut commands = Vec::<Command<Message>>::new();
@@ -412,6 +424,31 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::NeedsUpdate(Ok(newer_version)) => {
             ajour.needs_update = newer_version;
+        }
+        Message::Interaction(Interaction::SortColumn(sort_key)) => {
+            // First time clicking a column should sort it in Ascending order, otherwise
+            // flip the sort direction.
+            let mut sort_direction = SortDirection::Asc;
+
+            if let Some(previous_sort_key) = ajour.sort_state.previous_sort_key {
+                if sort_key == previous_sort_key {
+                    if let Some(previous_sort_direction) = ajour.sort_state.previous_sort_direction
+                    {
+                        sort_direction = previous_sort_direction.toggle()
+                    }
+                }
+            }
+
+            // Exception would be first time ever sorting and sorting by title.
+            // Since its already sorting in Asc by default, we should sort Desc.
+            if ajour.sort_state.previous_sort_key.is_none() && sort_key == SortKey::Title {
+                sort_direction = SortDirection::Desc;
+            }
+
+            sort_addons(&mut ajour.addons, sort_direction, sort_key);
+
+            ajour.sort_state.previous_sort_direction = Some(sort_direction);
+            ajour.sort_state.previous_sort_key = Some(sort_key);
         }
         Message::Error(error)
         | Message::Parse(Err(error))
@@ -570,4 +607,56 @@ async fn perform_unpack_addon(
             .await
             .map(|_| ()),
     )
+}
+
+fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: SortKey) {
+    match (sort_key, sort_direction) {
+        (SortKey::Title, SortDirection::Asc) => {
+            addons.sort();
+        }
+        (SortKey::Title, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.title
+                    .cmp(&b.title)
+                    .reverse()
+                    .then_with(|| a.remote_version.cmp(&b.remote_version))
+            });
+        }
+        (SortKey::LocalVersion, SortDirection::Asc) => {
+            addons.sort_by(|a, b| {
+                a.version
+                    .cmp(&b.version)
+                    .then_with(|| a.title.cmp(&b.title))
+            });
+        }
+        (SortKey::LocalVersion, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.version
+                    .cmp(&b.version)
+                    .reverse()
+                    .then_with(|| a.title.cmp(&b.title))
+            });
+        }
+        (SortKey::RemoteVersion, SortDirection::Asc) => {
+            addons.sort_by(|a, b| {
+                a.remote_version
+                    .cmp(&b.remote_version)
+                    .then_with(|| a.cmp(&b))
+            });
+        }
+        (SortKey::RemoteVersion, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.remote_version
+                    .cmp(&b.remote_version)
+                    .reverse()
+                    .then_with(|| a.cmp(&b))
+            });
+        }
+        (SortKey::Status, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.state.cmp(&b.state).then_with(|| a.cmp(&b)));
+        }
+        (SortKey::Status, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.state.cmp(&b.state).reverse().then_with(|| a.cmp(&b)));
+        }
+    }
 }
