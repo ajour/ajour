@@ -7,7 +7,7 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 <p align="center">
   <img width="600"
        alt="Ajour"
-       src="./resources/screenshots/ajour-0.1.0-1.png">
+       src="./resources/screenshots/ajour-0.2.3.png">
 </p>
 
 ![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
