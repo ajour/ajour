@@ -1,5 +1,8 @@
 use {
-    super::{style, Addon, AddonState, AjourState, Config, Flavor, Interaction, Message},
+    super::{
+        style, Addon, AddonState, AjourState, Config, Flavor, Interaction, Message, SortKey,
+        SortState,
+    },
     crate::VERSION,
     iced::{
         button, pick_list, scrollable, Button, Column, Container, Element, HorizontalAlignment,
@@ -364,31 +367,55 @@ pub fn addon_data_cell(addon: &'_ mut Addon, is_addon_expanded: bool) -> Contain
         .style(style::Row)
 }
 
-pub fn addon_row_titles<'a>(addons: &[Addon]) -> Row<'a, Message> {
+pub fn addon_row_titles<'a>(addons: &[Addon], sort_state: &'a mut SortState) -> Row<'a, Message> {
     // A row containing titles above the addon rows.
-    let mut row_titles = Row::new().spacing(1).height(Length::Units(20));
+    let mut row_titles = Row::new().spacing(1).height(Length::Units(25));
 
     // We add some margin left to adjust for inner-marigin in cell.
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
     let right_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
 
-    let addon_row_text = Text::new("Addon").size(DEFAULT_FONT_SIZE);
-    let addon_row_container = Container::new(addon_row_text)
+    let addon_row_header: Element<Interaction> = Button::new(
+        &mut sort_state.title_btn_state,
+        Text::new("Addon").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::ColumnHeaderButton)
+    .on_press(Interaction::SortColumn(SortKey::Title))
+    .into();
+    let addon_row_container = Container::new(addon_row_header.map(Message::Interaction))
         .width(Length::FillPortion(1))
         .style(style::SecondaryTextContainer);
 
-    let local_version_text = Text::new("Local").size(DEFAULT_FONT_SIZE);
-    let local_version_container = Container::new(local_version_text)
+    let local_row_header: Element<Interaction> = Button::new(
+        &mut sort_state.local_version_btn_state,
+        Text::new("Local").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::ColumnHeaderButton)
+    .on_press(Interaction::SortColumn(SortKey::LocalVersion))
+    .into();
+    let local_version_container = Container::new(local_row_header.map(Message::Interaction))
         .width(Length::Units(150))
         .style(style::SecondaryTextContainer);
 
-    let remote_version_text = Text::new("Remote").size(DEFAULT_FONT_SIZE);
-    let remote_version_container = Container::new(remote_version_text)
+    let remote_row_header: Element<Interaction> = Button::new(
+        &mut sort_state.remote_version_btn_state,
+        Text::new("Remote").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::ColumnHeaderButton)
+    .on_press(Interaction::SortColumn(SortKey::RemoteVersion))
+    .into();
+    let remote_version_container = Container::new(remote_row_header.map(Message::Interaction))
         .width(Length::Units(150))
         .style(style::SecondaryTextContainer);
 
-    let status_row_text = Text::new("Status").size(DEFAULT_FONT_SIZE);
-    let status_row_container = Container::new(status_row_text)
+    let status_row_header: Element<Interaction> = Button::new(
+        &mut sort_state.status_btn_state,
+        Text::new("Status").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::ColumnHeaderButton)
+    .on_press(Interaction::SortColumn(SortKey::Status))
+    .into();
+    let status_row_container = Container::new(status_row_header.map(Message::Interaction))
         .width(Length::Units(85))
         .style(style::SecondaryTextContainer);
 

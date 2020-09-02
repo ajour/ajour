@@ -158,6 +158,32 @@ impl button::StyleSheet for DeleteBoxedButton {
     }
 }
 
+pub struct ColumnHeaderButton;
+impl button::StyleSheet for ColumnHeaderButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(ColorPalette::Background.rgb())),
+            text_color: Color {
+                a: 0.4,
+                ..ColorPalette::OnSurface.rgb()
+            },
+            border_radius: 2,
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.1,
+                ..ColorPalette::Primary.rgb()
+            })),
+            text_color: ColorPalette::Primary.rgb(),
+            ..self.active()
+        }
+    }
+}
+
 pub struct Content;
 impl container::StyleSheet for Content {
     fn style(&self) -> container::Style {
