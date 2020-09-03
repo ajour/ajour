@@ -466,17 +466,17 @@ pub fn menu_container<'a>(
     )
     .style(style::DefaultBoxedButton);
 
-    let mut refresh_button = Button::new(
+    let refresh_button = Button::new(
         refresh_button_state,
         Text::new("Refresh").size(DEFAULT_FONT_SIZE),
     )
+    .on_press(Interaction::Refresh)
     .style(style::DefaultBoxedButton);
 
     // Enable update_all_button and refresh_button, if we have any Addons.
     if !addons.is_empty() {
         update_all_button = update_all_button.on_press(Interaction::UpdateAll);
     }
-    refresh_button = refresh_button.on_press(Interaction::Refresh);
 
     let update_all_button: Element<Interaction> = update_all_button.into();
     let refresh_button: Element<Interaction> = refresh_button.into();
