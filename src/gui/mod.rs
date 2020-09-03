@@ -142,6 +142,9 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Message> {
+        let has_addons = !&self.addons.is_empty();
+        let has_wow_path = self.config.wow.directory.is_some();
+
         // Ignored addons.
         // We find the  corresponding `Addon` from the ignored strings.
         let ignored_strings = &self.config.addons.ignored;
@@ -213,11 +216,24 @@ impl Application for Ajour {
         }
 
         // Adds the rest of the elements to the content column.
-        content = content
-            .push(addon_row_titles)
-            .push(addons_scrollable)
-            .push(bottom_space)
-            .padding(3); // small padding to make scrollbar fit better.
+        if has_addons {
+            content = content
+                .push(addon_row_titles)
+                .push(addons_scrollable)
+                .push(bottom_space)
+        }
+
+        // If we have no addons, and no path we assume onboarding.
+        if !has_addons && !has_wow_path {
+            let status_container = element::status_container(
+                "Welcome to Ajour!",
+                "To get started, go to Settings and select your World of Warcraft directory.",
+            );
+            content = content.push(status_container);
+        }
+
+        // Small padding to make UI fit better.
+        content = content.padding(3);
 
         // Finally wraps everything in a container.
         Container::new(content)
