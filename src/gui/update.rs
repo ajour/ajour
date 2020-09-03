@@ -26,20 +26,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Reset state
             ajour.state = AjourState::Idle;
 
+            // Begin to parse addon folder.
             let addon_directory = ajour.config.get_addon_directory();
-
-            match addon_directory {
-                Some(dir) => {
-                    return Ok(Command::perform(
-                        read_addon_directory(dir),
-                        Message::ParsedAddons,
-                    ))
-                }
-                None => {
-                    return Err(ClientError::Custom(
-                        "Please open settings to set a path for World of Warcraft.".to_owned(),
-                    ))
-                }
+            if let Some(dir) = addon_directory {
+                return Ok(Command::perform(
+                    read_addon_directory(dir),
+                    Message::ParsedAddons,
+                ));
             }
         }
         Message::Interaction(Interaction::Refresh) => {
@@ -103,6 +96,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ));
         }
         Message::UpdateDirectory(path) => {
+            // Clear addons.
+            ajour.addons = vec![];
+
             if path.is_some() {
                 // Update the path for World of Warcraft.
                 ajour.config.wow.directory = path;

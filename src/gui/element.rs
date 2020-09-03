@@ -47,7 +47,7 @@ pub fn settings_container<'a>(
         .directory
         .as_ref()
         .and_then(|p| p.to_str())
-        .unwrap_or("No path set.");
+        .unwrap_or("No directory is set");
     let directory_data_text = Text::new(path_str)
         .size(14)
         .vertical_alignment(VerticalAlignment::Center);
@@ -466,16 +466,16 @@ pub fn menu_container<'a>(
     )
     .style(style::DefaultBoxedButton);
 
-    let mut refresh_button = Button::new(
+    let refresh_button = Button::new(
         refresh_button_state,
         Text::new("Refresh").size(DEFAULT_FONT_SIZE),
     )
+    .on_press(Interaction::Refresh)
     .style(style::DefaultBoxedButton);
 
     // Enable update_all_button and refresh_button, if we have any Addons.
     if !addons.is_empty() {
         update_all_button = update_all_button.on_press(Interaction::UpdateAll);
-        refresh_button = refresh_button.on_press(Interaction::Refresh);
     }
 
     let update_all_button: Element<Interaction> = update_all_button.into();
@@ -587,6 +587,34 @@ pub fn menu_container<'a>(
 
     // Wraps it in a container.
     Container::new(settings_column)
+}
+
+pub fn status_container<'a>(title: &str, description: &str) -> Container<'a, Message> {
+    let title = Text::new(title)
+        .size(DEFAULT_FONT_SIZE)
+        .width(Length::Fill)
+        .horizontal_alignment(HorizontalAlignment::Center);
+    let title_container = Container::new(title)
+        .width(Length::Fill)
+        .style(style::DefaultTextContainer);
+
+    let description = Text::new(description)
+        .size(DEFAULT_FONT_SIZE)
+        .width(Length::Fill)
+        .horizontal_alignment(HorizontalAlignment::Center);
+    let description_container = Container::new(description)
+        .width(Length::Fill)
+        .style(style::SecondaryTextContainer);
+
+    let colum = Column::new()
+        .push(title_container)
+        .push(Space::new(Length::Units(0), Length::Units(2)))
+        .push(description_container);
+    Container::new(colum)
+        .center_y()
+        .center_x()
+        .width(Length::Fill)
+        .height(Length::Fill)
 }
 
 pub fn addon_scrollable(state: &'_ mut scrollable::State) -> Scrollable<'_, Message> {

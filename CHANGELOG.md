@@ -11,6 +11,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Make columns sortable (by [tarkah](https://github.com/tarkah))
 ### Fixed
 - UTF-8 issue in .toc file
+- Updated copy, and improved onboarding experience
 ## [0.2.4] - 2020-09-02
 ### Added
 - Ajour checks itself for updates (by [tarkah](https://github.com/tarkah))
