@@ -118,6 +118,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
     let reader = BufReader::new(file);
 
     let path = toc_entry.path().parent()?.to_path_buf();
+    let id = path.file_name()?.to_str()?.to_string();
     let mut title: Option<String> = None;
     let mut author: Option<String> = None;
     let mut notes: Option<String> = None;
@@ -181,6 +182,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
     }
 
     Some(Addon::new(
+        id,
         title?,
         author,
         notes,

@@ -7,13 +7,13 @@ use crate::{
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
-    Ajour(Option<String>),
-    Loading,
     Updatable,
+    Loading,
     Downloading,
     Unpacking,
+    Ajour(Option<String>),
 }
 
 #[derive(Debug, Clone)]
@@ -60,7 +60,9 @@ pub struct Addon {
 
 impl Addon {
     /// Creates a new Addon
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        id: String,
         title: String,
         author: Option<String>,
         notes: Option<String>,
@@ -69,14 +71,11 @@ impl Addon {
         dependencies: Vec<String>,
         repository_identifiers: RepositoryIdentifiers,
     ) -> Self {
-        let os_title = path.file_name().unwrap();
-        let str_title = os_title.to_str().unwrap();
-
         // Converts version to a readable truncated string.
         let readable_local_version = version.clone().map(|v| truncate_version(&v).to_string());
-
+      
         Addon {
-            id: str_title.to_string(),
+            id,
             title,
             author,
             notes,
@@ -278,22 +277,18 @@ impl PartialEq for Addon {
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(
-            self.is_updatable()
-                .cmp(&other.is_updatable())
-                .then_with(|| self.remote_version.cmp(&other.remote_version))
-                .reverse()
-                .then_with(|| self.title.cmp(&other.title)),
+            self.title
+                .cmp(&other.title)
+                .then_with(|| self.remote_version.cmp(&other.remote_version).reverse()),
         )
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.is_updatable()
-            .cmp(&other.is_updatable())
-            .then_with(|| self.remote_version.cmp(&other.remote_version))
-            .reverse()
-            .then_with(|| self.title.cmp(&other.title))
+        self.title
+            .cmp(&other.title)
+            .then_with(|| self.remote_version.cmp(&other.remote_version).reverse())
     }
 }
 
