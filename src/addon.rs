@@ -263,8 +263,10 @@ impl Addon {
 
 /// Used to truncate version label to be presented in the GUI.
 fn truncate_version(version: &str) -> &str {
+    // Split at \n. If it fails, i fall back to org. version.
+    let version = version.split("\n").next().unwrap_or(version);
     // Hardcoded a number which fits the width of local and remote container.
-    truncate(version, 26)
+    truncate(version, 24)
 }
 
 impl PartialEq for Addon {
