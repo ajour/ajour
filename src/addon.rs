@@ -73,7 +73,7 @@ impl Addon {
     ) -> Self {
         // Converts version to a readable truncated string.
         let readable_local_version = version.clone().map(|v| truncate_version(&v).to_string());
-      
+
         Addon {
             id,
             title,
