@@ -2,10 +2,10 @@ use {
     super::{Ajour, AjourState, Interaction, Message, SortDirection, SortKey},
     crate::{
         addon::{Addon, AddonState},
-        config::{load_config, persist_config, Flavor},
+        config::{load_config, Flavor},
         curse_api,
         error::ClientError,
-        fs::{delete_addons, install_addon},
+        fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         toc::read_addon_directory,
         tukui_api, wowinterface_api, Result,
@@ -71,7 +71,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.config.addons.ignored.push(addon.id.clone());
 
                 // Persist the newly updated config.
-                let _ = persist_config(&ajour.config);
+                let _ = &ajour.config.save();
             }
         }
         Message::Interaction(Interaction::Unignore(id)) => {
@@ -82,7 +82,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.addons.ignored.retain(|i| i != &id);
 
             // Persist the newly updated config.
-            let _ = persist_config(&ajour.config);
+            let _ = &ajour.config.save();
         }
         Message::Interaction(Interaction::OpenDirectory) => {
             return Ok(Command::perform(open_directory(), Message::UpdateDirectory));
@@ -103,7 +103,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Update the path for World of Warcraft.
                 ajour.config.wow.directory = path;
                 // Persist the newly updated config.
-                let _ = persist_config(&ajour.config);
+                let _ = &ajour.config.save();
                 // Reload config.
                 return Ok(Command::perform(load_config(), Message::Parse));
             }
@@ -112,7 +112,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Update the game flavor
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
-            let _ = persist_config(&ajour.config);
+            let _ = &ajour.config.save();
             // Reload config.
             return Ok(Command::perform(load_config(), Message::Parse));
         }

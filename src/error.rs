@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, path::PathBuf};
 
 #[derive(Debug)]
 pub enum ClientError {
@@ -10,6 +10,7 @@ pub enum ClientError {
     HttpError(isahc::http::Error),
     NetworkError(isahc::Error),
     ZipError(zip::result::ZipError),
+    LoadFileDoesntExist(PathBuf),
 }
 
 impl fmt::Display for ClientError {
@@ -26,6 +27,7 @@ impl fmt::Display for ClientError {
             ),
             Self::HttpError(x) => write!(f, "{}", x),
             Self::ZipError(x) => write!(f, "{}", x),
+            Self::LoadFileDoesntExist(x) => write!(f, "file doesn't exist: {:?}", x),
         }
     }
 }
