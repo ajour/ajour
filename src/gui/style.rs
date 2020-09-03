@@ -1,7 +1,7 @@
-use crate::theme::Theme;
+use crate::theme::ColorPalette;
 use iced::{button, container, pick_list, scrollable, Background, Color};
 
-pub struct TextButton(pub Theme);
+pub struct TextButton(pub ColorPalette);
 impl button::StyleSheet for TextButton {
     fn active(&self) -> button::Style {
         button::Style {
@@ -20,7 +20,7 @@ impl button::StyleSheet for TextButton {
     }
 }
 
-pub struct DefaultButton(pub Theme);
+pub struct DefaultButton(pub ColorPalette);
 impl button::StyleSheet for DefaultButton {
     fn active(&self) -> button::Style {
         button::Style {
@@ -42,7 +42,7 @@ impl button::StyleSheet for DefaultButton {
     }
 }
 
-pub struct DefaultBoxedButton(pub Theme);
+pub struct DefaultBoxedButton(pub ColorPalette);
 impl button::StyleSheet for DefaultBoxedButton {
     fn active(&self) -> button::Style {
         button::Style {
@@ -82,7 +82,7 @@ impl button::StyleSheet for DefaultBoxedButton {
     }
 }
 
-pub struct SecondaryButton(pub Theme);
+pub struct SecondaryButton(pub ColorPalette);
 impl button::StyleSheet for SecondaryButton {
     fn active(&self) -> button::Style {
         button::Style {
@@ -112,7 +112,7 @@ impl button::StyleSheet for SecondaryButton {
     }
 }
 
-pub struct DeleteBoxedButton(pub Theme);
+pub struct DeleteBoxedButton(pub ColorPalette);
 impl button::StyleSheet for DeleteBoxedButton {
     fn active(&self) -> button::Style {
         button::Style {
@@ -138,7 +138,7 @@ impl button::StyleSheet for DeleteBoxedButton {
     }
 }
 
-pub struct ColumnHeaderButton(pub Theme);
+pub struct ColumnHeaderButton(pub ColorPalette);
 impl button::StyleSheet for ColumnHeaderButton {
     fn active(&self) -> button::Style {
         button::Style {
@@ -164,7 +164,7 @@ impl button::StyleSheet for ColumnHeaderButton {
     }
 }
 
-pub struct Content(pub Theme);
+pub struct Content(pub ColorPalette);
 impl container::StyleSheet for Content {
     fn style(&self) -> container::Style {
         container::Style {
@@ -174,7 +174,7 @@ impl container::StyleSheet for Content {
     }
 }
 
-pub struct AddonRowDefaultTextContainer(pub Theme);
+pub struct AddonRowDefaultTextContainer(pub ColorPalette);
 impl container::StyleSheet for AddonRowDefaultTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
@@ -185,7 +185,7 @@ impl container::StyleSheet for AddonRowDefaultTextContainer {
     }
 }
 
-pub struct AddonRowSecondaryTextContainer(pub Theme);
+pub struct AddonRowSecondaryTextContainer(pub ColorPalette);
 impl container::StyleSheet for AddonRowSecondaryTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
@@ -199,7 +199,7 @@ impl container::StyleSheet for AddonRowSecondaryTextContainer {
     }
 }
 
-pub struct SecondaryTextContainer(pub Theme);
+pub struct SecondaryTextContainer(pub ColorPalette);
 impl container::StyleSheet for SecondaryTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
@@ -212,7 +212,7 @@ impl container::StyleSheet for SecondaryTextContainer {
     }
 }
 
-pub struct DefaultTextContainer(pub Theme);
+pub struct DefaultTextContainer(pub ColorPalette);
 impl container::StyleSheet for DefaultTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
@@ -222,7 +222,7 @@ impl container::StyleSheet for DefaultTextContainer {
     }
 }
 
-pub struct StatusErrorTextContainer(pub Theme);
+pub struct StatusErrorTextContainer(pub ColorPalette);
 impl container::StyleSheet for StatusErrorTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
@@ -235,7 +235,7 @@ impl container::StyleSheet for StatusErrorTextContainer {
     }
 }
 
-pub struct Row(pub Theme);
+pub struct Row(pub ColorPalette);
 impl container::StyleSheet for Row {
     fn style(&self) -> container::Style {
         container::Style {
@@ -245,7 +245,7 @@ impl container::StyleSheet for Row {
     }
 }
 
-pub struct Scrollable(pub Theme);
+pub struct Scrollable(pub ColorPalette);
 impl scrollable::StyleSheet for Scrollable {
     fn active(&self) -> scrollable::Scrollbar {
         scrollable::Scrollbar {
@@ -280,7 +280,7 @@ impl scrollable::StyleSheet for Scrollable {
     }
 }
 
-pub struct SecondaryScrollable(pub Theme);
+pub struct SecondaryScrollable(pub ColorPalette);
 impl scrollable::StyleSheet for SecondaryScrollable {
     fn active(&self) -> scrollable::Scrollbar {
         scrollable::Scrollbar {
@@ -315,7 +315,7 @@ impl scrollable::StyleSheet for SecondaryScrollable {
     }
 }
 
-pub struct PickList(pub Theme);
+pub struct PickList(pub ColorPalette);
 impl pick_list::StyleSheet for PickList {
     fn menu(&self) -> pick_list::Menu {
         pick_list::Menu {

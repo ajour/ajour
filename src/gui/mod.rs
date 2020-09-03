@@ -7,7 +7,7 @@ use crate::{
     config::{load_config, Config, Flavor},
     curse_api,
     error::ClientError,
-    theme::Theme,
+    theme::{ColorPalette, Theme},
     tukui_api,
     utility::needs_update,
     wowinterface_api, Result,
@@ -90,10 +90,6 @@ pub struct Ajour {
 
 impl Default for Ajour {
     fn default() -> Self {
-        let mut themes = BTreeMap::new();
-        themes.insert("Dark".to_string(), Theme::DARK);
-        themes.insert("Light".to_string(), Theme::LIGHT);
-
         Self {
             addons: Vec::new(),
             addons_scrollable_state: Default::default(),
@@ -156,17 +152,19 @@ impl Application for Ajour {
         // We find the  corresponding `Addon` from the ignored strings.
         let ignored_strings = &self.config.addons.ignored;
 
-        // Get theme of chosen theme name, shouldn't panic
-        let current_theme = *self
+        // Get color palette of chosen theme
+        let color_palette = self
             .theme_state
             .themes
             .get(&self.theme_state.current_theme_name)
-            .unwrap();
+            .as_ref()
+            .unwrap()
+            .palette;
 
         // Menu container at the top of the applications.
         // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
-            current_theme,
+            color_palette,
             &mut self.update_all_btn_state,
             &mut self.refresh_btn_state,
             &mut self.settings_btn_state,
@@ -181,12 +179,12 @@ impl Application for Ajour {
         // This is to add titles above each section of the addon row, to let
         // the user easily identify what the value is.
         let addon_row_titles =
-            element::addon_row_titles(current_theme, &self.addons, &mut self.sort_state);
+            element::addon_row_titles(color_palette, &self.addons, &mut self.sort_state);
 
         // A scrollable list containing rows.
         // Each row holds data about a single addon.
         let mut addons_scrollable =
-            element::addon_scrollable(current_theme, &mut self.addons_scrollable_state);
+            element::addon_scrollable(color_palette, &mut self.addons_scrollable_state);
 
         // Loops though the addons.
         for addon in &mut self
@@ -202,7 +200,7 @@ impl Application for Ajour {
 
             // A container cell which has all data about the current addon.
             // If the addon is expanded, then this is also included in this container.
-            let addon_data_cell = element::addon_data_cell(current_theme, addon, is_addon_expanded);
+            let addon_data_cell = element::addon_data_cell(color_palette, addon, is_addon_expanded);
 
             // Adds the addon data cell to the scrollable.
             addons_scrollable = addons_scrollable.push(addon_data_cell);
@@ -218,7 +216,7 @@ impl Application for Ajour {
         if self.is_showing_settings {
             // Settings container, containing all data releated to settings.
             let settings_container = element::settings_container(
-                current_theme,
+                color_palette,
                 &mut self.directory_btn_state,
                 &mut self.flavor_list_state,
                 &mut self.ignored_addons_scrollable_state,
@@ -245,7 +243,7 @@ impl Application for Ajour {
         // If we have no addons, and no path we assume onboarding.
         if !has_addons && !has_wow_path {
             let status_container = element::status_container(
-                self.theme,
+                color_palette,
                 "Welcome to Ajour!",
                 "To get started, go to Settings and select your World of Warcraft directory.",
             );
@@ -259,7 +257,7 @@ impl Application for Ajour {
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .style(style::Content(current_theme))
+            .style(style::Content(color_palette))
             .into()
     }
 }
@@ -326,8 +324,8 @@ pub struct ThemeState {
 impl Default for ThemeState {
     fn default() -> Self {
         let mut themes = BTreeMap::new();
-        themes.insert("Dark".to_string(), Theme::DARK);
-        themes.insert("Light".to_string(), Theme::LIGHT);
+        themes.insert("Dark".to_string(), Theme::dark());
+        themes.insert("Light".to_string(), Theme::light());
 
         ThemeState {
             themes,

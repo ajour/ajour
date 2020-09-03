@@ -1,8 +1,15 @@
 use de::deserialize_color_hex_string;
 use serde::Deserialize;
+use std::cmp::Ordering;
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Theme {
+    pub name: String,
+    pub palette: ColorPalette,
+}
 
 #[derive(Debug, Clone, Copy, Deserialize)]
-pub struct Theme {
+pub struct ColorPalette {
     #[serde(deserialize_with = "deserialize_color_hex_string")]
     pub primary: iced::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
@@ -18,23 +25,45 @@ pub struct Theme {
 }
 
 impl Theme {
-    pub const DARK: Theme = Theme {
-        primary: iced::Color::from_rgb(0.73, 0.52, 0.99),
-        secondary: iced::Color::from_rgb(0.88, 0.74, 0.28),
-        surface: iced::Color::from_rgb(0.12, 0.12, 0.12),
-        on_surface: iced::Color::from_rgb(0.88, 0.88, 0.88),
-        background: iced::Color::from_rgb(0.07, 0.07, 0.07),
-        error: iced::Color::from_rgb(0.76, 0.19, 0.28),
-    };
+    pub fn dark() -> Theme {
+        Theme {
+            name: "Dark".to_string(),
+            palette: ColorPalette {
+                primary: iced::Color::from_rgb(0.73, 0.52, 0.99),
+                secondary: iced::Color::from_rgb(0.88, 0.74, 0.28),
+                surface: iced::Color::from_rgb(0.12, 0.12, 0.12),
+                on_surface: iced::Color::from_rgb(0.88, 0.88, 0.88),
+                background: iced::Color::from_rgb(0.07, 0.07, 0.07),
+                error: iced::Color::from_rgb(0.76, 0.19, 0.28),
+            },
+        }
+    }
 
-    pub const LIGHT: Theme = Theme {
-        primary: iced::Color::from_rgb(0.39, 0.0, 0.93),
-        secondary: iced::Color::from_rgb(0.0, 0.85, 0.77),
-        surface: iced::Color::from_rgb(0.96, 0.96, 0.96),
-        on_surface: iced::Color::from_rgb(0.0, 0.0, 0.0),
-        background: iced::Color::from_rgb(1.0, 1.0, 1.0),
-        error: iced::Color::from_rgb(0.68, 0.0, 0.12),
-    };
+    pub fn light() -> Theme {
+        Theme {
+            name: "Light".to_string(),
+            palette: ColorPalette {
+                primary: iced::Color::from_rgb(0.39, 0.0, 0.93),
+                secondary: iced::Color::from_rgb(0.0, 0.85, 0.77),
+                surface: iced::Color::from_rgb(0.96, 0.96, 0.96),
+                on_surface: iced::Color::from_rgb(0.0, 0.0, 0.0),
+                background: iced::Color::from_rgb(1.0, 1.0, 1.0),
+                error: iced::Color::from_rgb(0.68, 0.0, 0.12),
+            },
+        }
+    }
+}
+
+impl PartialEq for Theme {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+impl PartialOrd for Theme {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.name.cmp(&other.name))
+    }
 }
 
 // Newtype on iced::Color so we can impl Deserialzer for it
@@ -115,12 +144,14 @@ mod tests {
     #[test]
     fn test_theme_yml_deser() {
         let theme_str = "---
-        primary: '#ABCDEF'
-        secondary: '#000000'
-        surface: '#FFFFFF'
-        on_surface: '#012345'
-        background: '#543210'
-        error: '#FEDCBA'
+        name: Test
+        palette:
+            primary: '#ABCDEF'
+            secondary: '#000000'
+            surface: '#FFFFFF'
+            on_surface: '#012345'
+            background: '#543210'
+            error: '#FEDCBA'
         ";
 
         serde_yaml::from_str::<Theme>(theme_str).unwrap();

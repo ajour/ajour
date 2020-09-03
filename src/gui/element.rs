@@ -1,7 +1,7 @@
 use {
     super::{
-        style, Addon, AddonState, AjourState, Config, Flavor, Interaction, Message, SortKey,
-        SortState, Theme, ThemeState,
+        style, Addon, AddonState, AjourState, ColorPalette, Config, Flavor, Interaction, Message,
+        SortKey, SortState, ThemeState,
     },
     crate::VERSION,
     iced::{
@@ -16,7 +16,7 @@ static DEFAULT_PADDING: u16 = 10;
 
 /// Container for settings.
 pub fn settings_container<'a>(
-    theme: Theme,
+    color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
     flavor_list_state: &'a mut pick_list::State<Flavor>,
     ignored_addons_scrollable_state: &'a mut scrollable::State,
@@ -35,7 +35,7 @@ pub fn settings_container<'a>(
         directory_button_state,
         Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(theme))
+    .style(style::DefaultBoxedButton(color_palette))
     .on_press(Interaction::OpenDirectory)
     .into();
 
@@ -56,7 +56,7 @@ pub fn settings_container<'a>(
     let directory_data_text_container = Container::new(directory_data_text)
         .center_y()
         .padding(5)
-        .style(style::SecondaryTextContainer(theme));
+        .style(style::SecondaryTextContainer(color_palette));
 
     // Data row for the World of Warcraft directory selection.
     let path_data_row = Row::new()
@@ -80,7 +80,7 @@ pub fn settings_container<'a>(
     )
     .text_size(14)
     .width(Length::Units(100))
-    .style(style::PickList(theme));
+    .style(style::PickList(color_palette));
 
     // Data row for flavor picker list.
     let flavor_data_row = Row::new().push(left_spacer).push(flavor_pick_list);
@@ -101,7 +101,7 @@ pub fn settings_container<'a>(
     )
     .text_size(14)
     .width(Length::Units(100))
-    .style(style::PickList(theme));
+    .style(style::PickList(color_palette));
 
     // Data row for theme picker list.
     let theme_data_row = Row::new().push(left_spacer).push(theme_pick_list);
@@ -125,15 +125,15 @@ pub fn settings_container<'a>(
     // Container wrapping colum.
     let left_container = Container::new(left_column)
         .width(Length::FillPortion(1))
-        .style(style::AddonRowDefaultTextContainer(theme));
+        .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Title for the ignored addons scrollable.
     let ignored_addons_title = Text::new("Ignored addons").size(14);
     let ignored_addons_title_row = Row::new()
         .push(ignored_addons_title)
         .padding(DEFAULT_PADDING);
-    let mut scrollable =
-        ignored_addon_scrollable(theme, ignored_addons_scrollable_state).width(Length::Fill);
+    let mut scrollable = ignored_addon_scrollable(color_palette, ignored_addons_scrollable_state)
+        .width(Length::Fill);
 
     if ignored_addons.is_empty() {
         let title =
@@ -142,7 +142,7 @@ pub fn settings_container<'a>(
         let title_container = Container::new(title)
             .center_x()
             .center_y()
-            .style(style::AddonRowSecondaryTextContainer(theme));
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
         let row = Row::new()
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(title_container);
@@ -160,10 +160,10 @@ pub fn settings_container<'a>(
             .width(Length::FillPortion(1))
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(theme));
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
         let unignore_button: Element<Interaction> =
             Button::new(state, Text::new("Unignore").size(DEFAULT_FONT_SIZE))
-                .style(style::DefaultBoxedButton(theme))
+                .style(style::DefaultBoxedButton(color_palette))
                 .on_press(Interaction::Unignore(addon.id.clone()))
                 .into();
         let row = Row::new()
@@ -181,7 +181,7 @@ pub fn settings_container<'a>(
     let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
         .height(Length::Fill)
-        .style(style::AddonRowDefaultTextContainer(theme));
+        .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Row to wrap each section.
     let row = Row::new()
@@ -195,7 +195,7 @@ pub fn settings_container<'a>(
 }
 
 pub fn addon_data_cell(
-    theme: Theme,
+    color_palette: ColorPalette,
     addon: &'_ mut Addon,
     is_addon_expanded: bool,
 ) -> Container<'_, Message> {
@@ -220,14 +220,14 @@ pub fn addon_data_cell(
     };
     let title_button: Element<Interaction> = Button::new(&mut addon.details_btn_state, title)
         .on_press(Interaction::Expand(addon.id.clone()))
-        .style(style::TextButton(theme))
+        .style(style::TextButton(color_palette))
         .into();
 
     let title_container = Container::new(title_button.map(Message::Interaction))
         .height(default_height)
         .width(Length::FillPortion(1))
         .center_y()
-        .style(style::AddonRowDefaultTextContainer(theme));
+        .style(style::AddonRowDefaultTextContainer(color_palette));
 
     let installed_version = Text::new(version).size(DEFAULT_FONT_SIZE);
     let installed_version_container = Container::new(installed_version)
@@ -235,7 +235,7 @@ pub fn addon_data_cell(
         .width(Length::Units(150))
         .center_y()
         .padding(5)
-        .style(style::AddonRowSecondaryTextContainer(theme));
+        .style(style::AddonRowSecondaryTextContainer(color_palette));
 
     let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
     let remote_version_container = Container::new(remote_version)
@@ -243,7 +243,7 @@ pub fn addon_data_cell(
         .width(Length::Units(150))
         .center_y()
         .padding(5)
-        .style(style::AddonRowSecondaryTextContainer(theme));
+        .style(style::AddonRowSecondaryTextContainer(color_palette));
 
     let update_button_width = Length::Units(85);
     let update_button_container = match &addon.state {
@@ -254,7 +254,7 @@ pub fn addon_data_cell(
         .width(update_button_width)
         .center_y()
         .center_x()
-        .style(style::AddonRowSecondaryTextContainer(theme)),
+        .style(style::AddonRowSecondaryTextContainer(color_palette)),
         AddonState::Updatable => {
             let id = addon.id.clone();
             let update_button: Element<Interaction> = Button::new(
@@ -263,7 +263,7 @@ pub fn addon_data_cell(
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(DEFAULT_FONT_SIZE),
             )
-            .style(style::SecondaryButton(theme))
+            .style(style::SecondaryButton(color_palette))
             .on_press(Interaction::Update(id))
             .into();
 
@@ -272,7 +272,7 @@ pub fn addon_data_cell(
                 .width(update_button_width)
                 .center_y()
                 .center_x()
-                .style(style::AddonRowDefaultTextContainer(theme))
+                .style(style::AddonRowDefaultTextContainer(color_palette))
         }
         AddonState::Downloading => Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
             .height(default_height)
@@ -280,21 +280,21 @@ pub fn addon_data_cell(
             .center_y()
             .center_x()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(theme)),
+            .style(style::AddonRowSecondaryTextContainer(color_palette)),
         AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
             .height(default_height)
             .width(update_button_width)
             .center_y()
             .center_x()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(theme)),
+            .style(style::AddonRowSecondaryTextContainer(color_palette)),
         AddonState::Loading => Container::new(Text::new("Loading").size(DEFAULT_FONT_SIZE))
             .height(default_height)
             .width(update_button_width)
             .center_y()
             .center_x()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(theme)),
+            .style(style::AddonRowSecondaryTextContainer(color_palette)),
     };
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
@@ -326,15 +326,15 @@ pub fn addon_data_cell(
         let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
         let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
         let author_title_container =
-            Container::new(author_title_text).style(style::DefaultTextContainer(theme));
+            Container::new(author_title_text).style(style::DefaultTextContainer(color_palette));
         let notes_title_container =
-            Container::new(notes_title_text).style(style::DefaultTextContainer(theme));
+            Container::new(notes_title_text).style(style::DefaultTextContainer(color_palette));
 
         let mut force_download_button = Button::new(
             &mut addon.force_btn_state,
             Text::new("Force update").size(DEFAULT_FONT_SIZE),
         )
-        .style(style::DefaultBoxedButton(theme));
+        .style(style::DefaultBoxedButton(color_palette));
 
         // If we have remote version on addon, enable force update.
         if addon.remote_version.is_some() {
@@ -349,7 +349,7 @@ pub fn addon_data_cell(
             Text::new("Ignore").size(DEFAULT_FONT_SIZE),
         )
         .on_press(Interaction::Ignore(addon.id.clone()))
-        .style(style::DefaultBoxedButton(theme))
+        .style(style::DefaultBoxedButton(color_palette))
         .into();
 
         let delete_button: Element<Interaction> = Button::new(
@@ -357,7 +357,7 @@ pub fn addon_data_cell(
             Text::new("Delete").size(DEFAULT_FONT_SIZE),
         )
         .on_press(Interaction::Delete(addon.id.clone()))
-        .style(style::DeleteBoxedButton(theme))
+        .style(style::DeleteBoxedButton(color_palette))
         .into();
 
         let row = Row::new()
@@ -378,7 +378,7 @@ pub fn addon_data_cell(
         let details_container = Container::new(column)
             .width(Length::Fill)
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(theme));
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
 
         let row = Row::new()
             .push(left_spacer)
@@ -393,11 +393,11 @@ pub fn addon_data_cell(
 
     Container::new(addon_column)
         .width(Length::Fill)
-        .style(style::Row(theme))
+        .style(style::Row(color_palette))
 }
 
 pub fn addon_row_titles<'a>(
-    theme: Theme,
+    color_palette: ColorPalette,
     addons: &[Addon],
     sort_state: &'a mut SortState,
 ) -> Row<'a, Message> {
@@ -415,13 +415,13 @@ pub fn addon_row_titles<'a>(
             .width(Length::Fill),
     )
     .width(Length::Fill)
-    .style(style::ColumnHeaderButton(theme))
+    .style(style::ColumnHeaderButton(color_palette))
     .on_press(Interaction::SortColumn(SortKey::Title))
     .into();
 
     let addon_row_container = Container::new(addon_row_header.map(Message::Interaction))
         .width(Length::FillPortion(1))
-        .style(style::SecondaryTextContainer(theme));
+        .style(style::SecondaryTextContainer(color_palette));
 
     let local_row_header: Element<Interaction> = Button::new(
         &mut sort_state.local_version_btn_state,
@@ -430,12 +430,12 @@ pub fn addon_row_titles<'a>(
             .width(Length::Fill),
     )
     .width(Length::Fill)
-    .style(style::ColumnHeaderButton(theme))
+    .style(style::ColumnHeaderButton(color_palette))
     .on_press(Interaction::SortColumn(SortKey::LocalVersion))
     .into();
     let local_version_container = Container::new(local_row_header.map(Message::Interaction))
         .width(Length::Units(150))
-        .style(style::SecondaryTextContainer(theme));
+        .style(style::SecondaryTextContainer(color_palette));
 
     let remote_row_header: Element<Interaction> = Button::new(
         &mut sort_state.remote_version_btn_state,
@@ -444,12 +444,12 @@ pub fn addon_row_titles<'a>(
             .width(Length::Fill),
     )
     .width(Length::Fill)
-    .style(style::ColumnHeaderButton(theme))
+    .style(style::ColumnHeaderButton(color_palette))
     .on_press(Interaction::SortColumn(SortKey::RemoteVersion))
     .into();
     let remote_version_container = Container::new(remote_row_header.map(Message::Interaction))
         .width(Length::Units(150))
-        .style(style::SecondaryTextContainer(theme));
+        .style(style::SecondaryTextContainer(color_palette));
 
     let status_row_header: Element<Interaction> = Button::new(
         &mut sort_state.status_btn_state,
@@ -458,12 +458,12 @@ pub fn addon_row_titles<'a>(
             .width(Length::Fill),
     )
     .width(Length::Fill)
-    .style(style::ColumnHeaderButton(theme))
+    .style(style::ColumnHeaderButton(color_palette))
     .on_press(Interaction::SortColumn(SortKey::Status))
     .into();
     let status_row_container = Container::new(status_row_header.map(Message::Interaction))
         .width(Length::Units(85))
-        .style(style::SecondaryTextContainer(theme));
+        .style(style::SecondaryTextContainer(color_palette));
 
     // Only shows row titles if we have any addons.
     if !addons.is_empty() {
@@ -481,7 +481,7 @@ pub fn addon_row_titles<'a>(
 
 #[allow(clippy::too_many_arguments)]
 pub fn menu_container<'a>(
-    theme: Theme,
+    color_palette: ColorPalette,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
     settings_button_state: &'a mut button::State,
@@ -498,14 +498,14 @@ pub fn menu_container<'a>(
         update_all_button_state,
         Text::new("Update All").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(theme));
+    .style(style::DefaultBoxedButton(color_palette));
 
     let refresh_button = Button::new(
         refresh_button_state,
         Text::new("Refresh").size(DEFAULT_FONT_SIZE),
     )
     .on_press(Interaction::Refresh)
-    .style(style::DefaultBoxedButton(theme));
+    .style(style::DefaultBoxedButton(color_palette));
 
     // Enable update_all_button and refresh_button, if we have any Addons.
     if !addons.is_empty() {
@@ -534,7 +534,7 @@ pub fn menu_container<'a>(
     let status_container = Container::new(status_text)
         .center_y()
         .padding(5)
-        .style(style::SecondaryTextContainer(theme));
+        .style(style::SecondaryTextContainer(color_palette));
 
     // Displays an error, if any has occured.
     let error_text = if let AjourState::Error(e) = state {
@@ -549,7 +549,7 @@ pub fn menu_container<'a>(
         .center_x()
         .padding(5)
         .width(Length::FillPortion(1))
-        .style(style::StatusErrorTextContainer(theme));
+        .style(style::StatusErrorTextContainer(color_palette));
 
     let version_text = Text::new(if let Some(new_version) = needs_update {
         format!("New Ajour version available {} -> {}", VERSION, new_version)
@@ -561,9 +561,9 @@ pub fn menu_container<'a>(
 
     let mut version_container = Container::new(version_text).center_y().padding(5);
     if needs_update.is_some() {
-        version_container = version_container.style(style::StatusErrorTextContainer(theme));
+        version_container = version_container.style(style::StatusErrorTextContainer(color_palette));
     } else {
-        version_container = version_container.style(style::SecondaryTextContainer(theme));
+        version_container = version_container.style(style::SecondaryTextContainer(color_palette));
     }
 
     let settings_button: Element<Interaction> = Button::new(
@@ -572,7 +572,7 @@ pub fn menu_container<'a>(
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(theme))
+    .style(style::DefaultBoxedButton(color_palette))
     .on_press(Interaction::Settings)
     .into();
 
@@ -598,7 +598,7 @@ pub fn menu_container<'a>(
             new_release_button_state,
             Text::new("Download").size(DEFAULT_FONT_SIZE),
         )
-        .style(style::SecondaryButton(theme));
+        .style(style::SecondaryButton(color_palette));
 
         new_release_button = new_release_button.on_press(Interaction::OpenLink(
             "https://github.com/casperstorm/ajour/releases/latest".to_owned(),
@@ -624,7 +624,7 @@ pub fn menu_container<'a>(
 }
 
 pub fn status_container<'a>(
-    theme: Theme,
+    color_palette: ColorPalette,
     title: &str,
     description: &str,
 ) -> Container<'a, Message> {
@@ -634,7 +634,7 @@ pub fn status_container<'a>(
         .horizontal_alignment(HorizontalAlignment::Center);
     let title_container = Container::new(title)
         .width(Length::Fill)
-        .style(style::DefaultTextContainer(theme));
+        .style(style::DefaultTextContainer(color_palette));
 
     let description = Text::new(description)
         .size(DEFAULT_FONT_SIZE)
@@ -642,7 +642,7 @@ pub fn status_container<'a>(
         .horizontal_alignment(HorizontalAlignment::Center);
     let description_container = Container::new(description)
         .width(Length::Fill)
-        .style(style::SecondaryTextContainer(theme));
+        .style(style::SecondaryTextContainer(color_palette));
 
     let colum = Column::new()
         .push(title_container)
@@ -655,19 +655,22 @@ pub fn status_container<'a>(
         .height(Length::Fill)
 }
 
-pub fn addon_scrollable(theme: Theme, state: &'_ mut scrollable::State) -> Scrollable<'_, Message> {
-    Scrollable::new(state)
-        .spacing(1)
-        .height(Length::FillPortion(1))
-        .style(style::Scrollable(theme))
-}
-
-pub fn ignored_addon_scrollable(
-    theme: Theme,
+pub fn addon_scrollable(
+    color_palette: ColorPalette,
     state: &'_ mut scrollable::State,
 ) -> Scrollable<'_, Message> {
     Scrollable::new(state)
         .spacing(1)
         .height(Length::FillPortion(1))
-        .style(style::SecondaryScrollable(theme))
+        .style(style::Scrollable(color_palette))
+}
+
+pub fn ignored_addon_scrollable(
+    color_palette: ColorPalette,
+    state: &'_ mut scrollable::State,
+) -> Scrollable<'_, Message> {
+    Scrollable::new(state)
+        .spacing(1)
+        .height(Length::FillPortion(1))
+        .style(style::SecondaryScrollable(color_palette))
 }
