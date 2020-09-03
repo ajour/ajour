@@ -372,24 +372,31 @@ pub fn addon_row_titles<'a>(addons: &[Addon], sort_state: &'a mut SortState) -> 
     let mut row_titles = Row::new().spacing(1).height(Length::Units(25));
 
     // We add some margin left to adjust for inner-marigin in cell.
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
-    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
 
     let addon_row_header: Element<Interaction> = Button::new(
         &mut sort_state.title_btn_state,
-        Text::new("Addon").size(DEFAULT_FONT_SIZE),
+        Text::new("Addon")
+            .size(DEFAULT_FONT_SIZE)
+            .width(Length::Fill),
     )
+    .width(Length::Fill)
     .style(style::ColumnHeaderButton)
     .on_press(Interaction::SortColumn(SortKey::Title))
     .into();
+
     let addon_row_container = Container::new(addon_row_header.map(Message::Interaction))
         .width(Length::FillPortion(1))
         .style(style::SecondaryTextContainer);
 
     let local_row_header: Element<Interaction> = Button::new(
         &mut sort_state.local_version_btn_state,
-        Text::new("Local").size(DEFAULT_FONT_SIZE),
+        Text::new("Local")
+            .size(DEFAULT_FONT_SIZE)
+            .width(Length::Fill),
     )
+    .width(Length::Fill)
     .style(style::ColumnHeaderButton)
     .on_press(Interaction::SortColumn(SortKey::LocalVersion))
     .into();
@@ -399,8 +406,11 @@ pub fn addon_row_titles<'a>(addons: &[Addon], sort_state: &'a mut SortState) -> 
 
     let remote_row_header: Element<Interaction> = Button::new(
         &mut sort_state.remote_version_btn_state,
-        Text::new("Remote").size(DEFAULT_FONT_SIZE),
+        Text::new("Remote")
+            .size(DEFAULT_FONT_SIZE)
+            .width(Length::Fill),
     )
+    .width(Length::Fill)
     .style(style::ColumnHeaderButton)
     .on_press(Interaction::SortColumn(SortKey::RemoteVersion))
     .into();
@@ -410,8 +420,11 @@ pub fn addon_row_titles<'a>(addons: &[Addon], sort_state: &'a mut SortState) -> 
 
     let status_row_header: Element<Interaction> = Button::new(
         &mut sort_state.status_btn_state,
-        Text::new("Status").size(DEFAULT_FONT_SIZE),
+        Text::new("Status")
+            .size(DEFAULT_FONT_SIZE)
+            .width(Length::Fill),
     )
+    .width(Length::Fill)
     .style(style::ColumnHeaderButton)
     .on_press(Interaction::SortColumn(SortKey::Status))
     .into();
