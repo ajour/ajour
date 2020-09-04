@@ -9,6 +9,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ## [Unreleased]
 ### Added
 - Make columns sortable (by [tarkah](https://github.com/tarkah))
+- Support for user themes and theme selection (by [tarkah](https://github.com/tarkah))
 ### Fixed
 - UTF-8 issue in .toc file
 - Updated copy, and improved onboarding experience
