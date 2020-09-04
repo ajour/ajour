@@ -155,14 +155,14 @@ impl Application for Ajour {
         // We find the  corresponding `Addon` from the ignored strings.
         let ignored_strings = &self.config.addons.ignored;
 
-        // Get color palette of chosen theme
+        // Get color palette of chosen theme.
         let color_palette = self
             .theme_state
             .themes
             .iter()
             .find(|(name, _)| name == &self.theme_state.current_theme_name)
             .as_ref()
-            .unwrap()
+            .unwrap_or(&&("Dark".to_string(), Theme::dark()))
             .1
             .palette;
 
