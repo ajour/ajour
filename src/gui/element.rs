@@ -92,7 +92,12 @@ pub fn settings_container<'a>(
     // We add some margin left to adjust to the rest of the content.
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
 
-    let theme_names = theme_state.themes.keys().cloned().collect::<Vec<_>>();
+    let theme_names = theme_state
+        .themes
+        .iter()
+        .cloned()
+        .map(|(name, _)| name)
+        .collect::<Vec<_>>();
     let theme_pick_list = PickList::new(
         &mut theme_state.pick_list_state,
         theme_names,

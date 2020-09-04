@@ -1,6 +1,11 @@
+use crate::fs;
 use de::deserialize_color_hex_string;
 use serde::Deserialize;
 use std::cmp::Ordering;
+
+pub async fn load_user_themes() -> Vec<Theme> {
+    fs::load_user_themes().await
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Theme {
@@ -63,6 +68,14 @@ impl PartialEq for Theme {
 impl PartialOrd for Theme {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.name.cmp(&other.name))
+    }
+}
+
+impl Eq for Theme {}
+
+impl Ord for Theme {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.name.cmp(&other.name)
     }
 }
 

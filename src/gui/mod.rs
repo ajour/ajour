@@ -7,7 +7,7 @@ use crate::{
     config::{load_config, Config, Flavor},
     curse_api,
     error::ClientError,
-    theme::{ColorPalette, Theme},
+    theme::{load_user_themes, ColorPalette, Theme},
     tukui_api,
     utility::needs_update,
     wowinterface_api, Result,
@@ -21,7 +21,7 @@ use isahc::{
     config::{Configurable, RedirectPolicy},
     HttpClient,
 };
-use std::{collections::BTreeMap, path::PathBuf};
+use std::path::PathBuf;
 
 use image::ImageFormat;
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
@@ -54,13 +54,15 @@ pub enum Message {
     DownloadedAddon((String, Result<()>)),
     Error(ClientError),
     FlavorSelected(Flavor),
-    ThemeSelected(String),
+
     Interaction(Interaction),
     NeedsUpdate(Result<Option<String>>),
     None(()),
     Parse(Result<Config>),
     ParsedAddons(Result<Vec<Addon>>),
     PartialParsedAddons(Result<Vec<Addon>>),
+    ThemeSelected(String),
+    ThemesLoaded(Vec<Theme>),
     TukuiPackage((String, Result<tukui_api::Package>)),
     UnpackedAddon((String, Result<()>)),
     UpdateDirectory(Option<PathBuf>),
@@ -128,6 +130,7 @@ impl Application for Ajour {
         let init_commands = vec![
             Command::perform(load_config(), Message::Parse),
             Command::perform(needs_update(), Message::NeedsUpdate),
+            Command::perform(load_user_themes(), Message::ThemesLoaded),
         ];
 
         (Ajour::default(), Command::batch(init_commands))
@@ -156,9 +159,11 @@ impl Application for Ajour {
         let color_palette = self
             .theme_state
             .themes
-            .get(&self.theme_state.current_theme_name)
+            .iter()
+            .find(|(name, _)| name == &self.theme_state.current_theme_name)
             .as_ref()
             .unwrap()
+            .1
             .palette;
 
         // Menu container at the top of the applications.
@@ -316,16 +321,16 @@ pub struct SortState {
 }
 
 pub struct ThemeState {
-    themes: BTreeMap<String, Theme>,
+    themes: Vec<(String, Theme)>,
     current_theme_name: String,
     pick_list_state: pick_list::State<String>,
 }
 
 impl Default for ThemeState {
     fn default() -> Self {
-        let mut themes = BTreeMap::new();
-        themes.insert("Dark".to_string(), Theme::dark());
-        themes.insert("Light".to_string(), Theme::light());
+        let mut themes = vec![];
+        themes.push(("Dark".to_string(), Theme::dark()));
+        themes.push(("Light".to_string(), Theme::light()));
 
         ThemeState {
             themes,

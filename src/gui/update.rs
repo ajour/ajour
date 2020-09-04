@@ -116,9 +116,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Reload config.
             return Ok(Command::perform(load_config(), Message::Parse));
         }
-        Message::ThemeSelected(theme_name) => {
-            ajour.theme_state.current_theme_name = theme_name;
-        }
         Message::Interaction(Interaction::Expand(id)) => {
             // Expand a addon.
             // If it's already expanded, we collapse it again.
@@ -448,6 +445,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.sort_state.previous_sort_direction = Some(sort_direction);
             ajour.sort_state.previous_sort_key = Some(sort_key);
+        }
+        Message::ThemeSelected(theme_name) => {
+            ajour.theme_state.current_theme_name = theme_name;
+        }
+        Message::ThemesLoaded(mut themes) => {
+            themes.sort();
+
+            for theme in themes {
+                ajour.theme_state.themes.push((theme.name.clone(), theme));
+            }
         }
         Message::Error(error)
         | Message::Parse(Err(error))
