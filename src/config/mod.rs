@@ -23,6 +23,8 @@ pub struct Config {
 
     #[serde(default)]
     pub tokens: Tokens,
+
+    pub theme: Option<String>,
 }
 
 impl Config {

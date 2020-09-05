@@ -26,6 +26,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Reset state
             ajour.state = AjourState::Idle;
 
+            // Use theme from config. Set to "Dark" if not defined.
+            ajour.theme_state.current_theme_name =
+                ajour.config.theme.as_deref().unwrap_or("Dark").to_string();
+
             // Begin to parse addon folder.
             let addon_directory = ajour.config.get_addon_directory();
             if let Some(dir) = addon_directory {
@@ -445,6 +449,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.sort_state.previous_sort_direction = Some(sort_direction);
             ajour.sort_state.previous_sort_key = Some(sort_key);
+        }
+        Message::ThemeSelected(theme_name) => {
+            ajour.theme_state.current_theme_name = theme_name.clone();
+
+            ajour.config.theme = Some(theme_name);
+            let _ = ajour.config.save();
+        }
+        Message::ThemesLoaded(mut themes) => {
+            themes.sort();
+
+            for theme in themes {
+                ajour.theme_state.themes.push((theme.name.clone(), theme));
+            }
         }
         Message::Error(error)
         | Message::Parse(Err(error))
