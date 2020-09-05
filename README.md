@@ -22,6 +22,7 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 - Bulk update
 - Remove addon
 - Retail and classic flavor support
+- Custom themes
 
 ## Install 
 
@@ -78,6 +79,7 @@ https://ogri-la.github.io/wow-addon-managers/
 
 ## Acknowledgement
 
+- [tarkah](https://github.com/tarkah) for the many great contributions. 
 - [Rasmus Nielsen](https://rasmusnielsen.dk/) for the Ajour icon.
 - [mlablah](https://github.com/mlablah) for the architectural discussions.
 - [##rust and the whole community 🦀](https://webchat.freenode.net/?channels=##rust)
