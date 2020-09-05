@@ -3,10 +3,12 @@ use std::env;
 use std::{fs, path::PathBuf};
 
 mod addon;
-pub use addon::{delete_addons, install_addon};
-
 mod save;
+mod theme;
+
+pub use addon::{delete_addons, install_addon};
 pub use save::PersistentData;
+pub use theme::load_user_themes;
 
 /// Returns the location of the config directory. Will create if it doesn't
 /// exist.

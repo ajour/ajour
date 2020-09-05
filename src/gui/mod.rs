@@ -7,6 +7,7 @@ use crate::{
     config::{load_config, Config, Flavor},
     curse_api,
     error::ClientError,
+    theme::{load_user_themes, ColorPalette, Theme},
     tukui_api,
     utility::needs_update,
     wowinterface_api, Result,
@@ -53,12 +54,15 @@ pub enum Message {
     DownloadedAddon((String, Result<()>)),
     Error(ClientError),
     FlavorSelected(Flavor),
+
     Interaction(Interaction),
     NeedsUpdate(Result<Option<String>>),
     None(()),
     Parse(Result<Config>),
     ParsedAddons(Result<Vec<Addon>>),
     PartialParsedAddons(Result<Vec<Addon>>),
+    ThemeSelected(String),
+    ThemesLoaded(Vec<Theme>),
     TukuiPackage((String, Result<tukui_api::Package>)),
     UnpackedAddon((String, Result<()>)),
     UpdateDirectory(Option<PathBuf>),
@@ -83,6 +87,7 @@ pub struct Ajour {
     state: AjourState,
     update_all_btn_state: button::State,
     sort_state: SortState,
+    theme_state: ThemeState,
 }
 
 impl Default for Ajour {
@@ -108,10 +113,10 @@ impl Default for Ajour {
                     .build()
                     .unwrap(),
             ),
-
             state: AjourState::Idle,
             update_all_btn_state: Default::default(),
             sort_state: Default::default(),
+            theme_state: Default::default(),
         }
     }
 }
@@ -125,6 +130,7 @@ impl Application for Ajour {
         let init_commands = vec![
             Command::perform(load_config(), Message::Parse),
             Command::perform(needs_update(), Message::NeedsUpdate),
+            Command::perform(load_user_themes(), Message::ThemesLoaded),
         ];
 
         (Ajour::default(), Command::batch(init_commands))
@@ -149,9 +155,21 @@ impl Application for Ajour {
         // We find the  corresponding `Addon` from the ignored strings.
         let ignored_strings = &self.config.addons.ignored;
 
+        // Get color palette of chosen theme.
+        let color_palette = self
+            .theme_state
+            .themes
+            .iter()
+            .find(|(name, _)| name == &self.theme_state.current_theme_name)
+            .as_ref()
+            .unwrap_or(&&("Dark".to_string(), Theme::dark()))
+            .1
+            .palette;
+
         // Menu container at the top of the applications.
         // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
+            color_palette,
             &mut self.update_all_btn_state,
             &mut self.refresh_btn_state,
             &mut self.settings_btn_state,
@@ -165,11 +183,13 @@ impl Application for Ajour {
         // Addon row titles is a row of titles above the addon scrollable.
         // This is to add titles above each section of the addon row, to let
         // the user easily identify what the value is.
-        let addon_row_titles = element::addon_row_titles(&self.addons, &mut self.sort_state);
+        let addon_row_titles =
+            element::addon_row_titles(color_palette, &self.addons, &mut self.sort_state);
 
         // A scrollable list containing rows.
         // Each row holds data about a single addon.
-        let mut addons_scrollable = element::addon_scrollable(&mut self.addons_scrollable_state);
+        let mut addons_scrollable =
+            element::addon_scrollable(color_palette, &mut self.addons_scrollable_state);
 
         // Loops though the addons.
         for addon in &mut self
@@ -185,7 +205,7 @@ impl Application for Ajour {
 
             // A container cell which has all data about the current addon.
             // If the addon is expanded, then this is also included in this container.
-            let addon_data_cell = element::addon_data_cell(addon, is_addon_expanded);
+            let addon_data_cell = element::addon_data_cell(color_palette, addon, is_addon_expanded);
 
             // Adds the addon data cell to the scrollable.
             addons_scrollable = addons_scrollable.push(addon_data_cell);
@@ -201,11 +221,13 @@ impl Application for Ajour {
         if self.is_showing_settings {
             // Settings container, containing all data releated to settings.
             let settings_container = element::settings_container(
+                color_palette,
                 &mut self.directory_btn_state,
                 &mut self.flavor_list_state,
                 &mut self.ignored_addons_scrollable_state,
                 &mut self.ignored_addons,
                 &self.config,
+                &mut self.theme_state,
             );
 
             // Space below settings.
@@ -226,6 +248,7 @@ impl Application for Ajour {
         // If we have no addons, and no path we assume onboarding.
         if !has_addons && !has_wow_path {
             let status_container = element::status_container(
+                color_palette,
                 "Welcome to Ajour!",
                 "To get started, go to Settings and select your World of Warcraft directory.",
             );
@@ -239,7 +262,7 @@ impl Application for Ajour {
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .style(style::Content)
+            .style(style::Content(color_palette))
             .into()
     }
 }
@@ -295,4 +318,24 @@ pub struct SortState {
     local_version_btn_state: button::State,
     remote_version_btn_state: button::State,
     status_btn_state: button::State,
+}
+
+pub struct ThemeState {
+    themes: Vec<(String, Theme)>,
+    current_theme_name: String,
+    pick_list_state: pick_list::State<String>,
+}
+
+impl Default for ThemeState {
+    fn default() -> Self {
+        let mut themes = vec![];
+        themes.push(("Dark".to_string(), Theme::dark()));
+        themes.push(("Light".to_string(), Theme::light()));
+
+        ThemeState {
+            themes,
+            current_theme_name: "Dark".to_string(),
+            pick_list_state: Default::default(),
+        }
+    }
 }

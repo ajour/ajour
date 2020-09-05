@@ -31,16 +31,20 @@ For everyone else, a detailed instruction can be found [here](https://github.com
 
 ## Configuration
 
-Ajour will generate a configuration file for you, unless it finds one in one of the following directories:
+Ajour will generate a configuration file for you, unless it finds one in the following directory:
 
 macOS / Linux:
 - `$HOME/.config/ajour/ajour.yml`
-- `$HOME/.ajour.yml`
 
 Windows:
 
 - `%APPDATA%\ajour\ajour.yml`
-- `In the same directory as the executable`
+
+## Themes
+
+Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.
+
+Instructions for adding custom themes can be found on the [themes wiki page](https://github.com/casperstorm/ajour/wiki/Themes).
 
 ## FAQ
 
