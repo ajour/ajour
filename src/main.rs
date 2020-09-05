@@ -6,6 +6,7 @@
 mod addon;
 mod config;
 mod curse_api;
+mod curse_fingerprinting;
 mod error;
 mod fs;
 mod gui;

@@ -39,6 +39,7 @@ pub struct Addon {
     // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
     // get a name representing the bundle as a whole.
     pub is_bundle: bool,
+    pub fingerprint: u32,
 
     // States for GUI
     pub details_btn_state: iced::button::State,
@@ -60,6 +61,7 @@ impl Addon {
         version: Option<String>,
         path: PathBuf,
         dependencies: Vec<String>,
+        fingerprint: u32,
         repository_identifiers: RepositoryIdentifiers,
     ) -> Self {
         Addon {
@@ -76,6 +78,7 @@ impl Addon {
             state: AddonState::Ajour(None),
             repository_identifiers,
             is_bundle: false,
+            fingerprint,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),

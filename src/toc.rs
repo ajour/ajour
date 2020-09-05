@@ -7,6 +7,7 @@ use walkdir::{DirEntry, WalkDir};
 
 use crate::{
     addon::{Addon, RepositoryIdentifiers},
+    curse_fingerprinting::calculate_hash,
     error::ClientError,
     Result,
 };
@@ -181,6 +182,15 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
         }
     }
 
+    let data: Vec<u8> = std::fs::read(toc_entry.path())
+        .expect("Error reading file for fingerprinting")
+        .into_iter()
+        .filter(|&b| b != b' ' && b != b'\n' && b != b'\r' && b != b'\t')
+        .collect();
+
+    let hash = calculate_hash(&data, 1);
+    println!("hash: {:?}", hash);
+
     Some(Addon::new(
         id,
         title?,
@@ -189,6 +199,7 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
         version,
         path,
         dependencies,
+        123,
         repository_identifiers,
     ))
 }
