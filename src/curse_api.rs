@@ -3,7 +3,7 @@ use isahc::prelude::*;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_derive::Deserialize;
 
-const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2/addon";
+const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,9 +32,43 @@ pub struct Module {
     pub fingerprint: u32,
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameInfo {
+    pub id: i64,
+    pub name: String,
+    pub slug: String,
+    pub date_modified: String,
+    pub file_parsing_rules: Vec<FileParsingRule>,
+    pub category_sections: Vec<CategorySection>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileParsingRule {
+    pub comment_strip_pattern: String,
+    pub file_extension: String,
+    pub inclusion_pattern: String,
+    pub game_id: i64,
+    pub id: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CategorySection {
+    pub id: i64,
+    pub game_id: i64,
+    pub name: String,
+    pub package_type: i64,
+    pub path: String,
+    pub initial_inclusion_pattern: String,
+    pub extra_include_pattern: String,
+    pub game_category_id: i64,
+}
+
 /// Function to fetch a remote addon package for id.
 pub async fn fetch_remote_package(shared_client: &HttpClient, id: &u32) -> Result<Package> {
-    let url = format!("{}/{}", API_ENDPOINT, id);
+    let url = format!("{}/addon/{}", API_ENDPOINT, id);
     let timeout = Some(30);
     let mut resp = request_async(shared_client, &url, vec![], timeout).await?;
     if resp.status().is_success() {
@@ -58,7 +92,7 @@ pub async fn fetch_remote_packages(
     let timeout = Some(15);
     let search_string = utf8_percent_encode(search_string, NON_ALPHANUMERIC).to_string();
     let url = format!(
-        "{}/search?gameId={}&pageSize={}&searchFilter={}",
+        "{}/addon/search?gameId={}&pageSize={}&searchFilter={}",
         API_ENDPOINT, game_id, page_size, search_string
     );
 
@@ -69,6 +103,23 @@ pub async fn fetch_remote_packages(
     } else {
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",
+            resp.text()?
+        )))
+    }
+}
+
+pub async fn fetch_game_info() -> Result<GameInfo> {
+    let url = format!("{}/game/1", API_ENDPOINT);
+
+    //TODO Use shared client.
+    let client = HttpClient::builder().build().unwrap();
+    let mut resp = request_async(&client, url, vec![], None).await?;
+    if resp.status().is_success() {
+        let game_info: GameInfo = resp.json()?;
+        Ok(game_info)
+    } else {
+        Err(ClientError::Custom(format!(
+            "Coudn't fetch game information. Server returned: {}",
             resp.text()?
         )))
     }

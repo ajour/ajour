@@ -6,13 +6,13 @@
 mod addon;
 mod config;
 mod curse_api;
-mod curse_fingerprinting;
 mod error;
 mod fs;
 mod gui;
+mod murmur2;
 mod network;
+mod parse;
 mod theme;
-mod toc;
 mod tukui_api;
 mod utility;
 mod wowinterface_api;

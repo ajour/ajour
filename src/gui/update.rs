@@ -7,7 +7,7 @@ use {
         error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
-        toc::read_addon_directory,
+        parse::read_addon_directory,
         tukui_api, wowinterface_api, Result,
     },
     async_std::sync::Arc,

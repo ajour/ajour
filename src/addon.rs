@@ -11,6 +11,15 @@ pub enum AddonState {
     Ajour(Option<String>),
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
+pub enum Identity {
+    Curse(u32),
+    Tukui(String),
+    Wowi(String),
+    Fingerprint(String),
+    Unknown,
+}
+
 #[derive(Debug, Clone)]
 /// Struct which stores identifiers for the different repositories.
 pub struct RepositoryIdentifiers {
@@ -39,7 +48,8 @@ pub struct Addon {
     // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
     // get a name representing the bundle as a whole.
     pub is_bundle: bool,
-    pub fingerprint: u32,
+    pub fingerprint: Option<u32>,
+    pub identity: Identity,
 
     // States for GUI
     pub details_btn_state: iced::button::State,
@@ -61,7 +71,7 @@ impl Addon {
         version: Option<String>,
         path: PathBuf,
         dependencies: Vec<String>,
-        fingerprint: u32,
+        fingerprint: Option<u32>,
         repository_identifiers: RepositoryIdentifiers,
     ) -> Self {
         Addon {
@@ -79,6 +89,7 @@ impl Addon {
             repository_identifiers,
             is_bundle: false,
             fingerprint,
+            identity: Identity::Unknown,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),
