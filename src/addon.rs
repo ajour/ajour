@@ -15,8 +15,7 @@ pub enum AddonState {
 pub enum Identity {
     Curse(u32),
     Tukui(String),
-    Wowi(String),
-    Fingerprint(String),
+    Fingerprint(u32),
     Unknown,
 }
 
@@ -73,6 +72,7 @@ impl Addon {
         dependencies: Vec<String>,
         fingerprint: Option<u32>,
         repository_identifiers: RepositoryIdentifiers,
+        identity: Identity,
     ) -> Self {
         Addon {
             id,
@@ -89,7 +89,7 @@ impl Addon {
             repository_identifiers,
             is_bundle: false,
             fingerprint,
-            identity: Identity::Unknown,
+            identity,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),

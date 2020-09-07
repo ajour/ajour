@@ -1,7 +1,7 @@
 use crate::{error::ClientError, network::request_async, Result};
 use isahc::prelude::*;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 
 const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
 
@@ -14,7 +14,7 @@ pub struct Package {
     pub latest_files: Vec<File>,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct File {
     pub display_name: String,
@@ -25,7 +25,7 @@ pub struct File {
     pub is_alternate: bool,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Module {
     pub foldername: String,
@@ -66,6 +66,26 @@ pub struct CategorySection {
     pub game_category_id: i64,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FingerprintInfo {
+    pub is_cache_built: bool,
+    pub exact_matches: Vec<AddonFingerprintInfo>,
+    pub exact_fingerprints: Vec<u32>,
+    pub partial_matches: Vec<::serde_json::Value>,
+    pub partial_match_fingerprints: ::serde_json::Value,
+    pub installed_fingerprints: Vec<u32>,
+    pub unmatched_fingerprints: Vec<u32>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddonFingerprintInfo {
+    pub id: i64,
+    pub file: File,
+    pub latest_files: Vec<File>,
+}
+
 /// Function to fetch a remote addon package for id.
 pub async fn fetch_remote_package(shared_client: &HttpClient, id: &u32) -> Result<Package> {
     let url = format!("{}/addon/{}", API_ENDPOINT, id);
@@ -99,6 +119,22 @@ pub async fn fetch_remote_packages(
     let mut resp = request_async(shared_client, &url, vec![], timeout).await?;
     if resp.status().is_success() {
         let packages: Vec<Package> = resp.json()?;
+        Ok(packages)
+    } else {
+        Err(ClientError::Custom(format!(
+            "Couldn't fetch details for addon. Server returned: {}",
+            resp.text()?
+        )))
+    }
+}
+
+pub async fn fetch_remote_packages_by_fingerprint(
+    fingerprints: Vec<u32>,
+) -> Result<Vec<FingerprintInfo>> {
+    let url = format!("{}/fingerprint", API_ENDPOINT);
+    let mut resp = isahc::post_async(url, fingerprints).await?;
+    if resp.status().is_success() {
+        let packages: Vec<FingerprintInfo> = resp.json()?;
         Ok(packages)
     } else {
         Err(ClientError::Custom(format!(

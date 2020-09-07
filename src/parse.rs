@@ -5,11 +5,10 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
 
 use crate::{
-    addon::{Addon, RepositoryIdentifiers},
-    curse_api::fetch_game_info,
+    addon::{Addon, Identity, RepositoryIdentifiers},
+    curse_api::{fetch_game_info, fetch_remote_packages_by_fingerprint},
     error::ClientError,
     murmur2::calculate_hash,
     Result,
@@ -99,14 +98,22 @@ pub async fn read_addon_directory<P: AsRef<Path>>(root_dir: P) -> Result<Vec<Add
             if !toc_path.exists() {
                 return None;
             }
-            let addon = parse_toc_path(&toc_path);
-            addon
+
+            let mut addon = parse_toc_path(&toc_path)?;
+            if let (Identity::Unknown, Some(hash)) = (&addon.identity, fingerprint.hash) {
+                addon.identity = Identity::Fingerprint(hash);
+            }
+
+            Some(addon)
         })
         .filter(|a| a.is_some())
         .map(|addon| addon.unwrap())
         .collect();
 
-    link_dependencies_bidirectional(&mut addons);
+    let fingerprint_packages = fetch_remote_packages_by_fingerprint(vec![]).await;
+    println!("fingerprints: {:?}", fingerprint_packages);
+
+    // link_dependencies_bidirectional(&mut addons);
     Ok(addons)
 }
 
@@ -300,11 +307,12 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
     let mut notes: Option<String> = None;
     let mut version: Option<String> = None;
     let mut dependencies: Vec<String> = Vec::new();
-    let mut repository_identifiers = RepositoryIdentifiers {
+    let repository_identifiers = RepositoryIdentifiers {
         wowi: None,
         tukui: None,
         curse: None,
     };
+    let mut identity = Identity::Unknown;
 
     // It is an anti-pattern to compile the same regular expression in a loop,
     // which is why they are created here.
@@ -339,18 +347,23 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
                 }
                 // String - Addon identifier for Wowinterface API.
                 "X-WoWI-ID" => {
-                    repository_identifiers.wowi = Some(cap["value"].to_string());
+                    // Deprecated
+                    // repository_identifiers.wowi = Some(cap["value"].to_string());
                 }
                 // String - Addon identifier for TukUI API.
                 "X-Tukui-ProjectID" => {
-                    repository_identifiers.tukui = Some(cap["value"].to_string());
+                    // Deprecated
+                    // repository_identifiers.tukui = Some(cap["value"].to_string());
+                    identity = Identity::Tukui(cap["value"].to_string())
                 }
                 // String - Addon identifier for Curse API.
                 "X-Curse-Project-ID" => {
                     // Santize the id, so we only get a `u32`.
-                    if let Ok(id) = cap["value"].to_string().parse::<u32>() {
-                        repository_identifiers.curse = Some(id)
-                    }
+                    // if let Ok(id) = cap["value"].to_string().parse::<u32>() {
+                    // identity = Identity::Curse(id)
+                    // Deprecated
+                    // repository_identifiers.curse = Some(id)
+                    // }
                 }
                 _ => (),
             }
@@ -367,6 +380,7 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
         dependencies,
         None,
         repository_identifiers,
+        identity,
     ))
 }
 

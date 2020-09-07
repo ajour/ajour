@@ -10,9 +10,7 @@ pub async fn request_async<T: ToString>(
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
 ) -> Result<Response<isahc::Body>> {
-    // Edge case:
     // Sometimes a download url has a space.
-    // FIXME: Can we do this more elegant?
     let url = url.to_string().replace(" ", "%20");
 
     let mut request = Request::builder().uri(url);
