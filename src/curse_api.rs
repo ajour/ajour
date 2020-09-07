@@ -1,4 +1,8 @@
-use crate::{error::ClientError, network::request_async, Result};
+use crate::{
+    error::ClientError,
+    network::{post_json_async, request_async},
+    Result,
+};
 use isahc::prelude::*;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_derive::{Deserialize, Serialize};
@@ -132,7 +136,9 @@ pub async fn fetch_remote_packages_by_fingerprint(
     fingerprints: Vec<u32>,
 ) -> Result<Vec<FingerprintInfo>> {
     let url = format!("{}/fingerprint", API_ENDPOINT);
-    let mut resp = isahc::post_async(url, fingerprints).await?;
+
+    let mut resp = post_json_async(url, fingerprints, vec![], None).await?;
+
     if resp.status().is_success() {
         let packages: Vec<FingerprintInfo> = resp.json()?;
         Ok(packages)
