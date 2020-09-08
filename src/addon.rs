@@ -13,7 +13,6 @@ pub enum AddonState {
 
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum Identity {
-    Curse(u32),
     Tukui(String),
     Fingerprint(u32),
     Unknown,
@@ -47,7 +46,6 @@ pub struct Addon {
     // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
     // get a name representing the bundle as a whole.
     pub is_bundle: bool,
-    pub fingerprint: Option<u32>,
     pub identity: Identity,
 
     // States for GUI
@@ -70,7 +68,6 @@ impl Addon {
         version: Option<String>,
         path: PathBuf,
         dependencies: Vec<String>,
-        fingerprint: Option<u32>,
         repository_identifiers: RepositoryIdentifiers,
         identity: Identity,
     ) -> Self {
@@ -88,7 +85,6 @@ impl Addon {
             state: AddonState::Ajour(None),
             repository_identifiers,
             is_bundle: false,
-            fingerprint,
             identity,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
@@ -182,6 +178,31 @@ impl Addon {
                 }
             }
         }
+    }
+
+    pub fn apply_fingerprint_module(
+        &mut self,
+        info: &curse_api::AddonFingerprintInfo,
+        flavor: Flavor,
+    ) {
+        let dependencies: Vec<String> = info
+            .file
+            .modules
+            .iter()
+            .map(|m| m.foldername.clone())
+            .collect();
+
+        let file = info.latest_files.iter().find(|f| {
+            f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
+                    && !f.is_alternate
+                    && f.game_version_flavor == format!("wow_{}", flavor.to_string())
+        });
+        if let Some(file) = file {
+            self.remote_version = Some(file.display_name.clone());
+            self.remote_url = Some(file.download_url.clone());
+        }
+        self.dependencies = dependencies;
+        self.version = Some(info.file.display_name.clone());
     }
 
     /// Function returns a `bool` which indicates if a addon is a parent.

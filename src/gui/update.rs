@@ -32,9 +32,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Begin to parse addon folder.
             let addon_directory = ajour.config.get_addon_directory();
+            let flavor = ajour.config.wow.flavor;
             if let Some(dir) = addon_directory {
                 return Ok(Command::perform(
-                    read_addon_directory(dir),
+                    read_addon_directory(dir, flavor),
                     Message::ParsedAddons,
                 ));
             }
@@ -148,8 +149,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     &[&addon.dependencies[..], &[addon.id.clone()]].concat(),
                 );
 
+                let flavor = ajour.config.wow.flavor;
                 return Ok(Command::perform(
-                    read_addon_directory(addon_directory),
+                    read_addon_directory(addon_directory, flavor),
                     Message::ParsedAddons,
                 ));
             }
@@ -410,8 +412,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Ok(_) => {
                         addon.state = AddonState::Ajour(Some("Completed".to_owned()));
                         // Re-parse the single addon.
+                        let flavor = ajour.config.wow.flavor;
                         return Ok(Command::perform(
-                            read_addon_directory(addon.path.clone()),
+                            read_addon_directory(addon.path.clone(), flavor),
                             Message::PartialParsedAddons,
                         ));
                     }

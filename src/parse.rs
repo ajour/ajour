@@ -8,7 +8,8 @@ use std::path::{Path, PathBuf};
 
 use crate::{
     addon::{Addon, Identity, RepositoryIdentifiers},
-    curse_api::{fetch_game_info, fetch_remote_packages_by_fingerprint},
+    config::Flavor,
+    curse_api::{fetch_game_info, fetch_remote_packages_by_fingerprint, FingerprintInfo},
     error::ClientError,
     murmur2::calculate_hash,
     Result,
@@ -20,7 +21,10 @@ pub struct Fingerprint {
     pub hash: Option<u32>,
 }
 
-pub async fn read_addon_directory<P: AsRef<Path>>(root_dir: P) -> Result<Vec<Addon>> {
+pub async fn read_addon_directory<P: AsRef<Path>>(
+    root_dir: P,
+    flavor: Flavor,
+) -> Result<Vec<Addon>> {
     // Fetches game_info.
     let game_info = fetch_game_info().await?;
 
@@ -67,8 +71,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(root_dir: P) -> Result<Vec<Add
         })
         .collect();
 
-    let mut fingerprints: Vec<Fingerprint> = Vec::with_capacity(all_dirs.len());
-    all_dirs
+    let fingerprints: Vec<Fingerprint> = all_dirs
         .par_iter() // Easy parallelization
         .map(|dir_name| {
             // TODO: We should properly save fingerprints to disk.
@@ -87,18 +90,20 @@ pub async fn read_addon_directory<P: AsRef<Path>>(root_dir: P) -> Result<Vec<Add
                 hash,
             }
         })
-        .collect_into_vec(&mut fingerprints);
+        // Note: we filter out cases where hashing has failed.
+        .filter(|f| f.hash.is_some())
+        .collect();
 
-    let mut addons: Vec<Addon> = fingerprints
-        .iter()
+    let unfiltred_addons: Vec<Addon> = fingerprints
+        .par_iter()
         .map(|fingerprint| {
+            // Generate .toc path.
             let toc_path = root_dir
                 .join(&fingerprint.title)
                 .join(format!("{}.toc", fingerprint.title));
             if !toc_path.exists() {
                 return None;
             }
-
             let mut addon = parse_toc_path(&toc_path)?;
             if let (Identity::Unknown, Some(hash)) = (&addon.identity, fingerprint.hash) {
                 addon.identity = Identity::Fingerprint(hash);
@@ -106,15 +111,56 @@ pub async fn read_addon_directory<P: AsRef<Path>>(root_dir: P) -> Result<Vec<Add
 
             Some(addon)
         })
-        .filter(|a| a.is_some())
+        .filter(|addon| addon.is_some())
         .map(|addon| addon.unwrap())
         .collect();
 
-    let fingerprint_packages = fetch_remote_packages_by_fingerprint(vec![4175503321]).await;
-    println!("fingerprints: {:?}", fingerprint_packages);
+    let _tukui_ids: Vec<_> = unfiltred_addons
+        .iter()
+        .filter_map(|addon| {
+            if let Identity::Tukui(id) = addon.identity.clone() {
+                Some(id)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let fingerprint_hashes: Vec<_> = unfiltred_addons
+        .iter()
+        .filter_map(|addon| {
+            if let Identity::Fingerprint(hash) = addon.identity {
+                Some(hash)
+            } else {
+                None
+            }
+        })
+        .collect();
+    println!("fingerprint_hashes: {:?}", fingerprint_hashes);
+    let fingerprint_package: FingerprintInfo =
+        fetch_remote_packages_by_fingerprint(fingerprint_hashes).await?;
+    let fingerprint_addons: Vec<Addon> = fingerprint_package
+        .exact_matches
+        .iter()
+        .filter_map(|info| {
+            let main_module = info.file.modules.iter().find(|m| m.type_field == 3)?;
+            let mut addon = unfiltred_addons.clone().into_iter().find(|a| {
+                if let Identity::Fingerprint(hash) = a.identity {
+                    hash == main_module.fingerprint
+                } else {
+                    false
+                }
+            })?;
+
+            addon.apply_fingerprint_module(info, flavor);
+            Some(addon)
+        })
+        .collect();
+
+    println!("fingerprint_addons: {:?}", fingerprint_addons);
 
     // link_dependencies_bidirectional(&mut addons);
-    Ok(addons)
+    Ok(fingerprint_addons)
 }
 
 fn fingerprint_addon_dir(
@@ -378,7 +424,6 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
         version,
         path,
         dependencies,
-        None,
         repository_identifiers,
         identity,
     ))

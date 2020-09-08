@@ -27,6 +27,7 @@ pub struct File {
     pub game_version_flavor: String,
     pub modules: Vec<Module>,
     pub is_alternate: bool,
+    pub game_version_date_released: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -34,6 +35,8 @@ pub struct File {
 pub struct Module {
     pub foldername: String,
     pub fingerprint: u32,
+    #[serde(rename = "type")]
+    pub type_field: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
