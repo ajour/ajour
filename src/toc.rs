@@ -147,15 +147,17 @@ async fn parse_toc_entry(toc_entry: DirEntry) -> Option<Addon> {
                 // trim it away.
                 // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
                 // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
-                "Title" => title = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
-                // String - Author
-                "Author" => author = Some(cap["value"].to_string()),
-                // String - Notes
-                "Notes" => notes = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
-                // String - The AddOn version
-                "Version" => {
-                    version = Some(String::from(&cap["value"]));
+                "Title" => {
+                    title = Some(re_title.replace_all(&cap["value"], "$1").trim().to_string())
                 }
+                // String - Author
+                "Author" => author = Some(cap["value"].trim().to_string()),
+                // String - Notes
+                "Notes" => {
+                    notes = Some(re_title.replace_all(&cap["value"].trim(), "$1").to_string())
+                }
+                // String - The AddOn version
+                "Version" => version = Some(cap["value"].trim().to_owned()),
                 // String - A comma-separated list of addon (directory)
                 // names that must be loaded before this addon can be loaded.
                 "Dependencies" | "RequiredDeps" => {

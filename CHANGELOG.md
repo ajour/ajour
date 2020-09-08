@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Fixed
+- Trimming leading and trailing whitespace from toc values.
+
 ## [0.2.5] - 2020-09-05
 ### Added
 - Make columns sortable (by [tarkah](https://github.com/tarkah))
