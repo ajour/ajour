@@ -35,6 +35,7 @@ pub async fn post_json_async<T: ToString, D: Serialize>(
     timeout: Option<u64>,
 ) -> Result<Response<isahc::Body>> {
     let mut request = Request::builder()
+        .method("POST")
         .uri(url.to_string())
         .header("content-type", "application/json");
 

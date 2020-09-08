@@ -134,14 +134,14 @@ pub async fn fetch_remote_packages(
 
 pub async fn fetch_remote_packages_by_fingerprint(
     fingerprints: Vec<u32>,
-) -> Result<Vec<FingerprintInfo>> {
+) -> Result<FingerprintInfo> {
     let url = format!("{}/fingerprint", API_ENDPOINT);
 
     let mut resp = post_json_async(url, fingerprints, vec![], None).await?;
 
     if resp.status().is_success() {
-        let packages: Vec<FingerprintInfo> = resp.json()?;
-        Ok(packages)
+        let fingerprint_info: FingerprintInfo = resp.json()?;
+        Ok(fingerprint_info)
     } else {
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",

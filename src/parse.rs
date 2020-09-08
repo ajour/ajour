@@ -110,7 +110,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(root_dir: P) -> Result<Vec<Add
         .map(|addon| addon.unwrap())
         .collect();
 
-    let fingerprint_packages = fetch_remote_packages_by_fingerprint(vec![]).await;
+    let fingerprint_packages = fetch_remote_packages_by_fingerprint(vec![4175503321]).await;
     println!("fingerprints: {:?}", fingerprint_packages);
 
     // link_dependencies_bidirectional(&mut addons);
