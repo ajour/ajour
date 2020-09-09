@@ -137,21 +137,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
-            if let Some(addon) = ajour.addons.iter().find(|a| a.id == id) {
+            let addons = ajour.addons.clone();
+            if let Some(addon) = addons.iter().find(|a| a.id == id) {
                 let addon_directory = ajour
                     .config
                     .get_addon_directory()
                     .expect("has to have addon directory");
-                let _ = delete_addons(
-                    &addon_directory,
-                    &[&addon.dependencies[..], &[addon.id.clone()]].concat(),
-                );
-
-                let flavor = ajour.config.wow.flavor;
-                return Ok(Command::perform(
-                    read_addon_directory(addon_directory, flavor),
-                    Message::ParsedAddons,
-                ));
+                let addons_to_be_deleted = [&addon.dependencies[..], &[addon.id.clone()]].concat();
+                let _ = delete_addons(&addon_directory, &addons_to_be_deleted);
+                ajour.addons = ajour
+                    .addons
+                    .clone()
+                    .into_iter()
+                    .filter(|a| addons_to_be_deleted.iter().any(|ab| ab != &a.id))
+                    .collect();
             }
         }
         Message::Interaction(Interaction::Update(id)) => {
@@ -194,14 +193,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
             return Ok(Command::batch(commands));
         }
-        Message::PartialParsedAddons(Ok(addons)) => {
-            if let Some(updated_addon) = addons.first() {
-                if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == updated_addon.id) {
-                    // Update the addon with the newly parsed information.
-                    addon.update_addon(updated_addon);
-                }
-            }
-        }
         Message::ParsedAddons(Ok(mut addons)) => {
             sort_addons(&mut addons, SortDirection::Asc, SortKey::Status);
             ajour.addons = addons;
@@ -240,12 +231,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 match result {
                     Ok(_) => {
                         addon.state = AddonState::Ajour(Some("Completed".to_owned()));
-                        // Re-parse the single addon.
-                        let flavor = ajour.config.wow.flavor;
-                        return Ok(Command::perform(
-                            read_addon_directory(addon.path.clone(), flavor),
-                            Message::PartialParsedAddons,
-                        ));
+                        addon.version = addon.remote_version.clone();
                     }
                     Err(err) => {
                         ajour.state = AjourState::Error(err);
@@ -298,7 +284,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Error(error)
         | Message::Parse(Err(error))
         | Message::ParsedAddons(Err(error))
-        | Message::PartialParsedAddons(Err(error))
         | Message::NeedsUpdate(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }

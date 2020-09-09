@@ -1,9 +1,4 @@
-use async_std::sync::Arc;
 use fancy_regex::Regex;
-use isahc::{
-    config::{Configurable, RedirectPolicy},
-    HttpClient,
-};
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -16,7 +11,7 @@ use crate::{
     config::Flavor,
     curse_api::{
         fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
-        FingerprintInfo, Package,
+        FingerprintInfo,
     },
     error::ClientError,
     murmur2::calculate_hash,
@@ -35,9 +30,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     flavor: Flavor,
 ) -> Result<Vec<Addon>> {
     // Fetches game_info.
+    // Used to get regexs for various operations.
     let game_info = fetch_game_info().await?;
 
-    // If the path does not exists or does not point on a directory we throw an Error.
+    // If the path does not exists or does not point on a directory we return an Error.
     if !root_dir.as_ref().is_dir() {
         return Err(ClientError::Custom(format!(
             "Addon directory not found: {:?}",
@@ -46,6 +42,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     }
     let root_dir = root_dir.as_ref().to_owned();
 
+    // All addon dirs gathered in a `Vec<String>`.
     let all_dirs: Vec<String> = root_dir
         .read_dir()
         .unwrap()
@@ -80,6 +77,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    // Each addon dir mapped to fingerprint struct.
     let fingerprints: Vec<Fingerprint> = all_dirs
         .par_iter() // Easy parallelization
         .map(|dir_name| {
@@ -103,6 +101,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .filter(|f| f.hash.is_some())
         .collect();
 
+    // Maps each `Fingerprint` to `Addon`.
     let unfiltred_addons: Vec<Addon> = fingerprints
         .par_iter()
         .map(|fingerprint| {
@@ -113,6 +112,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             if !toc_path.exists() {
                 return None;
             }
+
+            // We add fingerprint to the addon.
             let mut addon = parse_toc_path(&toc_path)?;
             addon.fingerprint = fingerprint.hash;
 
@@ -122,6 +123,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .map(|addon| addon.unwrap())
         .collect();
 
+    // Filters the Tukui ids.
     let tukui_ids: Vec<_> = unfiltred_addons
         .iter()
         .filter_map(|addon| {
@@ -133,21 +135,17 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
-    let shared_client = Arc::new(
-        HttpClient::builder()
-            .redirect_policy(RedirectPolicy::Follow)
-            .max_connections_per_host(6)
-            .build()
-            .unwrap(),
-    );
     let mut tukui_addons: Vec<Addon> = vec![];
+    // Loops each tukui_id and fetch a remote package from their api.
     for id in tukui_ids {
-        let package = fetch_remote_package(&shared_client, &id, &flavor).await;
+        let package = fetch_remote_package(&id, &flavor).await;
+        // Find the corresponding addon.
         if let Some(addon) = unfiltred_addons
             .clone()
             .iter_mut()
             .find(|a| a.tukui_id == Some(id.clone()))
         {
+            // apply package to addon.
             if let Ok(package) = package {
                 addon.apply_tukui_package(&package);
                 tukui_addons.push(addon.clone());
@@ -155,15 +153,23 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         }
     }
 
+    // Links dependencies. This is needed for tukui addons since they don't
+    // tell which dependencies a addon has, so we use the information from toc.
     link_dependencies_bidirectional(&mut tukui_addons, &unfiltred_addons);
 
+    // Filter out addons with fingerprints.
     let fingerprint_hashes: Vec<_> = unfiltred_addons
         .iter()
         .filter_map(|addon| {
-            if let Some(hash) = addon.fingerprint {
-                Some(hash)
-            } else {
+            // Removes any addon which has tukui_id.
+            if addon.tukui_id.is_some() {
                 None
+            } else {
+                if let Some(hash) = addon.fingerprint {
+                    Some(hash)
+                } else {
+                    None
+                }
             }
         })
         .collect();
@@ -183,6 +189,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 .into_iter()
                 .find(|a| a.curse_id == Some(info.id));
 
+            // Apply package.
             if let Some(mut addon) = addon_by_id {
                 addon.apply_fingerprint_module(info, flavor);
                 return Some(addon);
@@ -196,6 +203,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                     .any(|m| Some(m.fingerprint) == a.fingerprint)
             });
 
+            // Apply package.
             if let Some(mut addon) = addon_by_fingerprint {
                 addon.apply_fingerprint_module(info, flavor);
                 return Some(addon);
@@ -218,18 +226,20 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .collect();
 
     // Fetches the curse packages based on the ids.
-    let curse_id_packages: Vec<Package> = fetch_remote_packages_by_ids(curse_ids).await?;
-
-    // Loops the packages, and updates our Addons with information.
-    for package in curse_id_packages {
-        let addon = fingerprint_addons
-            .iter_mut()
-            .find(|a| a.curse_id == Some(package.id));
-        if let Some(addon) = addon {
-            addon.apply_curse_package(&package);
+    let curse_id_packages_result = fetch_remote_packages_by_ids(curse_ids).await;
+    if let Ok(curse_id_packages) = curse_id_packages_result {
+        // Loops the packages, and updates our Addons with information.
+        for package in curse_id_packages {
+            let addon = fingerprint_addons
+                .iter_mut()
+                .find(|a| a.curse_id == Some(package.id));
+            if let Some(addon) = addon {
+                addon.apply_curse_package(&package);
+            }
         }
     }
 
+    // Concats the different repo addons, and returns.
     let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
     Ok(concatenated)
 }
@@ -241,12 +251,10 @@ fn fingerprint_addon_dir(
     extra_inclusion_regex: &Regex,
     file_parsing_regex: &HashMap<String, (regex::Regex, Regex)>,
 ) -> Option<u32> {
-    // TODO: If something goes wrong, we need to bail.
-
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
     // Add initial files
-    let glob_pattern = format!("{}/**/*.*", addon_dir.to_str().unwrap());
+    let glob_pattern = format!("{}/**/*.*", addon_dir.to_str()?);
     for path in glob::glob(&glob_pattern).expect("Glob pattern error") {
         let path = path.expect("Glob error");
         if !path.is_file() {
@@ -256,14 +264,13 @@ fn fingerprint_addon_dir(
         // Test relative path matches regexes
         let relative_path = path
             .strip_prefix(root_dir)
-            .unwrap()
-            .to_str()
-            .unwrap()
+            .ok()?
+            .to_str()?
             .to_ascii_lowercase()
             .replace("/", "\\"); // Convert to windows seperator
-        if initial_inclusion_regex.is_match(&relative_path).unwrap() {
+        if initial_inclusion_regex.is_match(&relative_path).ok()? {
             to_parse.push_back(path);
-        } else if extra_inclusion_regex.is_match(&relative_path).unwrap() {
+        } else if extra_inclusion_regex.is_match(&relative_path).ok()? {
             to_fingerprint.insert(path);
         }
     }
@@ -277,28 +284,24 @@ fn fingerprint_addon_dir(
         to_fingerprint.insert(path.clone());
 
         // Skip if no rules for extension
-        let ext = format!(".{}", path.extension().unwrap().to_str().unwrap());
+        let ext = format!(".{}", path.extension()?.to_str()?);
         if !file_parsing_regex.contains_key(&ext) {
             continue;
         }
 
         // Parse file for matches
-        // TODO: Parse line by line because regex is \n sensitive
-        let (comment_strip_regex, inclusion_regex) = file_parsing_regex.get(&ext).unwrap();
+        let (comment_strip_regex, inclusion_regex) = file_parsing_regex.get(&ext)?;
         let text = std::fs::read_to_string(&path).expect("Error reading file");
         let text = comment_strip_regex.replace_all(&text, "");
         for line in text.split(&['\n', '\r'][..]) {
             let mut last_offset = 0;
-            while let Some(inc_match) = inclusion_regex
-                .captures_from_pos(line, last_offset)
-                .unwrap()
-            {
-                last_offset = inc_match.get(0).unwrap().end();
-                let path_match = inc_match.get(1).unwrap().as_str();
+            while let Some(inc_match) = inclusion_regex.captures_from_pos(line, last_offset).ok()? {
+                last_offset = inc_match.get(0)?.end();
+                let path_match = inc_match.get(1)?.as_str();
                 // Path might be case insensitive and have windows separators. Find it
                 let path_match = path_match.replace("\\", "/");
-                let parent = path.parent().unwrap();
-                let real_path = find_file(parent.join(Path::new(&path_match)));
+                let parent = path.parent()?;
+                let real_path = find_file(parent.join(Path::new(&path_match)))?;
                 to_parse.push_back(real_path);
             }
         }
@@ -331,7 +334,7 @@ fn fingerprint_addon_dir(
 
 /// Finds a case sensitive path from an insensitive path
 /// Useful if, say, a WoW addon points to a local path in a different case but you're not on Windows
-fn find_file<P>(path: P) -> PathBuf
+fn find_file<P>(path: P) -> Option<PathBuf>
 where
     P: AsRef<Path>,
 {
@@ -340,31 +343,31 @@ where
 
     // Find first parent that exists
     while !current.exists() {
-        to_finds.push(current.file_name().unwrap());
-        current = current.parent().unwrap();
+        to_finds.push(current.file_name()?);
+        current = current.parent()?;
     }
 
     // Match to finds
     let mut current = current.to_path_buf();
     to_finds.reverse();
     for to_find in to_finds {
-        let mut children = current.read_dir().unwrap();
-        let lower = to_find.to_str().unwrap().to_ascii_lowercase();
+        let mut children = current.read_dir().ok()?;
+        let lower = to_find.to_str()?.to_ascii_lowercase();
         let found = children
             .find(|x| {
-                x.as_ref()
-                    .unwrap()
-                    .file_name()
-                    .to_str()
-                    .unwrap()
-                    .to_ascii_lowercase()
-                    == lower
-            })
-            .unwrap()
-            .unwrap();
+                if let Ok(x) = x.as_ref() {
+                    if let Some(file_name) = x.file_name().to_str() {
+                        return file_name.to_ascii_lowercase() == lower;
+                    }
+
+                    return false;
+                }
+                false
+            })?
+            .ok()?;
         current = found.path();
     }
-    current
+    Some(current)
 }
 
 /// Helper function to run through all addons and
