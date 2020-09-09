@@ -1,3 +1,4 @@
+// This code is from: https://github.com/camas/grunt/
 const MURMUR2_CONST: u32 = 1_540_483_477;
 
 pub fn calculate_hash(data: &[u8], seed: u32) -> u32 {
