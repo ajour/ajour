@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Added
+- Now uses fingerprinting to better match addons.
 ### Fixed
 - Trimming leading and trailing whitespace from toc values.
 
