@@ -3,7 +3,7 @@ use crate::{
     config::Flavor,
     curse_api::{
         fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
-        FingerprintInfo,
+        FingerprintInfo, GameInfo,
     },
     error::ClientError,
     fs::PersistentData,
@@ -11,6 +11,7 @@ use crate::{
     tukui_api::fetch_remote_package,
     Result,
 };
+use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
@@ -19,16 +20,17 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
+lazy_static::lazy_static! {
+    static ref CACHED_GAME_INFO: Arc<Mutex<Option<GameInfo>>> = Arc::new(Mutex::new(None));
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-pub struct Fingerprint {
+struct Fingerprint {
     pub title: String,
     pub hash: Option<u32>,
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-pub struct FingerprintCollection {
-    pub fingerprints: Vec<Fingerprint>,
-}
+type FingerprintCollection = Vec<Fingerprint>;
 
 impl PersistentData for FingerprintCollection {
     fn relative_path() -> PathBuf {
@@ -36,23 +38,32 @@ impl PersistentData for FingerprintCollection {
     }
 }
 
-impl Default for FingerprintCollection {
-    fn default() -> Self {
-        FingerprintCollection {
-            fingerprints: vec![],
-        }
-    }
-}
-
-pub async fn load_fingerprint_collection() -> Result<FingerprintCollection> {
+async fn load_fingerprint_collection() -> Result<FingerprintCollection> {
     Ok(FingerprintCollection::load_or_default()?)
 }
 
+struct ParsingPatterns {
+    initial_inclusion_regex: Regex,
+    extra_inclusion_regex: Regex,
+    file_parsing_regex: HashMap<String, (regex::Regex, Regex)>,
+}
+
 /// File parsing regexes used for parsing the addon files.
-async fn file_parsing_regex() -> Result<(Regex, Regex, HashMap<String, (regex::Regex, Regex)>)> {
-    // Fetches game_info.
+async fn file_parsing_regex() -> Result<ParsingPatterns> {
+    // Fetches game_info from memory or API if not in memory
     // Used to get regexs for various operations.
-    let game_info = fetch_game_info().await?;
+    let game_info = {
+        let cached_info = { CACHED_GAME_INFO.clone().lock().await.clone() };
+
+        if let Some(info) = cached_info {
+            info
+        } else {
+            let info = fetch_game_info().await?;
+            *CACHED_GAME_INFO.clone().lock().await = Some(info.clone());
+
+            info
+        }
+    };
 
     // Compile regexes
     let addon_cat = &game_info.category_sections[0];
@@ -75,11 +86,11 @@ async fn file_parsing_regex() -> Result<(Regex, Regex, HashMap<String, (regex::R
         })
         .collect();
 
-    Ok((
+    Ok(ParsingPatterns {
         initial_inclusion_regex,
         extra_inclusion_regex,
         file_parsing_regex,
-    ))
+    })
 }
 
 pub async fn read_addon_directory<P: AsRef<Path>>(
@@ -109,20 +120,22 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
-    let (initial_inclusion_regex, extra_inclusion_regex, file_parsing_regex) =
-        file_parsing_regex().await?;
+    let ParsingPatterns {
+        initial_inclusion_regex,
+        extra_inclusion_regex,
+        file_parsing_regex,
+    } = file_parsing_regex().await?;
 
     // Load fingerprint collection from disk.
     let fingerprint_collection: FingerprintCollection = load_fingerprint_collection().await?;
 
     // Each addon dir mapped to fingerprint struct.
-    let new_fingerprints: Vec<Fingerprint> = all_dirs
+    let new_fingerprints: FingerprintCollection = all_dirs
         .par_iter() // Easy parallelization
         .map(|dir_name| {
             let addon_dir = root_dir.join(dir_name);
             // If we have a stored fingerprint on disk, we use that.
             if let Some(fingerprint) = fingerprint_collection
-                .fingerprints
                 .clone()
                 .into_iter()
                 .find(|f| &f.title == dir_name)
@@ -146,10 +159,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .collect();
 
     // We save the new collection to disk.
-    let new_fingerprint_collection: FingerprintCollection = FingerprintCollection {
-        fingerprints: new_fingerprints.clone(),
-    };
-    let _ = new_fingerprint_collection.save();
+    let _ = new_fingerprints.save();
 
     // Maps each `Fingerprint` to `Addon`.
     let unfiltred_addons: Vec<Addon> = new_fingerprints
@@ -214,12 +224,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             // Removes any addon which has tukui_id.
             if addon.tukui_id.is_some() {
                 None
+            } else if let Some(hash) = addon.fingerprint {
+                Some(hash)
             } else {
-                if let Some(hash) = addon.fingerprint {
-                    Some(hash)
-                } else {
-                    None
-                }
+                None
             }
         })
         .collect();
@@ -296,11 +304,14 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
 pub async fn update_addon_fingerprint(addon: Addon) -> Result<()> {
     // Regexes
-    let (initial_inclusion_regex, extra_inclusion_regex, file_parsing_regex) =
-        file_parsing_regex().await?;
+    let ParsingPatterns {
+        initial_inclusion_regex,
+        extra_inclusion_regex,
+        file_parsing_regex,
+    } = file_parsing_regex().await?;
 
     // Load fingerprint collection from disk.
-    let fingerprint_collection: FingerprintCollection = load_fingerprint_collection().await?;
+    let mut fingerprint_collection: FingerprintCollection = load_fingerprint_collection().await?;
 
     // Generate new hash, and update collection.
     if let Some(hash) = fingerprint_addon_dir(
@@ -309,22 +320,12 @@ pub async fn update_addon_fingerprint(addon: Addon) -> Result<()> {
         &extra_inclusion_regex,
         &file_parsing_regex,
     ) {
-        let new_collection: Vec<Fingerprint> = fingerprint_collection
-            .fingerprints
-            .clone()
-            .iter_mut()
-            .map(|fingerprint| {
-                if fingerprint.title == addon.id {
-                    fingerprint.hash = Some(hash);
-                }
+        fingerprint_collection.iter_mut().for_each(|fingerprint| {
+            if fingerprint.title == addon.id {
+                fingerprint.hash = Some(hash);
+            }
+        });
 
-                fingerprint.clone()
-            })
-            .collect();
-
-        let fingerprint_collection: FingerprintCollection = FingerprintCollection {
-            fingerprints: new_collection,
-        };
         let _ = fingerprint_collection.save();
     }
 
@@ -409,7 +410,7 @@ fn fingerprint_addon_dir(
         .collect();
 
     // Calculate overall fingerprint
-    fingerprints.sort();
+    fingerprints.sort_unstable();
     let to_hash = fingerprints
         .iter()
         .map(|val| val.to_string())
@@ -477,7 +478,7 @@ where
 /// `Foo` - dependencies: [`Bar`, `Baz`]
 /// `Bar` - dependencies: [`Foo`]
 /// `Baz` - dependencies: [`Foo`]
-fn link_dependencies_bidirectional(sliced_addons: &mut Vec<Addon>, all_addons: &Vec<Addon>) {
+fn link_dependencies_bidirectional(sliced_addons: &mut Vec<Addon>, all_addons: &[Addon]) {
     for addon in sliced_addons {
         for unsorted_addon in all_addons {
             for dependency in &unsorted_addon.dependencies {
