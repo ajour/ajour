@@ -33,12 +33,6 @@ pub struct Addon {
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
-    pub repository_identifiers: RepositoryIdentifiers,
-    // If an addon consists of multiple folders, and all of them has a version all will be
-    // shown. We try to bundle them together as one, in that case. See: https://github.com/casperstorm/ajour/issues/39
-    // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
-    // get a name representing the bundle as a whole.
-    pub is_bundle: bool,
     pub wowi_id: Option<String>,
     pub tukui_id: Option<String>,
     pub curse_id: Option<u32>,
@@ -68,11 +62,6 @@ impl Addon {
         tukui_id: Option<String>,
         curse_id: Option<u32>,
     ) -> Self {
-        let ri = RepositoryIdentifiers {
-            wowi: None,
-            tukui: None,
-            curse: None,
-        };
         Addon {
             id,
             title,
@@ -85,8 +74,6 @@ impl Addon {
             path,
             dependencies,
             state: AddonState::Ajour(None),
-            repository_identifiers: ri,
-            is_bundle: false,
             wowi_id,
             tukui_id,
             curse_id,
@@ -153,15 +140,6 @@ impl Addon {
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
     pub fn is_ignored(&self, ignored: &[String]) -> bool {
         ignored.iter().any(|i| i == &self.id)
-    }
-
-    /// Takes a `Addon` and updates self.
-    /// Used when we reparse a single `Addon`.
-    pub fn update_addon(&mut self, other: &Addon) {
-        self.title = other.title.clone();
-        self.version = other.version.clone();
-        self.dependencies = other.dependencies.clone();
-        self.repository_identifiers = other.repository_identifiers.clone();
     }
 
     /// Check if the `Addon` is updatable.

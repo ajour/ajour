@@ -213,16 +213,7 @@ pub fn addon_data_cell(
         .clone()
         .unwrap_or_else(|| String::from("-"));
 
-    // If addon is_bundle we use remote_title.
-    let title = if addon.is_bundle {
-        let title = addon
-            .remote_title
-            .clone()
-            .unwrap_or_else(|| String::from("-"));
-        Text::new(title).size(DEFAULT_FONT_SIZE)
-    } else {
-        Text::new(&addon.title).size(DEFAULT_FONT_SIZE)
-    };
+    let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
     let title_button: Element<Interaction> = Button::new(&mut addon.details_btn_state, title)
         .on_press(Interaction::Expand(addon.id.clone()))
         .style(style::TextButton(color_palette))

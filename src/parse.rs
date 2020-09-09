@@ -1,11 +1,3 @@
-use fancy_regex::Regex;
-use rayon::prelude::*;
-use serde_derive::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::{Path, PathBuf};
-
 use crate::{
     addon::Addon,
     config::Flavor,
@@ -14,10 +6,18 @@ use crate::{
         FingerprintInfo,
     },
     error::ClientError,
+    fs::PersistentData,
     murmur2::calculate_hash,
     tukui_api::fetch_remote_package,
     Result,
 };
+use fancy_regex::Regex;
+use rayon::prelude::*;
+use serde_derive::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Fingerprint {
@@ -25,14 +25,67 @@ pub struct Fingerprint {
     pub hash: Option<u32>,
 }
 
-pub async fn read_addon_directory<P: AsRef<Path>>(
-    root_dir: P,
-    flavor: Flavor,
-) -> Result<Vec<Addon>> {
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+pub struct FingerprintCollection {
+    pub fingerprints: Vec<Fingerprint>,
+}
+
+impl PersistentData for FingerprintCollection {
+    fn relative_path() -> PathBuf {
+        PathBuf::from("fingerprints.yml")
+    }
+}
+
+impl Default for FingerprintCollection {
+    fn default() -> Self {
+        FingerprintCollection {
+            fingerprints: vec![],
+        }
+    }
+}
+
+pub async fn load_fingerprint_collection() -> Result<FingerprintCollection> {
+    Ok(FingerprintCollection::load_or_default()?)
+}
+
+/// File parsing regexes used for parsing the addon files.
+async fn file_parsing_regex() -> Result<(Regex, Regex, HashMap<String, (regex::Regex, Regex)>)> {
     // Fetches game_info.
     // Used to get regexs for various operations.
     let game_info = fetch_game_info().await?;
 
+    // Compile regexes
+    let addon_cat = &game_info.category_sections[0];
+    let initial_inclusion_regex =
+        Regex::new(&addon_cat.initial_inclusion_pattern).expect("Error compiling inclusion regex");
+    let extra_inclusion_regex = Regex::new(&addon_cat.extra_include_pattern)
+        .expect("Error compiling extra inclusion regex");
+    let file_parsing_regex: HashMap<String, (regex::Regex, Regex)> = game_info
+        .file_parsing_rules
+        .iter()
+        .map(|data| {
+            let comment_strip_regex = regex::Regex::new(&data.comment_strip_pattern)
+                .expect("Error compiling comment strip regex");
+            let inclusion_regex =
+                Regex::new(&data.inclusion_pattern).expect("Error compiling inclusion pattern");
+            (
+                data.file_extension.clone(),
+                (comment_strip_regex, inclusion_regex),
+            )
+        })
+        .collect();
+
+    Ok((
+        initial_inclusion_regex,
+        extra_inclusion_regex,
+        file_parsing_regex,
+    ))
+}
+
+pub async fn read_addon_directory<P: AsRef<Path>>(
+    root_dir: P,
+    flavor: Flavor,
+) -> Result<Vec<Addon>> {
     // If the path does not exists or does not point on a directory we return an Error.
     if !root_dir.as_ref().is_dir() {
         return Err(ClientError::Custom(format!(
@@ -56,53 +109,50 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
-    // Compile regexes
-    let addon_cat = &game_info.category_sections[0];
-    let initial_inclusion_regex =
-        Regex::new(&addon_cat.initial_inclusion_pattern).expect("Error compiling inclusion regex");
-    let extra_inclusion_regex = Regex::new(&addon_cat.extra_include_pattern)
-        .expect("Error compiling extra inclusion regex");
-    let file_parsing_regex: HashMap<String, (regex::Regex, Regex)> = game_info
-        .file_parsing_rules
-        .iter()
-        .map(|data| {
-            let comment_strip_regex = regex::Regex::new(&data.comment_strip_pattern)
-                .expect("Error compiling comment strip regex");
-            let inclusion_regex =
-                Regex::new(&data.inclusion_pattern).expect("Error compiling inclusion pattern");
-            (
-                data.file_extension.clone(),
-                (comment_strip_regex, inclusion_regex),
-            )
-        })
-        .collect();
+    let (initial_inclusion_regex, extra_inclusion_regex, file_parsing_regex) =
+        file_parsing_regex().await?;
+
+    // Load fingerprint collection from disk.
+    let fingerprint_collection: FingerprintCollection = load_fingerprint_collection().await?;
 
     // Each addon dir mapped to fingerprint struct.
-    let fingerprints: Vec<Fingerprint> = all_dirs
+    let new_fingerprints: Vec<Fingerprint> = all_dirs
         .par_iter() // Easy parallelization
         .map(|dir_name| {
-            // TODO: We should properly save fingerprints to disk.
-            // Use metadata - modified.
             let addon_dir = root_dir.join(dir_name);
-            let hash = fingerprint_addon_dir(
-                &addon_dir,
-                &root_dir,
-                &initial_inclusion_regex,
-                &extra_inclusion_regex,
-                &file_parsing_regex,
-            );
-
-            Fingerprint {
-                title: dir_name.to_owned(),
-                hash,
+            // If we have a stored fingerprint on disk, we use that.
+            if let Some(fingerprint) = fingerprint_collection
+                .fingerprints
+                .clone()
+                .into_iter()
+                .find(|f| &f.title == dir_name)
+            {
+                fingerprint
+            } else {
+                let hash = fingerprint_addon_dir(
+                    &addon_dir,
+                    &initial_inclusion_regex,
+                    &extra_inclusion_regex,
+                    &file_parsing_regex,
+                );
+                Fingerprint {
+                    title: dir_name.to_owned(),
+                    hash,
+                }
             }
         })
         // Note: we filter out cases where hashing has failed.
         .filter(|f| f.hash.is_some())
         .collect();
 
+    // We save the new collection to disk.
+    let new_fingerprint_collection: FingerprintCollection = FingerprintCollection {
+        fingerprints: new_fingerprints.clone(),
+    };
+    let _ = new_fingerprint_collection.save();
+
     // Maps each `Fingerprint` to `Addon`.
-    let unfiltred_addons: Vec<Addon> = fingerprints
+    let unfiltred_addons: Vec<Addon> = new_fingerprints
         .par_iter()
         .map(|fingerprint| {
             // Generate .toc path.
@@ -244,15 +294,52 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     Ok(concatenated)
 }
 
+pub async fn update_addon_fingerprint(addon: Addon) -> Result<()> {
+    // Regexes
+    let (initial_inclusion_regex, extra_inclusion_regex, file_parsing_regex) =
+        file_parsing_regex().await?;
+
+    // Load fingerprint collection from disk.
+    let fingerprint_collection: FingerprintCollection = load_fingerprint_collection().await?;
+
+    // Generate new hash, and update collection.
+    if let Some(hash) = fingerprint_addon_dir(
+        &addon.path,
+        &initial_inclusion_regex,
+        &extra_inclusion_regex,
+        &file_parsing_regex,
+    ) {
+        let new_collection: Vec<Fingerprint> = fingerprint_collection
+            .fingerprints
+            .clone()
+            .iter_mut()
+            .map(|fingerprint| {
+                if fingerprint.title == addon.id {
+                    fingerprint.hash = Some(hash);
+                }
+
+                fingerprint.clone()
+            })
+            .collect();
+
+        let fingerprint_collection: FingerprintCollection = FingerprintCollection {
+            fingerprints: new_collection,
+        };
+        let _ = fingerprint_collection.save();
+    }
+
+    Ok(())
+}
+
 fn fingerprint_addon_dir(
     addon_dir: &PathBuf,
-    root_dir: &PathBuf,
     initial_inclusion_regex: &Regex,
     extra_inclusion_regex: &Regex,
     file_parsing_regex: &HashMap<String, (regex::Regex, Regex)>,
 ) -> Option<u32> {
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
+    let root_dir = addon_dir.parent()?.to_path_buf();
     // Add initial files
     let glob_pattern = format!("{}/**/*.*", addon_dir.to_str()?);
     for path in glob::glob(&glob_pattern).expect("Glob pattern error") {
@@ -263,7 +350,7 @@ fn fingerprint_addon_dir(
 
         // Test relative path matches regexes
         let relative_path = path
-            .strip_prefix(root_dir)
+            .strip_prefix(&root_dir)
             .ok()?
             .to_str()?
             .to_ascii_lowercase()

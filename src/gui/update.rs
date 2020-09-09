@@ -5,7 +5,7 @@ use {
         config::load_config,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
-        parse::read_addon_directory,
+        parse::{read_addon_directory, update_addon_fingerprint},
         Result,
     },
     async_std::sync::Arc,
@@ -232,12 +232,23 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Ok(_) => {
                         addon.state = AddonState::Ajour(Some("Completed".to_owned()));
                         addon.version = addon.remote_version.clone();
+                        return Ok(Command::perform(
+                            update_addon_fingerprint(addon.clone()),
+                            Message::UpdateFingerprint,
+                        ));
                     }
                     Err(err) => {
                         ajour.state = AjourState::Error(err);
                         addon.state = AddonState::Ajour(Some("Error".to_owned()));
                     }
                 }
+            }
+        }
+        Message::UpdateFingerprint(result) => {
+            if result.is_ok() {
+                println!("updated fingerprint");
+            } else {
+                println!("failed to update fingerprint");
             }
         }
         Message::NeedsUpdate(Ok(newer_version)) => {
