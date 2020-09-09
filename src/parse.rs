@@ -525,12 +525,14 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
             match &cap["key"] {
                 // Note: Coloring is possible via UI escape sequences.
                 // Since we don't want any color modifications, we will trim it away.
-                "Title" => title = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
-                "Author" => author = Some(cap["value"].to_string()),
-                "Notes" => notes = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
-                "Version" => {
-                    version = Some(String::from(&cap["value"]));
+                "Title" => {
+                    title = Some(re_title.replace_all(&cap["value"], "$1").trim().to_string())
                 }
+                "Author" => author = Some(cap["value"].trim().to_string()),
+                "Notes" => {
+                    notes = Some(re_title.replace_all(&cap["value"], "$1").trim().to_string())
+                }
+                "Version" => version = Some(cap["value"].trim().to_owned()),
                 // Names that must be loaded before this addon can be loaded.
                 "Dependencies" | "RequiredDeps" => {
                     dependencies.append(&mut split_dependencies_into_vec(&cap["value"]));
