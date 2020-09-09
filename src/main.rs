@@ -15,7 +15,6 @@ mod parse;
 mod theme;
 mod tukui_api;
 mod utility;
-mod wowinterface_api;
 
 use crate::error::ClientError;
 

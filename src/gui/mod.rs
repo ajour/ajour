@@ -5,12 +5,10 @@ mod update;
 use crate::{
     addon::{Addon, AddonState},
     config::{load_config, Config, Flavor},
-    curse_api,
     error::ClientError,
     theme::{load_user_themes, ColorPalette, Theme},
-    tukui_api,
     utility::needs_update,
-    wowinterface_api, Result,
+    Result,
 };
 use async_std::sync::Arc;
 use iced::{
@@ -49,12 +47,9 @@ pub enum Interaction {
 
 #[derive(Debug)]
 pub enum Message {
-    CursePackage((String, Result<curse_api::Package>)),
-    CursePackages((String, u32, Result<Vec<curse_api::Package>>)),
     DownloadedAddon((String, Result<()>)),
     Error(ClientError),
     FlavorSelected(Flavor),
-
     Interaction(Interaction),
     NeedsUpdate(Result<Option<String>>),
     None(()),
@@ -63,10 +58,8 @@ pub enum Message {
     PartialParsedAddons(Result<Vec<Addon>>),
     ThemeSelected(String),
     ThemesLoaded(Vec<Theme>),
-    TukuiPackage((String, Result<tukui_api::TukuiPackage>)),
     UnpackedAddon((String, Result<()>)),
     UpdateDirectory(Option<PathBuf>),
-    WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),
 }
 
 pub struct Ajour {

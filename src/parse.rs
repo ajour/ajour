@@ -16,11 +16,11 @@ use crate::{
     config::Flavor,
     curse_api::{
         fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
-        FingerprintInfo, Module, Package,
+        FingerprintInfo, Package,
     },
     error::ClientError,
     murmur2::calculate_hash,
-    tukui_api::{fetch_remote_package, TukuiPackage},
+    tukui_api::fetch_remote_package,
     Result,
 };
 
@@ -226,12 +226,11 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             .iter_mut()
             .find(|a| a.curse_id == Some(package.id));
         if let Some(addon) = addon {
-            addon.apply_curse_package(&package, &flavor);
+            addon.apply_curse_package(&package);
         }
     }
 
-    let mut concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
-    concatenated.sort();
+    let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
     Ok(concatenated)
 }
 

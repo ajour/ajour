@@ -2,14 +2,12 @@ use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 mod addons;
-mod tokens;
 mod wow;
 
 use crate::fs::PersistentData;
 use crate::Result;
 
 pub use crate::config::addons::Addons;
-pub use crate::config::tokens::Tokens;
 pub use crate::config::wow::{Flavor, Wow};
 
 /// Config struct.
@@ -20,9 +18,6 @@ pub struct Config {
 
     #[serde(default)]
     pub addons: Addons,
-
-    #[serde(default)]
-    pub tokens: Tokens,
 
     pub theme: Option<String>,
 }

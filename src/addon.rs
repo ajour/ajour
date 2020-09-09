@@ -1,4 +1,4 @@
-use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits, wowinterface_api};
+use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -100,25 +100,6 @@ impl Addon {
         }
     }
 
-    /// Packages from Wowinterface.
-    ///
-    /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
-    /// It then updates self, with the information from that package.
-    pub fn apply_wowi_packages(&mut self, packages: &[wowinterface_api::Package]) {
-        if let Some(wowi_id) = self.repository_identifiers.wowi.as_ref() {
-            let package = packages.iter().find(|a| &a.id == wowi_id);
-            if let Some(package) = package {
-                self.remote_version = Some(package.version.clone());
-                self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
-                self.remote_title = Some(package.title.clone());
-
-                if self.is_updatable() {
-                    self.state = AddonState::Updatable;
-                }
-            }
-        }
-    }
-
     /// Package from Tukui.
     ///
     /// This function takes a `Package` and updates self with the information.
@@ -135,42 +116,8 @@ impl Addon {
     /// Package from Curse.
     ///
     /// This function takes a `Package` and updates self with the information.
-    pub fn apply_curse_package(&mut self, package: &curse_api::Package, flavor: &Flavor) {
+    pub fn apply_curse_package(&mut self, package: &curse_api::Package) {
         self.title = package.name.clone();
-    }
-
-    /// Packages from Curse.
-    ///
-    /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
-    /// This is a slighty more complicated function, because it comes from a search
-    /// result, meaning none of the packages might match.
-    ///
-    /// The following is being done to check if we have a match:
-    /// 1. Loops each packages, and find the `File` which is stable and has right flavor.
-    /// 2. Then we loop each `Module` in the `File` and match filename with `self`.
-    /// 3. If tf we find a `Module` from step 2, we know we can update `self`
-    pub fn apply_curse_packages(&mut self, packages: &[curse_api::Package], flavor: &Flavor) {
-        // for package in packages {
-        //     let file = package.latest_files.iter().find(|f| {
-        //         f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
-        //             && !f.is_alternate
-        //             && f.game_version_flavor == format!("wow_{}", flavor.to_string())
-        //     });
-        //     if let Some(file) = file {
-        //         let module = file.modules.iter().find(|m| m.foldername == self.id);
-        //         if module.is_some() {
-        //             self.remote_version = Some(file.display_name.clone());
-        //             self.remote_url = Some(file.download_url.clone());
-        //             self.remote_title = Some(package.name.clone());
-        //             if self.is_updatable() {
-        //                 self.state = AddonState::Updatable;
-        //             }
-
-        //             // Breaks out on first hit.
-        //             break;
-        //         }
-        //     }
-        // }
     }
 
     pub fn apply_fingerprint_module(
@@ -201,26 +148,6 @@ impl Addon {
         self.dependencies = dependencies;
         self.version = Some(info.file.display_name.clone());
         self.curse_id = Some(info.id);
-    }
-
-    /// Function returns a `bool` which indicates if a addon is a parent.
-    /// For now we have the following requirements to be a parent `Addon`:
-    ///
-    /// - Has to have a version.
-    /// - None of its dependency addons have titles that are substrings of its own title.
-    pub fn is_parent(&self) -> bool {
-        match self.version {
-            Some(_) => {
-                for dependency in &self.dependencies {
-                    if self.id.contains(dependency) {
-                        return false;
-                    }
-                }
-
-                true
-            }
-            None => false,
-        }
     }
 
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
