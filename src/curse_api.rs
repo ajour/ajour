@@ -15,13 +15,14 @@ const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
 pub struct Package {
     pub id: u32,
     pub name: String,
-    pub latest_files: Vec<File>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct File {
+    pub id: i64,
     pub display_name: String,
+    pub file_name: String,
     pub download_url: String,
     pub release_type: u32,
     pub game_version_flavor: String,
@@ -88,7 +89,7 @@ pub struct FingerprintInfo {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddonFingerprintInfo {
-    pub id: i64,
+    pub id: u32,
     pub file: File,
     pub latest_files: Vec<File>,
 }
@@ -145,6 +146,22 @@ pub async fn fetch_remote_packages_by_fingerprint(
     if resp.status().is_success() {
         let fingerprint_info: FingerprintInfo = resp.json()?;
         Ok(fingerprint_info)
+    } else {
+        Err(ClientError::Custom(format!(
+            "Couldn't fetch details for addon. Server returned: {}",
+            resp.text()?
+        )))
+    }
+}
+
+pub async fn fetch_remote_packages_by_ids(curse_ids: Vec<u32>) -> Result<Vec<Package>> {
+    let url = format!("{}/addon", API_ENDPOINT);
+
+    let mut resp = post_json_async(url, curse_ids, vec![], None).await?;
+
+    if resp.status().is_success() {
+        let packages: Vec<Package> = resp.json()?;
+        Ok(packages)
     } else {
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",

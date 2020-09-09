@@ -4,7 +4,7 @@ use serde_derive::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 /// Struct for applying tukui details to an `Addon`.
-pub struct Package {
+pub struct TukuiPackage {
     pub name: String,
     pub version: String,
     pub url: String,
@@ -28,13 +28,13 @@ pub async fn fetch_remote_package(
     shared_client: &HttpClient,
     id: &str,
     flavor: &Flavor,
-) -> Result<Package> {
+) -> Result<TukuiPackage> {
     let url = api_endpoint(id, flavor);
     let timeout = Some(30);
     let mut resp = request_async(shared_client, &url, vec![], timeout).await?;
 
     if resp.status().is_success() {
-        let package: Package = resp.json()?;
+        let package: TukuiPackage = resp.json()?;
         Ok(package)
     } else {
         Err(ClientError::Custom(format!(

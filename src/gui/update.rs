@@ -204,126 +204,127 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::ParsedAddons(Ok(mut unfiltred_addons)) => {
-            let mut addons: Vec<Addon> = vec![];
+        Message::ParsedAddons(Ok(unfiltred_addons)) => {
+            ajour.addons = unfiltred_addons;
+            // let mut addons: Vec<Addon> = vec![];
 
-            // We are filtering out in the addons here.
-            // First we filter so we only have `is_parent`
-            let unfilted_addons_clone = unfiltred_addons.clone();
-            for addon in unfiltred_addons.iter_mut().collect::<Vec<&mut Addon>>() {
-                // Ensure we have bidirectional dependencies from unfilrted list.
-                addon.dependencies =
-                    bidirectional_addon_dependencies(addon, &unfilted_addons_clone);
+            // // We are filtering out in the addons here.
+            // // First we filter so we only have `is_parent`
+            // let unfilted_addons_clone = unfiltred_addons.clone();
+            // for addon in unfiltred_addons.iter_mut().collect::<Vec<&mut Addon>>() {
+            //     // Ensure we have bidirectional dependencies from unfilrted list.
+            //     addon.dependencies =
+            //         bidirectional_addon_dependencies(addon, &unfilted_addons_clone);
 
-                // Checks if a addon with same id already exsist in the Vec<Addon>.
-                let curse_id_exist = addons.iter().any(|a| {
-                    a.repository_identifiers.curse.is_some()
-                        && a.repository_identifiers.curse == addon.repository_identifiers.curse
-                        && a.id != addon.id
-                });
+            //     // Checks if a addon with same id already exsist in the Vec<Addon>.
+            //     let curse_id_exist = addons.iter().any(|a| {
+            //         a.repository_identifiers.curse.is_some()
+            //             && a.repository_identifiers.curse == addon.repository_identifiers.curse
+            //             && a.id != addon.id
+            //     });
 
-                let tukui_id_exist = addons.iter().any(|a| {
-                    a.repository_identifiers.tukui.is_some()
-                        && a.repository_identifiers.tukui == addon.repository_identifiers.tukui
-                        && a.id != addon.id
-                });
+            //     let tukui_id_exist = addons.iter().any(|a| {
+            //         a.repository_identifiers.tukui.is_some()
+            //             && a.repository_identifiers.tukui == addon.repository_identifiers.tukui
+            //             && a.id != addon.id
+            //     });
 
-                let wowi_id_exist = addons.iter().any(|a| {
-                    a.repository_identifiers.wowi.is_some()
-                        && a.repository_identifiers.wowi == addon.repository_identifiers.wowi
-                        && a.id != addon.id
-                });
+            //     let wowi_id_exist = addons.iter().any(|a| {
+            //         a.repository_identifiers.wowi.is_some()
+            //             && a.repository_identifiers.wowi == addon.repository_identifiers.wowi
+            //             && a.id != addon.id
+            //     });
 
-                // If we have a match, we find the addon.
-                let target_addon: Option<&mut Addon> = if curse_id_exist {
-                    addons.iter_mut().find(|a| {
-                        a.repository_identifiers.curse == addon.repository_identifiers.curse
-                    })
-                } else if tukui_id_exist {
-                    addons.iter_mut().find(|a| {
-                        a.repository_identifiers.tukui == addon.repository_identifiers.tukui
-                    })
-                } else if wowi_id_exist {
-                    addons.iter_mut().find(|a| {
-                        a.repository_identifiers.wowi == addon.repository_identifiers.wowi
-                    })
-                } else {
-                    None
-                };
+            //     // If we have a match, we find the addon.
+            //     let target_addon: Option<&mut Addon> = if curse_id_exist {
+            //         addons.iter_mut().find(|a| {
+            //             a.repository_identifiers.curse == addon.repository_identifiers.curse
+            //         })
+            //     } else if tukui_id_exist {
+            //         addons.iter_mut().find(|a| {
+            //             a.repository_identifiers.tukui == addon.repository_identifiers.tukui
+            //         })
+            //     } else if wowi_id_exist {
+            //         addons.iter_mut().find(|a| {
+            //             a.repository_identifiers.wowi == addon.repository_identifiers.wowi
+            //         })
+            //     } else {
+            //         None
+            //     };
 
-                // With the addon we tag the current addon as a bundle.
-                if let Some(target_addon) = target_addon {
-                    target_addon.dependencies.push(addon.id.clone());
-                    target_addon.is_bundle = true;
-                    continue;
-                } else {
-                    addons.push(addon.clone());
-                }
-            }
+            //     // With the addon we tag the current addon as a bundle.
+            //     if let Some(target_addon) = target_addon {
+            //         target_addon.dependencies.push(addon.id.clone());
+            //         target_addon.is_bundle = true;
+            //         continue;
+            //     } else {
+            //         addons.push(addon.clone());
+            //     }
+            // }
 
-            // Lastly we remove non-parents.
-            let addons = addons
-                .into_iter()
-                .filter(|a| a.is_parent())
-                .collect::<Vec<Addon>>();
+            // // Lastly we remove non-parents.
+            // let addons = addons
+            //     .into_iter()
+            //     .filter(|a| a.is_parent())
+            //     .collect::<Vec<Addon>>();
 
-            // Once filtred, we set state.
-            ajour.addons = addons;
+            // // Once filtred, we set state.
+            // ajour.addons = addons;
 
-            // Sort with state if sorting has been applied by user, otherwise use
-            // default sort.
-            if ajour.sort_state.previous_sort_key.is_some()
-                && ajour.sort_state.previous_sort_direction.is_some()
-            {
-                let sort_key = ajour.sort_state.previous_sort_key.unwrap();
-                let sort_direction = ajour.sort_state.previous_sort_direction.unwrap();
+            // // Sort with state if sorting has been applied by user, otherwise use
+            // // default sort.
+            // if ajour.sort_state.previous_sort_key.is_some()
+            //     && ajour.sort_state.previous_sort_direction.is_some()
+            // {
+            //     let sort_key = ajour.sort_state.previous_sort_key.unwrap();
+            //     let sort_direction = ajour.sort_state.previous_sort_direction.unwrap();
 
-                sort_addons(&mut ajour.addons, sort_direction, sort_key);
-            } else {
-                ajour.addons.sort();
-            }
+            //     sort_addons(&mut ajour.addons, sort_direction, sort_key);
+            // } else {
+            //     ajour.addons.sort();
+            // }
 
-            // Create a `Vec` of commands for fetching remote packages for each addon.
-            let mut commands = Vec::<Command<Message>>::new();
-            for addon in &mut ajour.addons {
-                addon.state = AddonState::Loading;
-                let addon = addon.to_owned();
-                if let (Some(_), Some(token)) = (
-                    &addon.repository_identifiers.wowi,
-                    &ajour.config.tokens.wowinterface,
-                ) {
-                    commands.push(Command::perform(
-                        fetch_wowinterface_packages(
-                            ajour.shared_client.clone(),
-                            addon,
-                            token.to_string(),
-                        ),
-                        Message::WowinterfacePackages,
-                    ))
-                } else if addon.repository_identifiers.tukui.is_some() {
-                    commands.push(Command::perform(
-                        fetch_tukui_package(
-                            ajour.shared_client.clone(),
-                            addon,
-                            ajour.config.wow.flavor,
-                        ),
-                        Message::TukuiPackage,
-                    ))
-                } else if addon.repository_identifiers.curse.is_some() {
-                    commands.push(Command::perform(
-                        fetch_curse_package(ajour.shared_client.clone(), addon),
-                        Message::CursePackage,
-                    ))
-                } else {
-                    let retries = 4;
-                    commands.push(Command::perform(
-                        fetch_curse_packages(ajour.shared_client.clone(), addon, retries),
-                        Message::CursePackages,
-                    ))
-                }
-            }
+            // // Create a `Vec` of commands for fetching remote packages for each addon.
+            // let mut commands = Vec::<Command<Message>>::new();
+            // for addon in &mut ajour.addons {
+            //     addon.state = AddonState::Loading;
+            //     let addon = addon.to_owned();
+            //     if let (Some(_), Some(token)) = (
+            //         &addon.repository_identifiers.wowi,
+            //         &ajour.config.tokens.wowinterface,
+            //     ) {
+            //         commands.push(Command::perform(
+            //             fetch_wowinterface_packages(
+            //                 ajour.shared_client.clone(),
+            //                 addon,
+            //                 token.to_string(),
+            //             ),
+            //             Message::WowinterfacePackages,
+            //         ))
+            //     } else if addon.repository_identifiers.tukui.is_some() {
+            //         commands.push(Command::perform(
+            //             fetch_tukui_package(
+            //                 ajour.shared_client.clone(),
+            //                 addon,
+            //                 ajour.config.wow.flavor,
+            //             ),
+            //             Message::TukuiPackage,
+            //         ))
+            //     } else if addon.repository_identifiers.curse.is_some() {
+            //         commands.push(Command::perform(
+            //             fetch_curse_package(ajour.shared_client.clone(), addon),
+            //             Message::CursePackage,
+            //         ))
+            //     } else {
+            //         let retries = 4;
+            //         commands.push(Command::perform(
+            //             fetch_curse_packages(ajour.shared_client.clone(), addon, retries),
+            //             Message::CursePackages,
+            //         ))
+            //     }
+            // }
 
-            return Ok(Command::batch(commands));
+            // return Ok(Command::batch(commands));
         }
         Message::CursePackage((id, result)) => {
             if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
@@ -562,7 +563,7 @@ async fn fetch_tukui_package(
     shared_client: Arc<HttpClient>,
     addon: Addon,
     flavor: Flavor,
-) -> (String, Result<tukui_api::Package>) {
+) -> (String, Result<tukui_api::TukuiPackage>) {
     (
         addon.id.clone(),
         tukui_api::fetch_remote_package(

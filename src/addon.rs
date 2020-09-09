@@ -11,13 +11,6 @@ pub enum AddonState {
     Ajour(Option<String>),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
-pub enum Identity {
-    Tukui(String),
-    Fingerprint(u32),
-    Unknown,
-}
-
 #[derive(Debug, Clone)]
 /// Struct which stores identifiers for the different repositories.
 pub struct RepositoryIdentifiers {
@@ -46,7 +39,10 @@ pub struct Addon {
     // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
     // get a name representing the bundle as a whole.
     pub is_bundle: bool,
-    pub identity: Identity,
+    pub wowi_id: Option<String>,
+    pub tukui_id: Option<String>,
+    pub curse_id: Option<u32>,
+    pub fingerprint: Option<u32>,
 
     // States for GUI
     pub details_btn_state: iced::button::State,
@@ -68,9 +64,15 @@ impl Addon {
         version: Option<String>,
         path: PathBuf,
         dependencies: Vec<String>,
-        repository_identifiers: RepositoryIdentifiers,
-        identity: Identity,
+        wowi_id: Option<String>,
+        tukui_id: Option<String>,
+        curse_id: Option<u32>,
     ) -> Self {
+        let ri = RepositoryIdentifiers {
+            wowi: None,
+            tukui: None,
+            curse: None,
+        };
         Addon {
             id,
             title,
@@ -83,9 +85,12 @@ impl Addon {
             path,
             dependencies,
             state: AddonState::Ajour(None),
-            repository_identifiers,
+            repository_identifiers: ri,
             is_bundle: false,
-            identity,
+            wowi_id,
+            tukui_id,
+            curse_id,
+            fingerprint: None,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),
@@ -117,7 +122,7 @@ impl Addon {
     /// Package from Tukui.
     ///
     /// This function takes a `Package` and updates self with the information.
-    pub fn apply_tukui_package(&mut self, package: &tukui_api::Package) {
+    pub fn apply_tukui_package(&mut self, package: &tukui_api::TukuiPackage) {
         self.remote_version = Some(package.version.clone());
         self.remote_url = Some(package.url.clone());
         self.remote_title = Some(package.name.clone());
@@ -131,19 +136,7 @@ impl Addon {
     ///
     /// This function takes a `Package` and updates self with the information.
     pub fn apply_curse_package(&mut self, package: &curse_api::Package, flavor: &Flavor) {
-        let file = package.latest_files.iter().find(|f| {
-            f.release_type == 1 && f.game_version_flavor == format!("wow_{}", flavor.to_string())
-        });
-
-        if let Some(file) = file {
-            self.remote_version = Some(file.display_name.clone());
-            self.remote_url = Some(file.download_url.clone());
-            self.remote_title = Some(package.name.clone());
-        }
-
-        if self.is_updatable() {
-            self.state = AddonState::Updatable;
-        }
+        self.title = package.name.clone();
     }
 
     /// Packages from Curse.
@@ -157,27 +150,27 @@ impl Addon {
     /// 2. Then we loop each `Module` in the `File` and match filename with `self`.
     /// 3. If tf we find a `Module` from step 2, we know we can update `self`
     pub fn apply_curse_packages(&mut self, packages: &[curse_api::Package], flavor: &Flavor) {
-        for package in packages {
-            let file = package.latest_files.iter().find(|f| {
-                f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
-                    && !f.is_alternate
-                    && f.game_version_flavor == format!("wow_{}", flavor.to_string())
-            });
-            if let Some(file) = file {
-                let module = file.modules.iter().find(|m| m.foldername == self.id);
-                if module.is_some() {
-                    self.remote_version = Some(file.display_name.clone());
-                    self.remote_url = Some(file.download_url.clone());
-                    self.remote_title = Some(package.name.clone());
-                    if self.is_updatable() {
-                        self.state = AddonState::Updatable;
-                    }
+        // for package in packages {
+        //     let file = package.latest_files.iter().find(|f| {
+        //         f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
+        //             && !f.is_alternate
+        //             && f.game_version_flavor == format!("wow_{}", flavor.to_string())
+        //     });
+        //     if let Some(file) = file {
+        //         let module = file.modules.iter().find(|m| m.foldername == self.id);
+        //         if module.is_some() {
+        //             self.remote_version = Some(file.display_name.clone());
+        //             self.remote_url = Some(file.download_url.clone());
+        //             self.remote_title = Some(package.name.clone());
+        //             if self.is_updatable() {
+        //                 self.state = AddonState::Updatable;
+        //             }
 
-                    // Breaks out on first hit.
-                    break;
-                }
-            }
-        }
+        //             // Breaks out on first hit.
+        //             break;
+        //         }
+        //     }
+        // }
     }
 
     pub fn apply_fingerprint_module(
@@ -200,9 +193,14 @@ impl Addon {
         if let Some(file) = file {
             self.remote_version = Some(file.display_name.clone());
             self.remote_url = Some(file.download_url.clone());
+
+            if file.id > info.file.id {
+                self.state = AddonState::Updatable;
+            }
         }
         self.dependencies = dependencies;
         self.version = Some(info.file.display_name.clone());
+        self.curse_id = Some(info.id);
     }
 
     /// Function returns a `bool` which indicates if a addon is a parent.

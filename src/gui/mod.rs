@@ -63,7 +63,7 @@ pub enum Message {
     PartialParsedAddons(Result<Vec<Addon>>),
     ThemeSelected(String),
     ThemesLoaded(Vec<Theme>),
-    TukuiPackage((String, Result<tukui_api::Package>)),
+    TukuiPackage((String, Result<tukui_api::TukuiPackage>)),
     UnpackedAddon((String, Result<()>)),
     UpdateDirectory(Option<PathBuf>),
     WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),

@@ -1,4 +1,9 @@
+use async_std::sync::Arc;
 use fancy_regex::Regex;
+use isahc::{
+    config::{Configurable, RedirectPolicy},
+    HttpClient,
+};
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -7,11 +12,15 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use crate::{
-    addon::{Addon, Identity, RepositoryIdentifiers},
+    addon::Addon,
     config::Flavor,
-    curse_api::{fetch_game_info, fetch_remote_packages_by_fingerprint, FingerprintInfo},
+    curse_api::{
+        fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
+        FingerprintInfo, Module, Package,
+    },
     error::ClientError,
     murmur2::calculate_hash,
+    tukui_api::{fetch_remote_package, TukuiPackage},
     Result,
 };
 
@@ -105,9 +114,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 return None;
             }
             let mut addon = parse_toc_path(&toc_path)?;
-            if let (Identity::Unknown, Some(hash)) = (&addon.identity, fingerprint.hash) {
-                addon.identity = Identity::Fingerprint(hash);
-            }
+            addon.fingerprint = fingerprint.hash;
 
             Some(addon)
         })
@@ -115,52 +122,117 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .map(|addon| addon.unwrap())
         .collect();
 
-    let _tukui_ids: Vec<_> = unfiltred_addons
+    let tukui_ids: Vec<_> = unfiltred_addons
         .iter()
         .filter_map(|addon| {
-            if let Identity::Tukui(id) = addon.identity.clone() {
-                Some(id)
+            if let Some(tukui_id) = addon.tukui_id.clone() {
+                Some(tukui_id)
             } else {
                 None
             }
         })
         .collect();
 
+    let shared_client = Arc::new(
+        HttpClient::builder()
+            .redirect_policy(RedirectPolicy::Follow)
+            .max_connections_per_host(6)
+            .build()
+            .unwrap(),
+    );
+    let mut tukui_addons: Vec<Addon> = vec![];
+    for id in tukui_ids {
+        let package = fetch_remote_package(&shared_client, &id, &flavor).await;
+        if let Some(addon) = unfiltred_addons
+            .clone()
+            .iter_mut()
+            .find(|a| a.tukui_id == Some(id.clone()))
+        {
+            if let Ok(package) = package {
+                addon.apply_tukui_package(&package);
+                tukui_addons.push(addon.clone());
+            }
+        }
+    }
+
+    link_dependencies_bidirectional(&mut tukui_addons, &unfiltred_addons);
+
     let fingerprint_hashes: Vec<_> = unfiltred_addons
         .iter()
         .filter_map(|addon| {
-            if let Identity::Fingerprint(hash) = addon.identity {
+            if let Some(hash) = addon.fingerprint {
                 Some(hash)
             } else {
                 None
             }
         })
         .collect();
-    println!("fingerprint_hashes: {:?}", fingerprint_hashes);
+
+    // Fetches fingerprint package from curse_api
     let fingerprint_package: FingerprintInfo =
         fetch_remote_packages_by_fingerprint(fingerprint_hashes).await?;
-    let fingerprint_addons: Vec<Addon> = fingerprint_package
+
+    // Converts the excat matches into our `Addon` struct.
+    let mut fingerprint_addons: Vec<Addon> = fingerprint_package
         .exact_matches
         .iter()
         .filter_map(|info| {
-            let main_module = info.file.modules.iter().find(|m| m.type_field == 3)?;
-            let mut addon = unfiltred_addons.clone().into_iter().find(|a| {
-                if let Identity::Fingerprint(hash) = a.identity {
-                    hash == main_module.fingerprint
-                } else {
-                    false
-                }
-            })?;
+            // We try to find the addon matching the curse_id.
+            let addon_by_id = unfiltred_addons
+                .clone()
+                .into_iter()
+                .find(|a| a.curse_id == Some(info.id));
 
-            addon.apply_fingerprint_module(info, flavor);
-            Some(addon)
+            if let Some(mut addon) = addon_by_id {
+                addon.apply_fingerprint_module(info, flavor);
+                return Some(addon);
+            }
+
+            // Second is we try to find the matching addon by looking at the hash.
+            let addon_by_fingerprint = unfiltred_addons.clone().into_iter().find(|a| {
+                info.file
+                    .modules
+                    .iter()
+                    .any(|m| Some(m.fingerprint) == a.fingerprint)
+            });
+
+            if let Some(mut addon) = addon_by_fingerprint {
+                addon.apply_fingerprint_module(info, flavor);
+                return Some(addon);
+            }
+
+            None
         })
         .collect();
 
-    println!("fingerprint_addons: {:?}", fingerprint_addons);
+    // Creates a `Vec` of curse_ids.
+    let curse_ids: Vec<_> = fingerprint_addons
+        .iter()
+        .filter_map(|addon| {
+            if let Some(curse_id) = addon.curse_id {
+                Some(curse_id)
+            } else {
+                None
+            }
+        })
+        .collect();
 
-    // link_dependencies_bidirectional(&mut addons);
-    Ok(fingerprint_addons)
+    // Fetches the curse packages based on the ids.
+    let curse_id_packages: Vec<Package> = fetch_remote_packages_by_ids(curse_ids).await?;
+
+    // Loops the packages, and updates our Addons with information.
+    for package in curse_id_packages {
+        let addon = fingerprint_addons
+            .iter_mut()
+            .find(|a| a.curse_id == Some(package.id));
+        if let Some(addon) = addon {
+            addon.apply_curse_package(&package, &flavor);
+        }
+    }
+
+    let mut concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
+    concatenated.sort();
+    Ok(concatenated)
 }
 
 fn fingerprint_addon_dir(
@@ -316,14 +388,12 @@ where
 /// `Foo` - dependencies: [`Bar`, `Baz`]
 /// `Bar` - dependencies: [`Foo`]
 /// `Baz` - dependencies: [`Foo`]
-fn link_dependencies_bidirectional(addons: &mut Vec<Addon>) {
-    let clone_addons = addons.clone();
-
-    for addon in addons {
-        for clone_addon in &clone_addons {
-            for dependency in &clone_addon.dependencies {
+fn link_dependencies_bidirectional(sliced_addons: &mut Vec<Addon>, all_addons: &Vec<Addon>) {
+    for addon in sliced_addons {
+        for unsorted_addon in all_addons {
+            for dependency in &unsorted_addon.dependencies {
                 if dependency == &addon.id {
-                    addon.dependencies.push(clone_addon.id.clone());
+                    addon.dependencies.push(unsorted_addon.id.clone());
                 }
             }
         }
@@ -353,63 +423,35 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
     let mut notes: Option<String> = None;
     let mut version: Option<String> = None;
     let mut dependencies: Vec<String> = Vec::new();
-    let repository_identifiers = RepositoryIdentifiers {
-        wowi: None,
-        tukui: None,
-        curse: None,
-    };
-    let mut identity = Identity::Unknown;
+    let mut wowi_id: Option<String> = None;
+    let mut tukui_id: Option<String> = None;
+    let mut curse_id: Option<u32> = None;
 
-    // It is an anti-pattern to compile the same regular expression in a loop,
-    // which is why they are created here.
-    //
-    // https://docs.rs/regex/1.3.9/regex/#example-avoid-compiling-the-same-regex-in-a-loop
+    // TODO: We should save these somewere so we don't keep creating them.
     let re_toc = regex::Regex::new(r"^##\s(?P<key>.*?):\s?(?P<value>.*)").unwrap();
     let re_title = regex::Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?").unwrap();
 
     for line in reader.lines().filter_map(|l| l.ok()) {
         for cap in re_toc.captures_iter(line.as_str()) {
             match &cap["key"] {
-                // String - The title to display.
-                //
                 // Note: Coloring is possible via UI escape sequences.
-                // Since we don't want any color modifications, we will
-                // trim it away.
-                // Example 1: |cff1784d1ElvUI|r should be just ElvUI.
-                // Example 2: BigWigs [|cffeda55fUldir|r] should be BigWigs [Uldir].
+                // Since we don't want any color modifications, we will trim it away.
                 "Title" => title = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
-                // String - Author
                 "Author" => author = Some(cap["value"].to_string()),
-                // String - Notes
                 "Notes" => notes = Some(re_title.replace_all(&cap["value"], "$1").to_string()),
-                // String - The AddOn version
                 "Version" => {
                     version = Some(String::from(&cap["value"]));
                 }
-                // String - A comma-separated list of addon (directory)
-                // names that must be loaded before this addon can be loaded.
+                // Names that must be loaded before this addon can be loaded.
                 "Dependencies" | "RequiredDeps" => {
                     dependencies.append(&mut split_dependencies_into_vec(&cap["value"]));
                 }
-                // String - Addon identifier for Wowinterface API.
-                "X-WoWI-ID" => {
-                    // Deprecated
-                    // repository_identifiers.wowi = Some(cap["value"].to_string());
-                }
-                // String - Addon identifier for TukUI API.
-                "X-Tukui-ProjectID" => {
-                    // Deprecated
-                    // repository_identifiers.tukui = Some(cap["value"].to_string());
-                    identity = Identity::Tukui(cap["value"].to_string())
-                }
-                // String - Addon identifier for Curse API.
+                "X-Tukui-ProjectID" => tukui_id = Some(cap["value"].to_string()),
+                "X-WoWI-ID" => wowi_id = Some(cap["value"].to_string()),
                 "X-Curse-Project-ID" => {
-                    // Santize the id, so we only get a `u32`.
-                    // if let Ok(id) = cap["value"].to_string().parse::<u32>() {
-                    // identity = Identity::Curse(id)
-                    // Deprecated
-                    // repository_identifiers.curse = Some(id)
-                    // }
+                    if let Ok(id) = cap["value"].to_string().parse::<u32>() {
+                        curse_id = Some(id)
+                    }
                 }
                 _ => (),
             }
@@ -424,8 +466,9 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
         version,
         path,
         dependencies,
-        repository_identifiers,
-        identity,
+        wowi_id,
+        tukui_id,
+        curse_id,
     ))
 }
 
