@@ -57,15 +57,9 @@ The plan is to have a stable, polished release in time for the Shadowlands launc
 
 Ajour is being developed and tested on macOS and Windows, but should work on Linux if installed from source.
 
-**_After updating an addon, it still says it can be updated. What gives?_**
+**_What should I do if some addon isn't showing or updating correctly?_**
 
-Ajour does a "best effort" attempt at comparing the local addon version, with the latest version available online. Sometimes addon authors specify different versions when uploading their addon to a repository than what they have written in the addon itself. If the numbers don't match, Ajour will say an update is available every time the list is refreshed.
-
-**_I'm using addon XYZ but I don't see it in Ajour. Why is that?_**
-
-Ajour parses through the AddOns folder and uses a couple of rules to determine what to show (main addons) and not to show (dependencies). For example: If an addon does not specify a version in its .toc file, Ajour cannot determine if a newer version of it is available, and so we assume it's a dependency of another addon and hide it. 
-
-If you are using an addon that Ajour doesn't list, we encourage you to raise an issue and tell us about it! We want Ajour to handle as many edge cases as possible. A collection of addons with known issues can be found in the [wiki](https://github.com/casperstorm/ajour/wiki/Addons-with-known-issues).
+We encourage you to raise an issue and tell us all about it! We want Ajour to support as many addons as possible. This means a lot of edge cases. A list of addons with known issues can be found in the [wiki](https://github.com/casperstorm/ajour/wiki/Addons-with-known-issues).
 
 **_Why Rust?_**
 
