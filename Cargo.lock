@@ -50,6 +50,7 @@ dependencies = [
  "iced_futures",
  "image",
  "isahc",
+ "lazy_static",
  "native-dialog",
  "opener",
  "percent-encoding",
