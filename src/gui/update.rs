@@ -12,7 +12,7 @@ use {
     iced::{button, Command},
     isahc::HttpClient,
     native_dialog::*,
-    std::path::PathBuf,
+    std::path::{Path, PathBuf},
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -234,10 +234,37 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Ok(_) => {
                         addon.state = AddonState::Fingerprint;
                         addon.version = addon.remote_version.clone();
-                        return Ok(Command::perform(
-                            perform_hash_addon(addon.clone(), ajour.fingerprint_collection.clone()),
+
+                        let mut commands = vec![];
+                        commands.push(Command::perform(
+                            perform_hash_addon(
+                                ajour
+                                    .config
+                                    .get_addon_directory()
+                                    .expect("Expected a valid path"),
+                                addon.id.clone(),
+                                ajour.fingerprint_collection.clone(),
+                            ),
                             Message::UpdateFingerprint,
                         ));
+
+                        for dep in &addon.dependencies {
+                            if dep != &addon.id {
+                                commands.push(Command::perform(
+                                    perform_hash_addon(
+                                        ajour
+                                            .config
+                                            .get_addon_directory()
+                                            .expect("Expected a valid path"),
+                                        dep.clone(),
+                                        ajour.fingerprint_collection.clone(),
+                                    ),
+                                    Message::UpdateFingerprint,
+                                ));
+                            }
+                        }
+
+                        return Ok(Command::batch(commands));
                     }
                     Err(err) => {
                         ajour.state = AjourState::Error(err);
@@ -332,12 +359,13 @@ async fn perform_download_addon(
 
 /// Rehashes a `Addon`.
 async fn perform_hash_addon(
-    addon: Addon,
+    addon_dir: impl AsRef<Path>,
+    addon_id: String,
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
 ) -> (String, Result<()>) {
     (
-        addon.id.clone(),
-        update_addon_fingerprint(fingerprint_collection, addon).await,
+        addon_id.clone(),
+        update_addon_fingerprint(fingerprint_collection, addon_dir, addon_id).await,
     )
 }
 

@@ -314,7 +314,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
 pub async fn update_addon_fingerprint(
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
-    addon: Addon,
+    addon_dir: impl AsRef<Path>,
+    addon_id: String,
 ) -> Result<()> {
     // Regexes
     let ParsingPatterns {
@@ -323,9 +324,11 @@ pub async fn update_addon_fingerprint(
         file_parsing_regex,
     } = file_parsing_regex().await?;
 
+    let addon_path = addon_dir.as_ref().join(&addon_id);
+
     // Generate new hash, and update collection.
     if let Some(hash) = fingerprint_addon_dir(
-        &addon.path,
+        &addon_path,
         &initial_inclusion_regex,
         &extra_inclusion_regex,
         &file_parsing_regex,
@@ -342,7 +345,7 @@ pub async fn update_addon_fingerprint(
         let fingerprint_collection = collection_guard.as_mut().unwrap();
 
         fingerprint_collection.iter_mut().for_each(|fingerprint| {
-            if fingerprint.title == addon.id {
+            if fingerprint.title == addon_id {
                 fingerprint.hash = Some(hash);
             }
         });
