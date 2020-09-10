@@ -93,13 +93,11 @@ pub struct AddonFingerprintInfo {
     pub latest_files: Vec<File>,
 }
 
-pub async fn fetch_remote_packages_by_fingerprint(
-    fingerprints: Vec<u32>,
-) -> Result<FingerprintInfo> {
+pub async fn fetch_remote_packages_by_fingerprint(fingerprints: &[u32]) -> Result<FingerprintInfo> {
     let url = format!("{}/fingerprint", API_ENDPOINT);
     let mut resp = post_json_async(url, fingerprints, vec![], None).await?;
     if resp.status().is_success() {
-        let fingerprint_info: FingerprintInfo = resp.json()?;
+        let fingerprint_info = resp.json()?;
         Ok(fingerprint_info)
     } else {
         Err(ClientError::Custom(format!(
@@ -109,11 +107,11 @@ pub async fn fetch_remote_packages_by_fingerprint(
     }
 }
 
-pub async fn fetch_remote_packages_by_ids(curse_ids: Vec<u32>) -> Result<Vec<Package>> {
+pub async fn fetch_remote_packages_by_ids(curse_ids: &[u32]) -> Result<Vec<Package>> {
     let url = format!("{}/addon", API_ENDPOINT);
     let mut resp = post_json_async(url, curse_ids, vec![], None).await?;
     if resp.status().is_success() {
-        let packages: Vec<Package> = resp.json()?;
+        let packages = resp.json()?;
         Ok(packages)
     } else {
         Err(ClientError::Custom(format!(
@@ -128,7 +126,7 @@ pub async fn fetch_game_info() -> Result<GameInfo> {
     let client = HttpClient::builder().build().unwrap();
     let mut resp = request_async(&client, url, vec![], None).await?;
     if resp.status().is_success() {
-        let game_info: GameInfo = resp.json()?;
+        let game_info = resp.json()?;
         Ok(game_info)
     } else {
         Err(ClientError::Custom(format!(

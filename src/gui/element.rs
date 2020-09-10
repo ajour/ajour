@@ -504,21 +504,16 @@ pub fn menu_container<'a>(
     .style(style::DefaultBoxedButton(color_palette));
 
     // Is any addon performing an action.
-    let addons_performing_actions = addons.iter().any(|a| match a.state {
-        AddonState::Downloading | AddonState::Unpacking => true,
-        _ => false,
-    });
+    let addons_performing_actions = addons
+        .iter()
+        .any(|a| matches!(a.state, AddonState::Downloading | AddonState::Unpacking));
 
-    let ajour_performing_actions = match state {
-        AjourState::Loading => true,
-        _ => false,
-    };
+    let ajour_performing_actions = matches!(state, AjourState::Loading);
 
     // Is any addon updtable.
-    let any_addon_updatable = addons.iter().any(|a| match a.state {
-        AddonState::Updatable => true,
-        _ => false,
-    });
+    let any_addon_updatable = addons
+        .iter()
+        .any(|a| matches!(a.state, AddonState::Updatable));
 
     // Enable update_all_button if:
     //   - We have addons.

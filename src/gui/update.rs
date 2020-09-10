@@ -45,7 +45,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Refresh) => {
             // Re-parse addons.
-            ajour.addons = Vec::new();
+            ajour.addons = vec![];
             return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
@@ -129,9 +129,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // If it's already expanded, we collapse it again.
             if let Some(addon) = ajour.addons.iter().find(|a| a.id == id) {
                 if let Some(is_addon_expanded) =
-                    &ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
+                    ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
                 {
-                    if *is_addon_expanded {
+                    if is_addon_expanded {
                         ajour.expanded_addon = None;
                         return Ok(Command::none());
                     }
@@ -142,20 +142,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
-            let addons = ajour.addons.clone();
-            if let Some(addon) = addons.iter().find(|a| a.id == id) {
+            if let Some(addon) = ajour.addons.iter().find(|a| a.id == id).cloned() {
                 let addon_directory = ajour
                     .config
                     .get_addon_directory()
                     .expect("has to have addon directory");
-                let addons_to_be_deleted = [&addon.dependencies[..], &[addon.id.clone()]].concat();
+                let addons_to_be_deleted = [&addon.dependencies[..], &[addon.id]].concat();
                 let _ = delete_addons(&addon_directory, &addons_to_be_deleted);
-                ajour.addons = ajour
+                ajour
                     .addons
-                    .clone()
-                    .into_iter()
-                    .filter(|a| addons_to_be_deleted.iter().any(|ab| ab != &a.id))
-                    .collect();
+                    .retain(|a| !addons_to_be_deleted.iter().any(|ab| ab != &a.id));
             }
         }
         Message::Interaction(Interaction::Update(id)) => {
@@ -163,7 +159,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .config
                 .get_temporary_addon_directory()
                 .expect("Expected a valid path");
-            for addon in &mut ajour.addons {
+            for addon in ajour.addons.iter_mut() {
                 if addon.id == id {
                     addon.state = AddonState::Downloading;
                     return Ok(Command::perform(
@@ -179,8 +175,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::UpdateAll) => {
             // Update all pressed
-            let mut commands = Vec::<Command<Message>>::new();
-            for addon in &mut ajour.addons {
+            let mut commands = vec![];
+            for addon in ajour.addons.iter_mut() {
                 if addon.state == AddonState::Updatable {
                     if let Some(to_directory) = ajour.config.get_temporary_addon_directory() {
                         addon.state = AddonState::Downloading;
@@ -330,9 +326,7 @@ async fn perform_download_addon(
 ) -> (String, Result<()>) {
     (
         addon.id.clone(),
-        download_addon(&shared_client, &addon, &to_directory)
-            .await
-            .map(|_| ()),
+        download_addon(&shared_client, &addon, &to_directory).await,
     )
 }
 
@@ -355,9 +349,7 @@ async fn perform_unpack_addon(
 ) -> (String, Result<()>) {
     (
         addon.id.clone(),
-        install_addon(&addon, &from_directory, &to_directory)
-            .await
-            .map(|_| ()),
+        install_addon(&addon, &from_directory, &to_directory).await,
     )
 }
 
