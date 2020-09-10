@@ -26,8 +26,10 @@ static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
 
 #[derive(Debug)]
 pub enum AjourState {
-    Idle,
     Error(ClientError),
+    Idle,
+    Loading,
+    Welcome,
 }
 
 #[derive(Debug, Clone)]
@@ -106,7 +108,7 @@ impl Default for Ajour {
                     .build()
                     .unwrap(),
             ),
-            state: AjourState::Idle,
+            state: AjourState::Loading,
             update_all_btn_state: Default::default(),
             sort_state: Default::default(),
             theme_state: Default::default(),
@@ -142,7 +144,6 @@ impl Application for Ajour {
 
     fn view(&mut self) -> Element<Message> {
         let has_addons = !&self.addons.is_empty();
-        let has_wow_path = self.config.wow.directory.is_some();
 
         // Ignored addons.
         // We find the  corresponding `Addon` from the ignored strings.
@@ -238,15 +239,35 @@ impl Application for Ajour {
                 .push(bottom_space)
         }
 
-        // If we have no addons, and no path we assume onboarding.
-        if !has_addons && !has_wow_path {
-            let status_container = element::status_container(
+        // Status messages.
+        let container: Option<Container<Message>> = match self.state {
+            AjourState::Welcome => Some(element::status_container(
                 color_palette,
                 "Welcome to Ajour!",
                 "To get started, go to Settings and select your World of Warcraft directory.",
-            );
-            content = content.push(status_container);
-        }
+            )),
+            AjourState::Idle => {
+                if !has_addons {
+                    Some(element::status_container(
+                        color_palette,
+                        "Woops!",
+                        "It seems you have no addons in your AddOn directory.",
+                    ))
+                } else {
+                    None
+                }
+            }
+            AjourState::Loading => Some(element::status_container(
+                color_palette,
+                "Loading...",
+                "Currently parsing addons.",
+            )),
+            _ => None,
+        };
+
+        if let Some(c) = container {
+            content = content.push(c);
+        };
 
         // Small padding to make UI fit better.
         content = content.padding(3);

@@ -21,8 +21,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
-            // Reset state
-            ajour.state = AjourState::Idle;
+
+            // Prepare state for loading.
+            ajour.state = AjourState::Loading;
 
             // Use theme from config. Set to "Dark" if not defined.
             ajour.theme_state.current_theme_name =
@@ -31,11 +32,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Begin to parse addon folder.
             let addon_directory = ajour.config.get_addon_directory();
             let flavor = ajour.config.wow.flavor;
+
             if let Some(dir) = addon_directory {
                 return Ok(Command::perform(
                     read_addon_directory(dir, flavor),
                     Message::ParsedAddons,
                 ));
+            } else {
+                // Assume we are welcoming a user because directory is not set.
+                ajour.state = AjourState::Welcome;
             }
         }
         Message::Interaction(Interaction::Refresh) => {
@@ -196,6 +201,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::ParsedAddons(Ok(mut addons)) => {
             sort_addons(&mut addons, SortDirection::Asc, SortKey::Status);
             ajour.addons = addons;
+            ajour.state = AjourState::Idle;
         }
         Message::DownloadedAddon((id, result)) => {
             // When an addon has been successfully downloaded we begin to unpack it.
