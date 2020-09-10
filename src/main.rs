@@ -9,12 +9,12 @@ mod curse_api;
 mod error;
 mod fs;
 mod gui;
+mod murmur2;
 mod network;
+mod parse;
 mod theme;
-mod toc;
 mod tukui_api;
 mod utility;
-mod wowinterface_api;
 
 use crate::error::ClientError;
 

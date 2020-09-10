@@ -13,3 +13,6 @@
 
 # Environment variables
 .env
+
+# Editor config
+.vscode/

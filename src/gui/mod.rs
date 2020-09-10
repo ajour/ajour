@@ -5,14 +5,13 @@ mod update;
 use crate::{
     addon::{Addon, AddonState},
     config::{load_config, Config, Flavor},
-    curse_api,
     error::ClientError,
+    parse::FingerprintCollection,
     theme::{load_user_themes, ColorPalette, Theme},
-    tukui_api,
     utility::needs_update,
-    wowinterface_api, Result,
+    Result,
 };
-use async_std::sync::Arc;
+use async_std::sync::{Arc, Mutex};
 use iced::{
     button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
     Settings, Space,
@@ -28,8 +27,10 @@ static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
 
 #[derive(Debug)]
 pub enum AjourState {
-    Idle,
     Error(ClientError),
+    Idle,
+    Loading,
+    Welcome,
 }
 
 #[derive(Debug, Clone)]
@@ -49,24 +50,19 @@ pub enum Interaction {
 
 #[derive(Debug)]
 pub enum Message {
-    CursePackage((String, Result<curse_api::Package>)),
-    CursePackages((String, u32, Result<Vec<curse_api::Package>>)),
     DownloadedAddon((String, Result<()>)),
     Error(ClientError),
     FlavorSelected(Flavor),
-
     Interaction(Interaction),
     NeedsUpdate(Result<Option<String>>),
     None(()),
     Parse(Result<Config>),
     ParsedAddons(Result<Vec<Addon>>),
-    PartialParsedAddons(Result<Vec<Addon>>),
+    UpdateFingerprint((String, Result<()>)),
     ThemeSelected(String),
     ThemesLoaded(Vec<Theme>),
-    TukuiPackage((String, Result<tukui_api::Package>)),
     UnpackedAddon((String, Result<()>)),
     UpdateDirectory(Option<PathBuf>),
-    WowinterfacePackages((String, Result<Vec<wowinterface_api::Package>>)),
 }
 
 pub struct Ajour {
@@ -88,6 +84,7 @@ pub struct Ajour {
     update_all_btn_state: button::State,
     sort_state: SortState,
     theme_state: ThemeState,
+    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
 }
 
 impl Default for Ajour {
@@ -113,10 +110,11 @@ impl Default for Ajour {
                     .build()
                     .unwrap(),
             ),
-            state: AjourState::Idle,
+            state: AjourState::Loading,
             update_all_btn_state: Default::default(),
             sort_state: Default::default(),
             theme_state: Default::default(),
+            fingerprint_collection: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -149,7 +147,6 @@ impl Application for Ajour {
 
     fn view(&mut self) -> Element<Message> {
         let has_addons = !&self.addons.is_empty();
-        let has_wow_path = self.config.wow.directory.is_some();
 
         // Ignored addons.
         // We find the  corresponding `Addon` from the ignored strings.
@@ -245,15 +242,35 @@ impl Application for Ajour {
                 .push(bottom_space)
         }
 
-        // If we have no addons, and no path we assume onboarding.
-        if !has_addons && !has_wow_path {
-            let status_container = element::status_container(
+        // Status messages.
+        let container: Option<Container<Message>> = match self.state {
+            AjourState::Welcome => Some(element::status_container(
                 color_palette,
                 "Welcome to Ajour!",
                 "To get started, go to Settings and select your World of Warcraft directory.",
-            );
-            content = content.push(status_container);
-        }
+            )),
+            AjourState::Idle => {
+                if !has_addons {
+                    Some(element::status_container(
+                        color_palette,
+                        "Woops!",
+                        "It seems you have no addons in your AddOn directory.",
+                    ))
+                } else {
+                    None
+                }
+            }
+            AjourState::Loading => Some(element::status_container(
+                color_palette,
+                "Loading..",
+                "Currently parsing addons.",
+            )),
+            _ => None,
+        };
+
+        if let Some(c) = container {
+            content = content.push(c);
+        };
 
         // Small padding to make UI fit better.
         content = content.padding(3);

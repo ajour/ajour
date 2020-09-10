@@ -1,6 +1,7 @@
 use crate::{addon::Addon, Result};
 use async_std::{fs::File, prelude::*};
 use isahc::prelude::*;
+use serde::Serialize;
 use std::path::PathBuf;
 
 /// Generic request function.
@@ -10,9 +11,7 @@ pub async fn request_async<T: ToString>(
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
 ) -> Result<Response<isahc::Body>> {
-    // Edge case:
     // Sometimes a download url has a space.
-    // FIXME: Can we do this more elegant?
     let url = url.to_string().replace(" ", "%20");
 
     let mut request = Request::builder().uri(url);
@@ -26,6 +25,32 @@ pub async fn request_async<T: ToString>(
     }
 
     Ok(shared_client.send_async(request.body(())?).await?)
+}
+
+// Generic function for posting Json data
+pub async fn post_json_async<T: ToString, D: Serialize>(
+    url: T,
+    data: D,
+    headers: Vec<(&str, &str)>,
+    timeout: Option<u64>,
+) -> Result<Response<isahc::Body>> {
+    let mut request = Request::builder()
+        .method("POST")
+        .uri(url.to_string())
+        .header("content-type", "application/json");
+
+    for (name, value) in headers {
+        request = request.header(name, value);
+    }
+
+    if let Some(timeout) = timeout {
+        request = request.timeout(std::time::Duration::from_secs(timeout));
+    }
+
+    Ok(request
+        .body(serde_json::to_vec(&data)?)?
+        .send_async()
+        .await?)
 }
 
 /// Function to download a zip archive for a `Addon`.

@@ -1,14 +1,14 @@
-use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits, wowinterface_api};
+use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits};
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
-    Updatable,
-    Loading,
-    Downloading,
-    Unpacking,
     Ajour(Option<String>),
+    Downloading,
+    Fingerprint,
+    Unpacking,
+    Updatable,
 }
 
 #[derive(Debug, Clone)]
@@ -33,12 +33,10 @@ pub struct Addon {
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
-    pub repository_identifiers: RepositoryIdentifiers,
-    // If an addon consists of multiple folders, and all of them has a version all will be
-    // shown. We try to bundle them together as one, in that case. See: https://github.com/casperstorm/ajour/issues/39
-    // When a addon is bundled, the only difference is we use `remote_title` rather than `title` to
-    // get a name representing the bundle as a whole.
-    pub is_bundle: bool,
+    pub wowi_id: Option<String>,
+    pub tukui_id: Option<String>,
+    pub curse_id: Option<u32>,
+    pub fingerprint: Option<u32>,
 
     // States for GUI
     pub details_btn_state: iced::button::State,
@@ -60,7 +58,9 @@ impl Addon {
         version: Option<String>,
         path: PathBuf,
         dependencies: Vec<String>,
-        repository_identifiers: RepositoryIdentifiers,
+        wowi_id: Option<String>,
+        tukui_id: Option<String>,
+        curse_id: Option<u32>,
     ) -> Self {
         Addon {
             id,
@@ -74,8 +74,10 @@ impl Addon {
             path,
             dependencies,
             state: AddonState::Ajour(None),
-            repository_identifiers,
-            is_bundle: false,
+            wowi_id,
+            tukui_id,
+            curse_id,
+            fingerprint: None,
             details_btn_state: Default::default(),
             update_btn_state: Default::default(),
             force_btn_state: Default::default(),
@@ -85,29 +87,10 @@ impl Addon {
         }
     }
 
-    /// Packages from Wowinterface.
-    ///
-    /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
-    /// It then updates self, with the information from that package.
-    pub fn apply_wowi_packages(&mut self, packages: &[wowinterface_api::Package]) {
-        if let Some(wowi_id) = self.repository_identifiers.wowi.as_ref() {
-            let package = packages.iter().find(|a| &a.id == wowi_id);
-            if let Some(package) = package {
-                self.remote_version = Some(package.version.clone());
-                self.remote_url = Some(crate::wowinterface_api::remote_url(&wowi_id));
-                self.remote_title = Some(package.title.clone());
-
-                if self.is_updatable() {
-                    self.state = AddonState::Updatable;
-                }
-            }
-        }
-    }
-
     /// Package from Tukui.
     ///
     /// This function takes a `Package` and updates self with the information.
-    pub fn apply_tukui_package(&mut self, package: &tukui_api::Package) {
+    pub fn apply_tukui_package(&mut self, package: &tukui_api::TukuiPackage) {
         self.remote_version = Some(package.version.clone());
         self.remote_url = Some(package.url.clone());
         self.remote_title = Some(package.name.clone());
@@ -120,88 +103,57 @@ impl Addon {
     /// Package from Curse.
     ///
     /// This function takes a `Package` and updates self with the information.
-    pub fn apply_curse_package(&mut self, package: &curse_api::Package, flavor: &Flavor) {
-        let file = package.latest_files.iter().find(|f| {
-            f.release_type == 1 && f.game_version_flavor == format!("wow_{}", flavor.to_string())
-        });
+    pub fn apply_curse_package(&mut self, package: &curse_api::Package) {
+        self.title = package.name.clone();
+    }
+
+    pub fn apply_fingerprint_module(
+        &mut self,
+        info: &curse_api::AddonFingerprintInfo,
+        flavor: Flavor,
+    ) {
+        let dependencies: Vec<String> = info
+            .file
+            .modules
+            .iter()
+            .map(|m| m.foldername.clone())
+            .collect();
+
+        let flavor = format!("wow_{}", flavor.to_string());
+        // We try to find the latest stable release. If we can't find that.
+        // We will fallback to latest beta release. And lastly we give up.
+        let file = if let Some(file) = info.latest_files.iter().find(|f| {
+            f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
+                && !f.is_alternate
+                && f.game_version_flavor == flavor
+        }) {
+            Some(file)
+        } else if let Some(file) = info.latest_files.iter().find(|f| {
+            f.release_type == 2 // 1 is stable, 2 is beta, 3 is alpha.
+                && !f.is_alternate
+                && f.game_version_flavor == flavor
+        }) {
+            Some(file)
+        } else {
+            None
+        };
 
         if let Some(file) = file {
             self.remote_version = Some(file.display_name.clone());
             self.remote_url = Some(file.download_url.clone());
-            self.remote_title = Some(package.name.clone());
-        }
 
-        if self.is_updatable() {
-            self.state = AddonState::Updatable;
-        }
-    }
-
-    /// Packages from Curse.
-    ///
-    /// This functions takes a `&Vec<Package>` and finds the one matching `self`.
-    /// This is a slighty more complicated function, because it comes from a search
-    /// result, meaning none of the packages might match.
-    ///
-    /// The following is being done to check if we have a match:
-    /// 1. Loops each packages, and find the `File` which is stable and has right flavor.
-    /// 2. Then we loop each `Module` in the `File` and match filename with `self`.
-    /// 3. If tf we find a `Module` from step 2, we know we can update `self`
-    pub fn apply_curse_packages(&mut self, packages: &[curse_api::Package], flavor: &Flavor) {
-        for package in packages {
-            let file = package.latest_files.iter().find(|f| {
-                f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
-                    && !f.is_alternate
-                    && f.game_version_flavor == format!("wow_{}", flavor.to_string())
-            });
-            if let Some(file) = file {
-                let module = file.modules.iter().find(|m| m.foldername == self.id);
-                if module.is_some() {
-                    self.remote_version = Some(file.display_name.clone());
-                    self.remote_url = Some(file.download_url.clone());
-                    self.remote_title = Some(package.name.clone());
-                    if self.is_updatable() {
-                        self.state = AddonState::Updatable;
-                    }
-
-                    // Breaks out on first hit.
-                    break;
-                }
+            if file.id > info.file.id {
+                self.state = AddonState::Updatable;
             }
         }
-    }
-
-    /// Function returns a `bool` which indicates if a addon is a parent.
-    /// For now we have the following requirements to be a parent `Addon`:
-    ///
-    /// - Has to have a version.
-    /// - None of its dependency addons have titles that are substrings of its own title.
-    pub fn is_parent(&self) -> bool {
-        match self.version {
-            Some(_) => {
-                for dependency in &self.dependencies {
-                    if self.id.contains(dependency) {
-                        return false;
-                    }
-                }
-
-                true
-            }
-            None => false,
-        }
+        self.dependencies = dependencies;
+        self.version = Some(info.file.display_name.clone());
+        self.curse_id = Some(info.id);
     }
 
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
     pub fn is_ignored(&self, ignored: &[String]) -> bool {
         ignored.iter().any(|i| i == &self.id)
-    }
-
-    /// Takes a `Addon` and updates self.
-    /// Used when we reparse a single `Addon`.
-    pub fn update_addon(&mut self, other: &Addon) {
-        self.title = other.title.clone();
-        self.version = other.version.clone();
-        self.dependencies = other.dependencies.clone();
-        self.repository_identifiers = other.repository_identifiers.clone();
     }
 
     /// Check if the `Addon` is updatable.
