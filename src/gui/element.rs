@@ -285,7 +285,7 @@ pub fn addon_data_cell(
             .center_x()
             .padding(5)
             .style(style::AddonRowSecondaryTextContainer(color_palette)),
-        AddonState::Loading => Container::new(Text::new("Loading").size(DEFAULT_FONT_SIZE))
+        AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
             .height(default_height)
             .width(update_button_width)
             .center_y()
@@ -497,16 +497,25 @@ pub fn menu_container<'a>(
     )
     .style(style::DefaultBoxedButton(color_palette));
 
-    let refresh_button = Button::new(
+    let mut refresh_button = Button::new(
         refresh_button_state,
         Text::new("Refresh").size(DEFAULT_FONT_SIZE),
     )
-    .on_press(Interaction::Refresh)
     .style(style::DefaultBoxedButton(color_palette));
 
+    let addons_performing_actions = addons.iter().any(|a| match a.state {
+        AddonState::Downloading | AddonState::Unpacking => true,
+        _ => false,
+    });
+
     // Enable update_all_button and refresh_button, if we have any Addons.
-    if !addons.is_empty() {
+    if !addons.is_empty() && !addons_performing_actions {
         update_all_button = update_all_button.on_press(Interaction::UpdateAll);
+    }
+
+    // Enable refresh_button if we are not performing any actions on any addon.
+    if !addons_performing_actions {
+        refresh_button = refresh_button.on_press(Interaction::Refresh);
     }
 
     let update_all_button: Element<Interaction> = update_all_button.into();
@@ -518,15 +527,8 @@ pub fn menu_container<'a>(
         .iter()
         .filter(|a| !a.is_ignored(&ignored_addons))
         .count();
-    let loading_addons = addons
-        .iter()
-        .filter(|a| a.state == AddonState::Loading)
-        .count();
-    let status_text = if loading_addons != 0 {
-        Text::new(format!("Fetching data for {} addons", loading_addons)).size(DEFAULT_FONT_SIZE)
-    } else {
-        Text::new(format!("{} addons loaded", parent_addons_count)).size(DEFAULT_FONT_SIZE)
-    };
+    let status_text =
+        Text::new(format!("{} addons loaded", parent_addons_count)).size(DEFAULT_FONT_SIZE);
 
     let status_container = Container::new(status_text)
         .center_y()

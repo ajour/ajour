@@ -4,11 +4,11 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
-    Updatable,
-    Loading,
-    Downloading,
-    Unpacking,
     Ajour(Option<String>),
+    Downloading,
+    Fingerprint,
+    Unpacking,
+    Updatable,
 }
 
 #[derive(Debug, Clone)]

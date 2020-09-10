@@ -58,7 +58,7 @@ pub enum Message {
     None(()),
     Parse(Result<Config>),
     ParsedAddons(Result<Vec<Addon>>),
-    UpdateFingerprint(Result<()>),
+    UpdateFingerprint((String, Result<()>)),
     ThemeSelected(String),
     ThemesLoaded(Vec<Theme>),
     UnpackedAddon((String, Result<()>)),

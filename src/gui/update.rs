@@ -5,10 +5,10 @@ use {
         config::load_config,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
-        parse::{read_addon_directory, update_addon_fingerprint},
+        parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
         Result,
     },
-    async_std::sync::Arc,
+    async_std::sync::{Arc, Mutex},
     iced::{button, Command},
     isahc::HttpClient,
     native_dialog::*,
@@ -199,7 +199,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::batch(commands));
         }
         Message::ParsedAddons(Ok(mut addons)) => {
-            sort_addons(&mut addons, SortDirection::Asc, SortKey::Status);
+            sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
             ajour.addons = addons;
             ajour.state = AjourState::Idle;
         }
@@ -236,13 +236,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
                 match result {
                     Ok(_) => {
-                        addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                        addon.state = AddonState::Fingerprint;
                         addon.version = addon.remote_version.clone();
                         return Ok(Command::perform(
-                            update_addon_fingerprint(
-                                ajour.fingerprint_collection.clone(),
-                                addon.clone(),
-                            ),
+                            perform_hash_addon(addon.clone(), ajour.fingerprint_collection.clone()),
                             Message::UpdateFingerprint,
                         ));
                     }
@@ -253,11 +250,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::UpdateFingerprint(result) => {
-            if result.is_ok() {
-                println!("updated fingerprint");
-            } else {
-                println!("failed to update fingerprint");
+        Message::UpdateFingerprint((id, result)) => {
+            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+                if let Ok(_) = result {
+                    addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                } else {
+                    addon.state = AddonState::Ajour(Some("Error".to_owned()));
+                }
             }
         }
         Message::NeedsUpdate(Ok(newer_version)) => {
@@ -334,6 +333,17 @@ async fn perform_download_addon(
         download_addon(&shared_client, &addon, &to_directory)
             .await
             .map(|_| ()),
+    )
+}
+
+/// Rehashes a `Addon`.
+async fn perform_hash_addon(
+    addon: Addon,
+    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+) -> (String, Result<()>) {
+    (
+        addon.id.clone(),
+        update_addon_fingerprint(fingerprint_collection, addon).await,
     )
 }
 
