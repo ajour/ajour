@@ -503,18 +503,35 @@ pub fn menu_container<'a>(
     )
     .style(style::DefaultBoxedButton(color_palette));
 
+    // Is any addon performing an action.
     let addons_performing_actions = addons.iter().any(|a| match a.state {
         AddonState::Downloading | AddonState::Unpacking => true,
         _ => false,
     });
 
-    // Enable update_all_button and refresh_button, if we have any Addons.
-    if !addons.is_empty() && !addons_performing_actions {
+    let ajour_performing_actions = match state {
+        AjourState::Loading => true,
+        _ => false,
+    };
+
+    // Is any addon updtable.
+    let any_addon_updatable = addons.iter().any(|a| match a.state {
+        AddonState::Updatable => true,
+        _ => false,
+    });
+
+    // Enable update_all_button if:
+    //   - We have addons.
+    //   - No addon is performing any task.
+    //   - We have updatable addons.
+    if !addons.is_empty() && !addons_performing_actions && any_addon_updatable {
         update_all_button = update_all_button.on_press(Interaction::UpdateAll);
     }
 
-    // Enable refresh_button if we are not performing any actions on any addon.
-    if !addons_performing_actions {
+    // Enable refresh_button if:
+    //   - No addon is performing any task.
+    //   - Ajour isn't loading
+    if !addons_performing_actions && !ajour_performing_actions {
         refresh_button = refresh_button.on_press(Interaction::Refresh);
     }
 
@@ -527,8 +544,13 @@ pub fn menu_container<'a>(
         .iter()
         .filter(|a| !a.is_ignored(&ignored_addons))
         .count();
-    let status_text =
-        Text::new(format!("{} addons loaded", parent_addons_count)).size(DEFAULT_FONT_SIZE);
+
+    let status_text = match state {
+        AjourState::Idle => {
+            Text::new(format!("{} addons loaded", parent_addons_count)).size(DEFAULT_FONT_SIZE)
+        }
+        _ => Text::new(""),
+    };
 
     let status_container = Container::new(status_text)
         .center_y()

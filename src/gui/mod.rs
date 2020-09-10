@@ -262,7 +262,7 @@ impl Application for Ajour {
             }
             AjourState::Loading => Some(element::status_container(
                 color_palette,
-                "Loading...",
+                "Loading..",
                 "Currently parsing addons.",
             )),
             _ => None,
