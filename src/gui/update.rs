@@ -252,7 +252,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::UpdateFingerprint((id, result)) => {
             if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
-                if let Ok(_) = result {
+                if result.is_ok() {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
                 } else {
                     addon.state = AddonState::Ajour(Some("Error".to_owned()));
