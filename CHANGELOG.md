@@ -11,6 +11,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Now uses fingerprinting to better match addons.
 ### Fixed
 - Trimming leading and trailing whitespace from toc values.
+- UI glitch in settings.
 
 ## [0.2.5] - 2020-09-05
 ### Added
