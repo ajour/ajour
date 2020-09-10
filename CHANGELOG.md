@@ -5,13 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
-
 ## [Unreleased]
+
+## [0.3.0] - 2020-09-10
 ### Added
-- Now uses fingerprinting to better match addons.
+- Fingerprinting is now used to better match addons.
+  - This is a bigger refactor, which introduces a whole new way of matching addons. We are now doing a hash of each addon, which we then compare with the API to see if we need to update or not. It has, however, introduced a longer initial load time because we need to hash each addon. The hash is saved locally, so we have some logic in place to minimize the amount of times we are hashing.
 ### Fixed
 - Trimming leading and trailing whitespace from toc values.
-
+  - Small issue where some `.toc` files added multiple space before, or after values which would confuse our UI. 
+- UI glitch in settings has been removed.
 ## [0.2.5] - 2020-09-05
 ### Added
 - Make columns sortable (by [tarkah](https://github.com/tarkah))
