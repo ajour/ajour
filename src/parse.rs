@@ -11,7 +11,7 @@ use crate::{
     tukui_api::fetch_remote_package,
     Result,
 };
-use async_std::sync::{Arc, Mutex};
+use async_std::sync::Mutex;
 use fancy_regex::Regex;
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
@@ -21,7 +21,7 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 lazy_static::lazy_static! {
-    static ref CACHED_GAME_INFO: Arc<Mutex<Option<GameInfo>>> = Arc::new(Mutex::new(None));
+    static ref CACHED_GAME_INFO: Mutex<Option<GameInfo>> = Mutex::new(None);
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -53,13 +53,13 @@ async fn file_parsing_regex() -> Result<ParsingPatterns> {
     // Fetches game_info from memory or API if not in memory
     // Used to get regexs for various operations.
     let game_info = {
-        let cached_info = { CACHED_GAME_INFO.clone().lock().await.clone() };
+        let cached_info = { CACHED_GAME_INFO.lock().await.clone() };
 
         if let Some(info) = cached_info {
             info
         } else {
             let info = fetch_game_info().await?;
-            *CACHED_GAME_INFO.clone().lock().await = Some(info.clone());
+            *CACHED_GAME_INFO.lock().await = Some(info.clone());
 
             info
         }
