@@ -35,7 +35,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             if let Some(dir) = addon_directory {
                 return Ok(Command::perform(
-                    read_addon_directory(dir, flavor),
+                    read_addon_directory(ajour.fingerprint_collection.clone(), dir, flavor),
                     Message::ParsedAddons,
                 ));
             } else {
@@ -239,7 +239,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon.state = AddonState::Ajour(Some("Completed".to_owned()));
                         addon.version = addon.remote_version.clone();
                         return Ok(Command::perform(
-                            update_addon_fingerprint(addon.clone()),
+                            update_addon_fingerprint(
+                                ajour.fingerprint_collection.clone(),
+                                addon.clone(),
+                            ),
                             Message::UpdateFingerprint,
                         ));
                     }

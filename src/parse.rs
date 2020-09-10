@@ -11,7 +11,7 @@ use crate::{
     tukui_api::fetch_remote_package,
     Result,
 };
-use async_std::sync::Mutex;
+use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
@@ -25,12 +25,12 @@ lazy_static::lazy_static! {
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
-struct Fingerprint {
+pub struct Fingerprint {
     pub title: String,
     pub hash: Option<u32>,
 }
 
-type FingerprintCollection = Vec<Fingerprint>;
+pub type FingerprintCollection = Vec<Fingerprint>;
 
 impl PersistentData for FingerprintCollection {
     fn relative_path() -> PathBuf {
@@ -94,6 +94,7 @@ async fn file_parsing_regex() -> Result<ParsingPatterns> {
 }
 
 pub async fn read_addon_directory<P: AsRef<Path>>(
+    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     root_dir: P,
     flavor: Flavor,
 ) -> Result<Vec<Addon>> {
@@ -126,8 +127,14 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         file_parsing_regex,
     } = file_parsing_regex().await?;
 
-    // Load fingerprint collection from disk.
-    let fingerprint_collection: FingerprintCollection = load_fingerprint_collection().await?;
+    // Load fingerprint collection from memory else disk.
+    let mut collection_guard = fingerprint_collection.lock().await;
+
+    if collection_guard.is_none() {
+        *collection_guard = Some(load_fingerprint_collection().await?);
+    }
+
+    let fingerprint_collection = collection_guard.as_mut().unwrap();
 
     // Each addon dir mapped to fingerprint struct.
     let new_fingerprints: FingerprintCollection = all_dirs
@@ -158,13 +165,15 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .filter(|f| f.hash.is_some())
         .collect();
 
-    // We save the new collection to disk.
-    let _ = new_fingerprints.save();
+    // Update our in memory collection and save to disk.
+    fingerprint_collection.drain(..);
+    fingerprint_collection.extend(new_fingerprints);
+    let _ = fingerprint_collection.save();
 
     // Maps each `Fingerprint` to `Addon`.
-    let unfiltred_addons: Vec<Addon> = new_fingerprints
+    let unfiltred_addons: Vec<Addon> = fingerprint_collection
         .par_iter()
-        .map(|fingerprint| {
+        .filter_map(|fingerprint| {
             // Generate .toc path.
             let toc_path = root_dir
                 .join(&fingerprint.title)
@@ -179,9 +188,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
             Some(addon)
         })
-        .filter(|addon| addon.is_some())
-        .map(|addon| addon.unwrap())
         .collect();
+
+    // Drop Mutex guard, collection is no longer needed
+    drop(collection_guard);
 
     // Filters the Tukui ids.
     let tukui_ids: Vec<_> = unfiltred_addons
@@ -302,16 +312,16 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     Ok(concatenated)
 }
 
-pub async fn update_addon_fingerprint(addon: Addon) -> Result<()> {
+pub async fn update_addon_fingerprint(
+    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    addon: Addon,
+) -> Result<()> {
     // Regexes
     let ParsingPatterns {
         initial_inclusion_regex,
         extra_inclusion_regex,
         file_parsing_regex,
     } = file_parsing_regex().await?;
-
-    // Load fingerprint collection from disk.
-    let mut fingerprint_collection: FingerprintCollection = load_fingerprint_collection().await?;
 
     // Generate new hash, and update collection.
     if let Some(hash) = fingerprint_addon_dir(
@@ -320,13 +330,27 @@ pub async fn update_addon_fingerprint(addon: Addon) -> Result<()> {
         &extra_inclusion_regex,
         &file_parsing_regex,
     ) {
+        // Lock Mutex ensuring this is the only operation that can update the collection.
+        // This is needed since during `Update All` we can have concurrent operations updating
+        // this collection and we need to ensure they don't overwrite eachother.
+        let mut collection_guard = fingerprint_collection.lock().await;
+
+        if collection_guard.is_none() {
+            *collection_guard = Some(load_fingerprint_collection().await?);
+        }
+
+        let fingerprint_collection = collection_guard.as_mut().unwrap();
+
         fingerprint_collection.iter_mut().for_each(|fingerprint| {
             if fingerprint.title == addon.id {
                 fingerprint.hash = Some(hash);
             }
         });
 
+        // Persist collection to disk
         let _ = fingerprint_collection.save();
+
+        // Mutex guard is dropped, allowing other operations to work on FingerprintCollection
     }
 
     Ok(())
