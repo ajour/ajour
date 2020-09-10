@@ -5,9 +5,12 @@
 Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
 
 <p align="center">
-  <img width="600"
-       alt="Ajour"
+  <img width="400"
+       alt="Ajour with default Dark theme"
        src="./resources/screenshots/ajour-0.3.0a.png">
+    <img width="400"
+       alt="Ajour with Solarized Light theme"
+       src="./resources/screenshots/ajour-0.3.0b.png">
 </p>
 
 ![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
