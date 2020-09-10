@@ -6,11 +6,12 @@ use crate::{
     addon::{Addon, AddonState},
     config::{load_config, Config, Flavor},
     error::ClientError,
+    parse::FingerprintCollection,
     theme::{load_user_themes, ColorPalette, Theme},
     utility::needs_update,
     Result,
 };
-use async_std::sync::Arc;
+use async_std::sync::{Arc, Mutex};
 use iced::{
     button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
     Settings, Space,
@@ -83,6 +84,7 @@ pub struct Ajour {
     update_all_btn_state: button::State,
     sort_state: SortState,
     theme_state: ThemeState,
+    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
 }
 
 impl Default for Ajour {
@@ -112,6 +114,7 @@ impl Default for Ajour {
             update_all_btn_state: Default::default(),
             sort_state: Default::default(),
             theme_state: Default::default(),
+            fingerprint_collection: Arc::new(Mutex::new(None)),
         }
     }
 }
