@@ -130,6 +130,7 @@ pub fn settings_container<'a>(
     // Container wrapping colum.
     let left_container = Container::new(left_column)
         .width(Length::FillPortion(1))
+        .height(Length::Fill)
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Title for the ignored addons scrollable.
