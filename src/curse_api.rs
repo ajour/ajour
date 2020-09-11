@@ -14,6 +14,7 @@ const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
 pub struct Package {
     pub id: u32,
     pub name: String,
+    pub latest_files: Vec<File>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
