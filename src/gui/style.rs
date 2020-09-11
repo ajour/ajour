@@ -144,7 +144,6 @@ impl button::StyleSheet for ColumnHeaderButton {
         button::Style {
             background: Some(Background::Color(self.0.background)),
             text_color: Color {
-                a: 0.4,
                 ..self.0.on_surface
             },
             border_radius: 2,
@@ -191,7 +190,7 @@ impl container::StyleSheet for AddonRowSecondaryTextContainer {
         container::Style {
             background: Some(Background::Color(self.0.surface)),
             text_color: Some(Color {
-                a: 0.4,
+                a: 0.65,
                 ..self.0.on_surface
             }),
             ..container::Style::default()
@@ -204,7 +203,7 @@ impl container::StyleSheet for SecondaryTextContainer {
     fn style(&self) -> container::Style {
         container::Style {
             text_color: Some(Color {
-                a: 0.4,
+                a: 0.65,
                 ..self.0.on_surface
             }),
             ..container::Style::default()

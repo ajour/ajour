@@ -601,9 +601,9 @@ pub fn menu_container<'a>(
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
         .push(left_spacer)
-        .push(update_all_button.map(Message::Interaction))
-        .push(spacer)
         .push(refresh_button.map(Message::Interaction))
+        .push(spacer)
+        .push(update_all_button.map(Message::Interaction))
         .push(status_container)
         .push(error_container)
         .push(version_container);
