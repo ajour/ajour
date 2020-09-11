@@ -36,7 +36,7 @@ pub async fn fetch_remote_package(id: &str, flavor: &Flavor) -> Result<TukuiPack
     let mut resp = request_async(&client, &url, vec![], timeout).await?;
 
     if resp.status().is_success() {
-        let package: TukuiPackage = resp.json()?;
+        let package = resp.json()?;
         Ok(package)
     } else {
         Err(ClientError::Custom(format!(

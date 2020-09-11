@@ -12,7 +12,7 @@ use {
     iced::{button, Command},
     isahc::HttpClient,
     native_dialog::*,
-    std::path::PathBuf,
+    std::path::{Path, PathBuf},
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -45,7 +45,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Refresh) => {
             // Re-parse addons.
-            ajour.addons = Vec::new();
+            ajour.addons = vec![];
             return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
@@ -129,9 +129,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // If it's already expanded, we collapse it again.
             if let Some(addon) = ajour.addons.iter().find(|a| a.id == id) {
                 if let Some(is_addon_expanded) =
-                    &ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
+                    ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
                 {
-                    if *is_addon_expanded {
+                    if is_addon_expanded {
                         ajour.expanded_addon = None;
                         return Ok(Command::none());
                     }
@@ -142,20 +142,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
-            let addons = ajour.addons.clone();
-            if let Some(addon) = addons.iter().find(|a| a.id == id) {
+            if let Some(addon) = ajour.addons.iter().find(|a| a.id == id).cloned() {
                 let addon_directory = ajour
                     .config
                     .get_addon_directory()
                     .expect("has to have addon directory");
-                let addons_to_be_deleted = [&addon.dependencies[..], &[addon.id.clone()]].concat();
+                let addons_to_be_deleted = [&addon.dependencies[..], &[addon.id]].concat();
                 let _ = delete_addons(&addon_directory, &addons_to_be_deleted);
-                ajour.addons = ajour
+                ajour
                     .addons
-                    .clone()
-                    .into_iter()
-                    .filter(|a| addons_to_be_deleted.iter().any(|ab| ab != &a.id))
-                    .collect();
+                    .retain(|a| !addons_to_be_deleted.iter().any(|ab| ab != &a.id));
             }
         }
         Message::Interaction(Interaction::Update(id)) => {
@@ -163,7 +159,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .config
                 .get_temporary_addon_directory()
                 .expect("Expected a valid path");
-            for addon in &mut ajour.addons {
+            for addon in ajour.addons.iter_mut() {
                 if addon.id == id {
                     addon.state = AddonState::Downloading;
                     return Ok(Command::perform(
@@ -179,8 +175,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::UpdateAll) => {
             // Update all pressed
-            let mut commands = Vec::<Command<Message>>::new();
-            for addon in &mut ajour.addons {
+            let mut commands = vec![];
+            for addon in ajour.addons.iter_mut() {
                 if addon.state == AddonState::Updatable {
                     if let Some(to_directory) = ajour.config.get_temporary_addon_directory() {
                         addon.state = AddonState::Downloading;
@@ -238,10 +234,37 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Ok(_) => {
                         addon.state = AddonState::Fingerprint;
                         addon.version = addon.remote_version.clone();
-                        return Ok(Command::perform(
-                            perform_hash_addon(addon.clone(), ajour.fingerprint_collection.clone()),
+
+                        let mut commands = vec![];
+                        commands.push(Command::perform(
+                            perform_hash_addon(
+                                ajour
+                                    .config
+                                    .get_addon_directory()
+                                    .expect("Expected a valid path"),
+                                addon.id.clone(),
+                                ajour.fingerprint_collection.clone(),
+                            ),
                             Message::UpdateFingerprint,
                         ));
+
+                        for dep in &addon.dependencies {
+                            if dep != &addon.id {
+                                commands.push(Command::perform(
+                                    perform_hash_addon(
+                                        ajour
+                                            .config
+                                            .get_addon_directory()
+                                            .expect("Expected a valid path"),
+                                        dep.clone(),
+                                        ajour.fingerprint_collection.clone(),
+                                    ),
+                                    Message::UpdateFingerprint,
+                                ));
+                            }
+                        }
+
+                        return Ok(Command::batch(commands));
                     }
                     Err(err) => {
                         ajour.state = AjourState::Error(err);
@@ -330,20 +353,19 @@ async fn perform_download_addon(
 ) -> (String, Result<()>) {
     (
         addon.id.clone(),
-        download_addon(&shared_client, &addon, &to_directory)
-            .await
-            .map(|_| ()),
+        download_addon(&shared_client, &addon, &to_directory).await,
     )
 }
 
 /// Rehashes a `Addon`.
 async fn perform_hash_addon(
-    addon: Addon,
+    addon_dir: impl AsRef<Path>,
+    addon_id: String,
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
 ) -> (String, Result<()>) {
     (
-        addon.id.clone(),
-        update_addon_fingerprint(fingerprint_collection, addon).await,
+        addon_id.clone(),
+        update_addon_fingerprint(fingerprint_collection, addon_dir, addon_id).await,
     )
 }
 
@@ -355,9 +377,7 @@ async fn perform_unpack_addon(
 ) -> (String, Result<()>) {
     (
         addon.id.clone(),
-        install_addon(&addon, &from_directory, &to_directory)
-            .await
-            .map(|_| ()),
+        install_addon(&addon, &from_directory, &to_directory).await,
     )
 }
 

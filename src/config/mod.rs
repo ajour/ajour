@@ -26,11 +26,11 @@ impl Config {
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory(&self) -> Option<PathBuf> {
-        match self.wow.directory.clone() {
+        match &self.wow.directory {
             Some(dir) => {
                 // We prepend and append `_` to the formatted_client_flavor so it
                 // either becomes _retail_, or _classic_.
-                let formatted_client_flavor = format!("_{}_", self.wow.flavor.to_string());
+                let formatted_client_flavor = format!("_{}_", self.wow.flavor);
 
                 // The path to the directory containing the addons
                 Some(dir.join(formatted_client_flavor).join("Interface/AddOns"))

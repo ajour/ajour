@@ -3,7 +3,7 @@ use crate::{
     config::Flavor,
     curse_api::{
         fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
-        FingerprintInfo, GameInfo,
+        GameInfo,
     },
     error::ClientError,
     fs::PersistentData,
@@ -71,7 +71,7 @@ async fn file_parsing_regex() -> Result<ParsingPatterns> {
         Regex::new(&addon_cat.initial_inclusion_pattern).expect("Error compiling inclusion regex");
     let extra_inclusion_regex = Regex::new(&addon_cat.extra_include_pattern)
         .expect("Error compiling extra inclusion regex");
-    let file_parsing_regex: HashMap<String, (regex::Regex, Regex)> = game_info
+    let file_parsing_regex = game_info
         .file_parsing_rules
         .iter()
         .map(|data| {
@@ -98,14 +98,15 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     root_dir: P,
     flavor: Flavor,
 ) -> Result<Vec<Addon>> {
+    let root_dir = root_dir.as_ref();
+
     // If the path does not exists or does not point on a directory we return an Error.
-    if !root_dir.as_ref().is_dir() {
+    if !root_dir.is_dir() {
         return Err(ClientError::Custom(format!(
             "Addon directory not found: {:?}",
-            root_dir.as_ref().to_owned()
+            root_dir
         )));
     }
-    let root_dir = root_dir.as_ref().to_owned();
 
     // All addon dirs gathered in a `Vec<String>`.
     let all_dirs: Vec<String> = root_dir
@@ -142,12 +143,9 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .map(|dir_name| {
             let addon_dir = root_dir.join(dir_name);
             // If we have a stored fingerprint on disk, we use that.
-            if let Some(fingerprint) = fingerprint_collection
-                .clone()
-                .into_iter()
-                .find(|f| &f.title == dir_name)
+            if let Some(fingerprint) = fingerprint_collection.iter().find(|f| &f.title == dir_name)
             {
-                fingerprint
+                fingerprint.clone()
             } else {
                 let hash = fingerprint_addon_dir(
                     &addon_dir,
@@ -171,7 +169,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let _ = fingerprint_collection.save();
 
     // Maps each `Fingerprint` to `Addon`.
-    let unfiltred_addons: Vec<Addon> = fingerprint_collection
+    let unfiltred_addons: Vec<_> = fingerprint_collection
         .par_iter()
         .filter_map(|fingerprint| {
             // Generate .toc path.
@@ -205,20 +203,20 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
-    let mut tukui_addons: Vec<Addon> = vec![];
+    let mut tukui_addons = vec![];
     // Loops each tukui_id and fetch a remote package from their api.
     for id in tukui_ids {
         let package = fetch_remote_package(&id, &flavor).await;
         // Find the corresponding addon.
-        if let Some(addon) = unfiltred_addons
-            .clone()
-            .iter_mut()
+        if let Some(mut addon) = unfiltred_addons
+            .iter()
             .find(|a| a.tukui_id == Some(id.clone()))
+            .cloned()
         {
             // apply package to addon.
             if let Ok(package) = package {
                 addon.apply_tukui_package(&package);
-                tukui_addons.push(addon.clone());
+                tukui_addons.push(addon);
             }
         }
     }
@@ -243,19 +241,18 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .collect();
 
     // Fetches fingerprint package from curse_api
-    let fingerprint_package: FingerprintInfo =
-        fetch_remote_packages_by_fingerprint(fingerprint_hashes).await?;
+    let fingerprint_package = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
 
     // Converts the excat matches into our `Addon` struct.
-    let mut fingerprint_addons: Vec<Addon> = fingerprint_package
+    let mut fingerprint_addons: Vec<_> = fingerprint_package
         .exact_matches
         .iter()
         .filter_map(|info| {
             // We try to find the addon matching the curse_id.
             let addon_by_id = unfiltred_addons
-                .clone()
-                .into_iter()
-                .find(|a| a.curse_id == Some(info.id));
+                .iter()
+                .find(|a| a.curse_id == Some(info.id))
+                .cloned();
 
             // Apply package.
             if let Some(mut addon) = addon_by_id {
@@ -264,12 +261,15 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             }
 
             // Second is we try to find the matching addon by looking at the hash.
-            let addon_by_fingerprint = unfiltred_addons.clone().into_iter().find(|a| {
-                info.file
-                    .modules
-                    .iter()
-                    .any(|m| Some(m.fingerprint) == a.fingerprint)
-            });
+            let addon_by_fingerprint = unfiltred_addons
+                .iter()
+                .find(|a| {
+                    info.file
+                        .modules
+                        .iter()
+                        .any(|m| Some(m.fingerprint) == a.fingerprint)
+                })
+                .cloned();
 
             // Apply package.
             if let Some(mut addon) = addon_by_fingerprint {
@@ -294,7 +294,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .collect();
 
     // Fetches the curse packages based on the ids.
-    let curse_id_packages_result = fetch_remote_packages_by_ids(curse_ids).await;
+    let curse_id_packages_result = fetch_remote_packages_by_ids(&curse_ids).await;
     if let Ok(curse_id_packages) = curse_id_packages_result {
         // Loops the packages, and updates our Addons with information.
         for package in curse_id_packages {
@@ -314,7 +314,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
 pub async fn update_addon_fingerprint(
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
-    addon: Addon,
+    addon_dir: impl AsRef<Path>,
+    addon_id: String,
 ) -> Result<()> {
     // Regexes
     let ParsingPatterns {
@@ -323,9 +324,11 @@ pub async fn update_addon_fingerprint(
         file_parsing_regex,
     } = file_parsing_regex().await?;
 
+    let addon_path = addon_dir.as_ref().join(&addon_id);
+
     // Generate new hash, and update collection.
     if let Some(hash) = fingerprint_addon_dir(
-        &addon.path,
+        &addon_path,
         &initial_inclusion_regex,
         &extra_inclusion_regex,
         &file_parsing_regex,
@@ -342,7 +345,7 @@ pub async fn update_addon_fingerprint(
         let fingerprint_collection = collection_guard.as_mut().unwrap();
 
         fingerprint_collection.iter_mut().for_each(|fingerprint| {
-            if fingerprint.title == addon.id {
+            if fingerprint.title == addon_id {
                 fingerprint.hash = Some(hash);
             }
         });
@@ -364,7 +367,7 @@ fn fingerprint_addon_dir(
 ) -> Option<u32> {
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
-    let root_dir = addon_dir.parent()?.to_path_buf();
+    let root_dir = addon_dir.parent()?;
     // Add initial files
     let glob_pattern = format!("{}/**/*.*", addon_dir.to_str()?);
     for path in glob::glob(&glob_pattern).expect("Glob pattern error") {
@@ -375,7 +378,7 @@ fn fingerprint_addon_dir(
 
         // Test relative path matches regexes
         let relative_path = path
-            .strip_prefix(&root_dir)
+            .strip_prefix(root_dir)
             .ok()?
             .to_str()?
             .to_ascii_lowercase()
@@ -420,11 +423,11 @@ fn fingerprint_addon_dir(
     }
 
     // Calculate fingerprints
-    let mut fingerprints: Vec<u32> = to_fingerprint
+    let mut fingerprints: Vec<_> = to_fingerprint
         .iter()
         .map(|path| {
             // Read file, removing whitespace
-            let data: Vec<u8> = std::fs::read(path)
+            let data: Vec<_> = std::fs::read(path)
                 .expect("Error reading file for fingerprinting")
                 .into_iter()
                 .filter(|&b| b != b' ' && b != b'\n' && b != b'\r' && b != b'\t')
@@ -438,7 +441,7 @@ fn fingerprint_addon_dir(
     let to_hash = fingerprints
         .iter()
         .map(|val| val.to_string())
-        .collect::<Vec<String>>()
+        .collect::<Vec<_>>()
         .join("");
 
     Some(calculate_hash(to_hash.as_bytes(), 1))
@@ -502,7 +505,7 @@ where
 /// `Foo` - dependencies: [`Bar`, `Baz`]
 /// `Bar` - dependencies: [`Foo`]
 /// `Baz` - dependencies: [`Foo`]
-fn link_dependencies_bidirectional(sliced_addons: &mut Vec<Addon>, all_addons: &[Addon]) {
+fn link_dependencies_bidirectional(sliced_addons: &mut [Addon], all_addons: &[Addon]) {
     for addon in sliced_addons {
         for unsorted_addon in all_addons {
             for dependency in &unsorted_addon.dependencies {
