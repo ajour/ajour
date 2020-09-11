@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 ## [Unreleased]
+### Fixed
+- Correctly rehashes addons after an update. (by [tarkah](https://github.com/tarkah))
 
 ## [0.3.0] - 2020-09-10
 ### Added
