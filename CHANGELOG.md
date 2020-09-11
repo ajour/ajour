@@ -7,10 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Fixed
+- Include curse addons that failed fingerprinting
+  - Even though fingerprinting failed, there is still a curse project id that can be used to lookup the addon via the curse API. Previously these addons were not shown, but now they are included.
+
 ## [0.3.2] - 2020-09-11
 ### Changed
 - Light theme is now a bit more gentle to the eyes. Don't worry, it's still not default.
 - Switched Refresh and Update All buttons.
+
 ## [0.3.1] - 2020-09-11
 ### Fixed
 - Correctly rehashes addon after an update.
