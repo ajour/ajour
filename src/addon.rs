@@ -102,9 +102,54 @@ impl Addon {
 
     /// Package from Curse.
     ///
-    /// This function takes a `Package` and updates self with the information.
-    pub fn apply_curse_package(&mut self, package: &curse_api::Package) {
+    /// This function takes a `Package` and updates self with the information. For packages
+    /// that weren't updated from the fingerprint module, apply all the relevant metadata
+    /// for this package.
+    pub fn apply_curse_package(
+        &mut self,
+        package: &curse_api::Package,
+        flavor: Flavor,
+        fingerprinted: bool,
+    ) {
         self.title = package.name.clone();
+
+        if !fingerprinted {
+            let flavor = format!("wow_{}", flavor.to_string());
+            // We try to find the latest stable release. If we can't find that.
+            // We will fallback to latest beta release. And lastly we give up.
+            let file = if let Some(file) = package.latest_files.iter().find(|f| {
+                f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
+                && !f.is_alternate
+                && f.game_version_flavor == flavor
+            }) {
+                Some(file)
+            } else if let Some(file) = package.latest_files.iter().find(|f| {
+                f.release_type == 2 // 1 is stable, 2 is beta, 3 is alpha.
+                && !f.is_alternate
+                && f.game_version_flavor == flavor
+            }) {
+                Some(file)
+            } else {
+                None
+            };
+
+            if let Some(file) = file {
+                let dependencies: Vec<String> =
+                    file.modules.iter().map(|m| m.foldername.clone()).collect();
+
+                self.dependencies = dependencies;
+                self.remote_version = Some(file.display_name.clone());
+                self.remote_url = Some(file.download_url.clone());
+
+                // Always assume a non-match on version name means an upgrade is
+                // available. Worst case, user upgrades through the app which will
+                // then allow us to match on fingerprint afterwards and it'll
+                // be more accurate.
+                if self.version.as_ref() != Some(&file.display_name) {
+                    self.state = AddonState::Updatable;
+                }
+            }
+        }
     }
 
     pub fn apply_fingerprint_module(
