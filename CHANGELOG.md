@@ -5,9 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
+
 ## [Unreleased]
+## [0.3.1] - 2020-09-11
 ### Fixed
-- Correctly rehashes addons after an update. (by [tarkah](https://github.com/tarkah))
+- Correctly rehashes addon after an update.
+  - After an addon was updated we did in some cases not rehash correctly. This was due to the fact that a addon can have multiple folders and this was not taken into account in this case. Another case was that we replaced the content with the new update, but that could again lead to a miscalclulated hash if there was a mismatch in amount of files. Thanks to [tarkah](https://github.com/tarkah) for these optimizations.
 
 ## [0.3.0] - 2020-09-10
 ### Added
