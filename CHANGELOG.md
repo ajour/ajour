@@ -10,6 +10,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Fixed
 - Include curse addons that failed fingerprinting
   - Even though fingerprinting failed, there is still a curse project id that can be used to lookup the addon via the curse API. Previously these addons were not shown, but now they are included.
+- Check for case-insensitive version of `Interface/AddOns` folder for robustness
 
 ## [0.3.2] - 2020-09-11
 ### Changed
