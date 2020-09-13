@@ -4,11 +4,11 @@ mod update;
 
 use crate::{
     addon::{Addon, AddonState},
-    config::{load_config, Config, Flavor},
+    config::{Config, Flavor},
     error::ClientError,
+    fs::config_dir,
     parse::FingerprintCollection,
-    theme::{load_user_themes, ColorPalette, Theme},
-    utility::needs_update,
+    theme::{ColorPalette, Theme},
     Result,
 };
 use async_std::sync::{Arc, Mutex};
@@ -50,6 +50,7 @@ pub enum Interaction {
 
 #[derive(Debug)]
 pub enum Message {
+    ConfigDirExists(PathBuf),
     DownloadedAddon((String, Result<()>)),
     Error(ClientError),
     FlavorSelected(Flavor),
@@ -125,13 +126,12 @@ impl Application for Ajour {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        let init_commands = vec![
-            Command::perform(load_config(), Message::Parse),
-            Command::perform(needs_update(), Message::NeedsUpdate),
-            Command::perform(load_user_themes(), Message::ThemesLoaded),
-        ];
-
-        (Ajour::default(), Command::batch(init_commands))
+        (
+            Ajour::default(),
+            // Will create the config directory if it doesn't exist. This needs to happen before
+            // we can safely perform all of our init operations concurrently
+            Command::perform(async { config_dir() }, Message::ConfigDirExists),
+        )
     }
 
     fn title(&self) -> String {
