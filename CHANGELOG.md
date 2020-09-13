@@ -8,6 +8,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Fixed
+- Better toc file parsing
+  - We now have better logic catching the values inside the toc file
+  - If we for some reason does not find a title for the addon, we fallback and use the foldername
 - Include curse addons that failed fingerprinting
   - Even though fingerprinting failed, there is still a curse project id that can be used to lookup the addon via the curse API. Previously these addons were not shown, but now they are included.
 - Check for case-insensitive version of `Interface/AddOns` folder for robustness
