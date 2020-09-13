@@ -281,89 +281,34 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
-    // Addons that failed fingerprinting but can be looked up on Curse ID
-    let mut curse_id_only_addons: Vec<_> = unfiltred_addons
-        .iter()
-        .filter(|a| {
-            !fingerprint_addons.iter().any(|f| f.id == a.id)
-                && a.tukui_id.is_none()
-                && a.curse_id.is_some()
-        })
-        .cloned()
-        .collect();
-
-    // Creates a `Vec` of curse_ids from unfiltred_addons.
-    let curse_ids_from_unfiltred: Vec<_> = unfiltred_addons
+    // Creates a `Vec` of curse_ids.
+    let curse_ids: Vec<_> = fingerprint_addons
         .iter()
         .filter_map(|addon| {
             if let Some(curse_id) = addon.curse_id {
-                if addon.tukui_id.is_none() {
-                    Some(curse_id)
-                } else {
-                    None
-                }
+                Some(curse_id)
             } else {
                 None
             }
         })
         .collect();
-
-    // Creates a `Vec` of curse_ids from the newly created fingerprint_addons.
-    // We want to run these through the curse API by curse_id. This is because
-    // the fingerprint API does not return a few important values, such as title.
-    let curse_ids_from_fingerprint: Vec<_> = fingerprint_addons
-        .iter()
-        .filter_map(|addon| {
-            if let Some(curse_id) = addon.curse_id {
-                if addon.tukui_id.is_none() {
-                    Some(curse_id)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    let mut all_curse_ids = [
-        &curse_ids_from_unfiltred[..],
-        &curse_ids_from_fingerprint[..],
-    ]
-    .concat();
-    all_curse_ids.dedup();
 
     // Fetches the curse packages based on the ids.
-    let curse_id_packages_result = fetch_remote_packages_by_ids(&all_curse_ids).await;
+    let curse_id_packages_result = fetch_remote_packages_by_ids(&curse_ids).await;
     if let Ok(curse_id_packages) = curse_id_packages_result {
-        // Loops the packages, and updates fingerprinted addons with package info
-        for package in curse_id_packages.iter() {
+        // Loops the packages, and updates our Addons with information.
+        for package in curse_id_packages {
             let addon = fingerprint_addons
                 .iter_mut()
                 .find(|a| a.curse_id == Some(package.id));
             if let Some(addon) = addon {
-                addon.apply_curse_package(&package, flavor, true);
-            }
-        }
-
-        // Loops the packages, and updates non-fingerprinted addons with package info
-        for package in curse_id_packages.iter() {
-            let addon = curse_id_only_addons
-                .iter_mut()
-                .find(|a| a.curse_id == Some(package.id));
-            if let Some(addon) = addon {
-                addon.apply_curse_package(&package, flavor, false);
+                addon.apply_curse_package(&package);
             }
         }
     }
 
     // Concats the different repo addons, and returns.
-    let concatenated = [
-        &fingerprint_addons[..],
-        &tukui_addons[..],
-        &curse_id_only_addons[..],
-    ]
-    .concat();
+    let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
     Ok(concatenated)
 }
 
