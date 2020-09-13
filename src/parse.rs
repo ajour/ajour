@@ -577,9 +577,16 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
         }
     }
 
+    // If we don't find title, we will fallback to id (foldername).
+    let title = if let Some(title) = title {
+        title
+    } else {
+        id.clone()
+    };
+
     Some(Addon::new(
         id,
-        title?,
+        title,
         author,
         notes,
         version,
