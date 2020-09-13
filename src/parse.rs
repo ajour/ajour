@@ -28,6 +28,7 @@ lazy_static::lazy_static! {
 pub struct Fingerprint {
     pub title: String,
     pub hash: Option<u32>,
+    pub flavor: Flavor,
 }
 
 pub type FingerprintCollection = Vec<Fingerprint>;
@@ -96,8 +97,8 @@ async fn file_parsing_regex() -> Result<ParsingPatterns> {
 pub async fn read_addon_directory<P: AsRef<Path>>(
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     root_dir: P,
-    flavor: Flavor,
-) -> Result<Vec<Addon>> {
+    flavor: &Flavor,
+) -> Result<(Flavor, Vec<Addon>)> {
     let root_dir = root_dir.as_ref();
 
     // If the path does not exists or does not point on a directory we return an Error.
@@ -143,9 +144,11 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .map(|dir_name| {
             let addon_dir = root_dir.join(dir_name);
             // If we have a stored fingerprint on disk, we use that.
-            if let Some(fingerprint) = fingerprint_collection.iter().find(|f| &f.title == dir_name)
+            if let Some(fingerprint) = fingerprint_collection
+                .iter()
+                .find(|f| &f.flavor == flavor && &f.title == dir_name)
             {
-                fingerprint.clone()
+                fingerprint.to_owned().clone()
             } else {
                 let hash = fingerprint_addon_dir(
                     &addon_dir,
@@ -156,6 +159,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 Fingerprint {
                     title: dir_name.to_owned(),
                     hash,
+                    flavor: flavor.to_owned(),
                 }
             }
         })
@@ -163,15 +167,28 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .filter(|f| f.hash.is_some())
         .collect();
 
+    // Get the other flavors, we want saved as well.
+    let other_flavors_fingerprints: Vec<_> = fingerprint_collection
+        .clone()
+        .into_iter()
+        .filter(|f| &f.flavor != flavor)
+        .collect();
+
     // Update our in memory collection and save to disk.
     fingerprint_collection.drain(..);
-    fingerprint_collection.extend(new_fingerprints);
+    fingerprint_collection
+        .extend([&new_fingerprints[..], &other_flavors_fingerprints[..]].concat());
     let _ = fingerprint_collection.save();
 
     // Maps each `Fingerprint` to `Addon`.
     let unfiltred_addons: Vec<_> = fingerprint_collection
         .par_iter()
         .filter_map(|fingerprint| {
+            // Filter out non-relevant fingerprints.
+            if &fingerprint.flavor != flavor {
+                return None;
+            }
+
             // Generate .toc path.
             let toc_path = root_dir
                 .join(&fingerprint.title)
@@ -226,7 +243,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     link_dependencies_bidirectional(&mut tukui_addons, &unfiltred_addons);
 
     // Filter out addons with fingerprints.
-    let fingerprint_hashes: Vec<_> = unfiltred_addons
+    let mut fingerprint_hashes: Vec<_> = unfiltred_addons
         .iter()
         .filter_map(|addon| {
             // Removes any addon which has tukui_id.
@@ -239,6 +256,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             }
         })
         .collect();
+    fingerprint_hashes.dedup();
 
     // Fetches fingerprint package from curse_api
     let fingerprint_package = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
@@ -256,7 +274,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
             // Apply package.
             if let Some(mut addon) = addon_by_id {
-                addon.apply_fingerprint_module(info, flavor);
+                addon.apply_fingerprint_module(info, flavor.to_owned());
                 return Some(addon);
             }
 
@@ -273,7 +291,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
             // Apply package.
             if let Some(mut addon) = addon_by_fingerprint {
-                addon.apply_fingerprint_module(info, flavor);
+                addon.apply_fingerprint_module(info, flavor.to_owned());
                 return Some(addon);
             }
 
@@ -309,7 +327,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Concats the different repo addons, and returns.
     let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
-    Ok(concatenated)
+    Ok((flavor.to_owned(), concatenated))
 }
 
 pub async fn update_addon_fingerprint(

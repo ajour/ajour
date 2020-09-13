@@ -163,6 +163,46 @@ impl button::StyleSheet for ColumnHeaderButton {
     }
 }
 
+pub struct SegmentedButton(pub ColorPalette);
+impl button::StyleSheet for SegmentedButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.03,
+                ..self.0.primary
+            })),
+            text_color: self.0.primary,
+            border_radius: 2,
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.1,
+                ..self.0.primary
+            })),
+            text_color: self.0.primary,
+            ..self.active()
+        }
+    }
+
+    fn disabled(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.01,
+                ..self.0.primary
+            })),
+            text_color: Color {
+                a: 0.1,
+                ..self.0.primary
+            },
+            ..self.active()
+        }
+    }
+}
+
 pub struct Content(pub ColorPalette);
 impl container::StyleSheet for Content {
     fn style(&self) -> container::Style {

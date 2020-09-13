@@ -43,17 +43,8 @@ pub trait PersistentData: DeserializeOwned + Serialize {
         let load_result = <T as PersistentData>::load();
 
         match load_result {
-            Err(ClientError::LoadFileDoesntExist(_)) => Ok(get_default_and_save()?),
-            Err(ClientError::YamlError(error)) => {
-                // Prevent parsing error with an empty string and commented out file.
-                if error.to_string() == "EOF while parsing a value" {
-                    Ok(get_default_and_save()?)
-                } else {
-                    Err(ClientError::YamlError(error))
-                }
-            }
-            Err(error) => Err(error),
             Ok(deser) => Ok(deser),
+            _ => Ok(get_default_and_save()?),
         }
     }
 

@@ -2,7 +2,7 @@ use {
     super::{Ajour, AjourState, Interaction, Message, SortDirection, SortKey},
     crate::{
         addon::{Addon, AddonState},
-        config::load_config,
+        config::{load_config, Flavor},
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
@@ -14,6 +14,7 @@ use {
     iced::{button, Command},
     isahc::HttpClient,
     native_dialog::*,
+    std::collections::HashMap,
     std::path::{Path, PathBuf},
 };
 
@@ -33,30 +34,38 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // which is provided by the config.
             ajour.config = config;
 
-            // Prepare state for loading.
-            ajour.state = AjourState::Loading;
-
             // Use theme from config. Set to "Dark" if not defined.
             ajour.theme_state.current_theme_name =
                 ajour.config.theme.as_deref().unwrap_or("Dark").to_string();
 
-            // Begin to parse addon folder.
-            let addon_directory = ajour.config.get_addon_directory();
-            let flavor = ajour.config.wow.flavor;
-
-            if let Some(dir) = addon_directory {
-                return Ok(Command::perform(
-                    read_addon_directory(ajour.fingerprint_collection.clone(), dir, flavor),
-                    Message::ParsedAddons,
-                ));
-            } else {
-                // Assume we are welcoming a user because directory is not set.
-                ajour.state = AjourState::Welcome;
+            // Begin to parse addon folder(s).
+            let mut commands = vec![];
+            let flavors = &Flavor::ALL[..];
+            for flavor in flavors {
+                if let Some(addon_directory) = ajour.config.get_addon_directory_for_flavor(flavor) {
+                    commands.push(Command::perform(
+                        read_addon_directory(
+                            ajour.fingerprint_collection.clone(),
+                            addon_directory.clone(),
+                            flavor,
+                        ),
+                        Message::ParsedAddons,
+                    ));
+                } else {
+                    // Assume we are welcoming a user because directory is not set.
+                    ajour.state = AjourState::Welcome;
+                    break;
+                }
             }
+            return Ok(Command::batch(commands));
         }
         Message::Interaction(Interaction::Refresh) => {
-            // Re-parse addons.
-            ajour.addons = vec![];
+            // Cleans the addons.
+            ajour.addons = HashMap::new();
+
+            // Prepare state for loading.
+            ajour.state = AjourState::Loading;
+
             return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
@@ -66,22 +75,30 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Prepare ignore_addons data.
             // We need to find the corresponding addons, and then save it to
             // the ajour state, with a new button::State attatched.
-            if ajour.is_showing_settings {
-                let ignored_strings = &ajour.config.addons.ignored;
-                ajour.ignored_addons = ajour
-                    .addons
-                    .iter()
-                    .filter(|a| ignored_strings.iter().any(|i| i == &a.id))
-                    .map(|a| (a.clone(), button::State::new()))
-                    .collect::<Vec<(Addon, button::State)>>();
-            } else {
-                ajour.ignored_addons = vec![];
-            }
+            // if ajour.is_showing_settings {
+            //     let ignored_strings = &ajour.config.addons.ignored;
+            //     let flavor = &ajour.config.wow.flavor.clone();
+            //     let addons = &ajour
+            //         .ignored_addons
+            //         .get(&flavor)
+            //         .expect("no addons for flavor");
+            // ajour.ignored_addons = ajour
+            //     .addons
+            //     .iter()
+            //     .filter(|a| ignored_strings.iter().any(|i| i == &a.id))
+            //     .map(|a| (a.clone(), button::State::new()))
+            //     .collect::<Vec<(Addon, button::State)>>();
+            // } else {
+            // ajour.ignored_addons = vec![];
+            // }
         }
         Message::Interaction(Interaction::Ignore(id)) => {
-            let addon = ajour.addons.iter().find(|a| a.id == id);
+            let flavor = &ajour.config.wow.flavor.clone();
+            let addons = &ajour.addons.get(&flavor).expect("no addons for flavor");
+            let addon = addons.iter().find(|a| a.id == id);
+
             if let Some(addon) = addon {
-                // Update ajour state
+                // Push addon to ignored addons.
                 ajour
                     .ignored_addons
                     .push((addon.clone(), button::State::new()));
@@ -116,7 +133,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::UpdateDirectory(path) => {
             // Clear addons.
-            ajour.addons = vec![];
+            ajour.addons = HashMap::new();
 
             if path.is_some() {
                 // Update the path for World of Warcraft.
@@ -127,18 +144,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 return Ok(Command::perform(load_config(), Message::Parse));
             }
         }
-        Message::FlavorSelected(flavor) => {
+        Message::Interaction(Interaction::FlavorSelected(flavor)) => {
             // Update the game flavor
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
             let _ = &ajour.config.save();
-            // Reload config.
-            return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Expand(id)) => {
             // Expand a addon.
             // If it's already expanded, we collapse it again.
-            if let Some(addon) = ajour.addons.iter().find(|a| a.id == id) {
+            let flavor = &ajour.config.wow.flavor;
+            let addons = ajour.addons.get(flavor).expect("no addons for flavor");
+            if let Some(addon) = addons.iter().find(|a| a.id == id) {
                 if let Some(is_addon_expanded) =
                     ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
                 {
@@ -153,24 +170,28 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             // Delete addon, and it's dependencies.
-            if let Some(addon) = ajour.addons.iter().find(|a| a.id == id).cloned() {
+            let flavor = &ajour.config.wow.flavor;
+            let addons = ajour.addons.get(flavor).expect("no addons for flavor");
+            if let Some(addon) = addons.iter().find(|a| a.id == id).cloned() {
                 let addon_directory = ajour
                     .config
-                    .get_addon_directory()
+                    .get_addon_directory_for_flavor(&flavor)
                     .expect("has to have addon directory");
                 let addons_to_be_deleted = [&addon.dependencies[..], &[addon.id]].concat();
                 let _ = delete_addons(&addon_directory, &addons_to_be_deleted);
-                ajour
-                    .addons
-                    .retain(|a| !addons_to_be_deleted.iter().any(|ab| ab != &a.id));
+                // TODO: Does this work still?
+                let mut_addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
+                mut_addons.retain(|a| !addons_to_be_deleted.iter().any(|ab| ab != &a.id));
             }
         }
         Message::Interaction(Interaction::Update(id)) => {
+            let flavor = &ajour.config.wow.flavor;
+            let addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
             let to_directory = ajour
                 .config
                 .get_temporary_addon_directory()
                 .expect("Expected a valid path");
-            for addon in ajour.addons.iter_mut() {
+            for addon in addons.iter_mut() {
                 if addon.id == id {
                     addon.state = AddonState::Downloading;
                     return Ok(Command::perform(
@@ -186,8 +207,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::UpdateAll) => {
             // Update all pressed
+            let flavor = &ajour.config.wow.flavor;
+            let addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
             let mut commands = vec![];
-            for addon in ajour.addons.iter_mut() {
+            for addon in addons.iter_mut() {
                 if addon.state == AddonState::Updatable {
                     if let Some(to_directory) = ajour.config.get_temporary_addon_directory() {
                         addon.state = AddonState::Downloading;
@@ -205,10 +228,26 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
             return Ok(Command::batch(commands));
         }
-        Message::ParsedAddons(Ok(mut addons)) => {
+        Message::ParsedAddons(Ok((flavor, mut addons))) => {
+            // Sort the addons.
             sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
-            ajour.addons = addons;
-            ajour.state = AjourState::Idle;
+
+            if flavor == ajour.config.wow.flavor {
+                // Set the state if flavor matches.
+                ajour.state = AjourState::Idle;
+
+                // Find and push the ignored addons.
+                let ignored_ids = &ajour.config.addons.ignored;
+                let ignored_addons: Vec<_> = addons
+                    .iter()
+                    .filter(|a| ignored_ids.iter().any(|i| i == &a.id))
+                    .map(|a| (a.clone(), button::State::new()))
+                    .collect::<Vec<(Addon, button::State)>>();
+                ajour.ignored_addons = ignored_addons;
+            }
+
+            // Insert the addons into the HashMap.
+            ajour.addons.insert(flavor, addons);
         }
         Message::DownloadedAddon((id, result)) => {
             // When an addon has been successfully downloaded we begin to unpack it.
@@ -217,11 +256,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .config
                 .get_temporary_addon_directory()
                 .expect("Expected a valid path");
+            let flavor = ajour.config.wow.flavor;
             let to_directory = ajour
                 .config
-                .get_addon_directory()
+                .get_addon_directory_for_flavor(&flavor)
                 .expect("Expected a valid path");
-            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            let flavor = &ajour.config.wow.flavor;
+            let addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
+            if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
                 match result {
                     Ok(_) => {
                         if addon.state == AddonState::Downloading {
@@ -240,18 +282,21 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::UnpackedAddon((id, result)) => {
-            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            let flavor = &ajour.config.wow.flavor;
+            let addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
+            if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
                 match result {
                     Ok(_) => {
                         addon.state = AddonState::Fingerprint;
                         addon.version = addon.remote_version.clone();
 
                         let mut commands = vec![];
+                        let flavor = ajour.config.wow.flavor;
                         commands.push(Command::perform(
                             perform_hash_addon(
                                 ajour
                                     .config
-                                    .get_addon_directory()
+                                    .get_addon_directory_for_flavor(&flavor)
                                     .expect("Expected a valid path"),
                                 addon.id.clone(),
                                 ajour.fingerprint_collection.clone(),
@@ -265,7 +310,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                     perform_hash_addon(
                                         ajour
                                             .config
-                                            .get_addon_directory()
+                                            .get_addon_directory_for_flavor(&flavor)
                                             .expect("Expected a valid path"),
                                         dep.clone(),
                                         ajour.fingerprint_collection.clone(),
@@ -285,7 +330,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::UpdateFingerprint((id, result)) => {
-            if let Some(addon) = ajour.addons.iter_mut().find(|a| a.id == id) {
+            let flavor = &ajour.config.wow.flavor;
+            let addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
+            if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
                 if result.is_ok() {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
                 } else {
@@ -316,7 +363,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 sort_direction = SortDirection::Desc;
             }
 
-            sort_addons(&mut ajour.addons, sort_direction, sort_key);
+            let flavor = &ajour.config.wow.flavor;
+            let mut addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
+            sort_addons(&mut addons, sort_direction, sort_key);
 
             ajour.sort_state.previous_sort_direction = Some(sort_direction);
             ajour.sort_state.previous_sort_key = Some(sort_key);
