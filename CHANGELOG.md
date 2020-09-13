@@ -8,6 +8,10 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Fixed
+
+- Better toc file parsing
+  - We now have better logic catching the values inside the toc file
+  - If we for some reason does not find a title for the addon, we fallback and use the foldername
 - Check for case-insensitive version of `Interface/AddOns` folder for robustness
 - Check for & create ajour config folder before launching concurrent init operations
   - The `load_config` and `load_user_themes` operations are launched concurrently on startup. Since they both require the config folder, they will both try to create it if it doesn't exist. This causes a panic on linux since the `create_dir` fs operation fails if the folder already exists.
