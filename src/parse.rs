@@ -148,7 +148,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 .iter()
                 .find(|f| &f.flavor == flavor && &f.title == dir_name)
             {
-                fingerprint.to_owned().clone()
+                fingerprint.to_owned()
             } else {
                 let hash = fingerprint_addon_dir(
                     &addon_dir,
