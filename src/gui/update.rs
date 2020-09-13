@@ -6,6 +6,8 @@ use {
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
+        theme::load_user_themes,
+        utility::needs_update,
         Result,
     },
     async_std::sync::{Arc, Mutex},
@@ -17,6 +19,15 @@ use {
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
+        Message::ConfigDirExists(_) => {
+            let commands = vec![
+                Command::perform(load_config(), Message::Parse),
+                Command::perform(needs_update(), Message::NeedsUpdate),
+                Command::perform(load_user_themes(), Message::ThemesLoaded),
+            ];
+
+            return Ok(Command::batch(commands));
+        }
         Message::Parse(Ok(config)) => {
             // When we have the config, we parse the addon directory
             // which is provided by the config.

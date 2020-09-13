@@ -15,7 +15,7 @@ pub use theme::load_user_themes;
 ///
 /// $HOME/.config/ajour
 #[cfg(not(windows))]
-fn config_dir() -> PathBuf {
+pub fn config_dir() -> PathBuf {
     let home = env::var("HOME").expect("user home directory not found.");
 
     let config_dir = PathBuf::from(&home).join(".config/ajour");
@@ -32,7 +32,7 @@ fn config_dir() -> PathBuf {
 ///
 /// %APPDATA%\ajour
 #[cfg(windows)]
-fn config_dir() -> PathBuf {
+pub fn config_dir() -> PathBuf {
     let config_dir = dirs::config_dir()
         .map(|path| path.join("ajour"))
         .expect("user home directory not found.");
