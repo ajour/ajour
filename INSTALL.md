@@ -1,3 +1,10 @@
+# Third Party Repositories
+
+## [Homebrew](https://brew.sh/)
+```sh
+brew cask install ajour
+```
+
 # Manual Installation
 
 1. [Prerequisites](#prerequisites)
