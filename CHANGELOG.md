@@ -10,6 +10,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Fixed
 - Include curse addons that failed fingerprinting
   - Even though fingerprinting failed, there is still a curse project id that can be used to lookup the addon via the curse API. Previously these addons were not shown, but now they are included.
+- Check for case-insensitive version of `Interface/AddOns` folder for robustness
 - Check for & create ajour config folder before launching concurrent init operations
   - The `load_config` and `load_user_themes` operations are launched concurrently on startup. Since they both require the config folder, they will both try to create it if it doesn't exist. This causes a panic on linux since the `create_dir` fs operation fails if the folder already exists.
 

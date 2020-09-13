@@ -1,3 +1,4 @@
+use glob::MatchOptions;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -33,7 +34,31 @@ impl Config {
                 let formatted_client_flavor = format!("_{}_", self.wow.flavor);
 
                 // The path to the directory containing the addons
-                Some(dir.join(formatted_client_flavor).join("Interface/AddOns"))
+                let mut addon_dir = dir.join(&formatted_client_flavor).join("Interface/AddOns");
+
+                // If path doesn't exist, it could have been modified by the user.
+                // Check for a case-insensitive version and use that instead.
+                if !addon_dir.exists() {
+                    let options = MatchOptions {
+                        case_sensitive: false,
+                        ..Default::default()
+                    };
+
+                    // For some reason the case insensitive pattern doesn't work
+                    // unless we add an actual pattern symbol, hence the `?`.
+                    let pattern = format!(
+                        "{}/?nterface/?ddons",
+                        dir.join(&formatted_client_flavor).display()
+                    );
+
+                    for entry in glob::glob_with(&pattern, options).unwrap() {
+                        if let Ok(path) = entry {
+                            addon_dir = path;
+                        }
+                    }
+                }
+
+                Some(addon_dir)
             }
             None => None,
         }
