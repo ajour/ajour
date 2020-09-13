@@ -545,7 +545,7 @@ fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
     let mut curse_id: Option<u32> = None;
 
     // TODO: We should save these somewere so we don't keep creating them.
-    let re_toc = regex::Regex::new(r"^##\s(?P<key>.*?):\s?(?P<value>.*)").unwrap();
+    let re_toc = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
     let re_title = regex::Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?").unwrap();
 
     for line in reader.lines().filter_map(|l| l.ok()) {
