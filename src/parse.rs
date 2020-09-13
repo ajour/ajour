@@ -292,8 +292,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .cloned()
         .collect();
 
-    // Creates a `Vec` of curse_ids.
-    let curse_ids: Vec<_> = unfiltred_addons
+    // Creates a `Vec` of curse_ids from unfiltred_addons.
+    let curse_ids_from_unfiltred: Vec<_> = unfiltred_addons
         .iter()
         .filter_map(|addon| {
             if let Some(curse_id) = addon.curse_id {
@@ -308,8 +308,33 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    // Creates a `Vec` of curse_ids from the newly created fingerprint_addons.
+    // We want to run these through the curse API by curse_id. This is because
+    // the fingerprint API does not return a few important values, such as title.
+    let curse_ids_from_fingerprint: Vec<_> = fingerprint_addons
+        .iter()
+        .filter_map(|addon| {
+            if let Some(curse_id) = addon.curse_id {
+                if addon.tukui_id.is_none() {
+                    Some(curse_id)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let mut all_curse_ids = [
+        &curse_ids_from_unfiltred[..],
+        &curse_ids_from_fingerprint[..],
+    ]
+    .concat();
+    all_curse_ids.dedup();
+
     // Fetches the curse packages based on the ids.
-    let curse_id_packages_result = fetch_remote_packages_by_ids(&curse_ids).await;
+    let curse_id_packages_result = fetch_remote_packages_by_ids(&all_curse_ids).await;
     if let Ok(curse_id_packages) = curse_id_packages_result {
         // Loops the packages, and updates fingerprinted addons with package info
         for package in curse_id_packages.iter() {
