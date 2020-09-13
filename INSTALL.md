@@ -1,5 +1,10 @@
 # Third Party Repositories
 
+## Cargo
+```sh
+cargo install ajour --git https://github.com/casperstorm/ajour.git
+```
+
 ## [Homebrew](https://brew.sh/)
 ```sh
 brew cask install ajour
