@@ -104,7 +104,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     root_dir: P,
     flavor: Flavor,
-) -> Result<(Flavor, Vec<Addon>)> {
+) -> Result<Vec<Addon>> {
     let root_dir = root_dir.as_ref();
 
     // If the path does not exists or does not point on a directory we return an Error.
@@ -317,7 +317,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Concats the different repo addons, and returns.
     let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
-    Ok((flavor, concatenated))
+    Ok(concatenated)
 }
 
 pub async fn update_addon_fingerprint(

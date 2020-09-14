@@ -44,7 +44,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             for flavor in flavors {
                 if let Some(addon_directory) = ajour.config.get_addon_directory_for_flavor(flavor) {
                     commands.push(Command::perform(
-                        read_addon_directory(
+                        perform_read_addon_directory(
                             ajour.fingerprint_collection.clone(),
                             addon_directory.clone(),
                             *flavor,
@@ -211,33 +211,36 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
             return Ok(Command::batch(commands));
         }
-        Message::ParsedAddons(Ok((flavor, mut addons))) => {
-            // Sort the addons.
-            sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
+        // Message::ParsedAddons(Ok((flavor, mut addons))) => {
+        Message::ParsedAddons((flavor, result)) => {
+            // If our selected flavor returns error, we assume we have no valid addons.
+            let selected_flavor = ajour.config.wow.flavor;
+            // let is_empty = ajour.addons.get(flavor).map_or(false, |v| v.is_empty());
 
-            if flavor == ajour.config.wow.flavor {
-                // Set the state if flavor matches.
+            if flavor == selected_flavor {
                 ajour.state = AjourState::Idle;
-
-                // Find and push the ignored addons.
-                let ignored_ids = &ajour.config.addons.ignored;
-                let ignored_addons: Vec<_> = addons
-                    .iter()
-                    .filter(|a| ignored_ids.iter().any(|i| i == &a.id))
-                    .map(|a| (a.clone(), button::State::new()))
-                    .collect::<Vec<(Addon, button::State)>>();
-                ajour.ignored_addons = ignored_addons;
             }
 
-            // Insert the addons into the HashMap.
-            ajour.addons.insert(flavor, addons);
-        }
-        Message::ParsedAddons(Err(_)) => {
-            // If our selected flavor returns error, we assume we have no valid addons.
-            let flavor = &ajour.config.wow.flavor;
-            let is_empty = ajour.addons.get(flavor).map_or(false, |v| v.is_empty());
-            if is_empty {
-                ajour.state = AjourState::Idle;
+            if let Ok(mut addons) = result {
+                // Sort the addons.
+                sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
+
+                if flavor == ajour.config.wow.flavor {
+                    // Set the state if flavor matches.
+                    ajour.state = AjourState::Idle;
+
+                    // Find and push the ignored addons.
+                    let ignored_ids = &ajour.config.addons.ignored;
+                    let ignored_addons: Vec<_> = addons
+                        .iter()
+                        .filter(|a| ignored_ids.iter().any(|i| i == &a.id))
+                        .map(|a| (a.clone(), button::State::new()))
+                        .collect::<Vec<(Addon, button::State)>>();
+                    ajour.ignored_addons = ignored_addons;
+                }
+
+                // Insert the addons into the HashMap.
+                ajour.addons.insert(flavor, addons);
             }
         }
         Message::DownloadedAddon((id, result)) => {
@@ -391,6 +394,17 @@ async fn open_directory() -> Option<PathBuf> {
     }
 
     None
+}
+
+async fn perform_read_addon_directory(
+    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    root_dir: PathBuf,
+    flavor: Flavor,
+) -> (Flavor, Result<Vec<Addon>>) {
+    (
+        flavor,
+        read_addon_directory(fingerprint_collection, root_dir, flavor).await,
+    )
 }
 
 /// Downloads the newest version of the addon.

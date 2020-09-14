@@ -59,7 +59,7 @@ pub enum Message {
     NeedsUpdate(Result<Option<String>>),
     None(()),
     Parse(Result<Config>),
-    ParsedAddons(Result<(Flavor, Vec<Addon>)>),
+    ParsedAddons((Flavor, Result<Vec<Addon>>)),
     UpdateFingerprint((String, Result<()>)),
     ThemeSelected(String),
     ThemesLoaded(Vec<Theme>),
