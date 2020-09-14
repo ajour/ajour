@@ -19,6 +19,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 lazy_static::lazy_static! {
     static ref CACHED_GAME_INFO: Mutex<Option<GameInfo>> = Mutex::new(None);
@@ -105,6 +106,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     root_dir: P,
     flavor: Flavor,
 ) -> Result<Vec<Addon>> {
+    log::debug!("{} - parsing addons folder", flavor);
+
     let root_dir = root_dir.as_ref();
 
     // If the path does not exists or does not point on a directory we return an Error.
@@ -129,6 +132,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    log::debug!(
+        "{} - {} folders in AddOns directory to parse",
+        flavor,
+        all_dirs.len()
+    );
+
     let ParsingPatterns {
         initial_inclusion_regex,
         extra_inclusion_regex,
@@ -146,12 +155,14 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
 
     // Each addon dir mapped to fingerprint struct.
+    let num_cached = AtomicUsize::new(0);
     let new_fingerprints: Vec<_> = all_dirs
         .par_iter() // Easy parallelization
         .map(|dir_name| {
             let addon_dir = root_dir.join(dir_name);
             // If we have a stored fingerprint on disk, we use that.
             if let Some(fingerprint) = fingerprints.iter().find(|f| &f.title == dir_name) {
+                let _ = num_cached.fetch_add(1, Ordering::SeqCst);
                 fingerprint.to_owned()
             } else {
                 let hash = fingerprint_addon_dir(
@@ -169,6 +180,23 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         // Note: we filter out cases where hashing has failed.
         .filter(|f| f.hash.is_some())
         .collect();
+
+    {
+        let num_cached = num_cached.load(Ordering::Relaxed);
+        let change = fingerprints.len() as isize - new_fingerprints.len() as isize;
+        let removed = change.max(0);
+        let added = change.min(0).abs();
+
+        log::debug!(
+            "{} - {} fingerprints: {} cached, {} calculated, {} added, {} removed",
+            flavor,
+            new_fingerprints.len(),
+            num_cached,
+            new_fingerprints.len() - num_cached,
+            added,
+            removed
+        );
+    }
 
     // Update our in memory collection and save to disk.
     fingerprints.drain(..);
@@ -195,6 +223,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    log::debug!(
+        "{} - {} successfully parsed from '.toc'",
+        flavor,
+        unfiltred_addons.len()
+    );
+
     // Drop Mutex guard, collection is no longer needed
     drop(collection_guard);
 
@@ -209,6 +243,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             }
         })
         .collect();
+
+    log::debug!("{} - {} addons with tukui id", flavor, tukui_ids.len());
 
     let mut tukui_addons = vec![];
     // Loops each tukui_id and fetch a remote package from their api.
@@ -227,6 +263,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             }
         }
     }
+
+    log::debug!(
+        "{} - {} addons applied with tukui id package metadata",
+        flavor,
+        tukui_addons.len()
+    );
 
     // Links dependencies. This is needed for tukui addons since they don't
     // tell which dependencies a addon has, so we use the information from toc.
@@ -250,6 +292,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Fetches fingerprint package from curse_api
     let fingerprint_package = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
+
+    log::debug!(
+        "{} - {} exact fingerprint matches against curse api",
+        flavor,
+        fingerprint_package.exact_fingerprints.len()
+    );
 
     // Converts the excat matches into our `Addon` struct.
     let mut fingerprint_addons: Vec<_> = fingerprint_package
@@ -289,6 +337,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    log::debug!(
+        "{} - {} addons applied with fingerprint metadata",
+        flavor,
+        fingerprint_addons.len()
+    );
+
     // Creates a `Vec` of curse_ids.
     let curse_ids: Vec<_> = fingerprint_addons
         .iter()
@@ -301,9 +355,17 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    log::debug!(
+        "{} - {} addons with curse id",
+        flavor,
+        fingerprint_addons.len()
+    );
+
     // Fetches the curse packages based on the ids.
     let curse_id_packages_result = fetch_remote_packages_by_ids(&curse_ids).await;
     if let Ok(curse_id_packages) = curse_id_packages_result {
+        let mut updated = 0;
+
         // Loops the packages, and updates our Addons with information.
         for package in curse_id_packages {
             let addon = fingerprint_addons
@@ -311,12 +373,26 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 .find(|a| a.curse_id == Some(package.id));
             if let Some(addon) = addon {
                 addon.apply_curse_package(&package);
+                updated += 1;
             }
         }
+
+        log::debug!(
+            "{} - {} addons applied with curse id package metadata",
+            flavor,
+            updated
+        );
     }
 
     // Concats the different repo addons, and returns.
     let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
+
+    log::debug!(
+        "{} - {} addons successfully parsed",
+        flavor,
+        concatenated.len()
+    );
+
     Ok(concatenated)
 }
 
@@ -326,6 +402,8 @@ pub async fn update_addon_fingerprint(
     addon_dir: impl AsRef<Path>,
     addon_id: String,
 ) -> Result<()> {
+    log::debug!("{} - updating fingerprint for {}", flavor, &addon_id);
+
     // Regexes
     let ParsingPatterns {
         initial_inclusion_regex,

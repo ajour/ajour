@@ -22,6 +22,7 @@ pub fn config_dir() -> PathBuf {
 
     if !config_dir.exists() {
         fs::create_dir(&config_dir).expect("could not create folder $HOME/.config/ajour");
+        log::debug!("config directory created");
     }
 
     config_dir
@@ -39,6 +40,7 @@ pub fn config_dir() -> PathBuf {
 
     if !config_dir.exists() {
         fs::create_dir(&config_dir).expect("could not create folder %APPDATA%\\ajour");
+        log::debug!("config directory created");
     }
 
     config_dir

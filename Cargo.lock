@@ -42,15 +42,18 @@ name = "ajour"
 version = "0.3.3"
 dependencies = [
  "async-std",
+ "chrono",
  "dirs 3.0.1",
  "embed-resource",
  "fancy-regex",
+ "fern",
  "glob",
  "iced",
  "iced_futures",
  "image",
  "isahc",
  "lazy_static",
+ "log",
  "native-dialog",
  "opener",
  "percent-encoding",
@@ -309,6 +312,17 @@ name = "cfg-if"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
+
+[[package]]
+name = "chrono"
+version = "0.4.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "942f72db697d8767c22d46a598e01f2d3b475501ea43d0db4f16d90259182d0b"
+dependencies = [
+ "num-integer",
+ "num-traits",
+ "time",
+]
 
 [[package]]
 name = "clipboard-win"
@@ -773,6 +787,15 @@ name = "fastrand"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36a9cb09840f81cd211e435d00a4e487edd263dc3c8ff815c32dd76ad668ebed"
+
+[[package]]
+name = "fern"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c9a4820f0ccc8a7afd67c39a0f1a0f4b07ca1725164271a64939d7aeb9af065"
+dependencies = [
+ "log",
+]
 
 [[package]]
 name = "flate2"

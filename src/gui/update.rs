@@ -30,6 +30,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::batch(commands));
         }
         Message::Parse(Ok(config)) => {
+            log::debug!("Message::Parse");
+
             // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
@@ -60,6 +62,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::batch(commands));
         }
         Message::Interaction(Interaction::Refresh) => {
+            log::debug!("Interaction::Refresh");
+
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
@@ -72,9 +76,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
+            log::debug!("Interaction::Settings");
+
             ajour.is_showing_settings = !ajour.is_showing_settings;
         }
         Message::Interaction(Interaction::Ignore(id)) => {
+            log::debug!("Interaction::Ignore({})", &id);
+
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
@@ -105,6 +113,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Interaction(Interaction::Unignore(id)) => {
+            log::debug!("Interaction::Unignore({})", &id);
+
             // Update ajour state.
             let flavor = ajour.config.wow.flavor;
             let ignored_addons = ajour.ignored_addons.entry(flavor).or_default();
@@ -118,9 +128,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let _ = &ajour.config.save();
         }
         Message::Interaction(Interaction::OpenDirectory) => {
+            log::debug!("Interaction::OpenDirectory");
+
             return Ok(Command::perform(open_directory(), Message::UpdateDirectory));
         }
         Message::Interaction(Interaction::OpenLink(link)) => {
+            log::debug!("Interaction::OpenLink({})", &link);
+
             return Ok(Command::perform(
                 async {
                     let _ = opener::open(link);
@@ -129,6 +143,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ));
         }
         Message::UpdateDirectory(path) => {
+            log::debug!("Message::UpdateDirectory({:?})", &path);
+
             // Clear addons.
             ajour.addons = HashMap::new();
 
@@ -144,6 +160,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
+            log::debug!("Interaction::FlavorSelected({})", flavor);
+
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Update the game flavor
@@ -152,6 +170,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let _ = &ajour.config.save();
         }
         Message::Interaction(Interaction::Expand(id)) => {
+            log::debug!("Interaction::Expand({})", &id);
+
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Expand a addon. If it's already expanded, we collapse it again.
@@ -171,6 +191,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Interaction(Interaction::Delete(id)) => {
+            log::debug!("Interaction::Delete({})", &id);
+
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
@@ -195,6 +217,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Interaction(Interaction::Update(id)) => {
+            log::debug!("Interaction::Update({})", &id);
+
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
@@ -219,6 +243,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Interaction(Interaction::UpdateAll) => {
+            log::debug!("Interaction::UpdateAll");
+
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
@@ -251,6 +277,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
 
             if let Ok(mut addons) = result {
+                log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
+
                 // Sort the addons.
                 sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
                 ajour.sort_state.previous_sort_direction = Some(SortDirection::Desc);
@@ -273,9 +301,21 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 // Insert the addons into the HashMap.
                 ajour.addons.insert(flavor, addons);
+            } else {
+                log::error!(
+                    "Message::ParsedAddons({}) - {}",
+                    flavor,
+                    result.err().unwrap(),
+                );
             }
         }
         Message::DownloadedAddon((id, result)) => {
+            log::debug!(
+                "Message::DownloadedAddon(({}, error: {}))",
+                &id,
+                result.is_err()
+            );
+
             // When an addon has been successfully downloaded we begin to unpack it.
             // If it for some reason fails to download, we handle the error.
             let from_directory = ajour
@@ -307,6 +347,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::UnpackedAddon((id, result)) => {
+            log::debug!(
+                "Message::UnpackedAddon(({}, error: {}))",
+                &id,
+                result.is_err()
+            );
+
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
@@ -356,6 +402,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::UpdateFingerprint((id, result)) => {
+            log::debug!(
+                "Message::UpdateFingerprint(({}, error: {}))",
+                &id,
+                result.is_err()
+            );
+
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
@@ -367,6 +419,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::NeedsUpdate(Ok(newer_version)) => {
+            log::debug!("Message::NeedsUpdate({:?})", &newer_version);
+
             ajour.needs_update = newer_version;
         }
         Message::Interaction(Interaction::SortColumn(sort_key)) => {
@@ -392,6 +446,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 sort_direction = SortDirection::Desc;
             }
 
+            log::debug!(
+                "Interaction::SortColumn({:?}, {:?})",
+                sort_key,
+                sort_direction
+            );
+
             let flavor = ajour.config.wow.flavor;
             let mut addons = ajour.addons.entry(flavor).or_default();
 
@@ -401,12 +461,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.sort_state.previous_sort_key = Some(sort_key);
         }
         Message::ThemeSelected(theme_name) => {
+            log::debug!("Message::ThemeSelected({:?})", &theme_name);
+
             ajour.theme_state.current_theme_name = theme_name.clone();
 
             ajour.config.theme = Some(theme_name);
             let _ = ajour.config.save();
         }
         Message::ThemesLoaded(mut themes) => {
+            log::debug!("Message::ThemesLoaded({} themes)", themes.len());
+
             themes.sort();
 
             for theme in themes {
@@ -414,6 +478,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
+            log::error!("{}", error);
+
             ajour.state = AjourState::Error(error);
         }
         Message::None(_) => {}
