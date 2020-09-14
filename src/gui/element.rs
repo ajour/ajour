@@ -173,7 +173,7 @@ pub fn settings_container<'a>(
         .push(right_spacer);
 
     // Returns the final container.
-    Container::new(row).height(Length::Units(150))
+    Container::new(row).height(Length::Units(130))
 }
 
 pub fn addon_data_cell(
@@ -487,6 +487,7 @@ pub fn menu_container<'a>(
         .any(|a| matches!(a.state, AddonState::Downloading | AddonState::Unpacking));
 
     let ajour_performing_actions = matches!(state, AjourState::Loading);
+    let ajour_welcome = matches!(state, AjourState::Welcome);
 
     // Is any addon updtable.
     let any_addon_updatable = addons
@@ -523,7 +524,7 @@ pub fn menu_container<'a>(
     )
     .style(style::SegmentedButton(color_palette));
 
-    if !ajour_performing_actions {
+    if !ajour_performing_actions && !ajour_welcome {
         match config.wow.flavor {
             Flavor::Retail => {
                 classic_button =

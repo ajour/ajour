@@ -262,7 +262,7 @@ impl Application for Ajour {
                     Some(element::status_container(
                         color_palette,
                         "Woops!",
-                        "It seems you have no addons in your AddOn directory.",
+                        &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
                     ))
                 } else {
                     None

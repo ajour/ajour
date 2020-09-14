@@ -69,28 +69,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::perform(load_config(), Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
-            // Toggle state.
             ajour.is_showing_settings = !ajour.is_showing_settings;
-
-            // Prepare ignore_addons data.
-            // We need to find the corresponding addons, and then save it to
-            // the ajour state, with a new button::State attatched.
-            // if ajour.is_showing_settings {
-            //     let ignored_strings = &ajour.config.addons.ignored;
-            //     let flavor = &ajour.config.wow.flavor.clone();
-            //     let addons = &ajour
-            //         .ignored_addons
-            //         .get(&flavor)
-            //         .expect("no addons for flavor");
-            // ajour.ignored_addons = ajour
-            //     .addons
-            //     .iter()
-            //     .filter(|a| ignored_strings.iter().any(|i| i == &a.id))
-            //     .map(|a| (a.clone(), button::State::new()))
-            //     .collect::<Vec<(Addon, button::State)>>();
-            // } else {
-            // ajour.ignored_addons = vec![];
-            // }
         }
         Message::Interaction(Interaction::Ignore(id)) => {
             let flavor = &ajour.config.wow.flavor.clone();
@@ -151,8 +130,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let _ = &ajour.config.save();
         }
         Message::Interaction(Interaction::Expand(id)) => {
-            // Expand a addon.
-            // If it's already expanded, we collapse it again.
+            // Expand a addon. If it's already expanded, we collapse it again.
             let flavor = &ajour.config.wow.flavor;
             let addons = ajour.addons.get(flavor).expect("no addons for flavor");
             if let Some(addon) = addons.iter().find(|a| a.id == id) {
@@ -255,6 +233,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Insert the addons into the HashMap.
             ajour.addons.insert(flavor, addons);
         }
+        Message::ParsedAddons(Err(_)) => {
+            // If our selected flavor returns error, we assume we have no valid addons.
+            let flavor = &ajour.config.wow.flavor;
+            let is_empty = ajour.addons.get(flavor).map_or(false, |v| v.is_empty());
+            if is_empty {
+                ajour.state = AjourState::Idle;
+            }
+        }
         Message::DownloadedAddon((id, result)) => {
             // When an addon has been successfully downloaded we begin to unpack it.
             // If it for some reason fails to download, we handle the error.
@@ -267,8 +253,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .config
                 .get_addon_directory_for_flavor(&flavor)
                 .expect("Expected a valid path");
-            let flavor = &ajour.config.wow.flavor;
-            let addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
+            let addons = ajour.addons.get_mut(&flavor).expect("no addons for flavor");
             if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
                 match result {
                     Ok(_) => {
@@ -297,12 +282,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon.version = addon.remote_version.clone();
 
                         let mut commands = vec![];
-                        let flavor = ajour.config.wow.flavor;
                         commands.push(Command::perform(
                             perform_hash_addon(
                                 ajour
                                     .config
-                                    .get_addon_directory_for_flavor(&flavor)
+                                    .get_addon_directory_for_flavor(flavor)
                                     .expect("Expected a valid path"),
                                 addon.id.clone(),
                                 ajour.fingerprint_collection.clone(),
@@ -391,10 +375,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.theme_state.themes.push((theme.name.clone(), theme));
             }
         }
-        Message::Error(error)
-        | Message::Parse(Err(error))
-        | Message::ParsedAddons(Err(error))
-        | Message::NeedsUpdate(Err(error)) => {
+        Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
             ajour.state = AjourState::Error(error);
         }
         Message::None(_) => {}
