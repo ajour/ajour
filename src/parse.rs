@@ -28,10 +28,16 @@ lazy_static::lazy_static! {
 pub struct Fingerprint {
     pub title: String,
     pub hash: Option<u32>,
-    pub flavor: Flavor,
 }
 
-pub type FingerprintCollection = Vec<Fingerprint>;
+#[derive(Serialize, Deserialize, Default)]
+pub struct FingerprintCollection(HashMap<Flavor, Vec<Fingerprint>>);
+
+impl FingerprintCollection {
+    fn get_mut_for_flavor(&mut self, flavor: Flavor) -> &mut Vec<Fingerprint> {
+        self.0.entry(flavor).or_default()
+    }
+}
 
 impl PersistentData for FingerprintCollection {
     fn relative_path() -> PathBuf {
@@ -97,7 +103,7 @@ async fn file_parsing_regex() -> Result<ParsingPatterns> {
 pub async fn read_addon_directory<P: AsRef<Path>>(
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     root_dir: P,
-    flavor: &Flavor,
+    flavor: Flavor,
 ) -> Result<(Flavor, Vec<Addon>)> {
     let root_dir = root_dir.as_ref();
 
@@ -137,17 +143,15 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     }
 
     let fingerprint_collection = collection_guard.as_mut().unwrap();
+    let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
 
     // Each addon dir mapped to fingerprint struct.
-    let new_fingerprints: FingerprintCollection = all_dirs
+    let new_fingerprints: Vec<_> = all_dirs
         .par_iter() // Easy parallelization
         .map(|dir_name| {
             let addon_dir = root_dir.join(dir_name);
             // If we have a stored fingerprint on disk, we use that.
-            if let Some(fingerprint) = fingerprint_collection
-                .iter()
-                .find(|f| &f.flavor == flavor && &f.title == dir_name)
-            {
+            if let Some(fingerprint) = fingerprints.iter().find(|f| &f.title == dir_name) {
                 fingerprint.to_owned()
             } else {
                 let hash = fingerprint_addon_dir(
@@ -159,7 +163,6 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 Fingerprint {
                     title: dir_name.to_owned(),
                     hash,
-                    flavor: flavor.to_owned(),
                 }
             }
         })
@@ -167,28 +170,15 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .filter(|f| f.hash.is_some())
         .collect();
 
-    // Get the other flavors, we want saved as well.
-    let other_flavors_fingerprints: Vec<_> = fingerprint_collection
-        .clone()
-        .into_iter()
-        .filter(|f| &f.flavor != flavor)
-        .collect();
-
     // Update our in memory collection and save to disk.
-    fingerprint_collection.drain(..);
-    fingerprint_collection
-        .extend([&new_fingerprints[..], &other_flavors_fingerprints[..]].concat());
+    fingerprints.drain(..);
+    fingerprints.extend(new_fingerprints.clone());
     let _ = fingerprint_collection.save();
 
     // Maps each `Fingerprint` to `Addon`.
-    let unfiltred_addons: Vec<_> = fingerprint_collection
+    let unfiltred_addons: Vec<_> = new_fingerprints
         .par_iter()
         .filter_map(|fingerprint| {
-            // Filter out non-relevant fingerprints.
-            if &fingerprint.flavor != flavor {
-                return None;
-            }
-
             // Generate .toc path.
             let toc_path = root_dir
                 .join(&fingerprint.title)
@@ -274,7 +264,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
             // Apply package.
             if let Some(mut addon) = addon_by_id {
-                addon.apply_fingerprint_module(info, flavor.to_owned());
+                addon.apply_fingerprint_module(info, flavor);
                 return Some(addon);
             }
 
@@ -291,7 +281,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
             // Apply package.
             if let Some(mut addon) = addon_by_fingerprint {
-                addon.apply_fingerprint_module(info, flavor.to_owned());
+                addon.apply_fingerprint_module(info, flavor);
                 return Some(addon);
             }
 
@@ -327,11 +317,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Concats the different repo addons, and returns.
     let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
-    Ok((flavor.to_owned(), concatenated))
+    Ok((flavor, concatenated))
 }
 
 pub async fn update_addon_fingerprint(
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    flavor: Flavor,
     addon_dir: impl AsRef<Path>,
     addon_id: String,
 ) -> Result<()> {
@@ -361,8 +352,9 @@ pub async fn update_addon_fingerprint(
         }
 
         let fingerprint_collection = collection_guard.as_mut().unwrap();
+        let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
 
-        fingerprint_collection.iter_mut().for_each(|fingerprint| {
+        fingerprints.iter_mut().for_each(|fingerprint| {
             if fingerprint.title == addon_id {
                 fingerprint.hash = Some(hash);
             }

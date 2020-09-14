@@ -47,7 +47,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         read_addon_directory(
                             ajour.fingerprint_collection.clone(),
                             addon_directory.clone(),
-                            flavor,
+                            *flavor,
                         ),
                         Message::ParsedAddons,
                     ));
@@ -300,6 +300,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                     .expect("Expected a valid path"),
                                 addon.id.clone(),
                                 ajour.fingerprint_collection.clone(),
+                                ajour.config.wow.flavor,
                             ),
                             Message::UpdateFingerprint,
                         ));
@@ -314,6 +315,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                             .expect("Expected a valid path"),
                                         dep.clone(),
                                         ajour.fingerprint_collection.clone(),
+                                        ajour.config.wow.flavor,
                                     ),
                                     Message::UpdateFingerprint,
                                 ));
@@ -422,10 +424,11 @@ async fn perform_hash_addon(
     addon_dir: impl AsRef<Path>,
     addon_id: String,
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    flavor: Flavor,
 ) -> (String, Result<()>) {
     (
         addon_id.clone(),
-        update_addon_fingerprint(fingerprint_collection, addon_dir, addon_id).await,
+        update_addon_fingerprint(fingerprint_collection, flavor, addon_dir, addon_id).await,
     )
 }
 
