@@ -161,8 +161,8 @@ impl Application for Ajour {
             .palette;
 
         // Get addons for current flavor.
-        let flavor = self.config.wow.flavor.clone();
-        let addons = self.addons.entry(flavor).or_insert(Vec::new());
+        let flavor = self.config.wow.flavor;
+        let addons = self.addons.entry(flavor).or_insert_with(Vec::new);
 
         // Check if we have any addons.
         let has_addons = !&addons.is_empty();
