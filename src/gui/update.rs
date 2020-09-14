@@ -177,17 +177,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     .config
                     .get_addon_directory_for_flavor(&flavor)
                     .expect("has to have addon directory");
+
+                // Remove from local state.
+                let addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
+                addons.retain(|a| a.id != addon.id);
+
                 // Foldernames to the addons which is to be deleted.
                 let mut addons_to_be_deleted = [&addon.dependencies[..], &[addon.id]].concat();
-
-                // Ensure we don't have more of the same string.
                 addons_to_be_deleted.dedup();
-                let _ = delete_addons(&addon_directory, &addons_to_be_deleted);
-                // TODO: Does this work still?
-                let addons = ajour.addons.get_mut(flavor).expect("no addons for flavor");
-                // addons.retain(|ma| &addon.id != ma.id);
 
-                // mut_addons.retain(|a| !addons_to_be_deleted.iter().any(|ab| ab == &a.id));
+                // Delete addon(s) from disk.
+                let _ = delete_addons(&addon_directory, &addons_to_be_deleted);
             }
         }
         Message::Interaction(Interaction::Update(id)) => {
