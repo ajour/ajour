@@ -211,13 +211,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
             return Ok(Command::batch(commands));
         }
-        // Message::ParsedAddons(Ok((flavor, mut addons))) => {
         Message::ParsedAddons((flavor, result)) => {
-            // If our selected flavor returns error, we assume we have no valid addons.
-            let selected_flavor = ajour.config.wow.flavor;
-            // let is_empty = ajour.addons.get(flavor).map_or(false, |v| v.is_empty());
-
-            if flavor == selected_flavor {
+            // if our selected flavor returns (either ok or error) - we change to idle.
+            if flavor == ajour.config.wow.flavor {
                 ajour.state = AjourState::Idle;
             }
 
