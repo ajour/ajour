@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Added
+-  Improve clarity of row titles to reflect current sort state
+  - A little up-, or down-arrow has been added to indicate sort direction, and a color has been added to the selected colum.
 ### Fixed
-
 - Better toc file parsing
   - We now have better logic catching the values inside the toc file
   - If we for some reason does not find a title for the addon, we fallback and use the foldername
