@@ -73,7 +73,7 @@ pub struct Ajour {
     config: Config,
     directory_btn_state: button::State,
     expanded_addon: Option<Addon>,
-    ignored_addons: Vec<(Addon, button::State)>,
+    ignored_addons: HashMap<Flavor, Vec<(Addon, button::State)>>,
     ignored_addons_scrollable_state: scrollable::State,
     is_showing_settings: bool,
     needs_update: Option<String>,
@@ -149,6 +149,10 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Message> {
+        // Clone config to be used.
+        // FIXME: This could be done prettier.
+        let cloned_config = self.config.clone();
+
         // Get color palette of chosen theme.
         let color_palette = self
             .theme_state
@@ -164,12 +168,14 @@ impl Application for Ajour {
         let flavor = self.config.wow.flavor;
         let addons = self.addons.entry(flavor).or_default();
 
+        // Get the ignored addons ids.
+        let ignored_strings = self.config.addons.ignored.get(&flavor).cloned();
+
+        // Get ignored addons for flavor.
+        let ignored_addons = self.ignored_addons.entry(flavor).or_default();
+
         // Check if we have any addons.
         let has_addons = !&addons.is_empty();
-
-        // Ignored addons.
-        // We find the  corresponding `Addon` from the ignored strings.
-        let ignored_strings = &self.config.addons.ignored;
 
         // Menu container at the top of the applications.
         // This has all global buttons, such as Settings, Update All, etc.
@@ -182,7 +188,7 @@ impl Application for Ajour {
             &mut self.settings_btn_state,
             &self.state,
             addons,
-            &self.config,
+            &mut self.config,
             self.needs_update.as_deref(),
             &mut self.new_release_button_state,
         );
@@ -201,7 +207,7 @@ impl Application for Ajour {
         // Loops though the addons.
         for addon in &mut addons
             .iter_mut()
-            .filter(|a| !a.is_ignored(&ignored_strings))
+            .filter(|a| !a.is_ignored(ignored_strings.as_ref()))
         {
             // Checks if the current addon is expanded.
             let is_addon_expanded = match &self.expanded_addon {
@@ -230,8 +236,8 @@ impl Application for Ajour {
                 color_palette,
                 &mut self.directory_btn_state,
                 &mut self.ignored_addons_scrollable_state,
-                &mut self.ignored_addons,
-                &self.config,
+                ignored_addons,
+                &cloned_config,
                 &mut self.theme_state,
             );
 

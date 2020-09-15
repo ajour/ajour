@@ -152,8 +152,11 @@ impl Addon {
     }
 
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
-    pub fn is_ignored(&self, ignored: &[String]) -> bool {
-        ignored.iter().any(|i| i == &self.id)
+    pub fn is_ignored(&self, ignored: Option<&Vec<String>>) -> bool {
+        match ignored {
+            Some(ignored) => ignored.iter().any(|i| i == &self.id),
+            _ => false,
+        }
     }
 
     /// Check if the `Addon` is updatable.

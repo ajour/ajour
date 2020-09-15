@@ -462,7 +462,7 @@ pub fn menu_container<'a>(
     classic_btn_state: &'a mut button::State,
     state: &AjourState,
     addons: &[Addon],
-    config: &Config,
+    config: &'a mut Config,
     needs_update: Option<&'a str>,
     new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
@@ -544,10 +544,11 @@ pub fn menu_container<'a>(
         .push(classic_button.map(Message::Interaction));
 
     // Displays text depending on the state of the app.
-    let ignored_addons = config.addons.ignored.as_ref();
+    let flavor = config.wow.flavor;
+    let ignored_addons = config.addons.ignored.get(&flavor);
     let parent_addons_count = addons
         .iter()
-        .filter(|a| !a.is_ignored(&ignored_addons))
+        .filter(|a| !a.is_ignored(ignored_addons))
         .count();
 
     let status_text = match state {

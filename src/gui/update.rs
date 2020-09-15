@@ -78,12 +78,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             if let Some(addon) = addon {
                 // Push addon to ignored addons.
-                ajour
-                    .ignored_addons
-                    .push((addon.clone(), button::State::new()));
+                let ignored_addon = (addon.clone(), button::State::new());
+                let ignored_addons = ajour.ignored_addons.entry(flavor).or_default();
+                ignored_addons.push(ignored_addon);
 
                 // Update the config.
-                ajour.config.addons.ignored.push(addon.id.clone());
+                ajour
+                    .config
+                    .addons
+                    .ignored
+                    .entry(flavor)
+                    .or_default()
+                    .push(addon.id.clone());
 
                 // Persist the newly updated config.
                 let _ = &ajour.config.save();
@@ -91,10 +97,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Unignore(id)) => {
             // Update ajour state.
-            ajour.ignored_addons.retain(|(a, _)| a.id != id);
+            let flavor = ajour.config.wow.flavor;
+            let ignored_addons = ajour.ignored_addons.entry(flavor).or_default();
+            ignored_addons.retain(|(a, _)| a.id != id);
 
             // Update the config.
-            ajour.config.addons.ignored.retain(|i| i != &id);
+            let ignored_addon_ids = ajour.config.addons.ignored.entry(flavor).or_default();
+            ignored_addon_ids.retain(|i| i != &id);
 
             // Persist the newly updated config.
             let _ = &ajour.config.save();
@@ -119,6 +128,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.config.wow.directory = path;
                 // Persist the newly updated config.
                 let _ = &ajour.config.save();
+                // Set loading state.
+                ajour.state = AjourState::Loading;
                 // Reload config.
                 return Ok(Command::perform(load_config(), Message::Parse));
             }
@@ -226,13 +237,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.state = AjourState::Idle;
 
                     // Find and push the ignored addons.
-                    let ignored_ids = &ajour.config.addons.ignored;
+                    let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
                     let ignored_addons: Vec<_> = addons
                         .iter()
                         .filter(|a| ignored_ids.iter().any(|i| i == &a.id))
                         .map(|a| (a.clone(), button::State::new()))
                         .collect::<Vec<(Addon, button::State)>>();
-                    ajour.ignored_addons = ignored_addons;
+
+                    ajour.ignored_addons.insert(flavor, ignored_addons);
                 }
 
                 // Insert the addons into the HashMap.
