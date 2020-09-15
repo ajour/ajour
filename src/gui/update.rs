@@ -231,6 +231,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Ok(mut addons) = result {
                 // Sort the addons.
                 sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
+                ajour.sort_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.sort_state.previous_sort_key = Some(SortKey::Status);
 
                 if flavor == ajour.config.wow.flavor {
                     // Set the state if flavor matches.
