@@ -48,7 +48,7 @@ Windows:
 
 Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.
 
-Instructions for adding custom themes can be found on the [themes wiki page](https://github.com/casperstorm/ajour/wiki/Themes).
+Find instructions and a variety of custom themes [here](./THEMES.md).
 
 ## FAQ
 
