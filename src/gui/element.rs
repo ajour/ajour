@@ -5,8 +5,8 @@ use {
     },
     crate::VERSION,
     iced::{
-        button, pick_list, scrollable, Button, Column, Container, Element, HorizontalAlignment,
-        Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
+        button, scrollable, Button, Column, Container, Element, HorizontalAlignment, Length,
+        PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
 };
 
@@ -18,7 +18,6 @@ static DEFAULT_PADDING: u16 = 10;
 pub fn settings_container<'a>(
     color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
-    flavor_list_state: &'a mut pick_list::State<Flavor>,
     ignored_addons_scrollable_state: &'a mut scrollable::State,
     ignored_addons: &'a mut Vec<(Addon, button::State)>,
     config: &Config,
@@ -64,27 +63,6 @@ pub fn settings_container<'a>(
         .push(directory_button.map(Message::Interaction))
         .push(directory_data_text_container);
 
-    // Title for the flavor pick list.
-    let flavor_info_text = Text::new("Flavor").size(14);
-    let flavor_info_row = Row::new().push(flavor_info_text).padding(DEFAULT_PADDING);
-
-    // We add some margin left to adjust to the rest of the content.
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-
-    let flavors = &Flavor::ALL[..];
-    let flavor_pick_list = PickList::new(
-        flavor_list_state,
-        flavors,
-        Some(config.wow.flavor),
-        Message::FlavorSelected,
-    )
-    .text_size(14)
-    .width(Length::Units(100))
-    .style(style::PickList(color_palette));
-
-    // Data row for flavor picker list.
-    let flavor_data_row = Row::new().push(left_spacer).push(flavor_pick_list);
-
     // Title for the theme pick list.
     let theme_info_text = Text::new("Theme").size(14);
     let theme_info_row = Row::new().push(theme_info_text).padding(DEFAULT_PADDING);
@@ -118,8 +96,6 @@ pub fn settings_container<'a>(
     let left_column = Column::new()
         .push(directory_info_row)
         .push(path_data_row)
-        .push(flavor_info_row)
-        .push(flavor_data_row)
         .push(theme_info_row)
         .push(theme_data_row)
         .push(bottom_space);
@@ -197,7 +173,7 @@ pub fn settings_container<'a>(
         .push(right_spacer);
 
     // Returns the final container.
-    Container::new(row).height(Length::Units(185))
+    Container::new(row).height(Length::Units(130))
 }
 
 pub fn addon_data_cell(
@@ -482,14 +458,16 @@ pub fn menu_container<'a>(
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
     settings_button_state: &'a mut button::State,
+    retail_btn_state: &'a mut button::State,
+    classic_btn_state: &'a mut button::State,
     state: &AjourState,
     addons: &[Addon],
-    config: &Config,
+    config: &'a mut Config,
     needs_update: Option<&'a str>,
     new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
-    let mut settings_row = Row::new().spacing(1).height(Length::Units(35));
+    let mut settings_row = Row::new().height(Length::Units(35));
 
     let mut update_all_button = Button::new(
         update_all_button_state,
@@ -509,6 +487,7 @@ pub fn menu_container<'a>(
         .any(|a| matches!(a.state, AddonState::Downloading | AddonState::Unpacking));
 
     let ajour_performing_actions = matches!(state, AjourState::Loading);
+    let ajour_welcome = matches!(state, AjourState::Welcome);
 
     // Is any addon updtable.
     let any_addon_updatable = addons
@@ -533,17 +512,52 @@ pub fn menu_container<'a>(
     let update_all_button: Element<Interaction> = update_all_button.into();
     let refresh_button: Element<Interaction> = refresh_button.into();
 
+    let mut retail_button = Button::new(
+        retail_btn_state,
+        Text::new("Retail").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::SegmentedButton(color_palette));
+
+    let mut classic_button = Button::new(
+        classic_btn_state,
+        Text::new("Classic").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::SegmentedButton(color_palette));
+
+    if !ajour_performing_actions && !ajour_welcome {
+        match config.wow.flavor {
+            Flavor::Retail => {
+                classic_button =
+                    classic_button.on_press(Interaction::FlavorSelected(Flavor::Classic));
+            }
+            Flavor::Classic => {
+                retail_button = retail_button.on_press(Interaction::FlavorSelected(Flavor::Retail));
+            }
+        }
+    }
+
+    let retail_button: Element<Interaction> = retail_button.into();
+    let classic_button: Element<Interaction> = classic_button.into();
+
+    let segmented_flavor_control_container = Row::new()
+        .push(retail_button.map(Message::Interaction))
+        .push(classic_button.map(Message::Interaction));
+
     // Displays text depending on the state of the app.
-    let ignored_addons = config.addons.ignored.as_ref();
+    let flavor = config.wow.flavor;
+    let ignored_addons = config.addons.ignored.get(&flavor);
     let parent_addons_count = addons
         .iter()
-        .filter(|a| !a.is_ignored(&ignored_addons))
+        .filter(|a| !a.is_ignored(ignored_addons))
         .count();
 
     let status_text = match state {
-        AjourState::Idle => {
-            Text::new(format!("{} addons loaded", parent_addons_count)).size(DEFAULT_FONT_SIZE)
-        }
+        AjourState::Idle => Text::new(format!(
+            "{} {} addons loaded",
+            parent_addons_count,
+            config.wow.flavor.to_string()
+        ))
+        .size(DEFAULT_FONT_SIZE),
         _ => Text::new(""),
     };
 
@@ -592,7 +606,6 @@ pub fn menu_container<'a>(
     .on_press(Interaction::Settings)
     .into();
 
-    let spacer = Space::new(Length::Units(7), Length::Units(0));
     // Not using default padding, just to make it look prettier UI wise
     let top_spacer = Space::new(Length::Units(0), Length::Units(5));
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
@@ -602,8 +615,10 @@ pub fn menu_container<'a>(
     settings_row = settings_row
         .push(left_spacer)
         .push(refresh_button.map(Message::Interaction))
-        .push(spacer)
+        .push(Space::new(Length::Units(7), Length::Units(0)))
         .push(update_all_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(7), Length::Units(0)))
+        .push(segmented_flavor_control_container)
         .push(status_container)
         .push(error_container)
         .push(version_container);

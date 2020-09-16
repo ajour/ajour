@@ -26,12 +26,12 @@ pub struct Config {
 impl Config {
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
-    pub fn get_addon_directory(&self) -> Option<PathBuf> {
+    pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
         match &self.wow.directory {
             Some(dir) => {
                 // We prepend and append `_` to the formatted_client_flavor so it
                 // either becomes _retail_, or _classic_.
-                let formatted_client_flavor = format!("_{}_", self.wow.flavor);
+                let formatted_client_flavor = format!("_{}_", flavor);
 
                 // The path to the directory containing the addons
                 let mut addon_dir = dir.join(&formatted_client_flavor).join("Interface/AddOns");
@@ -69,7 +69,8 @@ impl Config {
     /// For now it will use the parent of the Addons folder.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_temporary_addon_directory(&self) -> Option<PathBuf> {
-        match self.get_addon_directory() {
+        let flavor = self.wow.flavor;
+        match self.get_addon_directory_for_flavor(&flavor) {
             Some(dir) => {
                 // The path to the directory which hold the temporary zip archives
                 let dir = dir.parent().expect("Expected Addons folder has a parent.");

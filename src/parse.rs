@@ -30,7 +30,14 @@ pub struct Fingerprint {
     pub hash: Option<u32>,
 }
 
-pub type FingerprintCollection = Vec<Fingerprint>;
+#[derive(Serialize, Deserialize, Default)]
+pub struct FingerprintCollection(HashMap<Flavor, Vec<Fingerprint>>);
+
+impl FingerprintCollection {
+    fn get_mut_for_flavor(&mut self, flavor: Flavor) -> &mut Vec<Fingerprint> {
+        self.0.entry(flavor).or_default()
+    }
+}
 
 impl PersistentData for FingerprintCollection {
     fn relative_path() -> PathBuf {
@@ -136,16 +143,16 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     }
 
     let fingerprint_collection = collection_guard.as_mut().unwrap();
+    let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
 
     // Each addon dir mapped to fingerprint struct.
-    let new_fingerprints: FingerprintCollection = all_dirs
+    let new_fingerprints: Vec<_> = all_dirs
         .par_iter() // Easy parallelization
         .map(|dir_name| {
             let addon_dir = root_dir.join(dir_name);
             // If we have a stored fingerprint on disk, we use that.
-            if let Some(fingerprint) = fingerprint_collection.iter().find(|f| &f.title == dir_name)
-            {
-                fingerprint.clone()
+            if let Some(fingerprint) = fingerprints.iter().find(|f| &f.title == dir_name) {
+                fingerprint.to_owned()
             } else {
                 let hash = fingerprint_addon_dir(
                     &addon_dir,
@@ -164,12 +171,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .collect();
 
     // Update our in memory collection and save to disk.
-    fingerprint_collection.drain(..);
-    fingerprint_collection.extend(new_fingerprints);
+    fingerprints.drain(..);
+    fingerprints.extend(new_fingerprints.clone());
     let _ = fingerprint_collection.save();
 
     // Maps each `Fingerprint` to `Addon`.
-    let unfiltred_addons: Vec<_> = fingerprint_collection
+    let unfiltred_addons: Vec<_> = new_fingerprints
         .par_iter()
         .filter_map(|fingerprint| {
             // Generate .toc path.
@@ -226,7 +233,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     link_dependencies_bidirectional(&mut tukui_addons, &unfiltred_addons);
 
     // Filter out addons with fingerprints.
-    let fingerprint_hashes: Vec<_> = unfiltred_addons
+    let mut fingerprint_hashes: Vec<_> = unfiltred_addons
         .iter()
         .filter_map(|addon| {
             // Removes any addon which has tukui_id.
@@ -239,6 +246,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             }
         })
         .collect();
+    fingerprint_hashes.dedup();
 
     // Fetches fingerprint package from curse_api
     let fingerprint_package = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
@@ -314,6 +322,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
 pub async fn update_addon_fingerprint(
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    flavor: Flavor,
     addon_dir: impl AsRef<Path>,
     addon_id: String,
 ) -> Result<()> {
@@ -343,8 +352,9 @@ pub async fn update_addon_fingerprint(
         }
 
         let fingerprint_collection = collection_guard.as_mut().unwrap();
+        let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
 
-        fingerprint_collection.iter_mut().for_each(|fingerprint| {
+        fingerprints.iter_mut().for_each(|fingerprint| {
             if fingerprint.title == addon_id {
                 fingerprint.hash = Some(hash);
             }
