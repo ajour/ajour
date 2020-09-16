@@ -19,3 +19,45 @@ Below are some examples based on popular editor themes.
   <img width="100%"
        src="./resources/themes/meh.png">
 </p>
+
+# [Gruvbox Dark](./resources/themes/gruvbox-dark.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/gruvbox-dark.png">
+</p>
+
+# [Gruvbox Light](./resources/themes/gruvbox-light.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/gruvbox-light.png">
+</p>
+
+# [Solarized Dark](./resources/themes/solarized-dark.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/solarized-dark.png">
+</p>
+
+# [Solarized Light](./resources/themes/solarized-light.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/solarized-light.png">
+</p>
+
+# [Dracula](./resources/themes/dracula.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/dracula.png">
+</p>
+
+# [Nord](./resources/themes/nord.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/nord.png">
+</p>
+
+# [Outrun](./resources/themes/outrun.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/outrun.png">
+</p>
