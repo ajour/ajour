@@ -583,7 +583,7 @@ fn fingerprint_addon_dir(
         // Parse file for matches
         let (comment_strip_regex, inclusion_regex) =
             file_parsing_regex.get(&ext).ok_or_else(|| {
-                ClientError::FingerprintError(format!("ext no in file parsing regex: {:?}", ext))
+                ClientError::FingerprintError(format!("ext not in file parsing regex: {:?}", ext))
             })?;
         let text = std::fs::read_to_string(&path).map_err(ClientError::fingerprint)?;
         let text = comment_strip_regex.replace_all(&text, "");
