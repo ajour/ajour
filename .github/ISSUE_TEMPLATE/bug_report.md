@@ -23,9 +23,11 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. Windows 10]
- - Version [e.g. 0.2.5]
+**Software involved**
+Please complete the following information:
+ - OS: [e.g. "Windows 10"]
+ - Ajour version: [e.g. "0.3.2"]
+ - (if applicable) Addon name, flavor (classic or retail) and version:
 
 **Additional context**
 Add any other context about the problem here.
