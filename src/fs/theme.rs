@@ -34,5 +34,7 @@ pub async fn load_user_themes() -> Vec<Theme> {
         }
     }
 
+    log::debug!("loaded {} user themes", themes.len());
+
     themes
 }

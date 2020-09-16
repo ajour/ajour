@@ -60,6 +60,12 @@ pub async fn download_addon(
     addon: &Addon,
     to_directory: &PathBuf,
 ) -> Result<()> {
+    log::debug!(
+        "downloading remote version {} for {}",
+        addon.remote_version.as_deref().unwrap_or_default(),
+        &addon.id
+    );
+
     if let Some(url) = addon.remote_url.clone() {
         let mut resp = request_async(shared_client, url, vec![], None).await?;
         let body = resp.body_mut();

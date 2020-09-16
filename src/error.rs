@@ -10,6 +10,14 @@ pub enum ClientError {
     NetworkError(isahc::Error),
     ZipError(zip::result::ZipError),
     LoadFileDoesntExist(PathBuf),
+    LogError(String),
+    FingerprintError(String),
+}
+
+impl ClientError {
+    pub fn fingerprint(e: impl fmt::Display) -> ClientError {
+        ClientError::FingerprintError(format!("{}", e))
+    }
 }
 
 impl fmt::Display for ClientError {
@@ -26,6 +34,8 @@ impl fmt::Display for ClientError {
             Self::HttpError(x) => write!(f, "{}", x),
             Self::ZipError(x) => write!(f, "{}", x),
             Self::LoadFileDoesntExist(x) => write!(f, "file doesn't exist: {:?}", x),
+            Self::LogError(x) => write!(f, "{}", x),
+            Self::FingerprintError(x) => write!(f, "{}", x),
         }
     }
 }
@@ -63,5 +73,17 @@ impl From<isahc::http::Error> for ClientError {
 impl From<zip::result::ZipError> for ClientError {
     fn from(error: zip::result::ZipError) -> Self {
         Self::ZipError(error)
+    }
+}
+
+impl From<fern::InitError> for ClientError {
+    fn from(error: fern::InitError) -> Self {
+        Self::LogError(format!("{:?}", error))
+    }
+}
+
+impl From<log::SetLoggerError> for ClientError {
+    fn from(error: log::SetLoggerError) -> Self {
+        Self::LogError(format!("{:?}", error))
     }
 }

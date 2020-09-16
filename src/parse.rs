@@ -19,6 +19,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 lazy_static::lazy_static! {
     static ref CACHED_GAME_INFO: Mutex<Option<GameInfo>> = Mutex::new(None);
@@ -105,6 +106,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     root_dir: P,
     flavor: Flavor,
 ) -> Result<Vec<Addon>> {
+    log::debug!("{} - parsing addons folder", flavor);
+
     let root_dir = root_dir.as_ref();
 
     // If the path does not exists or does not point on a directory we return an Error.
@@ -129,6 +132,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    log::debug!(
+        "{} - {} folders in AddOns directory to parse",
+        flavor,
+        all_dirs.len()
+    );
+
     let ParsingPatterns {
         initial_inclusion_regex,
         extra_inclusion_regex,
@@ -146,20 +155,31 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
 
     // Each addon dir mapped to fingerprint struct.
+    let num_cached = AtomicUsize::new(0);
     let new_fingerprints: Vec<_> = all_dirs
         .par_iter() // Easy parallelization
         .map(|dir_name| {
             let addon_dir = root_dir.join(dir_name);
             // If we have a stored fingerprint on disk, we use that.
             if let Some(fingerprint) = fingerprints.iter().find(|f| &f.title == dir_name) {
+                let _ = num_cached.fetch_add(1, Ordering::SeqCst);
                 fingerprint.to_owned()
             } else {
-                let hash = fingerprint_addon_dir(
+                let hash_result = fingerprint_addon_dir(
                     &addon_dir,
                     &initial_inclusion_regex,
                     &extra_inclusion_regex,
                     &file_parsing_regex,
                 );
+
+                let hash = match hash_result {
+                    Ok(hash) => Some(hash),
+                    Err(e) => {
+                        log::error!("fingerprinting failed for {:?}: {}", addon_dir, e);
+                        None
+                    }
+                };
+
                 Fingerprint {
                     title: dir_name.to_owned(),
                     hash,
@@ -169,6 +189,23 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         // Note: we filter out cases where hashing has failed.
         .filter(|f| f.hash.is_some())
         .collect();
+
+    {
+        let num_cached = num_cached.load(Ordering::Relaxed);
+        let change = fingerprints.len() as isize - new_fingerprints.len() as isize;
+        let removed = change.max(0);
+        let added = change.min(0).abs();
+
+        log::debug!(
+            "{} - {} fingerprints: {} cached, {} calculated, {} added, {} removed",
+            flavor,
+            new_fingerprints.len(),
+            num_cached,
+            new_fingerprints.len() - num_cached,
+            added,
+            removed
+        );
+    }
 
     // Update our in memory collection and save to disk.
     fingerprints.drain(..);
@@ -195,6 +232,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    log::debug!(
+        "{} - {} successfully parsed from '.toc'",
+        flavor,
+        unfiltred_addons.len()
+    );
+
     // Drop Mutex guard, collection is no longer needed
     drop(collection_guard);
 
@@ -209,6 +252,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             }
         })
         .collect();
+
+    log::debug!("{} - {} addons with tukui id", flavor, tukui_ids.len());
 
     let mut tukui_addons = vec![];
     // Loops each tukui_id and fetch a remote package from their api.
@@ -227,6 +272,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             }
         }
     }
+
+    log::debug!(
+        "{} - {} addons applied with tukui id package metadata",
+        flavor,
+        tukui_addons.len()
+    );
 
     // Links dependencies. This is needed for tukui addons since they don't
     // tell which dependencies a addon has, so we use the information from toc.
@@ -248,8 +299,55 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .collect();
     fingerprint_hashes.dedup();
 
+    log::debug!(
+        "{} - {} unique fingerprints to check against curse api",
+        flavor,
+        fingerprint_hashes.len()
+    );
+
     // Fetches fingerprint package from curse_api
     let fingerprint_package = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
+
+    // Log info about partial matches
+    {
+        for addon in fingerprint_package.partial_matches.iter() {
+            let curse_id = addon.file.id;
+
+            let file_name = addon
+                .file
+                .file_name
+                .strip_suffix(".zip")
+                .unwrap_or(&addon.file.file_name);
+
+            let mut modules_log = String::new();
+            for module in addon.file.modules.iter() {
+                let local_fingerprint = unfiltred_addons
+                    .iter()
+                    .find(|a| a.id == module.foldername)
+                    .map(|a| a.fingerprint.unwrap_or_default())
+                    .unwrap_or_default();
+
+                modules_log.push_str(&format!(
+                    "\n\t{} - {} - {}",
+                    module.foldername, local_fingerprint, module.fingerprint
+                ));
+            }
+
+            log::trace!(
+                "{} - partial fingerprint found:\n\tCurse ID: {}\n\tFile Name: {}\n\tModules (Name - Local Fingerprint - Remote Fingerprint){}",
+                flavor,
+                curse_id,
+                file_name,
+                modules_log
+            );
+        }
+    }
+
+    log::debug!(
+        "{} - {} exact fingerprint matches against curse api",
+        flavor,
+        fingerprint_package.exact_matches.len()
+    );
 
     // Converts the excat matches into our `Addon` struct.
     let mut fingerprint_addons: Vec<_> = fingerprint_package
@@ -289,6 +387,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    log::debug!(
+        "{} - {} addons applied with fingerprint metadata",
+        flavor,
+        fingerprint_addons.len()
+    );
+
     // Creates a `Vec` of curse_ids.
     let curse_ids: Vec<_> = fingerprint_addons
         .iter()
@@ -301,9 +405,17 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect();
 
+    log::debug!(
+        "{} - {} addons with curse id",
+        flavor,
+        fingerprint_addons.len()
+    );
+
     // Fetches the curse packages based on the ids.
     let curse_id_packages_result = fetch_remote_packages_by_ids(&curse_ids).await;
     if let Ok(curse_id_packages) = curse_id_packages_result {
+        let mut updated = 0;
+
         // Loops the packages, and updates our Addons with information.
         for package in curse_id_packages {
             let addon = fingerprint_addons
@@ -311,12 +423,26 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 .find(|a| a.curse_id == Some(package.id));
             if let Some(addon) = addon {
                 addon.apply_curse_package(&package);
+                updated += 1;
             }
         }
+
+        log::debug!(
+            "{} - {} addons applied with curse id package metadata",
+            flavor,
+            updated
+        );
     }
 
     // Concats the different repo addons, and returns.
     let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
+
+    log::debug!(
+        "{} - {} addons successfully parsed",
+        flavor,
+        concatenated.len()
+    );
+
     Ok(concatenated)
 }
 
@@ -326,6 +452,8 @@ pub async fn update_addon_fingerprint(
     addon_dir: impl AsRef<Path>,
     addon_id: String,
 ) -> Result<()> {
+    log::debug!("{} - updating fingerprint for {}", flavor, &addon_id);
+
     // Regexes
     let ParsingPatterns {
         initial_inclusion_regex,
@@ -336,34 +464,39 @@ pub async fn update_addon_fingerprint(
     let addon_path = addon_dir.as_ref().join(&addon_id);
 
     // Generate new hash, and update collection.
-    if let Some(hash) = fingerprint_addon_dir(
+    match fingerprint_addon_dir(
         &addon_path,
         &initial_inclusion_regex,
         &extra_inclusion_regex,
         &file_parsing_regex,
     ) {
-        // Lock Mutex ensuring this is the only operation that can update the collection.
-        // This is needed since during `Update All` we can have concurrent operations updating
-        // this collection and we need to ensure they don't overwrite eachother.
-        let mut collection_guard = fingerprint_collection.lock().await;
+        Ok(hash) => {
+            // Lock Mutex ensuring this is the only operation that can update the collection.
+            // This is needed since during `Update All` we can have concurrent operations updating
+            // this collection and we need to ensure they don't overwrite eachother.
+            let mut collection_guard = fingerprint_collection.lock().await;
 
-        if collection_guard.is_none() {
-            *collection_guard = Some(load_fingerprint_collection().await?);
-        }
-
-        let fingerprint_collection = collection_guard.as_mut().unwrap();
-        let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
-
-        fingerprints.iter_mut().for_each(|fingerprint| {
-            if fingerprint.title == addon_id {
-                fingerprint.hash = Some(hash);
+            if collection_guard.is_none() {
+                *collection_guard = Some(load_fingerprint_collection().await?);
             }
-        });
 
-        // Persist collection to disk
-        let _ = fingerprint_collection.save();
+            let fingerprint_collection = collection_guard.as_mut().unwrap();
+            let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
 
-        // Mutex guard is dropped, allowing other operations to work on FingerprintCollection
+            fingerprints.iter_mut().for_each(|fingerprint| {
+                if fingerprint.title == addon_id {
+                    fingerprint.hash = Some(hash);
+                }
+            });
+
+            // Persist collection to disk
+            let _ = fingerprint_collection.save();
+
+            // Mutex guard is dropped, allowing other operations to work on FingerprintCollection
+        }
+        Err(e) => {
+            log::error!("fingerprinting failed for {:?}: {}", addon_path, e);
+        }
     }
 
     Ok(())
@@ -374,14 +507,25 @@ fn fingerprint_addon_dir(
     initial_inclusion_regex: &Regex,
     extra_inclusion_regex: &Regex,
     file_parsing_regex: &HashMap<String, (regex::Regex, Regex)>,
-) -> Option<u32> {
+) -> Result<u32> {
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
-    let root_dir = addon_dir.parent()?;
+    let root_dir = addon_dir.parent().ok_or_else(|| {
+        ClientError::FingerprintError(format!("No parent directory for {:?}", addon_dir))
+    })?;
+
     // Add initial files
-    let glob_pattern = format!("{}/**/*.*", addon_dir.to_str()?);
-    for path in glob::glob(&glob_pattern).expect("Glob pattern error") {
-        let path = path.expect("Glob error");
+    let glob_pattern = format!(
+        "{}/**/*.*",
+        addon_dir
+            .to_str()
+            .ok_or_else(|| ClientError::FingerprintError(format!(
+                "Invalid UTF8 path: {:?}",
+                addon_dir
+            )))?
+    );
+    for path in glob::glob(&glob_pattern).map_err(ClientError::fingerprint)? {
+        let path = path.map_err(ClientError::fingerprint)?;
         if !path.is_file() {
             continue;
         }
@@ -389,13 +533,20 @@ fn fingerprint_addon_dir(
         // Test relative path matches regexes
         let relative_path = path
             .strip_prefix(root_dir)
-            .ok()?
-            .to_str()?
+            .map_err(ClientError::fingerprint)?
+            .to_str()
+            .ok_or_else(|| ClientError::FingerprintError(format!("Invalid UTF8 path: {:?}", path)))?
             .to_ascii_lowercase()
             .replace("/", "\\"); // Convert to windows seperator
-        if initial_inclusion_regex.is_match(&relative_path).ok()? {
+        if initial_inclusion_regex
+            .is_match(&relative_path)
+            .map_err(ClientError::fingerprint)?
+        {
             to_parse.push_back(path);
-        } else if extra_inclusion_regex.is_match(&relative_path).ok()? {
+        } else if extra_inclusion_regex
+            .is_match(&relative_path)
+            .map_err(ClientError::fingerprint)?
+        {
             to_fingerprint.insert(path);
         }
     }
@@ -403,48 +554,94 @@ fn fingerprint_addon_dir(
     // Parse additional files
     while let Some(path) = to_parse.pop_front() {
         if !path.exists() || !path.is_file() {
-            panic!("Invalid file given to parse");
+            return Err(ClientError::FingerprintError(format!(
+                "Invalid file given to parse: {:?}",
+                path.display()
+            )));
         }
 
         to_fingerprint.insert(path.clone());
 
         // Skip if no rules for extension
-        let ext = format!(".{}", path.extension()?.to_str()?);
+        let ext = format!(
+            ".{}",
+            path.extension()
+                .ok_or_else(|| ClientError::FingerprintError(format!(
+                    "Invalid extension for path: {:?}",
+                    path
+                )))?
+                .to_str()
+                .ok_or_else(|| ClientError::FingerprintError(format!(
+                    "Invalid UTF8 path: {:?}",
+                    path
+                )))?
+        );
         if !file_parsing_regex.contains_key(&ext) {
             continue;
         }
 
         // Parse file for matches
-        let (comment_strip_regex, inclusion_regex) = file_parsing_regex.get(&ext)?;
-        let text = std::fs::read_to_string(&path).expect("Error reading file");
+        let (comment_strip_regex, inclusion_regex) =
+            file_parsing_regex.get(&ext).ok_or_else(|| {
+                ClientError::FingerprintError(format!("ext not in file parsing regex: {:?}", ext))
+            })?;
+        let text = std::fs::read_to_string(&path).map_err(ClientError::fingerprint)?;
         let text = comment_strip_regex.replace_all(&text, "");
         for line in text.split(&['\n', '\r'][..]) {
             let mut last_offset = 0;
-            while let Some(inc_match) = inclusion_regex.captures_from_pos(line, last_offset).ok()? {
-                last_offset = inc_match.get(0)?.end();
-                let path_match = inc_match.get(1)?.as_str();
+            while let Some(inc_match) = inclusion_regex
+                .captures_from_pos(line, last_offset)
+                .map_err(ClientError::fingerprint)?
+            {
+                let prev_last_offset = last_offset;
+                last_offset = inc_match
+                    .get(0)
+                    .ok_or_else(|| {
+                        ClientError::FingerprintError(format!(
+                            "Inclusion regex error for group 0 on pos {}, line: {:?}",
+                            prev_last_offset, line
+                        ))
+                    })?
+                    .end();
+                let path_match = inc_match
+                    .get(1)
+                    .ok_or_else(|| {
+                        ClientError::FingerprintError(format!(
+                            "Inclusion regex error for group 1 on pos {}, line: {:?}",
+                            prev_last_offset, line
+                        ))
+                    })?
+                    .as_str();
                 // Path might be case insensitive and have windows separators. Find it
                 let path_match = path_match.replace("\\", "/");
-                let parent = path.parent()?;
-                let real_path = find_file(parent.join(Path::new(&path_match)))?;
+                let parent = path.parent().ok_or_else(|| {
+                    ClientError::FingerprintError(format!("No parent directory for {:?}", path))
+                })?;
+                let file_to_find = parent.join(Path::new(&path_match));
+                let real_path = find_file(&file_to_find).ok_or_else(|| {
+                    ClientError::FingerprintError(format!(
+                        "Unable to find file: {:?}",
+                        file_to_find
+                    ))
+                })?;
                 to_parse.push_back(real_path);
             }
         }
     }
 
     // Calculate fingerprints
-    let mut fingerprints: Vec<_> = to_fingerprint
-        .iter()
-        .map(|path| {
-            // Read file, removing whitespace
-            let data: Vec<_> = std::fs::read(path)
-                .expect("Error reading file for fingerprinting")
-                .into_iter()
-                .filter(|&b| b != b' ' && b != b'\n' && b != b'\r' && b != b'\t')
-                .collect();
-            calculate_hash(&data, 1)
-        })
-        .collect();
+    let mut fingerprints = vec![];
+    for path in to_fingerprint.iter() {
+        let data: Vec<_> = std::fs::read(path)
+            .map_err(ClientError::fingerprint)?
+            .into_iter()
+            .filter(|&b| b != b' ' && b != b'\n' && b != b'\r' && b != b'\t')
+            .collect();
+
+        let hash = calculate_hash(&data, 1);
+
+        fingerprints.push(hash);
+    }
 
     // Calculate overall fingerprint
     fingerprints.sort_unstable();
@@ -454,7 +651,7 @@ fn fingerprint_addon_dir(
         .collect::<Vec<_>>()
         .join("");
 
-    Some(calculate_hash(to_hash.as_bytes(), 1))
+    Ok(calculate_hash(to_hash.as_bytes(), 1))
 }
 
 /// Finds a case sensitive path from an insensitive path

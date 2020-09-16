@@ -91,5 +91,7 @@ impl PersistentData for Config {
 ///
 /// This functions handles the initialization of a Config.
 pub async fn load_config() -> Result<Config> {
+    log::debug!("loading config");
+
     Ok(Config::load_or_default()?)
 }

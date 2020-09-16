@@ -4,6 +4,8 @@ use serde::Deserialize;
 use std::cmp::Ordering;
 
 pub async fn load_user_themes() -> Vec<Theme> {
+    log::debug!("loading user themes");
+
     fs::load_user_themes().await
 }
 

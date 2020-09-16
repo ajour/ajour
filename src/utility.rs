@@ -20,6 +20,8 @@ struct Release {
 }
 
 pub async fn needs_update() -> Result<Option<String>> {
+    log::debug!("checking for application update");
+
     let client = HttpClient::new()?;
 
     let mut resp = request_async(

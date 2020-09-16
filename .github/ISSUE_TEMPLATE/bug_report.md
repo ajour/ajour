@@ -31,3 +31,6 @@ Please complete the following information:
 
 **Additional context**
 Add any other context about the problem here.
+
+**Log Output**
+Paste the content of `ajour.log` from `%APPDATA%\ajour\ajour.log` on Windows or `$HOME/.config/ajour/ajour.log` on Mac/Linux.
