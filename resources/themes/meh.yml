@@ -1,0 +1,9 @@
+name: Meh
+palette:
+  primary: '#67ac85'
+  secondary: '#7fabbd'
+  surface: '#222226'
+  on_surface: '#aaaaaa'
+  background: '#202022'
+  error: '#ec7060'
+
