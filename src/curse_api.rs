@@ -80,7 +80,7 @@ pub struct FingerprintInfo {
     pub is_cache_built: bool,
     pub exact_matches: Vec<AddonFingerprintInfo>,
     pub exact_fingerprints: Vec<u32>,
-    pub partial_matches: Vec<::serde_json::Value>,
+    pub partial_matches: Vec<AddonFingerprintInfo>,
     pub partial_match_fingerprints: ::serde_json::Value,
     pub installed_fingerprints: Vec<u32>,
     pub unmatched_fingerprints: Vec<u32>,

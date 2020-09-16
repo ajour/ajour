@@ -290,13 +290,54 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .collect();
     fingerprint_hashes.dedup();
 
+    log::debug!(
+        "{} - {} unique fingerprints to check against curse api",
+        flavor,
+        fingerprint_hashes.len()
+    );
+
     // Fetches fingerprint package from curse_api
     let fingerprint_package = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
+
+    // Log info about partial matches
+    {
+        for addon in fingerprint_package.partial_matches.iter() {
+            let curse_id = addon.file.id;
+
+            let file_name = addon
+                .file
+                .file_name
+                .strip_suffix(".zip")
+                .unwrap_or(&addon.file.file_name);
+
+            let mut modules_log = String::new();
+            for module in addon.file.modules.iter() {
+                let local_fingerprint = unfiltred_addons
+                    .iter()
+                    .find(|a| a.id == module.foldername)
+                    .map(|a| a.fingerprint.unwrap_or_default())
+                    .unwrap_or_default();
+
+                modules_log.push_str(&format!(
+                    "\n\t{} - {} - {}",
+                    module.foldername, local_fingerprint, module.fingerprint
+                ));
+            }
+
+            log::trace!(
+                "{} - partial fingerprint found:\n\tCurse ID: {}\n\tFile Name: {}\n\tModules (Name - Local Fingerprint - Remote Fingerprint){}",
+                flavor,
+                curse_id,
+                file_name,
+                modules_log
+            );
+        }
+    }
 
     log::debug!(
         "{} - {} exact fingerprint matches against curse api",
         flavor,
-        fingerprint_package.exact_fingerprints.len()
+        fingerprint_package.exact_matches.len()
     );
 
     // Converts the excat matches into our `Addon` struct.

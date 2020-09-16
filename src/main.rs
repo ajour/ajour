@@ -25,7 +25,7 @@ pub fn main() {
     // Setup the logger
     setup_logger().expect("setup logging");
 
-    log::debug!("Ajour has started.");
+    log::debug!("Ajour {} has started.", VERSION);
 
     // Start the GUI
     gui::run();
@@ -44,7 +44,7 @@ fn setup_logger() -> Result<()> {
             ))
         })
         .level(log::LevelFilter::Off)
-        .level_for("ajour", log::LevelFilter::Debug);
+        .level_for("ajour", log::LevelFilter::Trace);
 
     #[cfg(debug_assertions)]
     {

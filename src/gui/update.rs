@@ -31,6 +31,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Parse(Ok(config)) => {
             log::debug!("Message::Parse");
+            log::debug!("config loaded:\n{:#?}", config);
 
             // When we have the config, we parse the addon directory
             // which is provided by the config.
@@ -45,6 +46,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let flavors = &Flavor::ALL[..];
             for flavor in flavors {
                 if let Some(addon_directory) = ajour.config.get_addon_directory_for_flavor(flavor) {
+                    log::debug!(
+                        "preparing to parse addons in {:?}",
+                        addon_directory.display()
+                    );
+
                     commands.push(Command::perform(
                         perform_read_addon_directory(
                             ajour.fingerprint_collection.clone(),
@@ -54,6 +60,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         Message::ParsedAddons,
                     ));
                 } else {
+                    log::debug!("addon directory is not set, showing welcome screen");
+
                     // Assume we are welcoming a user because directory is not set.
                     ajour.state = AjourState::Welcome;
                     break;
