@@ -11,6 +11,13 @@ pub enum ClientError {
     ZipError(zip::result::ZipError),
     LoadFileDoesntExist(PathBuf),
     LogError(String),
+    FingerprintError(String),
+}
+
+impl ClientError {
+    pub fn fingerprint(e: impl fmt::Display) -> ClientError {
+        ClientError::FingerprintError(format!("{}", e))
+    }
 }
 
 impl fmt::Display for ClientError {
@@ -28,6 +35,7 @@ impl fmt::Display for ClientError {
             Self::ZipError(x) => write!(f, "{}", x),
             Self::LoadFileDoesntExist(x) => write!(f, "file doesn't exist: {:?}", x),
             Self::LogError(x) => write!(f, "{}", x),
+            Self::FingerprintError(x) => write!(f, "{}", x),
         }
     }
 }
