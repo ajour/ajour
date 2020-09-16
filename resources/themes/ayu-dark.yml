@@ -1,0 +1,9 @@
+name: Ayu Dark
+palette:
+  primary: '#ff8920'
+  secondary: '#23c1f1'
+  surface: '#00060f'
+  on_surface: '#aaafad'
+  background: '#090e15'
+  error: '#c75d55'
+

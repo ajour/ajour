@@ -14,6 +14,18 @@ Windows:
 
 Below are some examples based on popular editor themes.
 
+# [Ayu Mirage](./resources/themes/ayu-mirage.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/ayu-mirage.png">
+</p>
+
+# [Ayu Dark](./resources/themes/ayu-dark.yml)
+<p align="center">
+  <img width="100%"
+       src="./resources/themes/ayu-dark.png">
+</p>
+
 # [Meh](./resources/themes/meh.yml)
 <p align="center">
   <img width="100%"
