@@ -269,9 +269,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close details if shown.
             ajour.expanded_addon = None;
 
-            // Update all pressed
+            // Update all updatable addons, expect ignored.
             let flavor = ajour.config.wow.flavor;
-            let addons = ajour.addons.entry(flavor).or_default();
+            let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
+            let mut addons: Vec<_> = ajour
+                .addons
+                .entry(flavor)
+                .or_default()
+                .iter_mut()
+                .filter(|a| !ignored_ids.iter().any(|i| i == &a.id))
+                .collect();
+
             let mut commands = vec![];
             for addon in addons.iter_mut() {
                 if addon.state == AddonState::Updatable {

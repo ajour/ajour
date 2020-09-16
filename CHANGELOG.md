@@ -7,25 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Packaging
+- Added local logging for debugging the application. An `ajour.log` file is saved in the ajour config directory. This file can be shared along with any bug reports to help better debug the issue
 ### Added
 - Improve clarity of row titles to reflect current sort state
-  - A little up-, or down-arrow has been added to indicate sort direction, and a color has been added to the selected colum.
-- Added local logging for debugging the application. An `ajour.log` file is saved in the ajour config directory. This file can be shared along with any bug reports to help better debug the issue.
+  - A little up-, or down-arrow has been added to indicate sort direction, and a color has been added to the selected colum
 ### Changed
-- When displaying details for an addon, the title of the addon is highlighted to improve visibility of which addon is expanded.
-- Made it easier to use Ajour if you play both Classic and Retail by moving the control from settings into the menubar.
-  - Ajour will now parse both Classic and Retail directories on launch. This means that when you switch between the two it will now be instantaneously.
+- Made it easier to use Ajour if you play both Classic and Retail by moving the control from settings into the menubar
+  - Ajour will now parse both Classic and Retail directories on launch. This means that when you switch between the two it will now be instantaneously
 ### Fixed
-- Ignoring an addon, will now correctly clear the last opened addon state.
-  - If you opened details for an addon, and ignored it and unignored it right after it would re-appear as opened. This is now fixed so it will re-appear as closed. 
-- Settings and details window will now be closed on interactions outside of it.
-  - It was a bit confusing that the these windows stayed open even though you interacted with the application outside of it. This is now corrected, so any interaction will close them. 
+- Update all will now respect ignored addons, and correctly skip them
+- The settings- and detail-window will now be closed on interactions outside of it
+  - It was a bit confusing that the windows stayed open even though you interacted with the application outside of them
+- When displaying details for an addon, the title of the addon is highlighted to improve visibility of which addon is expanded
 - Better toc file parsing
   - We now have better logic catching the values inside the toc file
   - If we for some reason does not find a title for the addon, we fallback and use the foldername
 - Check for case-insensitive version of `Interface/AddOns` folder for robustness
 - Check for & create ajour config folder before launching concurrent init operations
-  - The `load_config` and `load_user_themes` operations are launched concurrently on startup. Since they both require the config folder, they will both try to create it if it doesn't exist. This causes a panic on linux since the `create_dir` fs operation fails if the folder already exists.
+  - The `load_config` and `load_user_themes` operations are launched concurrently on startup. Since they both require the config folder, they will both try to create it if it doesn't exist. This causes a panic on linux since the `create_dir` fs operation fails if the folder already exists
 
 ## [0.3.2] - 2020-09-11
 ### Changed
