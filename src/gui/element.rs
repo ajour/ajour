@@ -132,10 +132,7 @@ pub fn settings_container<'a>(
     }
 
     for (addon, state) in ignored_addons {
-        let title = addon
-            .remote_title
-            .clone()
-            .unwrap_or_else(|| addon.title.clone());
+        let title = addon.title.clone();
         let title_text = Text::new(title).size(14);
         let title_container = Container::new(title_text)
             .height(Length::Units(26))
