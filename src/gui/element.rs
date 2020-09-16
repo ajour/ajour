@@ -188,10 +188,16 @@ pub fn addon_data_cell(
         .unwrap_or_else(|| String::from("-"));
 
     let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
-    let title_button: Element<Interaction> = Button::new(&mut addon.details_btn_state, title)
-        .on_press(Interaction::Expand(addon.id.clone()))
-        .style(style::TextButton(color_palette))
-        .into();
+    let mut title_button = Button::new(&mut addon.details_btn_state, title)
+        .on_press(Interaction::Expand(addon.id.clone()));
+
+    if is_addon_expanded {
+        title_button = title_button.style(style::SelectedTextButton(color_palette));
+    } else {
+        title_button = title_button.style(style::TextButton(color_palette));
+    }
+
+    let title_button: Element<Interaction> = title_button.into();
 
     let title_container = Container::new(title_button.map(Message::Interaction))
         .height(default_height)

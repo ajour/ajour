@@ -74,6 +74,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
+            // Close details if shown.
+            ajour.expanded_addon = None;
 
             // Cleans the addons.
             ajour.addons = HashMap::new();
@@ -87,12 +89,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::Settings");
 
             ajour.is_showing_settings = !ajour.is_showing_settings;
+
+            // Remove the expanded addon.
+            ajour.expanded_addon = None;
         }
         Message::Interaction(Interaction::Ignore(id)) => {
             log::debug!("Interaction::Ignore({})", &id);
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
+            // Close details if shown.
+            ajour.expanded_addon = None;
 
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
@@ -103,9 +110,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let ignored_addon = (addon.clone(), button::State::new());
                 let ignored_addons = ajour.ignored_addons.entry(flavor).or_default();
                 ignored_addons.push(ignored_addon);
-
-                // Remove the expanded addon.
-                ajour.expanded_addon = None;
 
                 // Update the config.
                 ajour
@@ -172,6 +176,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
+            // Close details if shown.
+            ajour.expanded_addon = None;
             // Update the game flavor
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
@@ -182,6 +188,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
+
             // Expand a addon. If it's already expanded, we collapse it again.
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
@@ -203,6 +210,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
+            // Close details if shown.
+            ajour.expanded_addon = None;
 
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
@@ -229,6 +238,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
+            // Close details if shown.
+            ajour.expanded_addon = None;
 
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
@@ -255,6 +266,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
+            // Close details if shown.
+            ajour.expanded_addon = None;
 
             // Update all pressed
             let flavor = ajour.config.wow.flavor;
@@ -434,6 +447,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::SortColumn(sort_key)) => {
             // Close settings if shown.
             ajour.is_showing_settings = false;
+            // Close details if shown.
+            ajour.expanded_addon = None;
 
             // First time clicking a column should sort it in Ascending order, otherwise
             // flip the sort direction.
