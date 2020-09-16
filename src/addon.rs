@@ -29,7 +29,6 @@ pub struct Addon {
     pub version: Option<String>,
     pub remote_version: Option<String>,
     pub remote_url: Option<String>,
-    pub remote_title: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
@@ -70,7 +69,6 @@ impl Addon {
             version,
             remote_version: None,
             remote_url: None,
-            remote_title: None,
             path,
             dependencies,
             state: AddonState::Ajour(None),
@@ -93,7 +91,6 @@ impl Addon {
     pub fn apply_tukui_package(&mut self, package: &tukui_api::TukuiPackage) {
         self.remote_version = Some(package.version.clone());
         self.remote_url = Some(package.url.clone());
-        self.remote_title = Some(package.name.clone());
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;

@@ -132,10 +132,7 @@ pub fn settings_container<'a>(
     }
 
     for (addon, state) in ignored_addons {
-        let title = addon
-            .remote_title
-            .clone()
-            .unwrap_or_else(|| addon.title.clone());
+        let title = addon.title.clone();
         let title_text = Text::new(title).size(14);
         let title_container = Container::new(title_text)
             .height(Length::Units(26))
@@ -191,10 +188,16 @@ pub fn addon_data_cell(
         .unwrap_or_else(|| String::from("-"));
 
     let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
-    let title_button: Element<Interaction> = Button::new(&mut addon.details_btn_state, title)
-        .on_press(Interaction::Expand(addon.id.clone()))
-        .style(style::TextButton(color_palette))
-        .into();
+    let mut title_button = Button::new(&mut addon.details_btn_state, title)
+        .on_press(Interaction::Expand(addon.id.clone()));
+
+    if is_addon_expanded {
+        title_button = title_button.style(style::SelectedTextButton(color_palette));
+    } else {
+        title_button = title_button.style(style::TextButton(color_palette));
+    }
+
+    let title_button: Element<Interaction> = title_button.into();
 
     let title_container = Container::new(title_button.map(Message::Interaction))
         .height(default_height)

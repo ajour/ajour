@@ -20,6 +20,25 @@ impl button::StyleSheet for TextButton {
     }
 }
 
+pub struct SelectedTextButton(pub ColorPalette);
+impl button::StyleSheet for SelectedTextButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            text_color: self.0.primary,
+            border_radius: 2,
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color::TRANSPARENT)),
+            text_color: self.0.primary,
+            ..self.active()
+        }
+    }
+}
+
 pub struct DefaultButton(pub ColorPalette);
 impl button::StyleSheet for DefaultButton {
     fn active(&self) -> button::Style {

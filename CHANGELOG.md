@@ -7,19 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Packaging
+- Added local logging for debugging the application. An `ajour.log` file is saved in the ajour config directory. This file can be shared along with any bug reports to help better debug the issue
 ### Added
 - Improve clarity of row titles to reflect current sort state
   - A little up-, or down-arrow has been added to indicate sort direction, and a color has been added to the selected colum
-- Added local logging for debugging the application. An `ajour.log` file is saved in the ajour config directory. This file can be shared along with any bug reports to help better debug the issue
 ### Changed
 - Made it easier to use Ajour if you play both Classic and Retail by moving the control from settings into the menubar
   - Ajour will now parse both Classic and Retail directories on launch. This means that when you switch between the two it will now be instantaneously
 ### Fixed
 - Update all will now respect ignored addons, and correctly skip them
-- Ignoring an addon, will now correctly clear the last opened addon state
-  - If you opened details for an addon, and ignored it and unignored it right after it would re-appear as opened. This is now fixed so it will re-appear as closed
-- Settings window will now be closed on interactions outside of it
-  - It was a bit confusing that the settings window stayed open even though you interacted with the application outside of settings. This is now corrected, so any interaction will close the window, if it's open
+- The settings- and detail-window will now be closed on interactions outside of it
+  - It was a bit confusing that the windows stayed open even though you interacted with the application outside of them
+- When displaying details for an addon, the title of the addon is highlighted to improve visibility of which addon is expanded
 - Better toc file parsing
   - We now have better logic catching the values inside the toc file
   - If we for some reason does not find a title for the addon, we fallback and use the foldername
