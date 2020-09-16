@@ -1,0 +1,9 @@
+name: Gruvbox Dark
+palette:
+  primary: '#689D6A'
+  secondary: '#B48EAD'
+  surface: '#3c3836'
+  on_surface: '#FBF1C7'
+  background: '#282828'
+  error: '#CC241D'
+

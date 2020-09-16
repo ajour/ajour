@@ -1,0 +1,9 @@
+name: Gruvbox Light
+palette:
+  primary: '#689D6A'
+  secondary: '#B48EAD'
+  surface: '#eadbb4'
+  on_surface: '#3C3836'
+  background: '#FBF1C7'
+  error: '#CC241D'
+

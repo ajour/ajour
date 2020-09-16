@@ -1,0 +1,9 @@
+name: Dracula
+palette:
+  primary: '#4ef67a'
+  secondary: '#e970b7'
+  surface: '#44475a'
+  on_surface: '#ebebe5'
+  background: '#282a36'
+  error: '#ff5555'
+
