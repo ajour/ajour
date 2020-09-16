@@ -8,7 +8,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Added
--  Improve clarity of row titles to reflect current sort state
+- Improve clarity of row titles to reflect current sort state
   - A little up-, or down-arrow has been added to indicate sort direction, and a color has been added to the selected colum.
 ### Changed
 - Made it easier to use Ajour if you play both Classic and Retail by moving the control from settings into the menubar.
