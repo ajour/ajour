@@ -263,7 +263,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .addons
                 .entry(flavor)
                 .or_default()
-                .into_iter()
+                .iter_mut()
                 .filter(|a| !ignored_ids.iter().any(|i| i == &a.id))
                 .collect();
 
