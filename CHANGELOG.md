@@ -14,6 +14,10 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Made it easier to use Ajour if you play both Classic and Retail by moving the control from settings into the menubar.
   - Ajour will now parse both Classic and Retail directories on launch. This means that when you switch between the two it will now be instantaneously.
 ### Fixed
+- Ignoring an addon, will now correctly clear the last opened addon state.
+  - If you opened details for an addon, and ignored it and unignored it right after it would re-appear as opened. This is now fixed so it will re-appear as closed. 
+- Settings window will now be closed on interactions outside of it.
+  - It was a bit confusing that the settings window stayed open even though you interacted with the application outside of settings. This is now corrected, so any interaction will close the window, if it's open.
 - Better toc file parsing
   - We now have better logic catching the values inside the toc file
   - If we for some reason does not find a title for the addon, we fallback and use the foldername
