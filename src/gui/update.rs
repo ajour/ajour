@@ -235,17 +235,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if flavor == ajour.config.wow.flavor {
                     // Set the state if flavor matches.
                     ajour.state = AjourState::Idle;
-
-                    // Find and push the ignored addons.
-                    let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
-                    let ignored_addons: Vec<_> = addons
-                        .iter()
-                        .filter(|a| ignored_ids.iter().any(|i| i == &a.id))
-                        .map(|a| (a.clone(), button::State::new()))
-                        .collect::<Vec<(Addon, button::State)>>();
-
-                    ajour.ignored_addons.insert(flavor, ignored_addons);
                 }
+
+                // Find and push the ignored addons.
+                let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
+                let ignored_addons: Vec<_> = addons
+                    .iter()
+                    .filter(|a| ignored_ids.iter().any(|i| i == &a.id))
+                    .map(|a| (a.clone(), button::State::new()))
+                    .collect::<Vec<(Addon, button::State)>>();
+
+                ajour.ignored_addons.insert(flavor, ignored_addons);
 
                 // Insert the addons into the HashMap.
                 ajour.addons.insert(flavor, addons);
