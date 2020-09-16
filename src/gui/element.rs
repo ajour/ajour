@@ -1,7 +1,7 @@
 use {
     super::{
         style, Addon, AddonState, AjourState, ColorPalette, Config, Flavor, Interaction, Message,
-        SortKey, SortState, ThemeState,
+        SortDirection, SortKey, SortState, ThemeState,
     },
     crate::VERSION,
     iced::{
@@ -369,6 +369,23 @@ pub fn addon_data_cell(
         .style(style::Row(color_palette))
 }
 
+fn row_title(
+    sort_key: SortKey,
+    previous_sort_key: Option<SortKey>,
+    previous_sort_direction: Option<SortDirection>,
+    title: &str,
+) -> String {
+    if Some(sort_key) == previous_sort_key {
+        match previous_sort_direction {
+            Some(SortDirection::Asc) => format!("{} ▲", title),
+            Some(SortDirection::Desc) => format!("{} ▼", title),
+            _ => title.to_string(),
+        }
+    } else {
+        title.to_string()
+    }
+}
+
 pub fn addon_row_titles<'a>(
     color_palette: ColorPalette,
     addons: &[Addon],
@@ -377,63 +394,120 @@ pub fn addon_row_titles<'a>(
     // A row containing titles above the addon rows.
     let mut row_titles = Row::new().spacing(1).height(Length::Units(25));
 
+    let addon_row_title = row_title(
+        SortKey::Title,
+        sort_state.previous_sort_key,
+        sort_state.previous_sort_direction,
+        "Addon",
+    );
+
+    let local_row_title = row_title(
+        SortKey::LocalVersion,
+        sort_state.previous_sort_key,
+        sort_state.previous_sort_direction,
+        "Local",
+    );
+
+    let remote_row_title = row_title(
+        SortKey::RemoteVersion,
+        sort_state.previous_sort_key,
+        sort_state.previous_sort_direction,
+        "Remote",
+    );
+
+    let status_row_title = row_title(
+        SortKey::Status,
+        sort_state.previous_sort_key,
+        sort_state.previous_sort_direction,
+        "Status",
+    );
+
     // We add some margin left to adjust for inner-marigin in cell.
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
     let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
 
-    let addon_row_header: Element<Interaction> = Button::new(
+    let mut addon_row_header = Button::new(
         &mut sort_state.title_btn_state,
-        Text::new("Addon")
+        Text::new(addon_row_title)
             .size(DEFAULT_FONT_SIZE)
             .width(Length::Fill),
     )
     .width(Length::Fill)
-    .style(style::ColumnHeaderButton(color_palette))
-    .on_press(Interaction::SortColumn(SortKey::Title))
-    .into();
+    .on_press(Interaction::SortColumn(SortKey::Title));
+
+    if sort_state.previous_sort_key == Some(SortKey::Title) {
+        addon_row_header = addon_row_header.style(style::SelectedColumnHeaderButton(color_palette));
+    } else {
+        addon_row_header = addon_row_header.style(style::ColumnHeaderButton(color_palette));
+    }
+
+    let addon_row_header: Element<Interaction> = addon_row_header.into();
 
     let addon_row_container = Container::new(addon_row_header.map(Message::Interaction))
         .width(Length::FillPortion(1))
         .style(style::SecondaryTextContainer(color_palette));
 
-    let local_row_header: Element<Interaction> = Button::new(
+    let mut local_row_header = Button::new(
         &mut sort_state.local_version_btn_state,
-        Text::new("Local")
+        Text::new(local_row_title)
             .size(DEFAULT_FONT_SIZE)
             .width(Length::Fill),
     )
     .width(Length::Fill)
-    .style(style::ColumnHeaderButton(color_palette))
-    .on_press(Interaction::SortColumn(SortKey::LocalVersion))
-    .into();
+    .on_press(Interaction::SortColumn(SortKey::LocalVersion));
+
+    if sort_state.previous_sort_key == Some(SortKey::LocalVersion) {
+        local_row_header = local_row_header.style(style::SelectedColumnHeaderButton(color_palette));
+    } else {
+        local_row_header = local_row_header.style(style::ColumnHeaderButton(color_palette));
+    }
+
+    let local_row_header: Element<Interaction> = local_row_header.into();
+
     let local_version_container = Container::new(local_row_header.map(Message::Interaction))
         .width(Length::Units(150))
         .style(style::SecondaryTextContainer(color_palette));
 
-    let remote_row_header: Element<Interaction> = Button::new(
+    let mut remote_row_header = Button::new(
         &mut sort_state.remote_version_btn_state,
-        Text::new("Remote")
+        Text::new(remote_row_title)
             .size(DEFAULT_FONT_SIZE)
             .width(Length::Fill),
     )
     .width(Length::Fill)
-    .style(style::ColumnHeaderButton(color_palette))
-    .on_press(Interaction::SortColumn(SortKey::RemoteVersion))
-    .into();
+    .on_press(Interaction::SortColumn(SortKey::RemoteVersion));
+
+    if sort_state.previous_sort_key == Some(SortKey::RemoteVersion) {
+        remote_row_header =
+            remote_row_header.style(style::SelectedColumnHeaderButton(color_palette));
+    } else {
+        remote_row_header = remote_row_header.style(style::ColumnHeaderButton(color_palette));
+    }
+
+    let remote_row_header: Element<Interaction> = remote_row_header.into();
+
     let remote_version_container = Container::new(remote_row_header.map(Message::Interaction))
         .width(Length::Units(150))
         .style(style::SecondaryTextContainer(color_palette));
 
-    let status_row_header: Element<Interaction> = Button::new(
+    let mut status_row_header = Button::new(
         &mut sort_state.status_btn_state,
-        Text::new("Status")
+        Text::new(status_row_title)
             .size(DEFAULT_FONT_SIZE)
             .width(Length::Fill),
     )
     .width(Length::Fill)
-    .style(style::ColumnHeaderButton(color_palette))
-    .on_press(Interaction::SortColumn(SortKey::Status))
-    .into();
+    .on_press(Interaction::SortColumn(SortKey::Status));
+
+    if sort_state.previous_sort_key == Some(SortKey::Status) {
+        status_row_header =
+            status_row_header.style(style::SelectedColumnHeaderButton(color_palette));
+    } else {
+        status_row_header = status_row_header.style(style::ColumnHeaderButton(color_palette));
+    }
+
+    let status_row_header: Element<Interaction> = status_row_header.into();
+
     let status_row_container = Container::new(status_row_header.map(Message::Interaction))
         .width(Length::Units(85))
         .style(style::SecondaryTextContainer(color_palette));
