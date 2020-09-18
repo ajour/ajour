@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+## [0.3.3] - 2020-09-17
 ### Packaging
 - Added local logging for debugging the application. An `ajour.log` file is saved in the ajour config directory. This file can be shared along with any bug reports to help better debug the issue
 ### Added
