@@ -60,6 +60,12 @@ If your system has extra dependencies, and they are not listed here please creat
 cargo build --release
 ```
 
+The application executable will be built to
+
+```sh
+target/release/ajour
+``` 
+
 ### macOS
 
 ```sh
