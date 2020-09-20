@@ -56,6 +56,10 @@ Find instructions and a variety of custom themes [here](./THEMES.md).
 
 The plan is to have a stable, polished release in time for the Shadowlands launch. 10.27.20.
 
+**_What features are planned?_**
+
+We have a roadmap [here](https://github.com/casperstorm/ajour/projects/2).
+
 **_When can we expect a Linux version?_**
 
 Ajour is being developed and tested on macOS and Windows, but should work on Linux if installed from source.
