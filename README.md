@@ -64,6 +64,10 @@ Ajour is being developed and tested on macOS and Windows, but should work on Lin
 
 We encourage you to raise an issue and tell us all about it! We want Ajour to support as many addons as possible. This means a lot of edge cases. A list of addons with known issues can be found in the [wiki](https://github.com/casperstorm/ajour/wiki/Addons-with-known-issues).
 
+**_macOS won't let me open the app, what should I do?_**
+
+Instead of double clicking it, right click and choose "Open". That should successfully open Ajour.
+
 **_Why Rust?_**
 
 We wanted to create an application which natively compiles to both Windows, Linux and macOS while at the same time is as performant and reliable as possible.
