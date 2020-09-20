@@ -280,6 +280,23 @@ impl container::StyleSheet for AddonRowSecondaryTextContainer {
     }
 }
 
+pub struct AddonRowDetailsContainer(pub ColorPalette);
+impl container::StyleSheet for AddonRowDetailsContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(Color {
+                a: 0.60,
+                ..self.0.surface
+            })),
+            text_color: Some(Color {
+                a: 0.65,
+                ..self.0.on_surface
+            }),
+            ..container::Style::default()
+        }
+    }
+}
+
 pub struct SecondaryTextContainer(pub ColorPalette);
 impl container::StyleSheet for SecondaryTextContainer {
     fn style(&self) -> container::Style {

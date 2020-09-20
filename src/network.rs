@@ -66,7 +66,7 @@ pub async fn download_addon(
         &addon.id
     );
 
-    if let Some(url) = addon.remote_url.clone() {
+    if let Some(url) = addon.remote_download_url.clone() {
         let mut resp = request_async(shared_client, url, vec![], None).await?;
         let body = resp.body_mut();
         let zip_path = to_directory.join(&addon.id);

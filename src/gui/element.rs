@@ -306,6 +306,18 @@ pub fn addon_data_cell(
         let notes_title_container =
             Container::new(notes_title_text).style(style::DefaultTextContainer(color_palette));
 
+        let mut website_button = Button::new(
+            &mut addon.website_btn_state,
+            Text::new("Website").size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::DefaultBoxedButton(color_palette));
+
+        if let Some(link) = addon.remote_website_url.clone() {
+            website_button = website_button.on_press(Interaction::OpenLink(link));
+        }
+
+        let website_button: Element<Interaction> = website_button.into();
+
         let mut force_download_button = Button::new(
             &mut addon.force_btn_state,
             Text::new("Force update").size(DEFAULT_FONT_SIZE),
@@ -337,16 +349,22 @@ pub fn addon_data_cell(
         .into();
 
         let row = Row::new()
+            .push(Space::new(Length::Fill, Length::Units(0)))
+            .push(website_button.map(Message::Interaction))
+            .push(Space::new(Length::Units(5), Length::Units(0)))
             .push(force_download_button.map(Message::Interaction))
             .push(Space::new(Length::Units(5), Length::Units(0)))
             .push(ignore_button.map(Message::Interaction))
             .push(Space::new(Length::Units(5), Length::Units(0)))
-            .push(delete_button.map(Message::Interaction));
+            .push(delete_button.map(Message::Interaction))
+            .width(Length::Fill);
         let column = Column::new()
             .push(author_title_container)
-            .push(author_text)
             .push(Space::new(Length::Units(0), Length::Units(3)))
+            .push(author_text)
+            .push(Space::new(Length::Units(0), Length::Units(7)))
             .push(notes_title_container)
+            .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(notes_text)
             .push(space)
             .push(row)
@@ -354,7 +372,7 @@ pub fn addon_data_cell(
         let details_container = Container::new(column)
             .width(Length::Fill)
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::AddonRowDetailsContainer(color_palette));
 
         let row = Row::new()
             .push(left_spacer)
