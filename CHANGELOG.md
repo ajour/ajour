@@ -13,6 +13,15 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 - Windows: Ajour now comes bundled with the needed dependencies. This way we avoid relying on the system having Microsoft Visual C++ 2015 Redistributable.
 
+### Added
+
+- A website button has been added to the detail view of each addon.
+  - The idea is that with this button, it is easy to open up the addon website and view additional information which Ajour might not show.
+
+### Changed
+
+- Detail view has now a more calm look by utlilizing the space to the right, and by increasing the opacity of the background slighty to create some levels in the design.
+
 ## [0.3.3] - 2020-09-17
 
 ### Packaging
