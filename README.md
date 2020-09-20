@@ -68,6 +68,9 @@ We encourage you to raise an issue and tell us all about it! We want Ajour to su
 
 We wanted to create an application which natively compiles to both Windows, Linux and macOS while at the same time is as performant and reliable as possible.
 
+## Community
+Ajour discussion can be found in our [Discord server](https://discord.gg/4838t9R).
+
 ## Other addon managers
 
 [Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated list of other addon managers:
