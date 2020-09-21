@@ -2,7 +2,7 @@ use {
     super::{Ajour, AjourState, Interaction, Message, SortDirection, SortKey},
     crate::{
         addon::{Addon, AddonState},
-        config::{load_config, Flavor},
+        config::{load_config, ColumnConfig, Flavor},
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
@@ -36,6 +36,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
+
+            // Set column widths from the config
+            let ColumnConfig::V1 {
+                local_version_width,
+                remote_version_width,
+                status_width,
+            } = ajour.config.column_config;
+            ajour.header_state.local_version.width = Length::Units(local_version_width);
+            ajour.header_state.remote_version.width = Length::Units(remote_version_width);
+            ajour.header_state.status.width = Length::Units(status_width);
 
             // Use theme from config. Set to "Dark" if not defined.
             ajour.theme_state.current_theme_name =
@@ -512,20 +522,32 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ResizeColumn(event)) => {
             log::debug!("Interaction::ResizeColumn({:?})", event);
 
+            let column_config = &mut ajour.config.column_config;
+
             match event.right_name {
                 "local" => {
                     ajour.header_state.local_version.width = Length::Units(event.right_width);
+
+                    column_config.update_width(event.right_name, event.right_width);
                 }
                 "remote" => {
                     ajour.header_state.local_version.width = Length::Units(event.left_width);
                     ajour.header_state.remote_version.width = Length::Units(event.right_width);
+
+                    column_config.update_width(event.left_name, event.left_width);
+                    column_config.update_width(event.right_name, event.right_width);
                 }
                 "status" => {
                     ajour.header_state.remote_version.width = Length::Units(event.left_width);
                     ajour.header_state.status.width = Length::Units(event.right_width);
+
+                    column_config.update_width(event.left_name, event.left_width);
+                    column_config.update_width(event.right_name, event.right_width);
                 }
                 _ => {}
             }
+
+            let _ = ajour.config.save();
         }
         Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
             log::error!("{}", error);
