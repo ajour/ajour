@@ -64,6 +64,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "timeago",
+ "widgets",
  "zip",
 ]
 
@@ -3287,6 +3288,15 @@ checksum = "87c14ef7e1b8b8ecfc75d5eca37949410046e66f15d185c01d70824f1f8111ef"
 dependencies = [
  "libc",
  "thiserror",
+]
+
+[[package]]
+name = "widgets"
+version = "0.1.0"
+dependencies = [
+ "iced_graphics",
+ "iced_native",
+ "iced_wgpu",
 ]
 
 [[package]]

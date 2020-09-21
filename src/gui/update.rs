@@ -11,7 +11,7 @@ use {
         Result,
     },
     async_std::sync::{Arc, Mutex},
-    iced::{button, Command},
+    iced::{button, Command, Length},
     isahc::HttpClient,
     native_dialog::*,
     std::collections::HashMap,
@@ -310,8 +310,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 // Sort the addons.
                 sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
-                ajour.sort_state.previous_sort_direction = Some(SortDirection::Desc);
-                ajour.sort_state.previous_sort_key = Some(SortKey::Status);
+                ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.header_state.previous_sort_key = Some(SortKey::Status);
 
                 if flavor == ajour.config.wow.flavor {
                     // Set the state if flavor matches.
@@ -462,9 +462,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // flip the sort direction.
             let mut sort_direction = SortDirection::Asc;
 
-            if let Some(previous_sort_key) = ajour.sort_state.previous_sort_key {
+            if let Some(previous_sort_key) = ajour.header_state.previous_sort_key {
                 if sort_key == previous_sort_key {
-                    if let Some(previous_sort_direction) = ajour.sort_state.previous_sort_direction
+                    if let Some(previous_sort_direction) =
+                        ajour.header_state.previous_sort_direction
                     {
                         sort_direction = previous_sort_direction.toggle()
                     }
@@ -473,7 +474,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Exception would be first time ever sorting and sorting by title.
             // Since its already sorting in Asc by default, we should sort Desc.
-            if ajour.sort_state.previous_sort_key.is_none() && sort_key == SortKey::Title {
+            if ajour.header_state.previous_sort_key.is_none() && sort_key == SortKey::Title {
                 sort_direction = SortDirection::Desc;
             }
 
@@ -488,8 +489,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             sort_addons(&mut addons, sort_direction, sort_key);
 
-            ajour.sort_state.previous_sort_direction = Some(sort_direction);
-            ajour.sort_state.previous_sort_key = Some(sort_key);
+            ajour.header_state.previous_sort_direction = Some(sort_direction);
+            ajour.header_state.previous_sort_key = Some(sort_key);
         }
         Message::ThemeSelected(theme_name) => {
             log::debug!("Message::ThemeSelected({:?})", &theme_name);
@@ -506,6 +507,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             for theme in themes {
                 ajour.theme_state.themes.push((theme.name.clone(), theme));
+            }
+        }
+        Message::Interaction(Interaction::ResizeColumn(event)) => {
+            log::debug!("Interaction::ResizeColumn({:?})", event);
+
+            match event.right_name {
+                "local" => {
+                    ajour.header_state.local_version.width = Length::Units(event.right_width);
+                }
+                "remote" => {
+                    ajour.header_state.local_version.width = Length::Units(event.left_width);
+                    ajour.header_state.remote_version.width = Length::Units(event.right_width);
+                }
+                "status" => {
+                    ajour.header_state.remote_version.width = Length::Units(event.left_width);
+                    ajour.header_state.status.width = Length::Units(event.right_width);
+                }
+                _ => {}
             }
         }
         Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
