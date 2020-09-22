@@ -15,6 +15,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ### Added
 
+- It is now possible to see when a update was released in the details view of an addon. 
 - A website button has been added to the detail view of each addon.
   - The idea is that with this button, it is easy to open up the addon website and view additional information which Ajour might not show.
 
