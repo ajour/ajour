@@ -2,16 +2,14 @@ use {
     super::{Ajour, AjourState, Interaction, Message, SortDirection, SortKey},
     crate::{
         addon::{Addon, AddonState},
-        config::{load_config, Flavor},
+        config::{load_config, ColumnConfig, Flavor},
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
-        theme::load_user_themes,
-        utility::needs_update,
         Result,
     },
     async_std::sync::{Arc, Mutex},
-    iced::{button, Command},
+    iced::{button, Command, Length},
     isahc::HttpClient,
     native_dialog::*,
     std::collections::HashMap,
@@ -20,15 +18,6 @@ use {
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
-        Message::ConfigDirExists(_) => {
-            let commands = vec![
-                Command::perform(load_config(), Message::Parse),
-                Command::perform(needs_update(), Message::NeedsUpdate),
-                Command::perform(load_user_themes(), Message::ThemesLoaded),
-            ];
-
-            return Ok(Command::batch(commands));
-        }
         Message::Parse(Ok(config)) => {
             log::debug!("Message::Parse");
             log::debug!("config loaded:\n{:#?}", config);
@@ -36,6 +25,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // When we have the config, we parse the addon directory
             // which is provided by the config.
             ajour.config = config;
+
+            // Set column widths from the config
+            let ColumnConfig::V1 {
+                local_version_width,
+                remote_version_width,
+                status_width,
+            } = ajour.config.column_config;
+            ajour.header_state.local_version.width = Length::Units(local_version_width);
+            ajour.header_state.remote_version.width = Length::Units(remote_version_width);
+            ajour.header_state.status.width = Length::Units(status_width);
 
             // Use theme from config. Set to "Dark" if not defined.
             ajour.theme_state.current_theme_name =
@@ -310,8 +309,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 // Sort the addons.
                 sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
-                ajour.sort_state.previous_sort_direction = Some(SortDirection::Desc);
-                ajour.sort_state.previous_sort_key = Some(SortKey::Status);
+                ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.header_state.previous_sort_key = Some(SortKey::Status);
 
                 if flavor == ajour.config.wow.flavor {
                     // Set the state if flavor matches.
@@ -462,9 +461,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // flip the sort direction.
             let mut sort_direction = SortDirection::Asc;
 
-            if let Some(previous_sort_key) = ajour.sort_state.previous_sort_key {
+            if let Some(previous_sort_key) = ajour.header_state.previous_sort_key {
                 if sort_key == previous_sort_key {
-                    if let Some(previous_sort_direction) = ajour.sort_state.previous_sort_direction
+                    if let Some(previous_sort_direction) =
+                        ajour.header_state.previous_sort_direction
                     {
                         sort_direction = previous_sort_direction.toggle()
                     }
@@ -473,7 +473,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Exception would be first time ever sorting and sorting by title.
             // Since its already sorting in Asc by default, we should sort Desc.
-            if ajour.sort_state.previous_sort_key.is_none() && sort_key == SortKey::Title {
+            if ajour.header_state.previous_sort_key.is_none() && sort_key == SortKey::Title {
                 sort_direction = SortDirection::Desc;
             }
 
@@ -488,8 +488,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             sort_addons(&mut addons, sort_direction, sort_key);
 
-            ajour.sort_state.previous_sort_direction = Some(sort_direction);
-            ajour.sort_state.previous_sort_key = Some(sort_key);
+            ajour.header_state.previous_sort_direction = Some(sort_direction);
+            ajour.header_state.previous_sort_key = Some(sort_key);
         }
         Message::ThemeSelected(theme_name) => {
             log::debug!("Message::ThemeSelected({:?})", &theme_name);
@@ -508,11 +508,46 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.theme_state.themes.push((theme.name.clone(), theme));
             }
         }
+        Message::Interaction(Interaction::ResizeColumn(event)) => {
+            let column_config = &mut ajour.config.column_config;
+
+            match event.right_name {
+                "local" => {
+                    ajour.header_state.local_version.width = Length::Units(event.right_width);
+
+                    column_config.update_width(event.right_name, event.right_width);
+                }
+                "remote" => {
+                    ajour.header_state.local_version.width = Length::Units(event.left_width);
+                    ajour.header_state.remote_version.width = Length::Units(event.right_width);
+
+                    column_config.update_width(event.left_name, event.left_width);
+                    column_config.update_width(event.right_name, event.right_width);
+                }
+                "status" => {
+                    ajour.header_state.remote_version.width = Length::Units(event.left_width);
+                    ajour.header_state.status.width = Length::Units(event.right_width);
+
+                    column_config.update_width(event.left_name, event.left_width);
+                    column_config.update_width(event.right_name, event.right_width);
+                }
+                _ => {}
+            }
+
+            let _ = ajour.config.save();
+        }
         Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
             log::error!("{}", error);
 
             ajour.state = AjourState::Error(error);
         }
+        Message::RuntimeEvent(iced_native::Event::Window(
+            iced_native::window::Event::Resized { width, height },
+        )) => {
+            ajour.config.window_size = Some((width, height));
+            let _ = ajour.config.save();
+        }
+        Message::RuntimeEvent(_) => {}
         Message::None(_) => {}
     }
 

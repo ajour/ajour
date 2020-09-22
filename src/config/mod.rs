@@ -21,6 +21,11 @@ pub struct Config {
     pub addons: Addons,
 
     pub theme: Option<String>,
+
+    #[serde(default)]
+    pub column_config: ColumnConfig,
+
+    pub window_size: Option<(u32, u32)>,
 }
 
 impl Config {
@@ -84,6 +89,42 @@ impl Config {
 impl PersistentData for Config {
     fn relative_path() -> PathBuf {
         PathBuf::from("ajour.yml")
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+pub enum ColumnConfig {
+    V1 {
+        local_version_width: u16,
+        remote_version_width: u16,
+        status_width: u16,
+    },
+}
+
+impl Default for ColumnConfig {
+    fn default() -> Self {
+        ColumnConfig::V1 {
+            local_version_width: 150,
+            remote_version_width: 150,
+            status_width: 85,
+        }
+    }
+}
+
+impl ColumnConfig {
+    pub fn update_width(&mut self, name: &'static str, width: u16) {
+        match self {
+            ColumnConfig::V1 {
+                local_version_width,
+                remote_version_width,
+                status_width,
+            } => match name {
+                "local" => *local_version_width = width,
+                "remote" => *remote_version_width = width,
+                "status" => *status_width = width,
+                _ => {}
+            },
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 use {
     super::{
-        style, Addon, AddonState, AjourState, ColorPalette, Config, Flavor, Interaction, Message,
-        SortDirection, SortKey, SortState, ThemeState,
+        style, Addon, AddonState, AjourState, ColorPalette, Config, Flavor, HeaderState,
+        Interaction, Message, SortDirection, SortKey, ThemeState,
     },
     crate::VERSION,
     chrono::prelude::*,
@@ -9,6 +9,7 @@ use {
         button, scrollable, Button, Column, Container, Element, HorizontalAlignment, Length,
         PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
+    widgets::Header,
 };
 
 // Default values used on multiple elements.
@@ -178,6 +179,10 @@ pub fn addon_data_cell(
     color_palette: ColorPalette,
     addon: &'_ mut Addon,
     is_addon_expanded: bool,
+    title_width: Length,
+    local_width: Length,
+    remote_width: Length,
+    status_width: Length,
 ) -> Container<'_, Message> {
     let default_height = Length::Units(26);
 
@@ -202,14 +207,14 @@ pub fn addon_data_cell(
 
     let title_container = Container::new(title_button.map(Message::Interaction))
         .height(default_height)
-        .width(Length::FillPortion(1))
+        .width(title_width)
         .center_y()
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     let installed_version = Text::new(version).size(DEFAULT_FONT_SIZE);
     let installed_version_container = Container::new(installed_version)
         .height(default_height)
-        .width(Length::Units(150))
+        .width(local_width)
         .center_y()
         .padding(5)
         .style(style::AddonRowSecondaryTextContainer(color_palette));
@@ -217,18 +222,17 @@ pub fn addon_data_cell(
     let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
     let remote_version_container = Container::new(remote_version)
         .height(default_height)
-        .width(Length::Units(150))
+        .width(remote_width)
         .center_y()
         .padding(5)
         .style(style::AddonRowSecondaryTextContainer(color_palette));
 
-    let update_button_width = Length::Units(85);
     let update_button_container = match &addon.state {
         AddonState::Ajour(string) => Container::new(
             Text::new(string.clone().unwrap_or_else(|| "".to_string())).size(DEFAULT_FONT_SIZE),
         )
         .height(default_height)
-        .width(update_button_width)
+        .width(status_width)
         .center_y()
         .center_x()
         .style(style::AddonRowSecondaryTextContainer(color_palette)),
@@ -246,28 +250,28 @@ pub fn addon_data_cell(
 
             Container::new(update_button.map(Message::Interaction))
                 .height(default_height)
-                .width(update_button_width)
+                .width(status_width)
                 .center_y()
                 .center_x()
                 .style(style::AddonRowDefaultTextContainer(color_palette))
         }
         AddonState::Downloading => Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
             .height(default_height)
-            .width(update_button_width)
+            .width(status_width)
             .center_y()
             .center_x()
             .padding(5)
             .style(style::AddonRowSecondaryTextContainer(color_palette)),
         AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
             .height(default_height)
-            .width(update_button_width)
+            .width(status_width)
             .center_y()
             .center_x()
             .padding(5)
             .style(style::AddonRowSecondaryTextContainer(color_palette)),
         AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
             .height(default_height)
-            .width(update_button_width)
+            .width(status_width)
             .center_y()
             .center_x()
             .padding(5)
@@ -432,45 +436,41 @@ fn row_title(
 pub fn addon_row_titles<'a>(
     color_palette: ColorPalette,
     addons: &[Addon],
-    sort_state: &'a mut SortState,
-) -> Row<'a, Message> {
+    header_state: &'a mut HeaderState,
+) -> Header<'a, Message> {
     // A row containing titles above the addon rows.
-    let mut row_titles = Row::new().spacing(1).height(Length::Units(25));
+    let mut row_titles = vec![];
 
     let addon_row_title = row_title(
         SortKey::Title,
-        sort_state.previous_sort_key,
-        sort_state.previous_sort_direction,
+        header_state.previous_sort_key,
+        header_state.previous_sort_direction,
         "Addon",
     );
 
     let local_row_title = row_title(
         SortKey::LocalVersion,
-        sort_state.previous_sort_key,
-        sort_state.previous_sort_direction,
+        header_state.previous_sort_key,
+        header_state.previous_sort_direction,
         "Local",
     );
 
     let remote_row_title = row_title(
         SortKey::RemoteVersion,
-        sort_state.previous_sort_key,
-        sort_state.previous_sort_direction,
+        header_state.previous_sort_key,
+        header_state.previous_sort_direction,
         "Remote",
     );
 
     let status_row_title = row_title(
         SortKey::Status,
-        sort_state.previous_sort_key,
-        sort_state.previous_sort_direction,
+        header_state.previous_sort_key,
+        header_state.previous_sort_direction,
         "Status",
     );
 
-    // We add some margin left to adjust for inner-marigin in cell.
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
-
     let mut addon_row_header = Button::new(
-        &mut sort_state.title_btn_state,
+        &mut header_state.title.btn_state,
         Text::new(addon_row_title)
             .size(DEFAULT_FONT_SIZE)
             .width(Length::Fill),
@@ -478,7 +478,7 @@ pub fn addon_row_titles<'a>(
     .width(Length::Fill)
     .on_press(Interaction::SortColumn(SortKey::Title));
 
-    if sort_state.previous_sort_key == Some(SortKey::Title) {
+    if header_state.previous_sort_key == Some(SortKey::Title) {
         addon_row_header = addon_row_header.style(style::SelectedColumnHeaderButton(color_palette));
     } else {
         addon_row_header = addon_row_header.style(style::ColumnHeaderButton(color_palette));
@@ -487,11 +487,11 @@ pub fn addon_row_titles<'a>(
     let addon_row_header: Element<Interaction> = addon_row_header.into();
 
     let addon_row_container = Container::new(addon_row_header.map(Message::Interaction))
-        .width(Length::FillPortion(1))
+        .width(header_state.title.width)
         .style(style::SecondaryTextContainer(color_palette));
 
     let mut local_row_header = Button::new(
-        &mut sort_state.local_version_btn_state,
+        &mut header_state.local_version.btn_state,
         Text::new(local_row_title)
             .size(DEFAULT_FONT_SIZE)
             .width(Length::Fill),
@@ -499,7 +499,7 @@ pub fn addon_row_titles<'a>(
     .width(Length::Fill)
     .on_press(Interaction::SortColumn(SortKey::LocalVersion));
 
-    if sort_state.previous_sort_key == Some(SortKey::LocalVersion) {
+    if header_state.previous_sort_key == Some(SortKey::LocalVersion) {
         local_row_header = local_row_header.style(style::SelectedColumnHeaderButton(color_palette));
     } else {
         local_row_header = local_row_header.style(style::ColumnHeaderButton(color_palette));
@@ -508,11 +508,11 @@ pub fn addon_row_titles<'a>(
     let local_row_header: Element<Interaction> = local_row_header.into();
 
     let local_version_container = Container::new(local_row_header.map(Message::Interaction))
-        .width(Length::Units(150))
+        .width(header_state.local_version.width)
         .style(style::SecondaryTextContainer(color_palette));
 
     let mut remote_row_header = Button::new(
-        &mut sort_state.remote_version_btn_state,
+        &mut header_state.remote_version.btn_state,
         Text::new(remote_row_title)
             .size(DEFAULT_FONT_SIZE)
             .width(Length::Fill),
@@ -520,7 +520,7 @@ pub fn addon_row_titles<'a>(
     .width(Length::Fill)
     .on_press(Interaction::SortColumn(SortKey::RemoteVersion));
 
-    if sort_state.previous_sort_key == Some(SortKey::RemoteVersion) {
+    if header_state.previous_sort_key == Some(SortKey::RemoteVersion) {
         remote_row_header =
             remote_row_header.style(style::SelectedColumnHeaderButton(color_palette));
     } else {
@@ -530,11 +530,11 @@ pub fn addon_row_titles<'a>(
     let remote_row_header: Element<Interaction> = remote_row_header.into();
 
     let remote_version_container = Container::new(remote_row_header.map(Message::Interaction))
-        .width(Length::Units(150))
+        .width(header_state.remote_version.width)
         .style(style::SecondaryTextContainer(color_palette));
 
     let mut status_row_header = Button::new(
-        &mut sort_state.status_btn_state,
+        &mut header_state.status.btn_state,
         Text::new(status_row_title)
             .size(DEFAULT_FONT_SIZE)
             .width(Length::Fill),
@@ -542,7 +542,7 @@ pub fn addon_row_titles<'a>(
     .width(Length::Fill)
     .on_press(Interaction::SortColumn(SortKey::Status));
 
-    if sort_state.previous_sort_key == Some(SortKey::Status) {
+    if header_state.previous_sort_key == Some(SortKey::Status) {
         status_row_header =
             status_row_header.style(style::SelectedColumnHeaderButton(color_palette));
     } else {
@@ -552,21 +552,28 @@ pub fn addon_row_titles<'a>(
     let status_row_header: Element<Interaction> = status_row_header.into();
 
     let status_row_container = Container::new(status_row_header.map(Message::Interaction))
-        .width(Length::Units(85))
+        .width(header_state.status.width)
         .style(style::SecondaryTextContainer(color_palette));
 
     // Only shows row titles if we have any addons.
     if !addons.is_empty() {
-        row_titles = row_titles
-            .push(left_spacer)
-            .push(addon_row_container)
-            .push(local_version_container)
-            .push(remote_version_container)
-            .push(status_row_container)
-            .push(right_spacer);
+        row_titles.push(("title", addon_row_container));
+        row_titles.push(("local", local_version_container));
+        row_titles.push(("remote", remote_version_container));
+        row_titles.push(("status", status_row_container));
     }
 
-    row_titles
+    Header::new(
+        &mut header_state.state,
+        row_titles,
+        Some(Length::Units(DEFAULT_PADDING)),
+        Some(Length::Units(DEFAULT_PADDING + 5)),
+    )
+    .spacing(1)
+    .height(Length::Units(25))
+    .on_resize(3, |event| {
+        Message::Interaction(Interaction::ResizeColumn(event))
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

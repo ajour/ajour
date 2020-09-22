@@ -4,17 +4,18 @@ mod update;
 
 use crate::{
     addon::{Addon, AddonState},
-    config::{Config, Flavor},
+    config::{load_config, Config, Flavor},
     error::ClientError,
-    fs::config_dir,
+    fs::PersistentData,
     parse::FingerprintCollection,
-    theme::{ColorPalette, Theme},
+    theme::{load_user_themes, ColorPalette, Theme},
+    utility::needs_update,
     Result,
 };
 use async_std::sync::{Arc, Mutex};
 use iced::{
     button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
-    Settings, Space,
+    Settings, Space, Subscription,
 };
 use isahc::{
     config::{Configurable, RedirectPolicy},
@@ -22,6 +23,7 @@ use isahc::{
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
+use widgets::header;
 
 use image::ImageFormat;
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
@@ -48,11 +50,11 @@ pub enum Interaction {
     UpdateAll,
     SortColumn(SortKey),
     FlavorSelected(Flavor),
+    ResizeColumn(header::ResizeEvent),
 }
 
 #[derive(Debug)]
 pub enum Message {
-    ConfigDirExists(PathBuf),
     DownloadedAddon((String, Result<()>)),
     Error(ClientError),
     Interaction(Interaction),
@@ -65,6 +67,7 @@ pub enum Message {
     ThemesLoaded(Vec<Theme>),
     UnpackedAddon((String, Result<()>)),
     UpdateDirectory(Option<PathBuf>),
+    RuntimeEvent(iced_native::Event),
 }
 
 pub struct Ajour {
@@ -83,7 +86,7 @@ pub struct Ajour {
     shared_client: Arc<HttpClient>,
     state: AjourState,
     update_all_btn_state: button::State,
-    sort_state: SortState,
+    header_state: HeaderState,
     theme_state: ThemeState,
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     retail_btn_state: button::State,
@@ -114,7 +117,7 @@ impl Default for Ajour {
             ),
             state: AjourState::Loading,
             update_all_btn_state: Default::default(),
-            sort_state: Default::default(),
+            header_state: Default::default(),
             theme_state: Default::default(),
             fingerprint_collection: Arc::new(Mutex::new(None)),
             retail_btn_state: Default::default(),
@@ -129,16 +132,21 @@ impl Application for Ajour {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        (
-            Ajour::default(),
-            // Will create the config directory if it doesn't exist. This needs to happen before
-            // we can safely perform all of our init operations concurrently
-            Command::perform(async { config_dir() }, Message::ConfigDirExists),
-        )
+        let init_commands = vec![
+            Command::perform(load_config(), Message::Parse),
+            Command::perform(needs_update(), Message::NeedsUpdate),
+            Command::perform(load_user_themes(), Message::ThemesLoaded),
+        ];
+
+        (Ajour::default(), Command::batch(init_commands))
     }
 
     fn title(&self) -> String {
         String::from("Ajour")
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        iced_native::subscription::events().map(Message::RuntimeEvent)
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -193,11 +201,16 @@ impl Application for Ajour {
             &mut self.new_release_button_state,
         );
 
+        let title_width = self.header_state.title.width;
+        let local_width = self.header_state.local_version.width;
+        let remote_width = self.header_state.remote_version.width;
+        let status_width = self.header_state.status.width;
+
         // Addon row titles is a row of titles above the addon scrollable.
         // This is to add titles above each section of the addon row, to let
         // the user easily identify what the value is.
         let addon_row_titles =
-            element::addon_row_titles(color_palette, addons, &mut self.sort_state);
+            element::addon_row_titles(color_palette, addons, &mut self.header_state);
 
         // A scrollable list containing rows.
         // Each row holds data about a single addon.
@@ -217,7 +230,15 @@ impl Application for Ajour {
 
             // A container cell which has all data about the current addon.
             // If the addon is expanded, then this is also included in this container.
-            let addon_data_cell = element::addon_data_cell(color_palette, addon, is_addon_expanded);
+            let addon_data_cell = element::addon_data_cell(
+                color_palette,
+                addon,
+                is_addon_expanded,
+                title_width,
+                local_width,
+                remote_width,
+                status_width,
+            );
 
             // Adds the addon data cell to the scrollable.
             addons_scrollable = addons_scrollable.push(addon_data_cell);
@@ -301,8 +322,10 @@ impl Application for Ajour {
 /// Starts the GUI.
 /// This function does not return.
 pub fn run() {
+    let config: Config = Config::load_or_default().expect("loading config on application startup");
+
     let mut settings = Settings::default();
-    settings.window.size = (900, 620);
+    settings.window.size = config.window_size.unwrap_or((900, 620));
     // Enforce the usage of dedicated gpu if available.
     settings.antialiasing = true;
 
@@ -318,7 +341,7 @@ pub fn run() {
     Ajour::run(settings);
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
 pub enum SortKey {
     Title,
     LocalVersion,
@@ -341,14 +364,45 @@ impl SortDirection {
     }
 }
 
-#[derive(Default)]
-pub struct SortState {
+pub struct HeaderState {
+    state: header::State,
     previous_sort_key: Option<SortKey>,
     previous_sort_direction: Option<SortDirection>,
-    title_btn_state: button::State,
-    local_version_btn_state: button::State,
-    remote_version_btn_state: button::State,
-    status_btn_state: button::State,
+    title: ColumnState,
+    local_version: ColumnState,
+    remote_version: ColumnState,
+    status: ColumnState,
+}
+
+impl Default for HeaderState {
+    fn default() -> Self {
+        Self {
+            state: Default::default(),
+            previous_sort_key: None,
+            previous_sort_direction: None,
+            title: ColumnState {
+                btn_state: Default::default(),
+                width: Length::Fill,
+            },
+            local_version: ColumnState {
+                btn_state: Default::default(),
+                width: Length::Units(150),
+            },
+            remote_version: ColumnState {
+                btn_state: Default::default(),
+                width: Length::Units(150),
+            },
+            status: ColumnState {
+                btn_state: Default::default(),
+                width: Length::Units(85),
+            },
+        }
+    }
+}
+
+pub struct ColumnState {
+    btn_state: button::State,
+    width: Length,
 }
 
 pub struct ThemeState {

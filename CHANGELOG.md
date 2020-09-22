@@ -18,6 +18,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - It is now possible to see when a update was released in the details view of an addon. 
 - A website button has been added to the detail view of each addon.
   - The idea is that with this button, it is easy to open up the addon website and view additional information which Ajour might not show.
+- Columns can be resized by clicking & dragging the dividers between the column headers. This change will be saved and used when starting Ajour.
+- Window size will be saved when resizing the application and used when starting Ajour.
 
 ### Changed
 
