@@ -1,4 +1,5 @@
 use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits};
+use chrono::prelude::*;
 use std::cmp::Ordering;
 use std::path::PathBuf;
 
@@ -30,6 +31,7 @@ pub struct Addon {
     pub remote_version: Option<String>,
     pub remote_download_url: Option<String>,
     pub remote_website_url: Option<String>,
+    pub remote_date_time: Option<DateTime<FixedOffset>>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
@@ -72,6 +74,7 @@ impl Addon {
             remote_version: None,
             remote_download_url: None,
             remote_website_url: None,
+            remote_date_time: None,
             path,
             dependencies,
             state: AddonState::Ajour(None),
@@ -96,6 +99,12 @@ impl Addon {
         self.remote_version = Some(package.version.clone());
         self.remote_download_url = Some(package.url.clone());
         self.remote_website_url = Some(package.web_url.clone());
+
+        let date_time =
+            DateTime::parse_from_rfc3339(&format!("{}T15:33:15.007Z", &package.lastupdate));
+        if let Ok(date_time) = date_time {
+            self.remote_date_time = Some(date_time);
+        }
 
         if self.is_updatable() {
             self.state = AddonState::Updatable;
@@ -144,6 +153,11 @@ impl Addon {
         if let Some(file) = file {
             self.remote_version = Some(file.display_name.clone());
             self.remote_download_url = Some(file.download_url.clone());
+
+            let date_time = DateTime::parse_from_rfc3339(&file.file_date);
+            if let Ok(date_time) = date_time {
+                self.remote_date_time = Some(date_time);
+            }
 
             if file.id > info.file.id {
                 self.state = AddonState::Updatable;

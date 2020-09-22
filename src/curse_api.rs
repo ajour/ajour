@@ -24,6 +24,7 @@ pub struct File {
     pub id: i64,
     pub display_name: String,
     pub file_name: String,
+    pub file_date: String,
     pub download_url: String,
     pub release_type: u32,
     pub game_version_flavor: String,

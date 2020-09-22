@@ -10,6 +10,7 @@ pub struct TukuiPackage {
     pub version: String,
     pub url: String,
     pub web_url: String,
+    pub lastupdate: String,
 }
 
 /// Return the tukui API endpoint.

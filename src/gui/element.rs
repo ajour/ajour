@@ -4,6 +4,7 @@ use {
         SortDirection, SortKey, SortState, ThemeState,
     },
     crate::VERSION,
+    chrono::prelude::*,
     iced::{
         button, scrollable, Button, Column, Container, Element, HorizontalAlignment, Length,
         PickList, Row, Scrollable, Space, Text, VerticalAlignment,
@@ -306,6 +307,25 @@ pub fn addon_data_cell(
         let notes_title_container =
             Container::new(notes_title_text).style(style::DefaultTextContainer(color_palette));
 
+        let status_text: String = if let Some(date) = addon.remote_date_time {
+            // FIXME: should we init this somewere else?
+            let mut f = timeago::Formatter::new();
+            let now = Local::now();
+
+            if addon.state == AddonState::Updatable {
+                f.ago("old");
+                let readable_time = f.convert_chrono(date, now);
+                format!("New release is {}.", readable_time)
+            } else {
+                f.ago("");
+                let readable_time = f.convert_chrono(date, now);
+                format!("{} since last release.", readable_time)
+            }
+        } else {
+            format!("")
+        };
+        let status_text = Text::new(status_text).size(DEFAULT_FONT_SIZE);
+
         let mut website_button = Button::new(
             &mut addon.website_btn_state,
             Text::new("Website").size(DEFAULT_FONT_SIZE),
@@ -348,7 +368,7 @@ pub fn addon_data_cell(
         .style(style::DeleteBoxedButton(color_palette))
         .into();
 
-        let row = Row::new()
+        let button_row = Row::new()
             .push(Space::new(Length::Fill, Length::Units(0)))
             .push(website_button.map(Message::Interaction))
             .push(Space::new(Length::Units(5), Length::Units(0)))
@@ -365,13 +385,15 @@ pub fn addon_data_cell(
             .push(Space::new(Length::Units(0), Length::Units(7)))
             .push(notes_title_container)
             .push(Space::new(Length::Units(0), Length::Units(3)))
+            .push(status_text)
+            .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(notes_text)
             .push(space)
-            .push(row)
+            .push(button_row)
             .push(bottom_space);
         let details_container = Container::new(column)
             .width(Length::Fill)
-            .padding(5)
+            .padding(20)
             .style(style::AddonRowDetailsContainer(color_palette));
 
         let row = Row::new()
