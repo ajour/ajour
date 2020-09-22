@@ -24,6 +24,8 @@ pub struct Config {
 
     #[serde(default)]
     pub column_config: ColumnConfig,
+
+    pub window_size: Option<(u32, u32)>,
 }
 
 impl Config {

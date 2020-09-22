@@ -6,8 +6,6 @@ use {
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
-        theme::load_user_themes,
-        utility::needs_update,
         Result,
     },
     async_std::sync::{Arc, Mutex},
@@ -20,15 +18,6 @@ use {
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
-        Message::ConfigDirExists(_) => {
-            let commands = vec![
-                Command::perform(load_config(), Message::Parse),
-                Command::perform(needs_update(), Message::NeedsUpdate),
-                Command::perform(load_user_themes(), Message::ThemesLoaded),
-            ];
-
-            return Ok(Command::batch(commands));
-        }
         Message::Parse(Ok(config)) => {
             log::debug!("Message::Parse");
             log::debug!("config loaded:\n{:#?}", config);
@@ -554,6 +543,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.state = AjourState::Error(error);
         }
+        Message::RuntimeEvent(iced_native::Event::Window(
+            iced_native::window::Event::Resized { width, height },
+        )) => {
+            log::info!("Event::Resize({}, {})", width, height);
+
+            ajour.config.window_size = Some((width, height));
+            let _ = ajour.config.save();
+        }
+        Message::RuntimeEvent(_) => {}
         Message::None(_) => {}
     }
 

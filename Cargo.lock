@@ -50,6 +50,7 @@ dependencies = [
  "glob",
  "iced",
  "iced_futures",
+ "iced_native",
  "image",
  "isahc",
  "lazy_static",

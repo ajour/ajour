@@ -4,17 +4,18 @@ mod update;
 
 use crate::{
     addon::{Addon, AddonState},
-    config::{Config, Flavor},
+    config::{load_config, Config, Flavor},
     error::ClientError,
-    fs::config_dir,
+    fs::PersistentData,
     parse::FingerprintCollection,
-    theme::{ColorPalette, Theme},
+    theme::{load_user_themes, ColorPalette, Theme},
+    utility::needs_update,
     Result,
 };
 use async_std::sync::{Arc, Mutex};
 use iced::{
     button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
-    Settings, Space,
+    Settings, Space, Subscription,
 };
 use isahc::{
     config::{Configurable, RedirectPolicy},
@@ -54,7 +55,6 @@ pub enum Interaction {
 
 #[derive(Debug)]
 pub enum Message {
-    ConfigDirExists(PathBuf),
     DownloadedAddon((String, Result<()>)),
     Error(ClientError),
     Interaction(Interaction),
@@ -67,6 +67,7 @@ pub enum Message {
     ThemesLoaded(Vec<Theme>),
     UnpackedAddon((String, Result<()>)),
     UpdateDirectory(Option<PathBuf>),
+    RuntimeEvent(iced_native::Event),
 }
 
 pub struct Ajour {
@@ -131,16 +132,21 @@ impl Application for Ajour {
     type Flags = ();
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
-        (
-            Ajour::default(),
-            // Will create the config directory if it doesn't exist. This needs to happen before
-            // we can safely perform all of our init operations concurrently
-            Command::perform(async { config_dir() }, Message::ConfigDirExists),
-        )
+        let init_commands = vec![
+            Command::perform(load_config(), Message::Parse),
+            Command::perform(needs_update(), Message::NeedsUpdate),
+            Command::perform(load_user_themes(), Message::ThemesLoaded),
+        ];
+
+        (Ajour::default(), Command::batch(init_commands))
     }
 
     fn title(&self) -> String {
         String::from("Ajour")
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        iced_native::subscription::events().map(Message::RuntimeEvent)
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -316,8 +322,10 @@ impl Application for Ajour {
 /// Starts the GUI.
 /// This function does not return.
 pub fn run() {
+    let config: Config = Config::load_or_default().expect("loading config on application startup");
+
     let mut settings = Settings::default();
-    settings.window.size = (900, 620);
+    settings.window.size = config.window_size.unwrap_or((900, 620));
     // Enforce the usage of dedicated gpu if available.
     settings.antialiasing = true;
 
