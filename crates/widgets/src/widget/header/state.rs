@@ -2,11 +2,6 @@ use iced_native::Point;
 
 #[derive(Debug, Default)]
 pub struct State {
-    pub(super) inner: Inner,
-}
-
-#[derive(Debug, Default)]
-pub(super) struct Inner {
     pub resize_hovering: bool,
     pub resizing: bool,
     pub starting_cursor_pos: Option<Point>,

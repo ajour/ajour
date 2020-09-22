@@ -1,14 +1,11 @@
 #![allow(clippy::type_complexity)]
-#![allow(clippy::too_many_arguments)]
 
 use iced_native::{
     container, layout, mouse, space, Align, Clipboard, Container, Element, Event, Hasher, Layout,
     Length, Point, Space, Widget,
 };
-use std::hash::Hash;
 
 mod state;
-use state::Inner;
 pub use state::State;
 
 pub struct Header<'a, Message, Renderer>
@@ -18,7 +15,7 @@ where
     spacing: u16,
     width: Length,
     height: Length,
-    state: &'a mut Inner,
+    state: &'a mut State,
     leeway: u16,
     on_resize: Option<(u16, Box<dyn Fn(ResizeEvent) -> Message + 'a>)>,
     children: Vec<Element<'a, Message, Renderer>>,
@@ -29,7 +26,7 @@ where
 
 impl<'a, Message, Renderer> Header<'a, Message, Renderer>
 where
-    Renderer: 'a + self::Renderer + container::Renderer + space::Renderer,
+    Renderer: 'a + self::Renderer,
     Message: 'a,
 {
     pub fn new(
@@ -38,8 +35,6 @@ where
         left_margin: Option<Length>,
         right_margin: Option<Length>,
     ) -> Self {
-        let state = &mut state.inner;
-
         let mut names = vec![];
         let mut left = false;
         let mut right = false;
@@ -121,7 +116,7 @@ where
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for Header<'a, Message, Renderer>
 where
-    Renderer: 'a + self::Renderer + container::Renderer + space::Renderer,
+    Renderer: 'a + self::Renderer,
     Message: 'a,
 {
     fn width(&self) -> Length {
@@ -165,7 +160,7 @@ where
             .enumerate()
             .zip(layout.children())
             .filter_map(|((idx, _), layout)| {
-                if idx >= (start_offset) && idx < (child_len - 1 - end_offset) {
+                if idx >= start_offset && idx < (child_len - 1 - end_offset) {
                     Some((idx, layout.position().x + layout.bounds().width))
                 } else {
                     None
@@ -272,12 +267,17 @@ where
     }
 
     fn hash_layout(&self, state: &mut Hasher) {
+        use std::hash::Hash;
+
         struct Marker;
         std::any::TypeId::of::<Marker>().hash(state);
 
         self.width.hash(state);
         self.height.hash(state);
         self.spacing.hash(state);
+        self.left_margin.hash(state);
+        self.right_margin.hash(state);
+        self.leeway.hash(state);
 
         for child in &self.children {
             child.hash_layout(state);
@@ -286,15 +286,6 @@ where
 }
 
 pub trait Renderer: iced_native::Renderer + container::Renderer + space::Renderer + Sized {
-    /// Draws a [`Row`].
-    ///
-    /// It receives:
-    /// - the children of the [`Row`]
-    /// - the [`Layout`] of the [`Row`] and its children
-    /// - the cursor position
-    ///
-    /// [`Row`]: struct.Row.html
-    /// [`Layout`]: ../layout/struct.Layout.html
     fn draw<Message>(
         &mut self,
         defaults: &Self::Defaults,
@@ -305,14 +296,6 @@ pub trait Renderer: iced_native::Renderer + container::Renderer + space::Rendere
     ) -> Self::Output;
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct ResizeEvent {
-    pub left_name: &'static str,
-    pub left_width: u16,
-    pub right_name: &'static str,
-    pub right_width: u16,
-}
-
 impl<'a, Message, Renderer> From<Header<'a, Message, Renderer>> for Element<'a, Message, Renderer>
 where
     Renderer: 'a + self::Renderer,
@@ -321,4 +304,12 @@ where
     fn from(header: Header<'a, Message, Renderer>) -> Element<'a, Message, Renderer> {
         Element::new(header)
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ResizeEvent {
+    pub left_name: &'static str,
+    pub left_width: u16,
+    pub right_name: &'static str,
+    pub right_width: u16,
 }

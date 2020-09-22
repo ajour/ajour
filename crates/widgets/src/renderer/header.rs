@@ -1,9 +1,9 @@
-use crate::widget::table_header;
+use crate::widget::header;
 use iced_graphics::{Backend, Primitive, Renderer};
 use iced_native::mouse;
 use iced_native::{Element, Layout, Point};
 
-impl<B> table_header::Renderer for Renderer<B>
+impl<B> header::Renderer for Renderer<B>
 where
     B: Backend,
 {

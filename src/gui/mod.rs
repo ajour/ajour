@@ -23,7 +23,7 @@ use isahc::{
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
-use widgets::table_header;
+use widgets::header;
 
 use image::ImageFormat;
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
@@ -50,7 +50,7 @@ pub enum Interaction {
     UpdateAll,
     SortColumn(SortKey),
     FlavorSelected(Flavor),
-    ResizeColumn(table_header::ResizeEvent),
+    ResizeColumn(header::ResizeEvent),
 }
 
 #[derive(Debug)]
@@ -365,7 +365,7 @@ impl SortDirection {
 }
 
 pub struct HeaderState {
-    state: table_header::State,
+    state: header::State,
     previous_sort_key: Option<SortKey>,
     previous_sort_direction: Option<SortDirection>,
     title: ColumnState,
