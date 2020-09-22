@@ -509,8 +509,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Interaction(Interaction::ResizeColumn(event)) => {
-            log::debug!("Interaction::ResizeColumn({:?})", event);
-
             let column_config = &mut ajour.config.column_config;
 
             match event.right_name {
@@ -546,8 +544,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::RuntimeEvent(iced_native::Event::Window(
             iced_native::window::Event::Resized { width, height },
         )) => {
-            log::info!("Event::Resize({}, {})", width, height);
-
             ajour.config.window_size = Some((width, height));
             let _ = ajour.config.save();
         }
