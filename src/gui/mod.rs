@@ -51,6 +51,8 @@ pub enum Interaction {
     SortColumn(SortKey),
     FlavorSelected(Flavor),
     ResizeColumn(header::ResizeEvent),
+    ScaleUp,
+    ScaleDown,
 }
 
 #[derive(Debug)]
@@ -91,6 +93,7 @@ pub struct Ajour {
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     retail_btn_state: button::State,
     classic_btn_state: button::State,
+    scale_state: ScaleState,
 }
 
 impl Default for Ajour {
@@ -122,6 +125,7 @@ impl Default for Ajour {
             fingerprint_collection: Arc::new(Mutex::new(None)),
             retail_btn_state: Default::default(),
             classic_btn_state: Default::default(),
+            scale_state: Default::default(),
         }
     }
 }
@@ -143,6 +147,10 @@ impl Application for Ajour {
 
     fn title(&self) -> String {
         String::from("Ajour")
+    }
+
+    fn scale_factor(&self) -> f64 {
+        self.scale_state.scale
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
@@ -260,6 +268,7 @@ impl Application for Ajour {
                 ignored_addons,
                 &cloned_config,
                 &mut self.theme_state,
+                &mut self.scale_state,
             );
 
             // Space below settings.
@@ -421,6 +430,22 @@ impl Default for ThemeState {
             themes,
             current_theme_name: "Dark".to_string(),
             pick_list_state: Default::default(),
+        }
+    }
+}
+
+pub struct ScaleState {
+    scale: f64,
+    up_btn_state: button::State,
+    down_btn_state: button::State,
+}
+
+impl Default for ScaleState {
+    fn default() -> Self {
+        ScaleState {
+            scale: 1.0,
+            up_btn_state: Default::default(),
+            down_btn_state: Default::default(),
         }
     }
 }

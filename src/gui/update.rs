@@ -40,6 +40,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.theme_state.current_theme_name =
                 ajour.config.theme.as_deref().unwrap_or("Dark").to_string();
 
+            // Use scale from config. Set to 1.0 if not defined.
+            ajour.scale_state.scale = ajour.config.scale.unwrap_or(1.0);
+
             // Begin to parse addon folder(s).
             let mut commands = vec![];
             let flavors = &Flavor::ALL[..];
@@ -536,6 +539,34 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let _ = ajour.config.save();
         }
+        Message::Interaction(Interaction::ScaleUp) => {
+            let prev_scale = ajour.scale_state.scale;
+
+            ajour.scale_state.scale = (prev_scale + 0.25).min(2.0);
+
+            ajour.config.scale = Some(ajour.scale_state.scale);
+            let _ = ajour.config.save();
+
+            log::debug!(
+                "Interaction::ScaleUp({} -> {})",
+                prev_scale,
+                ajour.scale_state.scale
+            );
+        }
+        Message::Interaction(Interaction::ScaleDown) => {
+            let prev_scale = ajour.scale_state.scale;
+
+            ajour.scale_state.scale = (prev_scale - 0.25).max(0.5);
+
+            ajour.config.scale = Some(ajour.scale_state.scale);
+            let _ = ajour.config.save();
+
+            log::debug!(
+                "Interaction::ScaleDown({} -> {})",
+                prev_scale,
+                ajour.scale_state.scale
+            );
+        }
         Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
             log::error!("{}", error);
 
@@ -544,6 +575,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::RuntimeEvent(iced_native::Event::Window(
             iced_native::window::Event::Resized { width, height },
         )) => {
+            let width = (width as f64 * ajour.scale_state.scale) as u32;
+            let height = (height as f64 * ajour.scale_state.scale) as u32;
+
             ajour.config.window_size = Some((width, height));
             let _ = ajour.config.save();
         }

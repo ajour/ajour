@@ -20,6 +20,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
   - The idea is that with this button, it is easy to open up the addon website and view additional information which Ajour might not show.
 - Columns can be resized by clicking & dragging the dividers between the column headers. This change will be saved and used when starting Ajour.
 - Window size will be saved when resizing the application and used when starting Ajour.
+- UI Scaling has been added to settings. UI scale can be increased or decreased and will be saved when changed.
 
 ### Changed
 
