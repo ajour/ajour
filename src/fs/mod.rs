@@ -3,6 +3,7 @@ use std::env;
 use std::{fs, path::PathBuf};
 
 mod addon;
+mod backup;
 mod save;
 mod theme;
 

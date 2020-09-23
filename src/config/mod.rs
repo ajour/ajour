@@ -1,5 +1,5 @@
 use glob::MatchOptions;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 mod addons;
@@ -82,6 +82,43 @@ impl Config {
                 // The path to the directory which hold the temporary zip archives
                 let dir = dir.parent().expect("Expected Addons folder has a parent.");
                 Some(dir.to_path_buf())
+            }
+            None => None,
+        }
+    }
+
+    /// Returns a `Option<PathBuf>` to the WTF directory.
+    /// This will return `None` if no `wow_directory` is set in the config.
+    pub fn get_wtf_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
+        match &self.wow.directory {
+            Some(dir) => {
+                // We prepend and append `_` to the formatted_client_flavor so it
+                // either becomes _retail_, or _classic_.
+                let formatted_client_flavor = format!("_{}_", flavor);
+
+                // The path to the WTF directory
+                let mut addon_dir = dir.join(&formatted_client_flavor).join("WTF");
+
+                // If path doesn't exist, it could have been modified by the user.
+                // Check for a case-insensitive version and use that instead.
+                if !addon_dir.exists() {
+                    let options = MatchOptions {
+                        case_sensitive: false,
+                        ..Default::default()
+                    };
+
+                    // For some reason the case insensitive pattern doesn't work
+                    // unless we add an actual pattern symbol, hence the `?`.
+                    let pattern = format!("{}/?tf", dir.join(&formatted_client_flavor).display());
+
+                    for entry in glob::glob_with(&pattern, options).unwrap() {
+                        if let Ok(path) = entry {
+                            addon_dir = path;
+                        }
+                    }
+                }
+
+                Some(addon_dir)
             }
             None => None,
         }
