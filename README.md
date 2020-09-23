@@ -89,6 +89,7 @@ https://ogri-la.github.io/wow-addon-managers/
 
 - [tarkah](https://github.com/tarkah) for the many great contributions. 
 - [Rasmus Nielsen](https://rasmusnielsen.dk/) for the Ajour icon.
+- [Rune Seir](https://instagram.com/rseir/) for the Ajour banner.
 - [mlablah](https://github.com/mlablah) for the architectural discussions.
 - [##rust and the whole community 🦀](https://webchat.freenode.net/?channels=##rust)
 
