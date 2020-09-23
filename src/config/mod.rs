@@ -26,6 +26,8 @@ pub struct Config {
     pub column_config: ColumnConfig,
 
     pub window_size: Option<(u32, u32)>,
+
+    pub scale: Option<f64>,
 }
 
 impl Config {

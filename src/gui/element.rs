@@ -1,7 +1,7 @@
 use {
     super::{
         style, Addon, AddonState, AjourState, ColorPalette, Config, Flavor, HeaderState,
-        Interaction, Message, SortDirection, SortKey, ThemeState,
+        Interaction, Message, ScaleState, SortDirection, SortKey, ThemeState,
     },
     crate::VERSION,
     chrono::prelude::*,
@@ -24,6 +24,7 @@ pub fn settings_container<'a>(
     ignored_addons: &'a mut Vec<(Addon, button::State)>,
     config: &Config,
     theme_state: &'a mut ThemeState,
+    scale_state: &'a mut ScaleState,
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
@@ -91,6 +92,48 @@ pub fn settings_container<'a>(
     // Data row for theme picker list.
     let theme_data_row = Row::new().push(left_spacer).push(theme_pick_list);
 
+    // Scale buttons for application scale factoring.
+    let (scale_title_row, scale_buttons_row) = {
+        let scale_title = Text::new("Scale").size(DEFAULT_FONT_SIZE);
+        let scale_title_row = Row::new().push(scale_title).padding(DEFAULT_PADDING);
+
+        let scale_down_button: Element<Interaction> = Button::new(
+            &mut scale_state.down_btn_state,
+            Text::new("  -  ").size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::DefaultBoxedButton(color_palette))
+        .on_press(Interaction::ScaleDown)
+        .into();
+
+        let scale_up_button: Element<Interaction> = Button::new(
+            &mut scale_state.up_btn_state,
+            Text::new("  +  ").size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::DefaultBoxedButton(color_palette))
+        .on_press(Interaction::ScaleUp)
+        .into();
+
+        // We add some margin left to adjust to the rest of the content.
+        let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+
+        let current_scale_text = Text::new(format!("  {:.2}  ", scale_state.scale))
+            .size(DEFAULT_FONT_SIZE)
+            .vertical_alignment(VerticalAlignment::Center);
+        let current_scale_container = Container::new(current_scale_text)
+            .center_y()
+            .padding(5)
+            .style(style::SecondaryTextContainer(color_palette));
+
+        // Data row for the World of Warcraft directory selection.
+        let scale_buttons_row = Row::new()
+            .push(left_spacer)
+            .push(scale_down_button.map(Message::Interaction))
+            .push(current_scale_container)
+            .push(scale_up_button.map(Message::Interaction));
+
+        (scale_title_row, scale_buttons_row)
+    };
+
     // Small space below content.
     let bottom_space = Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
@@ -100,6 +143,8 @@ pub fn settings_container<'a>(
         .push(path_data_row)
         .push(theme_info_row)
         .push(theme_data_row)
+        .push(scale_title_row)
+        .push(scale_buttons_row)
         .push(bottom_space);
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
@@ -108,7 +153,7 @@ pub fn settings_container<'a>(
     // Container wrapping colum.
     let left_container = Container::new(left_column)
         .width(Length::FillPortion(1))
-        .height(Length::Fill)
+        .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Title for the ignored addons scrollable.
@@ -161,7 +206,7 @@ pub fn settings_container<'a>(
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
-        .height(Length::Fill)
+        .height(Length::Units(185))
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Row to wrap each section.
@@ -172,7 +217,9 @@ pub fn settings_container<'a>(
         .push(right_spacer);
 
     // Returns the final container.
-    Container::new(row).height(Length::Units(130))
+    Container::new(row)
+        .height(Length::Shrink)
+        .style(style::AddonRowDefaultTextContainer(color_palette))
 }
 
 pub fn addon_data_cell(
