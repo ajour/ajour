@@ -94,7 +94,7 @@ pub fn settings_container<'a>(
 
     // Scale buttons for application scale factoring.
     let (scale_title_row, scale_buttons_row) = {
-        let scale_title = Text::new("Scale").size(DEFAULT_FONT_SIZE);
+        let scale_title = Text::new("UI Scale").size(DEFAULT_FONT_SIZE);
         let scale_title_row = Row::new().push(scale_title).padding(DEFAULT_PADDING);
 
         let scale_down_button: Element<Interaction> = Button::new(
