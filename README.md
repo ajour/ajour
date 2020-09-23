@@ -1,6 +1,6 @@
 <h1 align="center">Ajour</h1>
 
-![](./resources/screenshots/ajour-banner.png)
+![](./resources/screenshots/ajour-banner.jpg)
 
 Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
 
