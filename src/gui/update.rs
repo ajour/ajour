@@ -2,7 +2,7 @@ use {
     super::{Ajour, AjourState, DirectoryType, Interaction, Message, SortDirection, SortKey},
     crate::{
         addon::{Addon, AddonState},
-        backup::{backup_folders, lastest_backup, BackupFolder},
+        backup::{backup_folders, latest_backup, BackupFolder},
         config::{load_config, ColumnConfig, Flavor},
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
@@ -50,7 +50,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // If a backup directory is selected, find the latest backup
             if let Some(dir) = &ajour.config.backup_directory {
                 commands.push(Command::perform(
-                    lastest_backup(dir.to_owned()),
+                    latest_backup(dir.to_owned()),
                     Message::LatestBackup,
                 ));
             }
@@ -592,10 +592,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let _ = &ajour.config.save();
 
                 // Check if a latest backup exists in path
-                return Ok(Command::perform(
-                    lastest_backup(path),
-                    Message::LatestBackup,
-                ));
+                return Ok(Command::perform(latest_backup(path), Message::LatestBackup));
             }
         }
 

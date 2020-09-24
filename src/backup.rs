@@ -30,7 +30,7 @@ pub async fn backup_folders(
 
 /// Finds the latest archive in the supplied backup folder and returns
 /// the datetime it was saved
-pub async fn lastest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
+pub async fn latest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
     let pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].zip", &backup_dir.display());
 
     let mut backups = vec![];
