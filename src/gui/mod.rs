@@ -13,6 +13,7 @@ use crate::{
     Result,
 };
 use async_std::sync::{Arc, Mutex};
+use chrono::NaiveDateTime;
 use iced::{
     button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
     Settings, Space, Subscription,
@@ -41,7 +42,7 @@ pub enum Interaction {
     Delete(String),
     Expand(String),
     Ignore(String),
-    OpenDirectory,
+    OpenDirectory(DirectoryType),
     OpenLink(String),
     Refresh,
     Settings,
@@ -53,6 +54,7 @@ pub enum Interaction {
     ResizeColumn(header::ResizeEvent),
     ScaleUp,
     ScaleDown,
+    Backup,
 }
 
 #[derive(Debug)]
@@ -68,8 +70,11 @@ pub enum Message {
     ThemeSelected(String),
     ThemesLoaded(Vec<Theme>),
     UnpackedAddon((String, Result<()>)),
-    UpdateDirectory(Option<PathBuf>),
+    UpdateWowDirectory(Option<PathBuf>),
+    UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),
+    LatestBackup(Option<NaiveDateTime>),
+    BackupFinished(Result<NaiveDateTime>),
 }
 
 pub struct Ajour {
@@ -94,6 +99,7 @@ pub struct Ajour {
     retail_btn_state: button::State,
     classic_btn_state: button::State,
     scale_state: ScaleState,
+    backup_state: BackupState,
 }
 
 impl Default for Ajour {
@@ -126,6 +132,7 @@ impl Default for Ajour {
             retail_btn_state: Default::default(),
             classic_btn_state: Default::default(),
             scale_state: Default::default(),
+            backup_state: Default::default(),
         }
     }
 }
@@ -269,6 +276,7 @@ impl Application for Ajour {
                 &cloned_config,
                 &mut self.theme_state,
                 &mut self.scale_state,
+                &mut self.backup_state,
             );
 
             // Space below settings.
@@ -348,6 +356,12 @@ pub fn run() {
 
     // Runs the GUI.
     Ajour::run(settings);
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum DirectoryType {
+    Wow,
+    Backup,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
@@ -448,4 +462,12 @@ impl Default for ScaleState {
             down_btn_state: Default::default(),
         }
     }
+}
+
+#[derive(Default)]
+pub struct BackupState {
+    backing_up: bool,
+    last_backup: Option<NaiveDateTime>,
+    directory_btn_state: button::State,
+    backup_now_btn_state: button::State,
 }

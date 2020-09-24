@@ -65,6 +65,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "timeago",
+ "walkdir",
  "widgets",
  "zip",
 ]

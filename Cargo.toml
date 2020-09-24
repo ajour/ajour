@@ -36,6 +36,7 @@ chrono = "0.4"
 log = "0.4"
 fern = "0.6"
 timeago = "0.2.1"
+walkdir = "2.3"
 
 widgets = { path = "crates/widgets" }
 

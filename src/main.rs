@@ -4,6 +4,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod addon;
+mod backup;
 mod config;
 mod curse_api;
 mod error;
