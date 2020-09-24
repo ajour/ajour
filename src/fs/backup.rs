@@ -1,3 +1,4 @@
+use crate::backup::BackupFolder;
 use crate::error::ClientError;
 use crate::Result;
 
@@ -7,24 +8,12 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
+/// A trait defining a way to back things up to the fs
 pub trait Backup {
     fn backup(&self) -> Result<()>;
 }
 
-pub struct BackupFolder {
-    path: PathBuf,
-    prefix: PathBuf,
-}
-
-impl BackupFolder {
-    fn new(path: impl AsRef<Path>, prefix: impl AsRef<Path>) -> BackupFolder {
-        BackupFolder {
-            path: path.as_ref().to_owned(),
-            prefix: prefix.as_ref().to_owned(),
-        }
-    }
-}
-
+/// Back up folders to a zip archive and save on the fs
 pub struct ZipBackup {
     src: Vec<BackupFolder>,
     dest: PathBuf,
@@ -72,6 +61,7 @@ impl Backup for ZipBackup {
     }
 }
 
+/// Write each path to the zip archive
 fn zip_write(
     path: &Path,
     prefix: &Path,
@@ -101,39 +91,4 @@ fn zip_write(
     }
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::config::{Config, Flavor};
-    use crate::fs::PersistentData;
-    use chrono::Local;
-
-    #[test]
-    fn test_zip_backup() {
-        let config: Config = Config::load().unwrap();
-
-        let mut src_folders = vec![];
-
-        let wow_dir = config.wow.directory.as_ref().unwrap();
-
-        for flavor in Flavor::ALL.iter() {
-            let addon_dir = config.get_addon_directory_for_flavor(flavor).unwrap();
-            let wtf_dir = config.get_wtf_directory_for_flavor(flavor).unwrap();
-
-            src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
-            src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
-        }
-
-        let now = Local::now();
-        let dest = format!(
-            "C:\\TempPath\\ajour_backup_{}.zip",
-            now.format("%Y-%m-%d_%H-%M-%S")
-        );
-
-        let zip_backup = ZipBackup::new(src_folders, dest);
-
-        zip_backup.backup().unwrap();
-    }
 }

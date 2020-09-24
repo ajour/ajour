@@ -1,7 +1,9 @@
+#![allow(clippy::too_many_arguments)]
+
 use {
     super::{
-        style, Addon, AddonState, AjourState, ColorPalette, Config, Flavor, HeaderState,
-        Interaction, Message, ScaleState, SortDirection, SortKey, ThemeState,
+        style, Addon, AddonState, AjourState, BackupState, ColorPalette, Config, DirectoryType,
+        Flavor, HeaderState, Interaction, Message, ScaleState, SortDirection, SortKey, ThemeState,
     },
     crate::VERSION,
     chrono::prelude::*,
@@ -25,6 +27,7 @@ pub fn settings_container<'a>(
     config: &Config,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
+    backup_state: &'a mut BackupState,
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
@@ -38,7 +41,7 @@ pub fn settings_container<'a>(
         Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultBoxedButton(color_palette))
-    .on_press(Interaction::OpenDirectory)
+    .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
     .into();
 
     // We add some margin left to adjust to the rest of the content.
@@ -200,13 +203,114 @@ pub fn settings_container<'a>(
         scrollable = scrollable.push(row);
     }
 
+    let (backup_title_row, backup_directory_row, backup_now_row) = {
+        // Title for the Backup section.
+        let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
+        let backup_title_row = Row::new().push(backup_title_text).padding(DEFAULT_PADDING);
+
+        // Directory button for Backup directory selection.
+        let directory_button: Element<Interaction> = Button::new(
+            &mut backup_state.directory_btn_state,
+            Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::DefaultBoxedButton(color_palette))
+        .on_press(Interaction::OpenDirectory(DirectoryType::Backup))
+        .into();
+
+        // Directory text, written next to directory button to let the user
+        // know what has been selected.
+        let path_str = config
+            .backup_directory
+            .as_ref()
+            .and_then(|p| p.to_str())
+            .unwrap_or("No directory is set");
+        let directory_data_text = Text::new(path_str)
+            .size(DEFAULT_FONT_SIZE)
+            .vertical_alignment(VerticalAlignment::Center);
+        let directory_data_text_container = Container::new(directory_data_text)
+            .center_y()
+            .padding(5)
+            .style(style::SecondaryTextContainer(color_palette));
+
+        // Data row for the Backup directory selection.
+        let backup_directory_row = Row::new()
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(directory_button.map(Message::Interaction))
+            .push(directory_data_text_container);
+
+        // Row to show actual backup button along with info about the latest
+        // backup date/time. Will give a description of what Backup is when no
+        // directory is chosen
+        let mut backup_now_row =
+            Row::new().push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
+
+        // Show button / last backup info if directory is shown, otherwise
+        // show description about the backup process
+        if config.backup_directory.is_some() {
+            let mut backup_button = Button::new(
+                &mut backup_state.backup_now_btn_state,
+                Text::new("Backup Now").size(DEFAULT_FONT_SIZE),
+            )
+            .style(style::DefaultBoxedButton(color_palette));
+
+            // Only show button as clickable if it's not currently backing up and
+            // the wow folder is chosen
+            if !backup_state.backing_up && config.wow.directory.is_some() {
+                backup_button = backup_button.on_press(Interaction::Backup);
+            }
+
+            let backup_status_text = if backup_state.backing_up {
+                Text::new("Backing up...")
+                    .size(DEFAULT_FONT_SIZE)
+                    .vertical_alignment(VerticalAlignment::Center)
+            } else {
+                let as_of = backup_state
+                    .last_backup
+                    .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
+                    .unwrap_or_else(|| "Never".to_string());
+
+                Text::new(&format!("Last backup: {}", as_of))
+                    .size(DEFAULT_FONT_SIZE)
+                    .vertical_alignment(VerticalAlignment::Center)
+            };
+
+            let backup_status_text_container = Container::new(backup_status_text)
+                .center_y()
+                .padding(5)
+                .style(style::SecondaryTextContainer(color_palette));
+
+            let backup_button: Element<Interaction> = backup_button.into();
+
+            backup_now_row = backup_now_row
+                .push(backup_button.map(Message::Interaction))
+                .push(backup_status_text_container);
+        } else {
+            let backup_status_text =
+                Text::new("Back up your AddOns and WTF folder to the chosen directory")
+                    .size(DEFAULT_FONT_SIZE)
+                    .vertical_alignment(VerticalAlignment::Center);
+
+            let backup_status_text_container = Container::new(backup_status_text)
+                .center_y()
+                .style(style::SecondaryTextContainer(color_palette));
+
+            backup_now_row = backup_now_row.push(backup_status_text_container);
+        }
+
+        (backup_title_row, backup_directory_row, backup_now_row)
+    };
+
     let right_column = Column::new()
+        .push(backup_title_row)
+        .push(backup_now_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(backup_directory_row)
         .push(ignored_addons_title_row)
         .push(scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
-        .height(Length::Units(185))
+        .height(Length::Units(240))
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Row to wrap each section.

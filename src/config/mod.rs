@@ -28,6 +28,8 @@ pub struct Config {
     pub window_size: Option<(u32, u32)>,
 
     pub scale: Option<f64>,
+
+    pub backup_directory: Option<PathBuf>,
 }
 
 impl Config {

@@ -1,7 +1,8 @@
 use {
-    super::{Ajour, AjourState, Interaction, Message, SortDirection, SortKey},
+    super::{Ajour, AjourState, DirectoryType, Interaction, Message, SortDirection, SortKey},
     crate::{
         addon::{Addon, AddonState},
+        backup::{backup_folders, lastest_backup, BackupFolder},
         config::{load_config, ColumnConfig, Flavor},
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
@@ -45,6 +46,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Begin to parse addon folder(s).
             let mut commands = vec![];
+
+            // If a backup directory is selected, find the latest backup
+            if let Some(dir) = &ajour.config.backup_directory {
+                commands.push(Command::perform(
+                    lastest_backup(dir.to_owned()),
+                    Message::LatestBackup,
+                ));
+            }
+
             let flavors = &Flavor::ALL[..];
             for flavor in flavors {
                 if let Some(addon_directory) = ajour.config.get_addon_directory_for_flavor(flavor) {
@@ -141,10 +151,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Persist the newly updated config.
             let _ = &ajour.config.save();
         }
-        Message::Interaction(Interaction::OpenDirectory) => {
-            log::debug!("Interaction::OpenDirectory");
+        Message::Interaction(Interaction::OpenDirectory(dir_type)) => {
+            log::debug!("Interaction::OpenDirectory({:?})", dir_type);
 
-            return Ok(Command::perform(open_directory(), Message::UpdateDirectory));
+            let message = match dir_type {
+                DirectoryType::Wow => Message::UpdateWowDirectory,
+                DirectoryType::Backup => Message::UpdateBackupDirectory,
+            };
+
+            return Ok(Command::perform(open_directory(), message));
         }
         Message::Interaction(Interaction::OpenLink(link)) => {
             log::debug!("Interaction::OpenLink({})", &link);
@@ -156,8 +171,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::None,
             ));
         }
-        Message::UpdateDirectory(path) => {
-            log::debug!("Message::UpdateDirectory({:?})", &path);
+        Message::UpdateWowDirectory(path) => {
+            log::debug!("Message::UpdateWowDirectory({:?})", &path);
 
             // Clear addons.
             ajour.addons = HashMap::new();
@@ -566,6 +581,75 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 prev_scale,
                 ajour.scale_state.scale
             );
+        }
+        Message::UpdateBackupDirectory(path) => {
+            log::debug!("Message::UpdateBackupDirectory({:?})", &path);
+
+            if let Some(path) = path {
+                // Update the backup directory path.
+                ajour.config.backup_directory = Some(path.clone());
+                // Persist the newly updated config.
+                let _ = &ajour.config.save();
+
+                // Check if a latest backup exists in path
+                return Ok(Command::perform(
+                    lastest_backup(path),
+                    Message::LatestBackup,
+                ));
+            }
+        }
+
+        Message::Interaction(Interaction::Backup) => {
+            log::debug!("Interaction::Backup");
+
+            // This will disable our backup button and show a message that the
+            // app is processing the backup. We will unflag this on completion.
+            ajour.backup_state.backing_up = true;
+
+            let mut src_folders = vec![];
+
+            // Shouldn't panic since button is only clickable if wow directory is chosen
+            let wow_dir = ajour.config.wow.directory.as_ref().unwrap();
+
+            // Shouldn't panic since button is only shown if backup directory is chosen
+            let dest = ajour.config.backup_directory.as_ref().unwrap();
+
+            // Backup WTF & AddOn directories for both flavors if they exist
+            for flavor in Flavor::ALL.iter() {
+                let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
+                let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
+
+                if addon_dir.exists() {
+                    src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
+                }
+
+                if wtf_dir.exists() {
+                    src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
+                }
+            }
+
+            return Ok(Command::perform(
+                backup_folders(src_folders, dest.to_owned()),
+                Message::BackupFinished,
+            ));
+        }
+        Message::LatestBackup(as_of) => {
+            log::debug!("Message::LatestBackup({:?})", &as_of);
+
+            ajour.backup_state.last_backup = as_of;
+        }
+        Message::BackupFinished(Ok(as_of)) => {
+            log::debug!("Message::BackupFinished({})", as_of.format("%H:%M:%S"));
+
+            ajour.backup_state.backing_up = false;
+            ajour.backup_state.last_backup = Some(as_of);
+        }
+        Message::BackupFinished(Err(error)) => {
+            log::error!("{}", error);
+
+            ajour.backup_state.backing_up = false;
+
+            ajour.state = AjourState::Error(error);
         }
         Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
             log::error!("{}", error);
