@@ -3,25 +3,8 @@
 // https://msdn.microsoft.com/en-us/library/4cc7ya5b.aspx for more information.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod addon;
-mod backup;
-mod config;
-mod curse_api;
-mod error;
-mod fs;
-mod gui;
-mod murmur2;
-mod network;
-mod parse;
-mod theme;
-mod tukui_api;
-mod utility;
+use ajour::{Result, VERSION};
 
-use crate::error::ClientError;
-
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-pub type Result<T> = std::result::Result<T, ClientError>;
 pub fn main() {
     // Setup the logger
     setup_logger().expect("setup logging");
@@ -29,7 +12,7 @@ pub fn main() {
     log::debug!("Ajour {} has started.", VERSION);
 
     // Start the GUI
-    gui::run();
+    ajour::run();
 }
 
 #[allow(clippy::unnecessary_operation)]

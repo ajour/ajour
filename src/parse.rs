@@ -14,7 +14,7 @@ use crate::{
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use rayon::prelude::*;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
