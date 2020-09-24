@@ -10,6 +10,7 @@ readme = "README.md"
 keywords = ["addon-manager", "wow", "world-of-warcraft", "addon"]
 categories = ["graphics", "gui", "games"]
 edition = "2018"
+default-run = "ajour"
 
 [dependencies]
 iced = { git = "https://github.com/hecrj/iced.git", features = ["debug"], rev = "fb015a85d22a7c4632bd251127a89259bfd0c346" }
