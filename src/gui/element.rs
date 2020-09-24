@@ -310,7 +310,7 @@ pub fn settings_container<'a>(
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
-        .height(Length::Units(240))
+        .height(Length::Units(245))
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Row to wrap each section.
