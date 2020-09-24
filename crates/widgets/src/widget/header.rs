@@ -150,88 +150,100 @@ where
         renderer: &Renderer,
         clipboard: Option<&dyn Clipboard>,
     ) {
-        let child_len = self.children.len();
-        let start_offset = if self.left_margin { 1 } else { 0 };
-        let end_offset = if self.right_margin { 1 } else { 0 };
+        let in_bounds = layout.bounds().contains(cursor_position);
 
-        let dividers = self
-            .children
-            .iter()
-            .enumerate()
-            .zip(layout.children())
-            .filter_map(|((idx, _), layout)| {
-                if idx >= start_offset && idx < (child_len - 1 - end_offset) {
-                    Some((idx, layout.position().x + layout.bounds().width))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
+        if self.state.resizing || in_bounds {
+            let child_len = self.children.len();
+            let start_offset = if self.left_margin { 1 } else { 0 };
+            let end_offset = if self.right_margin { 1 } else { 0 };
 
-        if self.on_resize.is_some() {
-            if !self.state.resizing {
-                self.state.resize_hovering = false;
-            }
-
-            for (idx, divider) in dividers.iter() {
-                if cursor_position.x > (divider - self.leeway as f32)
-                    && cursor_position.x < (divider + self.leeway as f32)
-                {
-                    if !self.state.resize_hovering {
-                        self.state.resizing_idx = *idx;
+            let dividers = self
+                .children
+                .iter()
+                .enumerate()
+                .zip(layout.children())
+                .filter_map(|((idx, _), layout)| {
+                    if idx >= start_offset && idx < (child_len - 1 - end_offset) {
+                        Some((idx, layout.position().x + layout.bounds().width))
+                    } else {
+                        None
                     }
+                })
+                .collect::<Vec<_>>();
 
-                    self.state.resize_hovering = true;
+            if self.on_resize.is_some() {
+                if !self.state.resizing {
+                    self.state.resize_hovering = false;
+                }
+
+                for (idx, divider) in dividers.iter() {
+                    if cursor_position.x > (divider - self.leeway as f32)
+                        && cursor_position.x < (divider + self.leeway as f32)
+                    {
+                        if !self.state.resize_hovering {
+                            self.state.resizing_idx = *idx;
+                        }
+
+                        self.state.resize_hovering = true;
+                    }
                 }
             }
-        }
 
-        match event {
-            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
-                if self.state.resize_hovering {
-                    self.state.resizing = true;
-                    self.state.starting_cursor_pos = Some(cursor_position);
-                    self.state.starting_left_width = layout
-                        .children()
-                        .nth(self.state.resizing_idx)
-                        .unwrap()
-                        .bounds()
-                        .width;
-                    self.state.starting_right_width = layout
-                        .children()
-                        .nth(self.state.resizing_idx + 1)
-                        .unwrap()
-                        .bounds()
-                        .width;
-                    return;
+            match event {
+                Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                    if self.state.resize_hovering {
+                        self.state.resizing = true;
+                        self.state.starting_cursor_pos = Some(cursor_position);
+                        self.state.starting_left_width = layout
+                            .children()
+                            .nth(self.state.resizing_idx)
+                            .unwrap()
+                            .bounds()
+                            .width;
+                        self.state.starting_right_width = layout
+                            .children()
+                            .nth(self.state.resizing_idx + 1)
+                            .unwrap()
+                            .bounds()
+                            .width;
+                        return;
+                    }
                 }
-            }
-            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
-                if self.state.resizing {
-                    self.state.resizing = false;
-                    self.state.starting_cursor_pos.take();
-                    return;
+                Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
+                    if self.state.resizing {
+                        self.state.resizing = false;
+                        self.state.starting_cursor_pos.take();
+                        return;
+                    }
                 }
-            }
-            Event::Mouse(mouse::Event::CursorMoved { x, .. }) => {
-                if self.state.resizing {
-                    let delta = x - self.state.starting_cursor_pos.unwrap().x;
+                Event::Mouse(mouse::Event::CursorMoved { x, .. }) => {
+                    if self.state.resizing {
+                        let delta = x - self.state.starting_cursor_pos.unwrap().x;
 
-                    let left_width = self.state.starting_left_width;
-                    let right_width = self.state.starting_right_width;
+                        let left_width = self.state.starting_left_width;
+                        let right_width = self.state.starting_right_width;
 
-                    let max_width = left_width + right_width - 30.0;
+                        let max_width = left_width + right_width - 30.0;
 
-                    let left_width = (left_width + delta).max(30.0).min(max_width) as u16;
-                    let left_name = self.names[self.state.resizing_idx - start_offset];
-                    let right_width = (right_width - delta).max(30.0).min(max_width) as u16;
-                    let right_name = self.names[self.state.resizing_idx + 1 - start_offset];
+                        let left_width = (left_width + delta).max(30.0).min(max_width) as u16;
+                        let left_name = self.names[self.state.resizing_idx - start_offset];
+                        let right_width = (right_width - delta).max(30.0).min(max_width) as u16;
+                        let right_name = self.names[self.state.resizing_idx + 1 - start_offset];
 
-                    self.trigger_resize(left_name, left_width, right_name, right_width, messages);
-                    return;
+                        self.trigger_resize(
+                            left_name,
+                            left_width,
+                            right_name,
+                            right_width,
+                            messages,
+                        );
+                        return;
+                    }
                 }
+                _ => {}
             }
-            _ => {}
+        } else {
+            self.state.resize_hovering = false;
         }
 
         self.children
