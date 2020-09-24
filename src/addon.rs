@@ -1,7 +1,23 @@
 use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits};
 use chrono::prelude::*;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::path::PathBuf;
+
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
+pub struct RemotePackage {
+    version: String,
+    download_url: String,
+    date_time: DateTime<Utc>,
+    is_update: bool,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
+pub enum ReleaseChannel {
+    Stable,
+    Beta,
+    Alpha,
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
@@ -28,10 +44,11 @@ pub struct Addon {
     pub author: Option<String>,
     pub notes: Option<String>,
     pub version: Option<String>,
+    pub remote_releases: HashMap<ReleaseChannel, RemotePackage>,
     pub remote_version: Option<String>,
     pub remote_download_url: Option<String>,
     pub remote_website_url: Option<String>,
-    pub remote_date_time: Option<DateTime<FixedOffset>>,
+    pub remote_date_time: Option<DateTime<Utc>>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
@@ -71,6 +88,7 @@ impl Addon {
             author,
             notes,
             version,
+            remote_releases: HashMap::new(),
             remote_version: None,
             remote_download_url: None,
             remote_website_url: None,
@@ -103,7 +121,7 @@ impl Addon {
         let date_time =
             DateTime::parse_from_rfc3339(&format!("{}T15:33:15.007Z", &package.lastupdate));
         if let Ok(date_time) = date_time {
-            self.remote_date_time = Some(date_time);
+            self.remote_date_time = Some(date_time.with_timezone(&Utc));
         }
 
         if self.is_updatable() {
@@ -150,13 +168,38 @@ impl Addon {
             None
         };
 
+        for file in info.latest_files.iter() {
+            if !file.is_alternate && file.game_version_flavor == flavor {
+                match file.release_type {
+                    1 /* stable */ => {
+                        let is_update = file.id > info.file.id;
+                        let date_time = DateTime::parse_from_rfc3339(&file.file_date).map(|d| d.with_timezone(&Utc)).unwrap_or(Utc::now());
+                        let package = RemotePackage { version: file.display_name.clone(), download_url: file.download_url.clone(), date_time, is_update };
+                        self.remote_releases.insert(ReleaseChannel::Stable, package);
+                    }
+                    2 /* beta */ => {
+                        // let is_update = file.id > info.file.id;
+                        // let package = RemotePackage { version: file.display_name.clone(), download_url: file.download_url.clone(), is_update };
+                        // self.remote_releases.insert(ReleaseChannel::Beta, package);
+
+                    }
+                    3 /* alpha */ => {
+                        // let is_update = file.id > info.file.id;
+                        // let package = RemotePackage { version: file.display_name.clone(), download_url: file.download_url.clone(), is_update };
+                        // self.remote_releases.insert(ReleaseChannel::Alpha, package);
+                    }
+                    _ => {}
+                };
+            }
+        }
+
         if let Some(file) = file {
             self.remote_version = Some(file.display_name.clone());
             self.remote_download_url = Some(file.download_url.clone());
 
             let date_time = DateTime::parse_from_rfc3339(&file.file_date);
             if let Ok(date_time) = date_time {
-                self.remote_date_time = Some(date_time);
+                self.remote_date_time = Some(date_time.with_timezone(&Utc));
             }
 
             if file.id > info.file.id {
