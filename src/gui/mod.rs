@@ -3,7 +3,7 @@ mod style;
 mod update;
 
 use crate::{
-    addon::{Addon, AddonState},
+    addon::{Addon, AddonState, ReleaseChannel},
     config::{load_config, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
@@ -68,6 +68,7 @@ pub enum Message {
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
     UpdateFingerprint((String, Result<()>)),
     ThemeSelected(String),
+    ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
     UnpackedAddon((String, Result<()>)),
     UpdateWowDirectory(Option<PathBuf>),

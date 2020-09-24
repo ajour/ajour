@@ -19,6 +19,34 @@ pub enum ReleaseChannel {
     Alpha,
 }
 
+impl ReleaseChannel {
+    pub const ALL: [ReleaseChannel; 3] = [
+        ReleaseChannel::Stable,
+        ReleaseChannel::Beta,
+        ReleaseChannel::Alpha,
+    ];
+}
+
+impl Default for ReleaseChannel {
+    fn default() -> ReleaseChannel {
+        ReleaseChannel::Stable
+    }
+}
+
+impl std::fmt::Display for ReleaseChannel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ReleaseChannel::Stable => "Stable",
+                ReleaseChannel::Beta => "Beta",
+                ReleaseChannel::Alpha => "Alpha",
+            }
+        )
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
     Ajour(Option<String>),
@@ -44,6 +72,7 @@ pub struct Addon {
     pub author: Option<String>,
     pub notes: Option<String>,
     pub version: Option<String>,
+    pub release_channel: ReleaseChannel,
     pub remote_releases: HashMap<ReleaseChannel, RemotePackage>,
     pub remote_version: Option<String>,
     pub remote_download_url: Option<String>,
@@ -65,6 +94,7 @@ pub struct Addon {
     pub ignore_btn_state: iced::button::State,
     pub unignore_btn_state: iced::button::State,
     pub website_btn_state: iced::button::State,
+    pub pick_release_channel_state: iced::pick_list::State<ReleaseChannel>,
 }
 
 impl Addon {
@@ -88,6 +118,7 @@ impl Addon {
             author,
             notes,
             version,
+            release_channel: Default::default(),
             remote_releases: HashMap::new(),
             remote_version: None,
             remote_download_url: None,
@@ -107,6 +138,7 @@ impl Addon {
             ignore_btn_state: Default::default(),
             unignore_btn_state: Default::default(),
             website_btn_state: Default::default(),
+            pick_release_channel_state: Default::default(),
         }
     }
 
@@ -118,15 +150,24 @@ impl Addon {
         self.remote_download_url = Some(package.url.clone());
         self.remote_website_url = Some(package.web_url.clone());
 
+        let version = package.version.clone();
+        let download_url = package.url.clone();
         let date_time =
-            DateTime::parse_from_rfc3339(&format!("{}T15:33:15.007Z", &package.lastupdate));
-        if let Ok(date_time) = date_time {
-            self.remote_date_time = Some(date_time.with_timezone(&Utc));
-        }
+            DateTime::parse_from_rfc3339(&format!("{}T15:33:15.007Z", &package.lastupdate))
+                .map(|d| d.with_timezone(&Utc))
+                .unwrap_or(Utc::now());
 
-        if self.is_updatable() {
-            self.state = AddonState::Updatable;
-        }
+        let is_update = self.is_updatable();
+
+        let package = RemotePackage {
+            version,
+            download_url,
+            date_time,
+            is_update,
+        };
+
+        // Since Tukui does not support release channels, our default is 'stable'.
+        self.remote_releases.insert(ReleaseChannel::Stable, package);
     }
 
     /// Package from Curse.
@@ -170,25 +211,30 @@ impl Addon {
 
         for file in info.latest_files.iter() {
             if !file.is_alternate && file.game_version_flavor == flavor {
+                let is_update = file.id > info.file.id;
+                let version = file.display_name.clone();
+                let download_url = file.download_url.clone();
+                let date_time = DateTime::parse_from_rfc3339(&file.file_date)
+                    .map(|d| d.with_timezone(&Utc))
+                    .unwrap_or(Utc::now());
+                let package = RemotePackage {
+                    version,
+                    download_url,
+                    date_time,
+                    is_update,
+                };
+
                 match file.release_type {
                     1 /* stable */ => {
-                        let is_update = file.id > info.file.id;
-                        let date_time = DateTime::parse_from_rfc3339(&file.file_date).map(|d| d.with_timezone(&Utc)).unwrap_or(Utc::now());
-                        let package = RemotePackage { version: file.display_name.clone(), download_url: file.download_url.clone(), date_time, is_update };
                         self.remote_releases.insert(ReleaseChannel::Stable, package);
                     }
                     2 /* beta */ => {
-                        // let is_update = file.id > info.file.id;
-                        // let package = RemotePackage { version: file.display_name.clone(), download_url: file.download_url.clone(), is_update };
-                        // self.remote_releases.insert(ReleaseChannel::Beta, package);
-
+                        self.remote_releases.insert(ReleaseChannel::Beta, package);
                     }
                     3 /* alpha */ => {
-                        // let is_update = file.id > info.file.id;
-                        // let package = RemotePackage { version: file.display_name.clone(), download_url: file.download_url.clone(), is_update };
-                        // self.remote_releases.insert(ReleaseChannel::Alpha, package);
+                        self.remote_releases.insert(ReleaseChannel::Alpha, package);
                     }
-                    _ => {}
+                    _ => ()
                 };
             }
         }

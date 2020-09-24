@@ -509,6 +509,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.header_state.previous_sort_direction = Some(sort_direction);
             ajour.header_state.previous_sort_key = Some(sort_key);
         }
+        Message::ReleaseChannelSelected(release_channel) => {
+            log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
+
+            if let Some(expanded_addon) = ajour.expanded_addon.clone() {
+                let flavor = ajour.config.wow.flavor;
+                let addons = ajour.addons.entry(flavor).or_default();
+                if let Some(addon) = addons.iter_mut().find(|a| a.id == expanded_addon.id) {
+                    addon.release_channel = release_channel;
+                }
+            };
+        }
         Message::ThemeSelected(theme_name) => {
             log::debug!("Message::ThemeSelected({:?})", &theme_name);
 

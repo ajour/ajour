@@ -3,7 +3,8 @@
 use {
     super::{
         style, Addon, AddonState, AjourState, BackupState, ColorPalette, Config, DirectoryType,
-        Flavor, HeaderState, Interaction, Message, ScaleState, SortDirection, SortKey, ThemeState,
+        Flavor, HeaderState, Interaction, Message, ReleaseChannel, ScaleState, SortDirection,
+        SortKey, ThemeState,
     },
     crate::VERSION,
     chrono::prelude::*,
@@ -481,6 +482,19 @@ pub fn addon_data_cell(
         };
         let status_text = Text::new(status_text).size(DEFAULT_FONT_SIZE);
 
+        let release_channel_title = Text::new("Release channel").size(DEFAULT_FONT_SIZE);
+        let release_channel_title_container =
+            Container::new(release_channel_title).style(style::DefaultTextContainer(color_palette));
+        let release_channel_list = PickList::new(
+            &mut addon.pick_release_channel_state,
+            &ReleaseChannel::ALL[..],
+            Some(addon.release_channel.clone()),
+            Message::ReleaseChannelSelected,
+        )
+        .text_size(14)
+        .width(Length::Units(100))
+        .style(style::PickList(color_palette));
+
         let mut website_button = Button::new(
             &mut addon.website_btn_state,
             Text::new("Website").size(DEFAULT_FONT_SIZE),
@@ -537,12 +551,16 @@ pub fn addon_data_cell(
             .push(author_title_container)
             .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(author_text)
-            .push(Space::new(Length::Units(0), Length::Units(7)))
+            .push(Space::new(Length::Units(0), Length::Units(15)))
             .push(notes_title_container)
             .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(status_text)
             .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(notes_text)
+            .push(Space::new(Length::Units(0), Length::Units(15)))
+            .push(release_channel_title_container)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(release_channel_list)
             .push(space)
             .push(button_row)
             .push(bottom_space);
