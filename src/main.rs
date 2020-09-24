@@ -39,7 +39,7 @@ fn setup_logger() -> Result<()> {
     {
         use std::fs::OpenOptions;
 
-        let config_dir = fs::config_dir();
+        let config_dir = ajour::exports::config_dir();
 
         let log_file = OpenOptions::new()
             .write(true)

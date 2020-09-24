@@ -22,5 +22,6 @@ pub use gui::run;
 
 pub mod exports {
     pub use crate::config::Flavor;
+    pub use crate::fs::config_dir;
     pub use crate::parse::read_addon_directory;
 }
