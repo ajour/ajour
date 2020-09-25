@@ -322,8 +322,34 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.state = AjourState::Idle;
             }
 
-            if let Ok(mut addons) = result {
+            if let Ok(addons) = result {
                 log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
+
+                // Check if addons is updatable.
+                let release_channels = ajour
+                    .config
+                    .addons
+                    .release_channels
+                    .entry(flavor)
+                    .or_default();
+                let mut addons = addons
+                    .into_iter()
+                    .map(|mut a| {
+                        // Check if we have saved release channel for addon.
+                        if let Some(release_channel) = release_channels.get(&a.id) {
+                            a.release_channel = release_channel.clone();
+                        }
+
+                        // Check if addon is updatable based on release channel.
+                        if let Some(package) = a.current_release_package() {
+                            if package.is_update {
+                                a.state = AddonState::Updatable;
+                            }
+                        }
+
+                        a
+                    })
+                    .collect::<Vec<Addon>>();
 
                 // Sort the addons.
                 sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
@@ -405,7 +431,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 match result {
                     Ok(_) => {
                         addon.state = AddonState::Fingerprint;
-                        addon.version = addon.remote_version.clone();
+
+                        if let Some(package) = addon.current_release_package() {
+                            addon.version = Some(package.version.clone());
+                        }
 
                         let mut commands = vec![];
                         commands.push(Command::perform(
@@ -517,6 +546,26 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let addons = ajour.addons.entry(flavor).or_default();
                 if let Some(addon) = addons.iter_mut().find(|a| a.id == expanded_addon.id) {
                     addon.release_channel = release_channel;
+
+                    if let Some(package) = addon.remote_packages.get(&addon.release_channel) {
+                        if package.is_update {
+                            addon.state = AddonState::Updatable;
+                        } else {
+                            addon.state = AddonState::Ajour(None);
+                        }
+                    }
+
+                    // Update config with the newly changed release channel.
+                    ajour
+                        .config
+                        .addons
+                        .release_channels
+                        .entry(flavor)
+                        .or_default()
+                        .insert(addon.id.clone(), release_channel);
+
+                    // Persist the newly updated config.
+                    let _ = &ajour.config.save();
                 }
             };
         }
@@ -745,10 +794,10 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: So
         }
         (SortKey::Title, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.title
-                    .cmp(&b.title)
-                    .reverse()
-                    .then_with(|| a.remote_version.cmp(&b.remote_version))
+                a.title.cmp(&b.title).reverse().then_with(|| {
+                    a.current_release_package()
+                        .cmp(&b.current_release_package())
+                })
             });
         }
         (SortKey::LocalVersion, SortDirection::Asc) => {
@@ -768,15 +817,15 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: So
         }
         (SortKey::RemoteVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
-                a.remote_version
-                    .cmp(&b.remote_version)
+                a.current_release_package()
+                    .cmp(&b.current_release_package())
                     .then_with(|| a.cmp(&b))
             });
         }
         (SortKey::RemoteVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.remote_version
-                    .cmp(&b.remote_version)
+                a.current_release_package()
+                    .cmp(&b.current_release_package())
                     .reverse()
                     .then_with(|| a.cmp(&b))
             });

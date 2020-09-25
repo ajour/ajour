@@ -339,15 +339,20 @@ pub fn addon_data_cell(
     let default_height = Length::Units(26);
 
     // Check if current addon is expanded.
+    let addon_cloned = addon.clone();
     let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
-    let remote_version = addon
-        .remote_version
-        .clone()
-        .unwrap_or_else(|| String::from("-"));
+    let release_package = addon_cloned.current_release_package();
+    let remote_version = if let Some(package) = release_package.as_deref() {
+        package.version.clone()
+    } else {
+        Default::default()
+    };
 
     let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
     let mut title_button = Button::new(&mut addon.details_btn_state, title)
         .on_press(Interaction::Expand(addon.id.clone()));
+
+    if release_package.as_deref().is_some() {}
 
     if is_addon_expanded {
         title_button = title_button.style(style::SelectedTextButton(color_palette));
@@ -482,7 +487,7 @@ pub fn addon_data_cell(
         };
         let status_text = Text::new(status_text).size(DEFAULT_FONT_SIZE);
 
-        let release_channel_title = Text::new("Release channel").size(DEFAULT_FONT_SIZE);
+        let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
         let release_channel_title_container =
             Container::new(release_channel_title).style(style::DefaultTextContainer(color_palette));
         let release_channel_list = PickList::new(
@@ -501,7 +506,7 @@ pub fn addon_data_cell(
         )
         .style(style::DefaultBoxedButton(color_palette));
 
-        if let Some(link) = addon.remote_website_url.clone() {
+        if let Some(link) = addon.website_url.clone() {
             website_button = website_button.on_press(Interaction::OpenLink(link));
         }
 
@@ -513,8 +518,8 @@ pub fn addon_data_cell(
         )
         .style(style::DefaultBoxedButton(color_palette));
 
-        // If we have remote version on addon, enable force update.
-        if addon.remote_version.is_some() {
+        // If we have a release package on addon, enable force update.
+        if release_package.is_some() {
             force_download_button =
                 force_download_button.on_press(Interaction::Update(addon.id.clone()));
         }

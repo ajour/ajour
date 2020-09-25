@@ -1,18 +1,31 @@
 use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits};
 use chrono::prelude::*;
+use serde_derive::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RemotePackage {
-    version: String,
-    download_url: String,
-    date_time: DateTime<Utc>,
-    is_update: bool,
+    pub version: String,
+    pub download_url: String,
+    pub date_time: DateTime<Utc>,
+    pub is_update: bool,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
+impl PartialOrd for RemotePackage {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.version.cmp(&other.version))
+    }
+}
+
+impl Ord for RemotePackage {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.version.cmp(&other.version)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub enum ReleaseChannel {
     Stable,
     Beta,
@@ -73,10 +86,8 @@ pub struct Addon {
     pub notes: Option<String>,
     pub version: Option<String>,
     pub release_channel: ReleaseChannel,
-    pub remote_releases: HashMap<ReleaseChannel, RemotePackage>,
-    pub remote_version: Option<String>,
-    pub remote_download_url: Option<String>,
-    pub remote_website_url: Option<String>,
+    pub remote_packages: HashMap<ReleaseChannel, RemotePackage>,
+    pub website_url: Option<String>,
     pub remote_date_time: Option<DateTime<Utc>>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
@@ -119,10 +130,8 @@ impl Addon {
             notes,
             version,
             release_channel: Default::default(),
-            remote_releases: HashMap::new(),
-            remote_version: None,
-            remote_download_url: None,
-            remote_website_url: None,
+            remote_packages: HashMap::new(),
+            website_url: None,
             remote_date_time: None,
             path,
             dependencies,
@@ -146,9 +155,7 @@ impl Addon {
     ///
     /// This function takes a `Package` and updates self with the information.
     pub fn apply_tukui_package(&mut self, package: &tukui_api::TukuiPackage) {
-        self.remote_version = Some(package.version.clone());
-        self.remote_download_url = Some(package.url.clone());
-        self.remote_website_url = Some(package.web_url.clone());
+        self.website_url = Some(package.web_url.clone());
 
         let version = package.version.clone();
         let download_url = package.url.clone();
@@ -167,7 +174,7 @@ impl Addon {
         };
 
         // Since Tukui does not support release channels, our default is 'stable'.
-        self.remote_releases.insert(ReleaseChannel::Stable, package);
+        self.remote_packages.insert(ReleaseChannel::Stable, package);
     }
 
     /// Package from Curse.
@@ -175,7 +182,7 @@ impl Addon {
     /// This function takes a `Package` and updates self with the information
     pub fn apply_curse_package(&mut self, package: &curse_api::Package) {
         self.title = package.name.clone();
-        self.remote_website_url = Some(package.website_url.clone());
+        self.website_url = Some(package.website_url.clone());
     }
 
     pub fn apply_fingerprint_module(
@@ -226,13 +233,13 @@ impl Addon {
 
                 match file.release_type {
                     1 /* stable */ => {
-                        self.remote_releases.insert(ReleaseChannel::Stable, package);
+                        self.remote_packages.insert(ReleaseChannel::Stable, package);
                     }
                     2 /* beta */ => {
-                        self.remote_releases.insert(ReleaseChannel::Beta, package);
+                        self.remote_packages.insert(ReleaseChannel::Beta, package);
                     }
                     3 /* alpha */ => {
-                        self.remote_releases.insert(ReleaseChannel::Alpha, package);
+                        self.remote_packages.insert(ReleaseChannel::Alpha, package);
                     }
                     _ => ()
                 };
@@ -240,17 +247,14 @@ impl Addon {
         }
 
         if let Some(file) = file {
-            self.remote_version = Some(file.display_name.clone());
-            self.remote_download_url = Some(file.download_url.clone());
-
             let date_time = DateTime::parse_from_rfc3339(&file.file_date);
             if let Ok(date_time) = date_time {
                 self.remote_date_time = Some(date_time.with_timezone(&Utc));
             }
 
-            if file.id > info.file.id {
-                self.state = AddonState::Updatable;
-            }
+            // if file.id > info.file.id {
+            //     self.state = AddonState::Updatable;
+            // }
         }
         self.dependencies = dependencies;
         self.version = Some(info.file.display_name.clone());
@@ -274,19 +278,22 @@ impl Addon {
     /// remote_version: Rematch_4_10_5.zip => 4105.
     /// Since `4105` is a sub_slice of `4105` it's not updatable.
     fn is_updatable(&self) -> bool {
-        match (&self.remote_version, &self.version) {
-            (Some(rv), Some(lv)) => {
-                let srv = strip_non_digits(&rv);
-                let slv = strip_non_digits(&lv);
+        if let (Some(package), Some(version)) =
+            (self.current_release_package(), self.version.clone())
+        {
+            let srv = strip_non_digits(&package.version);
+            let slv = strip_non_digits(&version);
 
-                if let (Some(srv), Some(slv)) = (srv, slv) {
-                    return !slv.contains(&srv);
-                }
-
-                false
+            if let (Some(srv), Some(slv)) = (srv, slv) {
+                return !slv.contains(&srv);
             }
-            _ => false,
         }
+
+        false
+    }
+
+    pub fn current_release_package(&self) -> Option<&RemotePackage> {
+        self.remote_packages.get(&self.release_channel)
     }
 }
 
@@ -298,20 +305,21 @@ impl PartialEq for Addon {
 
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(
-            self.title
-                .cmp(&other.title)
-                .then_with(|| self.remote_version.cmp(&other.remote_version).reverse()),
-        )
+        Some(self.title.cmp(&other.title).then_with(|| {
+            self.current_release_package()
+                .cmp(&other.current_release_package())
+                .reverse()
+        }))
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.title
-            .cmp(&other.title)
-            .then_with(|| self.remote_version.cmp(&other.remote_version).reverse())
+        self.title.cmp(&other.title).then_with(|| {
+            self.current_release_package()
+                .cmp(&other.current_release_package())
+                .reverse()
+        })
     }
 }
-
 impl Eq for Addon {}
