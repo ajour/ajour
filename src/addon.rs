@@ -196,24 +196,6 @@ impl Addon {
             .collect();
 
         let flavor = format!("wow_{}", flavor.to_string());
-        // We try to find the latest stable release. If we can't find that.
-        // We will fallback to latest beta release. And lastly we give up.
-        let file = if let Some(file) = info.latest_files.iter().find(|f| {
-            f.release_type == 1 // 1 is stable, 2 is beta, 3 is alpha.
-                && !f.is_alternate
-                && f.game_version_flavor == flavor
-        }) {
-            Some(file)
-        } else if let Some(file) = info.latest_files.iter().find(|f| {
-            f.release_type == 2 // 1 is stable, 2 is beta, 3 is alpha.
-                && !f.is_alternate
-                && f.game_version_flavor == flavor
-        }) {
-            Some(file)
-        } else {
-            None
-        };
-
         for file in info.latest_files.iter() {
             if !file.is_alternate && file.game_version_flavor == flavor {
                 let is_update = file.id > info.file.id;
