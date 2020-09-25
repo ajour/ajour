@@ -4,7 +4,7 @@ use crate::{
     Result,
 };
 use isahc::prelude::*;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
 

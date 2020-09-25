@@ -41,13 +41,20 @@ pub struct Addon {
     pub fingerprint: Option<u32>,
 
     // States for GUI
-    pub details_btn_state: iced::button::State,
-    pub update_btn_state: iced::button::State,
-    pub force_btn_state: iced::button::State,
-    pub delete_btn_state: iced::button::State,
-    pub ignore_btn_state: iced::button::State,
-    pub unignore_btn_state: iced::button::State,
-    pub website_btn_state: iced::button::State,
+    #[cfg(feature = "gui")]
+    pub details_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub update_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub force_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub delete_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub ignore_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub unignore_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub website_btn_state: iced_native::button::State,
 }
 
 impl Addon {
@@ -82,12 +89,19 @@ impl Addon {
             tukui_id,
             curse_id,
             fingerprint: None,
+            #[cfg(feature = "gui")]
             details_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             update_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             force_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             delete_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             ignore_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             unignore_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             website_btn_state: Default::default(),
         }
     }

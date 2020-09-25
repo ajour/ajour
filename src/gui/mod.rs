@@ -2,13 +2,14 @@ mod element;
 mod style;
 mod update;
 
-use crate::{
-    addon::{Addon, AddonState},
+use crate::VERSION;
+use ajour_core::{
+    addon::Addon,
     config::{load_config, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
     parse::FingerprintCollection,
-    theme::{load_user_themes, ColorPalette, Theme},
+    theme::{load_user_themes, Theme},
     utility::needs_update,
     Result,
 };
@@ -145,7 +146,7 @@ impl Application for Ajour {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         let init_commands = vec![
             Command::perform(load_config(), Message::Parse),
-            Command::perform(needs_update(), Message::NeedsUpdate),
+            Command::perform(needs_update(VERSION), Message::NeedsUpdate),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
         ];
 

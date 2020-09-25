@@ -1,6 +1,6 @@
 use {
     super::{Ajour, AjourState, DirectoryType, Interaction, Message, SortDirection, SortKey},
-    crate::{
+    ajour_core::{
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
         config::{load_config, ColumnConfig, Flavor},

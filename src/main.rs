@@ -3,7 +3,11 @@
 // https://msdn.microsoft.com/en-us/library/4cc7ya5b.aspx for more information.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use ajour::{Result, VERSION};
+mod gui;
+
+use ajour_core::Result;
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main() {
     // Setup the logger
@@ -12,7 +16,7 @@ pub fn main() {
     log::debug!("Ajour {} has started.", VERSION);
 
     // Start the GUI
-    ajour::run();
+    gui::run();
 }
 
 #[allow(clippy::unnecessary_operation)]
@@ -39,7 +43,7 @@ fn setup_logger() -> Result<()> {
     {
         use std::fs::OpenOptions;
 
-        let config_dir = ajour::exports::config_dir();
+        let config_dir = ajour_core::fs::config_dir();
 
         let log_file = OpenOptions::new()
             .write(true)

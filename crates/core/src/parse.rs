@@ -50,14 +50,14 @@ async fn load_fingerprint_collection() -> Result<FingerprintCollection> {
     Ok(FingerprintCollection::load_or_default()?)
 }
 
-struct ParsingPatterns {
-    initial_inclusion_regex: Regex,
-    extra_inclusion_regex: Regex,
-    file_parsing_regex: HashMap<String, (regex::Regex, Regex)>,
+pub struct ParsingPatterns {
+    pub initial_inclusion_regex: Regex,
+    pub extra_inclusion_regex: Regex,
+    pub file_parsing_regex: HashMap<String, (regex::Regex, Regex)>,
 }
 
 /// File parsing regexes used for parsing the addon files.
-async fn file_parsing_regex() -> Result<ParsingPatterns> {
+pub async fn file_parsing_regex() -> Result<ParsingPatterns> {
     // Fetches game_info from memory or API if not in memory
     // Used to get regexs for various operations.
     let game_info = {

@@ -1,4 +1,5 @@
-use ajour::exports::{read_addon_directory, Flavor};
+use ajour_core::config::Flavor;
+use ajour_core::parse::read_addon_directory;
 use async_std::{
     sync::{Arc, Mutex},
     task,
