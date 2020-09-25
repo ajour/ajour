@@ -88,7 +88,6 @@ pub struct Addon {
     pub release_channel: ReleaseChannel,
     pub remote_packages: HashMap<ReleaseChannel, RemotePackage>,
     pub website_url: Option<String>,
-    pub remote_date_time: Option<DateTime<Utc>>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
     pub state: AddonState,
@@ -132,7 +131,6 @@ impl Addon {
             release_channel: Default::default(),
             remote_packages: HashMap::new(),
             website_url: None,
-            remote_date_time: None,
             path,
             dependencies,
             state: AddonState::Ajour(None),
@@ -246,16 +244,6 @@ impl Addon {
             }
         }
 
-        if let Some(file) = file {
-            let date_time = DateTime::parse_from_rfc3339(&file.file_date);
-            if let Ok(date_time) = date_time {
-                self.remote_date_time = Some(date_time.with_timezone(&Utc));
-            }
-
-            // if file.id > info.file.id {
-            //     self.state = AddonState::Updatable;
-            // }
-        }
         self.dependencies = dependencies;
         self.version = Some(info.file.display_name.clone());
         self.curse_id = Some(info.id);

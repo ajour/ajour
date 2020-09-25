@@ -468,24 +468,15 @@ pub fn addon_data_cell(
         let notes_title_container =
             Container::new(notes_title_text).style(style::DefaultTextContainer(color_palette));
 
-        let status_text: String = if let Some(date) = addon.remote_date_time {
-            // FIXME: should we init this somewere else?
-            let mut f = timeago::Formatter::new();
+        let release_date_text: String = if let Some(package) = release_package {
+            let f = timeago::Formatter::new();
             let now = Local::now();
-
-            if addon.state == AddonState::Updatable {
-                f.ago("old");
-                let readable_time = f.convert_chrono(date, now);
-                format!("New release is {}.", readable_time)
-            } else {
-                f.ago("");
-                let readable_time = f.convert_chrono(date, now);
-                format!("{} since last release.", readable_time)
-            }
+            let readable_time = f.convert_chrono(package.date_time, now);
+            format!("Release is {}", readable_time)
         } else {
             format!("")
         };
-        let status_text = Text::new(status_text).size(DEFAULT_FONT_SIZE);
+        let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
 
         let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
         let release_channel_title_container =
@@ -559,12 +550,12 @@ pub fn addon_data_cell(
             .push(Space::new(Length::Units(0), Length::Units(15)))
             .push(notes_title_container)
             .push(Space::new(Length::Units(0), Length::Units(3)))
-            .push(status_text)
-            .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(notes_text)
             .push(Space::new(Length::Units(0), Length::Units(15)))
             .push(release_channel_title_container)
-            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(Space::new(Length::Units(0), Length::Units(3)))
+            .push(release_date_text)
+            .push(Space::new(Length::Units(0), Length::Units(7)))
             .push(release_channel_list)
             .push(space)
             .push(button_row)
