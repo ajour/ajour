@@ -34,7 +34,7 @@ impl Backup for ZipBackup {
 
         let mut zip_writer = ZipWriter::new(output);
         let options = FileOptions::default()
-            .compression_method(CompressionMethod::Bzip2)
+            .compression_method(CompressionMethod::Deflated)
             .unix_permissions(0o755);
 
         let mut buffer = vec![];

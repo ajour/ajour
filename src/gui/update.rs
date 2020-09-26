@@ -617,7 +617,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ScaleUp) => {
             let prev_scale = ajour.scale_state.scale;
 
-            ajour.scale_state.scale = (prev_scale + 0.25).min(2.0);
+            ajour.scale_state.scale = (prev_scale + 0.1).min(2.0);
 
             ajour.config.scale = Some(ajour.scale_state.scale);
             let _ = ajour.config.save();
@@ -631,7 +631,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ScaleDown) => {
             let prev_scale = ajour.scale_state.scale;
 
-            ajour.scale_state.scale = (prev_scale - 0.25).max(0.5);
+            ajour.scale_state.scale = (prev_scale - 0.1).max(0.5);
 
             ajour.config.scale = Some(ajour.scale_state.scale);
             let _ = ajour.config.save();
