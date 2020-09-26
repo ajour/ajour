@@ -502,7 +502,7 @@ pub async fn update_addon_fingerprint(
     Ok(())
 }
 
-fn fingerprint_addon_dir(
+pub fn fingerprint_addon_dir(
     addon_dir: &PathBuf,
     initial_inclusion_regex: &Regex,
     extra_inclusion_regex: &Regex,
@@ -731,7 +731,7 @@ fn link_dependencies_bidirectional(sliced_addons: &mut [Addon], all_addons: &[Ad
 ///
 /// TOC format summary:
 /// https://wowwiki.fandom.com/wiki/TOC_format
-fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
+pub fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
     //direntry
     let file = if let Ok(file) = File::open(toc_path) {
         file

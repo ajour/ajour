@@ -11,6 +11,18 @@ edition = "2018"
 [features]
 gui = ['iced_native']
 
+[[bin]]
+name = "file_parsing_regex"
+
+[[bin]]
+name = "fingerprint_addon"
+
+[[bin]]
+name = "parse_addon_directory"
+
+[[bin]]
+name = "parse_toc"
+
 [dependencies]
 regex = "1.3.9"
 fancy-regex = "0.3.5" # Regex with backtracking
@@ -29,9 +41,3 @@ fern = "0.6"
 walkdir = "2.3"
 
 iced_native = { git = "https://github.com/hecrj/iced.git", rev = "fb015a85d22a7c4632bd251127a89259bfd0c346", optional = true }
-
-[[bin]]
-name = "file_parsing_regex"
-
-[[bin]]
-name = "parse_addon_directory"
