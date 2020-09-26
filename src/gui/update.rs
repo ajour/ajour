@@ -541,7 +541,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
 
-            if let Some(expanded_addon) = ajour.expanded_addon.clone() {
+            if let Some(expanded_addon) = &ajour.expanded_addon {
                 let flavor = ajour.config.wow.flavor;
                 let addons = ajour.addons.entry(flavor).or_default();
                 if let Some(addon) = addons.iter_mut().find(|a| a.id == expanded_addon.id) {
