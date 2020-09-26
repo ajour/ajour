@@ -1,4 +1,4 @@
-use crate::theme::ColorPalette;
+use ajour_core::theme::ColorPalette;
 use iced::{button, container, pick_list, scrollable, Background, Color};
 
 pub struct TextButton(pub ColorPalette);

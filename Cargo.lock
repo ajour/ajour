@@ -41,32 +41,42 @@ dependencies = [
 name = "ajour"
 version = "0.3.4"
 dependencies = [
+ "ajour-core",
  "async-std",
  "chrono",
- "dirs 3.0.1",
  "embed-resource",
- "fancy-regex",
  "fern",
- "glob",
  "iced",
  "iced_futures",
  "iced_native",
  "image",
  "isahc",
- "lazy_static",
  "log",
  "native-dialog",
  "opener",
- "percent-encoding",
+ "timeago",
+ "widgets",
+]
+
+[[package]]
+name = "ajour-core"
+version = "0.3.3"
+dependencies = [
+ "async-std",
+ "chrono",
+ "fancy-regex",
+ "fern",
+ "glob",
+ "iced_native",
+ "isahc",
+ "lazy_static",
+ "log",
  "rayon",
  "regex",
  "serde",
- "serde_derive",
  "serde_json",
  "serde_yaml",
- "timeago",
  "walkdir",
- "widgets",
  "zip",
 ]
 
@@ -658,15 +668,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dirs"
-version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "142995ed02755914747cc6ca76fc7e4583cd18578746716d0508ea6ed558b9ff"
-dependencies = [
- "dirs-sys",
-]
-
-[[package]]
 name = "dirs-sys"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -842,7 +843,7 @@ dependencies = [
  "core-foundation 0.7.0",
  "core-graphics",
  "core-text",
- "dirs 2.0.2",
+ "dirs",
  "dwrote",
  "float-ord",
  "freetype",

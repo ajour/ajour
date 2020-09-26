@@ -9,6 +9,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+## [0.3.4] - 2020-09-26
 ### Packaging
 
 - Windows: Ajour now comes bundled with the needed dependencies. This way we avoid relying on the system having Microsoft Visual C++ 2015 Redistributable.

@@ -1,7 +1,7 @@
 use crate::{config::Flavor, error::ClientError, network::request_async, Result};
 use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 /// Struct for applying tukui details to an `Addon`.

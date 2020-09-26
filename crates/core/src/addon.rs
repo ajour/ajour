@@ -1,6 +1,6 @@
 use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits};
 use chrono::prelude::*;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -97,14 +97,22 @@ pub struct Addon {
     pub fingerprint: Option<u32>,
 
     // States for GUI
-    pub details_btn_state: iced::button::State,
-    pub update_btn_state: iced::button::State,
-    pub force_btn_state: iced::button::State,
-    pub delete_btn_state: iced::button::State,
-    pub ignore_btn_state: iced::button::State,
-    pub unignore_btn_state: iced::button::State,
-    pub website_btn_state: iced::button::State,
-    pub pick_release_channel_state: iced::pick_list::State<ReleaseChannel>,
+    #[cfg(feature = "gui")]
+    pub details_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub update_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub force_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub delete_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub ignore_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub unignore_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub website_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub pick_release_channel_state: iced_native::pick_list::State<ReleaseChannel>,
 }
 
 impl Addon {
@@ -138,12 +146,19 @@ impl Addon {
             tukui_id,
             curse_id,
             fingerprint: None,
+            #[cfg(feature = "gui")]
             details_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             update_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             force_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             delete_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             ignore_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             unignore_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             website_btn_state: Default::default(),
             pick_release_channel_state: Default::default(),
         }

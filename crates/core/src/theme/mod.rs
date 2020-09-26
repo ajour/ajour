@@ -18,17 +18,17 @@ pub struct Theme {
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct ColorPalette {
     #[serde(deserialize_with = "deserialize_color_hex_string")]
-    pub primary: iced::Color,
+    pub primary: iced_native::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
-    pub secondary: iced::Color,
+    pub secondary: iced_native::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
-    pub surface: iced::Color,
+    pub surface: iced_native::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
-    pub on_surface: iced::Color,
+    pub on_surface: iced_native::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
-    pub background: iced::Color,
+    pub background: iced_native::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
-    pub error: iced::Color,
+    pub error: iced_native::Color,
 }
 
 impl Theme {
@@ -36,12 +36,12 @@ impl Theme {
         Theme {
             name: "Dark".to_string(),
             palette: ColorPalette {
-                primary: iced::Color::from_rgb(0.73, 0.52, 0.99),
-                secondary: iced::Color::from_rgb(0.88, 0.74, 0.28),
-                surface: iced::Color::from_rgb(0.12, 0.12, 0.12),
-                on_surface: iced::Color::from_rgb(0.88, 0.88, 0.88),
-                background: iced::Color::from_rgb(0.07, 0.07, 0.07),
-                error: iced::Color::from_rgb(0.76, 0.19, 0.28),
+                primary: iced_native::Color::from_rgb(0.73, 0.52, 0.99),
+                secondary: iced_native::Color::from_rgb(0.88, 0.74, 0.28),
+                surface: iced_native::Color::from_rgb(0.12, 0.12, 0.12),
+                on_surface: iced_native::Color::from_rgb(0.88, 0.88, 0.88),
+                background: iced_native::Color::from_rgb(0.07, 0.07, 0.07),
+                error: iced_native::Color::from_rgb(0.76, 0.19, 0.28),
             },
         }
     }
@@ -50,12 +50,12 @@ impl Theme {
         Theme {
             name: "Light".to_string(),
             palette: ColorPalette {
-                primary: iced::Color::from_rgb(0.39, 0.0, 0.93),
-                secondary: iced::Color::from_rgb(0.0, 0.85, 0.77),
-                surface: iced::Color::from_rgb(0.96, 0.96, 0.96),
-                on_surface: iced::Color::from_rgb(0.0, 0.0, 0.0),
-                background: iced::Color::from_rgb(1.0, 1.0, 1.0),
-                error: iced::Color::from_rgb(0.68, 0.0, 0.12),
+                primary: iced_native::Color::from_rgb(0.39, 0.0, 0.93),
+                secondary: iced_native::Color::from_rgb(0.0, 0.85, 0.77),
+                surface: iced_native::Color::from_rgb(0.96, 0.96, 0.96),
+                on_surface: iced_native::Color::from_rgb(0.0, 0.0, 0.0),
+                background: iced_native::Color::from_rgb(1.0, 1.0, 1.0),
+                error: iced_native::Color::from_rgb(0.68, 0.0, 0.12),
             },
         }
     }
@@ -82,14 +82,16 @@ impl Ord for Theme {
 }
 
 // Newtype on iced::Color so we can impl Deserialzer for it
-struct Color(iced::Color);
+struct Color(iced_native::Color);
 
 mod de {
     use super::Color;
     use serde::de::{self, Error, Unexpected, Visitor};
     use std::fmt;
 
-    pub fn deserialize_color_hex_string<'de, D>(deserializer: D) -> Result<iced::Color, D::Error>
+    pub fn deserialize_color_hex_string<'de, D>(
+        deserializer: D,
+    ) -> Result<iced_native::Color, D::Error>
     where
         D: de::Deserializer<'de>,
     {
@@ -114,7 +116,7 @@ mod de {
                     let b = u8::from_str_radix(&s[5..7], 16);
 
                     if hash == "#" && r.is_ok() && g.is_ok() && b.is_ok() {
-                        return Ok(Color(iced::Color {
+                        return Ok(Color(iced_native::Color {
                             r: r.unwrap() as f32 / 255.0,
                             g: g.unwrap() as f32 / 255.0,
                             b: b.unwrap() as f32 / 255.0,
