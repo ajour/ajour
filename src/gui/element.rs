@@ -2,10 +2,15 @@
 
 use {
     super::{
-        style, Addon, AddonState, AjourState, BackupState, ColorPalette, Config, DirectoryType,
-        Flavor, HeaderState, Interaction, Message, ScaleState, SortDirection, SortKey, ThemeState,
+        style, AjourState, BackupState, DirectoryType, HeaderState, Interaction, Message,
+        ScaleState, SortDirection, SortKey, ThemeState,
     },
     crate::VERSION,
+    ajour_core::{
+        addon::{Addon, AddonState},
+        config::{Config, Flavor},
+        theme::ColorPalette,
+    },
     chrono::prelude::*,
     iced::{
         button, scrollable, Button, Column, Container, Element, HorizontalAlignment, Length,

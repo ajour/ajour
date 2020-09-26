@@ -1,4 +1,4 @@
-use crate::{network::request_async, Result, VERSION};
+use crate::{network::request_async, Result};
 use isahc::prelude::*;
 use regex::Regex;
 use serde::Deserialize;
@@ -19,7 +19,7 @@ struct Release {
     tag_name: String,
 }
 
-pub async fn needs_update() -> Result<Option<String>> {
+pub async fn needs_update(current_version: &str) -> Result<Option<String>> {
     log::debug!("checking for application update");
 
     let client = HttpClient::new()?;
@@ -34,7 +34,7 @@ pub async fn needs_update() -> Result<Option<String>> {
 
     let release: Release = resp.json()?;
 
-    if release.tag_name != VERSION {
+    if release.tag_name != current_version {
         Ok(Some(release.tag_name))
     } else {
         Ok(None)

@@ -14,7 +14,7 @@ use crate::{
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use rayon::prelude::*;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -50,14 +50,14 @@ async fn load_fingerprint_collection() -> Result<FingerprintCollection> {
     Ok(FingerprintCollection::load_or_default()?)
 }
 
-struct ParsingPatterns {
-    initial_inclusion_regex: Regex,
-    extra_inclusion_regex: Regex,
-    file_parsing_regex: HashMap<String, (regex::Regex, Regex)>,
+pub struct ParsingPatterns {
+    pub initial_inclusion_regex: Regex,
+    pub extra_inclusion_regex: Regex,
+    pub file_parsing_regex: HashMap<String, (regex::Regex, Regex)>,
 }
 
 /// File parsing regexes used for parsing the addon files.
-async fn file_parsing_regex() -> Result<ParsingPatterns> {
+pub async fn file_parsing_regex() -> Result<ParsingPatterns> {
     // Fetches game_info from memory or API if not in memory
     // Used to get regexs for various operations.
     let game_info = {
@@ -502,7 +502,7 @@ pub async fn update_addon_fingerprint(
     Ok(())
 }
 
-fn fingerprint_addon_dir(
+pub fn fingerprint_addon_dir(
     addon_dir: &PathBuf,
     initial_inclusion_regex: &Regex,
     extra_inclusion_regex: &Regex,
@@ -731,7 +731,7 @@ fn link_dependencies_bidirectional(sliced_addons: &mut [Addon], all_addons: &[Ad
 ///
 /// TOC format summary:
 /// https://wowwiki.fandom.com/wiki/TOC_format
-fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
+pub fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
     //direntry
     let file = if let Ok(file) = File::open(toc_path) {
         file

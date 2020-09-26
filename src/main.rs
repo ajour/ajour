@@ -3,25 +3,12 @@
 // https://msdn.microsoft.com/en-us/library/4cc7ya5b.aspx for more information.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod addon;
-mod backup;
-mod config;
-mod curse_api;
-mod error;
-mod fs;
 mod gui;
-mod murmur2;
-mod network;
-mod parse;
-mod theme;
-mod tukui_api;
-mod utility;
 
-use crate::error::ClientError;
+use ajour_core::Result;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub type Result<T> = std::result::Result<T, ClientError>;
 pub fn main() {
     // Setup the logger
     setup_logger().expect("setup logging");
@@ -56,7 +43,7 @@ fn setup_logger() -> Result<()> {
     {
         use std::fs::OpenOptions;
 
-        let config_dir = fs::config_dir();
+        let config_dir = ajour_core::fs::config_dir();
 
         let log_file = OpenOptions::new()
             .write(true)
