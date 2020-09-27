@@ -177,7 +177,7 @@ impl Addon {
         let date_time =
             DateTime::parse_from_rfc3339(&format!("{}T15:33:15.007Z", &package.lastupdate))
                 .map(|d| d.with_timezone(&Utc))
-                .unwrap_or(Utc::now());
+                .unwrap_or_else(|_| Utc::now());
 
         let package = RemotePackage {
             version,
@@ -217,7 +217,7 @@ impl Addon {
                 let download_url = file.download_url.clone();
                 let date_time = DateTime::parse_from_rfc3339(&file.file_date)
                     .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or(Utc::now());
+                    .unwrap_or_else(|_| Utc::now());
                 let package = RemotePackage {
                     version,
                     download_url,

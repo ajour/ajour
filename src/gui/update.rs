@@ -337,7 +337,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     .map(|mut a| {
                         // Check if we have saved release channel for addon.
                         if let Some(release_channel) = release_channels.get(&a.id) {
-                            a.release_channel = release_channel.clone();
+                            a.release_channel = *release_channel;
                         } else {
                             // Else we try to determine the release_channel based of installed version.
                             for (release_channel, package) in &a.remote_packages {

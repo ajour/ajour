@@ -478,7 +478,7 @@ pub fn addon_data_cell(
             let readable_time = f.convert_chrono(package.date_time, now);
             format!("is {}", readable_time)
         } else {
-            format!("has no avaiable release")
+            "has no avaiable release".to_string()
         };
         let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
         let release_date_text_container = Container::new(release_date_text)
@@ -492,7 +492,7 @@ pub fn addon_data_cell(
         let release_channel_list = PickList::new(
             &mut addon.pick_release_channel_state,
             &ReleaseChannel::ALL[..],
-            Some(addon.release_channel.clone()),
+            Some(addon.release_channel),
             Message::ReleaseChannelSelected,
         )
         .text_size(14)
