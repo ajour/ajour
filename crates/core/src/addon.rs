@@ -10,7 +10,7 @@ pub struct RemotePackage {
     pub version: String,
     pub download_url: String,
     pub date_time: DateTime<Utc>,
-    pub is_update: bool,
+    pub file_id: Option<i64>,
 }
 
 impl PartialOrd for RemotePackage {
@@ -87,6 +87,7 @@ pub struct Addon {
     pub version: Option<String>,
     pub release_channel: ReleaseChannel,
     pub remote_packages: HashMap<ReleaseChannel, RemotePackage>,
+    pub file_id: Option<i64>,
     pub website_url: Option<String>,
     pub path: PathBuf,
     pub dependencies: Vec<String>,
@@ -138,6 +139,7 @@ impl Addon {
             version,
             release_channel: Default::default(),
             remote_packages: HashMap::new(),
+            file_id: None,
             website_url: None,
             path,
             dependencies,
@@ -177,13 +179,14 @@ impl Addon {
                 .map(|d| d.with_timezone(&Utc))
                 .unwrap_or(Utc::now());
 
-        let is_update = self.is_updatable();
+        // TODO: handle update of packages without file_id
+        // let is_update = self.is_updatable();
 
         let package = RemotePackage {
             version,
             download_url,
             date_time,
-            is_update,
+            file_id: None,
         };
 
         // Since Tukui does not support release channels, our default is 'stable'.
@@ -213,7 +216,6 @@ impl Addon {
         let flavor = format!("wow_{}", flavor.to_string());
         for file in info.latest_files.iter() {
             if !file.is_alternate && file.game_version_flavor == flavor {
-                let is_update = file.id > info.file.id;
                 let version = file.display_name.clone();
                 let download_url = file.download_url.clone();
                 let date_time = DateTime::parse_from_rfc3339(&file.file_date)
@@ -223,7 +225,7 @@ impl Addon {
                     version,
                     download_url,
                     date_time,
-                    is_update,
+                    file_id: Some(file.id),
                 };
 
                 match file.release_type {
@@ -244,6 +246,7 @@ impl Addon {
         self.dependencies = dependencies;
         self.version = Some(info.file.display_name.clone());
         self.curse_id = Some(info.id);
+        self.file_id = Some(info.file.id)
     }
 
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
@@ -252,6 +255,11 @@ impl Addon {
             Some(ignored) => ignored.iter().any(|i| i == &self.id),
             _ => false,
         }
+    }
+
+    /// Function returns a `bool` indicating if the `remote_package` is a update.
+    pub fn is_update(&self, remote_package: &RemotePackage) -> bool {
+        remote_package.file_id > self.file_id
     }
 
     /// Check if the `Addon` is updatable.
@@ -264,7 +272,7 @@ impl Addon {
     /// Since `4105` is a sub_slice of `4105` it's not updatable.
     fn is_updatable(&self) -> bool {
         if let (Some(package), Some(version)) =
-            (self.current_release_package(), self.version.clone())
+            (self.relevant_release_package(), self.version.clone())
         {
             let srv = strip_non_digits(&package.version);
             let slv = strip_non_digits(&version);
@@ -277,8 +285,49 @@ impl Addon {
         false
     }
 
-    pub fn current_release_package(&self) -> Option<&RemotePackage> {
-        self.remote_packages.get(&self.release_channel)
+    /// Returns the relevant release_package for the addon.
+    /// Logic is that if a release channel above the selected is newer, we return that instead.
+    pub fn relevant_release_package(&self) -> Option<&RemotePackage> {
+        let stable_package = self.remote_packages.get(&ReleaseChannel::Stable);
+        let beta_package = self.remote_packages.get(&ReleaseChannel::Beta);
+        let alpha_package = self.remote_packages.get(&ReleaseChannel::Alpha);
+
+        let stable_newer_than_beta =
+            if let (Some(stable_package), Some(beta_package)) = (stable_package, beta_package) {
+                // If stable is newer than beta, we return that instead.
+                stable_package.file_id > beta_package.file_id
+            } else {
+                false
+            };
+        let beta_newer_than_alpha =
+            if let (Some(beta_package), Some(alpha_package)) = (beta_package, alpha_package) {
+                // If beta is newer than alpha, we return that instead.
+                beta_package.file_id > alpha_package.file_id
+            } else {
+                false
+            };
+
+        match &self.release_channel {
+            ReleaseChannel::Stable => stable_package,
+            ReleaseChannel::Beta => {
+                if stable_newer_than_beta {
+                    return stable_package;
+                }
+
+                beta_package
+            }
+            ReleaseChannel::Alpha => {
+                if beta_newer_than_alpha {
+                    if stable_newer_than_beta {
+                        return stable_package;
+                    }
+
+                    return beta_package;
+                }
+
+                alpha_package
+            }
+        }
     }
 }
 
@@ -291,8 +340,8 @@ impl PartialEq for Addon {
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.title.cmp(&other.title).then_with(|| {
-            self.current_release_package()
-                .cmp(&other.current_release_package())
+            self.relevant_release_package()
+                .cmp(&other.relevant_release_package())
                 .reverse()
         }))
     }
@@ -301,8 +350,8 @@ impl PartialOrd for Addon {
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
         self.title.cmp(&other.title).then_with(|| {
-            self.current_release_package()
-                .cmp(&other.current_release_package())
+            self.relevant_release_package()
+                .cmp(&other.relevant_release_package())
                 .reverse()
         })
     }

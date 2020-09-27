@@ -338,11 +338,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         // Check if we have saved release channel for addon.
                         if let Some(release_channel) = release_channels.get(&a.id) {
                             a.release_channel = release_channel.clone();
+                        } else {
+                            // Else we try to determine the release_channel based of installed version.
+                            for (release_channel, package) in &a.remote_packages {
+                                if package.file_id == a.file_id {
+                                    a.release_channel = release_channel.to_owned();
+                                    break;
+                                }
+                            }
                         }
 
                         // Check if addon is updatable based on release channel.
-                        if let Some(package) = a.current_release_package() {
-                            if package.is_update {
+                        if let Some(package) = a.relevant_release_package() {
+                            if a.is_update(package) {
                                 a.state = AddonState::Updatable;
                             }
                         }
@@ -432,7 +440,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Ok(_) => {
                         addon.state = AddonState::Fingerprint;
 
-                        if let Some(package) = addon.current_release_package() {
+                        if let Some(package) = addon.relevant_release_package() {
                             addon.version = Some(package.version.clone());
                         }
 
@@ -547,8 +555,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if let Some(addon) = addons.iter_mut().find(|a| a.id == expanded_addon.id) {
                     addon.release_channel = release_channel;
 
-                    if let Some(package) = addon.remote_packages.get(&addon.release_channel) {
-                        if package.is_update {
+                    if let Some(package) = addon.relevant_release_package() {
+                        if addon.is_update(package) {
                             addon.state = AddonState::Updatable;
                         } else {
                             addon.state = AddonState::Ajour(None);
@@ -795,8 +803,8 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: So
         (SortKey::Title, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
                 a.title.cmp(&b.title).reverse().then_with(|| {
-                    a.current_release_package()
-                        .cmp(&b.current_release_package())
+                    a.relevant_release_package()
+                        .cmp(&b.relevant_release_package())
                 })
             });
         }
@@ -817,15 +825,15 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: So
         }
         (SortKey::RemoteVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
-                a.current_release_package()
-                    .cmp(&b.current_release_package())
+                a.relevant_release_package()
+                    .cmp(&b.relevant_release_package())
                     .then_with(|| a.cmp(&b))
             });
         }
         (SortKey::RemoteVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.current_release_package()
-                    .cmp(&b.current_release_package())
+                a.relevant_release_package()
+                    .cmp(&b.relevant_release_package())
                     .reverse()
                     .then_with(|| a.cmp(&b))
             });

@@ -3,7 +3,7 @@
 use {
     super::{
         style, AjourState, BackupState, DirectoryType, HeaderState, Interaction, Message,
-        ScaleState, SortDirection, SortKey, ThemeState, ReleaseChannel
+        ReleaseChannel, ScaleState, SortDirection, SortKey, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -345,11 +345,11 @@ pub fn addon_data_cell(
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
     let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
-    let release_package = addon_cloned.current_release_package();
+    let release_package = addon_cloned.relevant_release_package();
     let remote_version = if let Some(package) = release_package.as_deref() {
         package.version.clone()
     } else {
-        Default::default()
+        String::from("-")
     };
 
     let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
@@ -476,11 +476,15 @@ pub fn addon_data_cell(
             let f = timeago::Formatter::new();
             let now = Local::now();
             let readable_time = f.convert_chrono(package.date_time, now);
-            format!("Release is {}", readable_time)
+            format!("is {}", readable_time)
         } else {
-            format!("")
+            format!("has no avaiable release")
         };
         let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
+        let release_date_text_container = Container::new(release_date_text)
+            .center_y()
+            .padding(5)
+            .style(style::SecondaryTextContainer(color_palette));
 
         let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
         let release_channel_title_container =
@@ -537,6 +541,10 @@ pub fn addon_data_cell(
         .style(style::DeleteBoxedButton(color_palette))
         .into();
 
+        let test_row = Row::new()
+            .push(release_channel_list)
+            .push(release_date_text_container);
+
         let button_row = Row::new()
             .push(Space::new(Length::Fill, Length::Units(0)))
             .push(website_button.map(Message::Interaction))
@@ -558,9 +566,7 @@ pub fn addon_data_cell(
             .push(Space::new(Length::Units(0), Length::Units(15)))
             .push(release_channel_title_container)
             .push(Space::new(Length::Units(0), Length::Units(3)))
-            .push(release_date_text)
-            .push(Space::new(Length::Units(0), Length::Units(7)))
-            .push(release_channel_list)
+            .push(test_row)
             .push(space)
             .push(button_row)
             .push(bottom_space);
