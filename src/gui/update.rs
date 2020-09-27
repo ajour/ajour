@@ -350,7 +350,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         // Check if addon is updatable based on release channel.
                         if let Some(package) = a.relevant_release_package() {
-                            if a.is_update(package) {
+                            if a.is_updatable(package) {
                                 a.state = AddonState::Updatable;
                             }
                         }
@@ -556,7 +556,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.release_channel = release_channel;
 
                     if let Some(package) = addon.relevant_release_package() {
-                        if addon.is_update(package) {
+                        if addon.is_updatable(package) {
                             addon.state = AddonState::Updatable;
                         } else {
                             addon.state = AddonState::Ajour(None);

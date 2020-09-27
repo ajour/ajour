@@ -179,9 +179,6 @@ impl Addon {
                 .map(|d| d.with_timezone(&Utc))
                 .unwrap_or(Utc::now());
 
-        // TODO: handle update of packages without file_id
-        // let is_update = self.is_updatable();
-
         let package = RemotePackage {
             version,
             download_url,
@@ -258,23 +255,19 @@ impl Addon {
     }
 
     /// Function returns a `bool` indicating if the `remote_package` is a update.
-    pub fn is_update(&self, remote_package: &RemotePackage) -> bool {
+    pub fn is_updatable(&self, remote_package: &RemotePackage) -> bool {
+        if self.file_id.is_none() {
+            return self.is_updatable_by_version_comparison(remote_package);
+        }
+
         remote_package.file_id > self.file_id
     }
 
-    /// Check if the `Addon` is updatable.
     /// We strip both version for non digits, and then
     /// checks if `remote_version` is a sub_slice of `local_version`.
-    ///
-    /// Eg:
-    /// local_version: 4.10.5 => 4105.
-    /// remote_version: Rematch_4_10_5.zip => 4105.
-    /// Since `4105` is a sub_slice of `4105` it's not updatable.
-    fn is_updatable(&self) -> bool {
-        if let (Some(package), Some(version)) =
-            (self.relevant_release_package(), self.version.clone())
-        {
-            let srv = strip_non_digits(&package.version);
+    fn is_updatable_by_version_comparison(&self, remote_package: &RemotePackage) -> bool {
+        if let Some(version) = self.version.clone() {
+            let srv = strip_non_digits(&remote_package.version);
             let slv = strip_non_digits(&version);
 
             if let (Some(srv), Some(slv)) = (srv, slv) {
