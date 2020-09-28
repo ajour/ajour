@@ -64,6 +64,7 @@ version = "0.3.3"
 dependencies = [
  "async-std",
  "chrono",
+ "dirs 3.0.1",
  "fancy-regex",
  "fern",
  "glob",
@@ -668,6 +669,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dirs"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "142995ed02755914747cc6ca76fc7e4583cd18578746716d0508ea6ed558b9ff"
+dependencies = [
+ "dirs-sys",
+]
+
+[[package]]
 name = "dirs-sys"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -843,7 +853,7 @@ dependencies = [
  "core-foundation 0.7.0",
  "core-graphics",
  "core-text",
- "dirs",
+ "dirs 2.0.2",
  "dwrote",
  "float-ord",
  "freetype",
