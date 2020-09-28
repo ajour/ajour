@@ -372,7 +372,7 @@ pub fn addon_data_cell(
         .align_items(Align::Center);
 
     if addon.release_channel != ReleaseChannel::Stable {
-        let release_channel = Container::new(Text::new(addon.release_channel.to_string()).size(8))
+        let release_channel = Container::new(Text::new(addon.release_channel.to_string()).size(10))
             .style(style::ChannelBadge(color_palette))
             .padding(3);
 
