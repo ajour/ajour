@@ -449,3 +449,16 @@ impl pick_list::StyleSheet for PickList {
         pick_list::Style { ..active }
     }
 }
+
+pub struct ChannelBadge(pub ColorPalette);
+impl container::StyleSheet for ChannelBadge {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(self.0.surface)),
+            text_color: Some(self.0.primary),
+            border_color: self.0.primary,
+            border_radius: 3,
+            border_width: 1,
+        }
+    }
+}

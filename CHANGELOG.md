@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Added
+
+- You can now select which release channel you want each addon to use. Currently `alpha`, `beta` and `stable` is supported.
 
 ## [0.3.4] - 2020-09-26
 ### Packaging

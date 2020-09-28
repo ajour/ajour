@@ -1,4 +1,5 @@
 use super::Flavor;
+use crate::addon::ReleaseChannel;
 use de::de_ignored;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -8,12 +9,16 @@ use std::collections::HashMap;
 pub struct Addons {
     #[serde(default, deserialize_with = "de_ignored")]
     pub ignored: HashMap<Flavor, Vec<String>>,
+
+    #[serde(default)]
+    pub release_channels: HashMap<Flavor, HashMap<String, ReleaseChannel>>,
 }
 
 impl Default for Addons {
     fn default() -> Self {
         Addons {
             ignored: HashMap::new(),
+            release_channels: HashMap::new(),
         }
     }
 }

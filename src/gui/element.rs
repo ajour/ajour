@@ -3,7 +3,7 @@
 use {
     super::{
         style, AjourState, BackupState, DirectoryType, HeaderState, Interaction, Message,
-        ScaleState, SortDirection, SortKey, ThemeState,
+        ReleaseChannel, ScaleState, SortDirection, SortKey, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -13,7 +13,7 @@ use {
     },
     chrono::prelude::*,
     iced::{
-        button, scrollable, Button, Column, Container, Element, HorizontalAlignment, Length,
+        button, scrollable, Align, Button, Column, Container, Element, HorizontalAlignment, Length,
         PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
     widgets::Header,
@@ -343,15 +343,20 @@ pub fn addon_data_cell(
     let default_height = Length::Units(26);
 
     // Check if current addon is expanded.
+    let addon_cloned = addon.clone();
     let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
-    let remote_version = addon
-        .remote_version
-        .clone()
-        .unwrap_or_else(|| String::from("-"));
+    let release_package = addon_cloned.relevant_release_package();
+    let remote_version = if let Some(package) = release_package.as_deref() {
+        package.version.clone()
+    } else {
+        String::from("-")
+    };
 
     let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
     let mut title_button = Button::new(&mut addon.details_btn_state, title)
         .on_press(Interaction::Expand(addon.id.clone()));
+
+    if release_package.as_deref().is_some() {}
 
     if is_addon_expanded {
         title_button = title_button.style(style::SelectedTextButton(color_palette));
@@ -361,7 +366,20 @@ pub fn addon_data_cell(
 
     let title_button: Element<Interaction> = title_button.into();
 
-    let title_container = Container::new(title_button.map(Message::Interaction))
+    let mut title_row = Row::new()
+        .push(title_button.map(Message::Interaction))
+        .spacing(3)
+        .align_items(Align::Center);
+
+    if addon.release_channel != ReleaseChannel::Stable {
+        let release_channel = Container::new(Text::new(addon.release_channel.to_string()).size(10))
+            .style(style::ChannelBadge(color_palette))
+            .padding(3);
+
+        title_row = title_row.push(release_channel);
+    }
+
+    let title_container = Container::new(title_row)
         .height(default_height)
         .width(title_width)
         .center_y()
@@ -467,24 +485,32 @@ pub fn addon_data_cell(
         let notes_title_container =
             Container::new(notes_title_text).style(style::DefaultTextContainer(color_palette));
 
-        let status_text: String = if let Some(date) = addon.remote_date_time {
-            // FIXME: should we init this somewere else?
-            let mut f = timeago::Formatter::new();
+        let release_date_text: String = if let Some(package) = release_package {
+            let f = timeago::Formatter::new();
             let now = Local::now();
-
-            if addon.state == AddonState::Updatable {
-                f.ago("old");
-                let readable_time = f.convert_chrono(date, now);
-                format!("New release is {}.", readable_time)
-            } else {
-                f.ago("");
-                let readable_time = f.convert_chrono(date, now);
-                format!("{} since last release.", readable_time)
-            }
+            let readable_time = f.convert_chrono(package.date_time, now);
+            format!("is {}", readable_time)
         } else {
-            format!("")
+            "has no avaiable release".to_string()
         };
-        let status_text = Text::new(status_text).size(DEFAULT_FONT_SIZE);
+        let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
+        let release_date_text_container = Container::new(release_date_text)
+            .center_y()
+            .padding(5)
+            .style(style::SecondaryTextContainer(color_palette));
+
+        let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
+        let release_channel_title_container =
+            Container::new(release_channel_title).style(style::DefaultTextContainer(color_palette));
+        let release_channel_list = PickList::new(
+            &mut addon.pick_release_channel_state,
+            &ReleaseChannel::ALL[..],
+            Some(addon.release_channel),
+            Message::ReleaseChannelSelected,
+        )
+        .text_size(14)
+        .width(Length::Units(100))
+        .style(style::PickList(color_palette));
 
         let mut website_button = Button::new(
             &mut addon.website_btn_state,
@@ -492,7 +518,7 @@ pub fn addon_data_cell(
         )
         .style(style::DefaultBoxedButton(color_palette));
 
-        if let Some(link) = addon.remote_website_url.clone() {
+        if let Some(link) = addon.website_url.clone() {
             website_button = website_button.on_press(Interaction::OpenLink(link));
         }
 
@@ -504,8 +530,8 @@ pub fn addon_data_cell(
         )
         .style(style::DefaultBoxedButton(color_palette));
 
-        // If we have remote version on addon, enable force update.
-        if addon.remote_version.is_some() {
+        // If we have a release package on addon, enable force update.
+        if release_package.is_some() {
             force_download_button =
                 force_download_button.on_press(Interaction::Update(addon.id.clone()));
         }
@@ -528,6 +554,10 @@ pub fn addon_data_cell(
         .style(style::DeleteBoxedButton(color_palette))
         .into();
 
+        let test_row = Row::new()
+            .push(release_channel_list)
+            .push(release_date_text_container);
+
         let button_row = Row::new()
             .push(Space::new(Length::Fill, Length::Units(0)))
             .push(website_button.map(Message::Interaction))
@@ -542,12 +572,14 @@ pub fn addon_data_cell(
             .push(author_title_container)
             .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(author_text)
-            .push(Space::new(Length::Units(0), Length::Units(7)))
+            .push(Space::new(Length::Units(0), Length::Units(15)))
             .push(notes_title_container)
             .push(Space::new(Length::Units(0), Length::Units(3)))
-            .push(status_text)
-            .push(Space::new(Length::Units(0), Length::Units(3)))
             .push(notes_text)
+            .push(Space::new(Length::Units(0), Length::Units(15)))
+            .push(release_channel_title_container)
+            .push(Space::new(Length::Units(0), Length::Units(3)))
+            .push(test_row)
             .push(space)
             .push(button_row)
             .push(bottom_space);
