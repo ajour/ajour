@@ -69,7 +69,7 @@ For everyone else, a detailed instruction can be found [here](https://github.com
        src="./resources/themes/outrun.png">
 </p>
 
-Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.
+Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.  
 Find instructions and a variety of custom themes [here](./THEMES.md).
 
 ## Contribute
