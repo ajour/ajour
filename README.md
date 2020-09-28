@@ -100,9 +100,7 @@ I welcome contributions of any kind, because together we can make Ajour as good 
 
 ## Other addon managers
 
-[Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated list of other addon managers:
-
-https://ogri-la.github.io/wow-addon-managers/
+If Ajour isn't your cup of tea, then [Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated [list of other addon managers](https://ogri-la.github.io/wow-addon-managers/).
 
 ## Acknowledgement
 
