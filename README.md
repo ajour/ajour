@@ -15,7 +15,6 @@
 - [Screenshots](#screenshots)
 - [Features](#features)
 - [Install](#install)
-- [Configuration](#configuration)
 - [Themes](#themes)
 - [Contribute](#contribute)
 - [FAQ](#faq)
@@ -52,17 +51,6 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 Prebuilt binaries for macOS and Windows can be downloaded from the [GitHub releases](https://github.com/casperstorm/ajour/releases) page.
 
 For everyone else, a detailed instruction can be found [here](https://github.com/casperstorm/ajour/blob/master/INSTALL.md).
-
-## Configuration
-
-Ajour will generate a configuration file for you, unless it finds one in the following directory:
-
-macOS / Linux:
-- `$HOME/.config/ajour/ajour.yml`
-
-Windows:
-
-- `%APPDATA%\ajour\ajour.yml`
 
 ## Themes
 
