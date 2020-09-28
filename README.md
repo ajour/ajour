@@ -14,6 +14,16 @@
 
 Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
 
+### Table of Contents
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Install](#install)
+- [Configuration](#configuration)
+- [Themes](#themes)
+- [Contribute](#contribute)
+- [FAQ](#faq)
+- [Acknowledgement](#acknowledgement)
+
 ## Screenshots
 
 <p align="center">
