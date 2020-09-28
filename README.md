@@ -1,6 +1,6 @@
 <div align="center">
   
-# Ajour
+<h1>Ajour</h1>
 
 ![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
 ![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
