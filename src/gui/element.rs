@@ -13,7 +13,7 @@ use {
     },
     chrono::prelude::*,
     iced::{
-        button, scrollable, Button, Column, Container, Element, HorizontalAlignment, Length,
+        button, scrollable, Align, Button, Column, Container, Element, HorizontalAlignment, Length,
         PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
     widgets::Header,
@@ -366,7 +366,20 @@ pub fn addon_data_cell(
 
     let title_button: Element<Interaction> = title_button.into();
 
-    let title_container = Container::new(title_button.map(Message::Interaction))
+    let mut title_row = Row::new()
+        .push(title_button.map(Message::Interaction))
+        .spacing(3)
+        .align_items(Align::Center);
+
+    if addon.release_channel != ReleaseChannel::Stable {
+        let release_channel = Container::new(Text::new(addon.release_channel.to_string()).size(8))
+            .style(style::ChannelBadge(color_palette))
+            .padding(3);
+
+        title_row = title_row.push(release_channel);
+    }
+
+    let title_container = Container::new(title_row)
         .height(default_height)
         .width(title_width)
         .center_y()
