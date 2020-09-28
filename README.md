@@ -1,8 +1,22 @@
-<h1 align="center">Ajour</h1>
+<div align="center">
+  
+# Ajour
+
+[Install](#install) • [FAQ](#faq) • [Screenshots](#screenshots) • [Contribute](#contribute)
+
+![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
+![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
+![Discord Server](https://img.shields.io/discord/757155234500968459?color=blue&label=Discord%20Chat&logo=discord&logoColor=white&style=flat-square)
 
 ![](./resources/screenshots/ajour-banner.jpg)
 
+</div>
+
+---
+
 Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
+
+## Screenshots
 
 <p align="center">
   <img width="400"
@@ -12,9 +26,6 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
        alt="Ajour with Solarized Light theme"
        src="./resources/screenshots/ajour-0.3.0b.png">
 </p>
-
-![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
-![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
 
 ## Features
 
@@ -77,8 +88,7 @@ Instead of double clicking it, right click and choose "Open". That should succes
 
 We wanted to create an application which natively compiles to both Windows, Linux and macOS while at the same time is as performant and reliable as possible.
 
-## Community
-Ajour discussion can be found in our [Discord server](https://discord.gg/4838t9R).
+## Contribute
 
 ## Other addon managers
 
