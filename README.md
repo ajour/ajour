@@ -54,8 +54,22 @@ For everyone else, a detailed instruction can be found [here](https://github.com
 
 ## Themes
 
-Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.
+<p align="left">
+  <img width="200"
+       alt="Ajour with Ayu Dark theme"
+       src="./resources/themes/ayu-dark.png">
+    <img width="200"
+       alt="Ajour with Gruvbox Dark theme"
+       src="./resources/themes/gruvbox-dark.png">
+      <img width="200"
+       alt="Ajour with Nord theme"
+       src="./resources/themes/nord.png">
+    <img width="200"
+       alt="Ajour with Outrun theme"
+       src="./resources/themes/outrun.png">
+</p>
 
+Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.
 Find instructions and a variety of custom themes [here](./THEMES.md).
 
 ## Contribute
