@@ -2,8 +2,6 @@
   
 # Ajour
 
-[Install](#install) • [FAQ](#faq) • [Screenshots](#screenshots) • [Contribute](#contribute)
-
 ![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
 ![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
 [![Discord Server](https://img.shields.io/discord/757155234500968459?color=blue&label=Discord%20Chat&logo=discord&logoColor=white&style=flat-square)](https://discord.gg/4838t9R)
