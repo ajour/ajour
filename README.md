@@ -76,7 +76,7 @@ Find instructions and a variety of custom themes [here](./THEMES.md).
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 Ajour woudn't be here without your help.  
-I welcome contributions of any kind, because together we can make Ajour as good as possible.
+I welcome contributions of any kind, because together we can make Ajour even better.
 
 + [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=) if you are missing a vital feature.
 + I love [pull requests](https://github.com/casperstorm/ajour/pulls) and [bug reports](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
