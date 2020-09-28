@@ -1,32 +1,51 @@
-<h1 align="center">Ajour</h1>
+<div align="center">
+  
+<h1>Ajour</h1>
+
+![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
+![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
+[![Discord Server](https://img.shields.io/discord/757155234500968459?color=blue&label=Discord%20Chat&logo=discord&logoColor=white&style=flat-square)](https://discord.gg/4838t9R)
 
 ![](./resources/screenshots/ajour-banner.jpg)
 
+</div>
+
+### Table of Contents
+- [Introduction](#introduction)
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Install](#install)
+- [Themes](#themes)
+- [Contribute](#contribute)
+- [FAQ](#faq)
+- [Acknowledgement](#acknowledgement)
+
+## Introduction
 Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
 
+## Screenshots
+
 <p align="center">
-  <img width="400"
+  <img width="420"
        alt="Ajour with default Dark theme"
        src="./resources/screenshots/ajour-0.3.0a.png">
-    <img width="400"
+    <img width="420"
        alt="Ajour with Solarized Light theme"
        src="./resources/screenshots/ajour-0.3.0b.png">
 </p>
 
-![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
-![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
-
 ## Features
 
-- Addons from multiple repositories:
+- Addons will automatic be parsed and resolved from multiple repositories:
   - [tukui.org](https://www.tukui.org/)
   - [curse](https://www.curseforge.com/wow/addons)
-- Bulk addon update
-- Remove addons
-- Ignore addons
-- Retail and classic flavor support
-- [Create your own themes](./THEMES.md)
-- Ability to backup your UI
+- Support for release channels, so it's possible to select either `alpha`, `beta` or `stable` for each addon
+- Bulk addon update without any limitations
+- Remove addons and their dependencies
+- Ignore addons you don't want to update
+- Supports both Retail and Classic version of World of Warcraft
+- [Create your own custom themes](./THEMES.md)
+- Ability to backup your whole UI, including all settings from WTF
 
 ## Install 
 
@@ -34,22 +53,37 @@ Prebuilt binaries for macOS and Windows can be downloaded from the [GitHub relea
 
 For everyone else, a detailed instruction can be found [here](https://github.com/casperstorm/ajour/blob/master/INSTALL.md).
 
-## Configuration
-
-Ajour will generate a configuration file for you, unless it finds one in the following directory:
-
-macOS / Linux:
-- `$HOME/.config/ajour/ajour.yml`
-
-Windows:
-
-- `%APPDATA%\ajour\ajour.yml`
-
 ## Themes
 
-Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.
+<p align="left">
+  <img width="200"
+       alt="Ajour with Ayu Dark theme"
+       src="./resources/themes/ayu-dark.png">
+    <img width="200"
+       alt="Ajour with Gruvbox Dark theme"
+       src="./resources/themes/gruvbox-dark.png">
+      <img width="200"
+       alt="Ajour with Nord theme"
+       src="./resources/themes/nord.png">
+    <img width="200"
+       alt="Ajour with Outrun theme"
+       src="./resources/themes/outrun.png">
+</p>
 
+Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.  
 Find instructions and a variety of custom themes [here](./THEMES.md).
+
+## Contribute
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
+Ajour woudn't be here without your help.  
+I welcome contributions of any kind, because together we can make Ajour even better.
+
++ [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=) if you are missing a vital feature.
++ I love [pull requests](https://github.com/casperstorm/ajour/pulls) and [bug reports](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
++ Don't hesitate to [tell me my Rust programming is bad](https://github.com/casperstorm/ajour/issues/new), but please tell me
+  why.
++ Join our [our Discord server](https://discord.gg/4838t9R) and say hey.
 
 ## FAQ
 
@@ -73,18 +107,26 @@ We encourage you to raise an issue and tell us all about it! We want Ajour to su
 
 Instead of double clicking it, right click and choose "Open". That should successfully open Ajour.
 
+**_Where does Ajour stores its configurations?_**
+
+Ajour will generate a folder in the following directory:
+
+macOS / Linux:
+- `$HOME/.config/ajour`
+
+Windows:
+
+- `%APPDATA%\ajour`
+
+Inside this folder Ajour will keep a configuration file for storing different user settings, a log file with events from the last session, a fingerprint file with hashed fingerprints for each addon and a theme folder with custom themes.
+
 **_Why Rust?_**
 
 We wanted to create an application which natively compiles to both Windows, Linux and macOS while at the same time is as performant and reliable as possible.
 
-## Community
-Ajour discussion can be found in our [Discord server](https://discord.gg/4838t9R).
-
 ## Other addon managers
 
-[Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated list of other addon managers:
-
-https://ogri-la.github.io/wow-addon-managers/
+If Ajour isn't your cup of tea, then [Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated [list of other addon managers](https://ogri-la.github.io/wow-addon-managers/).
 
 ## Acknowledgement
 
