@@ -17,10 +17,10 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 ## Screenshots
 
 <p align="center">
-  <img width="400"
+  <img width="420"
        alt="Ajour with default Dark theme"
        src="./resources/screenshots/ajour-0.3.0a.png">
-    <img width="400"
+    <img width="420"
        alt="Ajour with Solarized Light theme"
        src="./resources/screenshots/ajour-0.3.0b.png">
 </p>
