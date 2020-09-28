@@ -106,6 +106,19 @@ We encourage you to raise an issue and tell us all about it! We want Ajour to su
 
 Instead of double clicking it, right click and choose "Open". That should successfully open Ajour.
 
+**_Where does Ajour stores its configurations?_**
+
+Ajour will generate a folder in the following directory:
+
+macOS / Linux:
+- `$HOME/.config/ajour`
+
+Windows:
+
+- `%APPDATA%\ajour`
+
+Inside this folder Ajour will keep a configuration file for storing different user settings, a log file with events from the last session, a fingerprint file with hashed fingerprints for each addon and a theme folder with custom themes.
+
 **_Why Rust?_**
 
 We wanted to create an application which natively compiles to both Windows, Linux and macOS while at the same time is as performant and reliable as possible.
