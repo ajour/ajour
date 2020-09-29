@@ -162,6 +162,7 @@ impl Addon {
             unignore_btn_state: Default::default(),
             #[cfg(feature = "gui")]
             website_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
             pick_release_channel_state: Default::default(),
         }
     }
