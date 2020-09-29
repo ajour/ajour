@@ -205,8 +205,81 @@ impl button::StyleSheet for SelectedColumnHeaderButton {
     }
 }
 
-pub struct SegmentedButton(pub ColorPalette);
-impl button::StyleSheet for SegmentedButton {
+pub struct SegmentedDisabledButton(pub ColorPalette);
+impl button::StyleSheet for SegmentedDisabledButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color::TRANSPARENT)),
+            text_color: Color {
+                a: 0.1,
+                ..self.0.primary
+            },
+            border_radius: 2,
+            border_width: 0,
+            border_color: Color {
+                a: 0.1,
+                ..self.0.primary
+            },
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style { ..self.active() }
+    }
+
+    fn disabled(&self) -> button::Style {
+        button::Style { ..self.active() }
+    }
+}
+
+pub struct SegmentedUnselectedButton(pub ColorPalette);
+impl button::StyleSheet for SegmentedUnselectedButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color::TRANSPARENT)),
+            text_color: Color {
+                a: 0.5,
+                ..self.0.primary
+            },
+            border_radius: 2,
+            border_width: 0,
+            border_color: Color {
+                a: 0.1,
+                ..self.0.primary
+            },
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.03,
+                ..self.0.primary
+            })),
+            text_color: self.0.primary,
+            ..self.active()
+        }
+    }
+
+    fn disabled(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.01,
+                ..self.0.primary
+            })),
+            text_color: Color {
+                a: 0.1,
+                ..self.0.primary
+            },
+            ..self.active()
+        }
+    }
+}
+
+pub struct SegmentedSelectedButton(pub ColorPalette);
+impl button::StyleSheet for SegmentedSelectedButton {
     fn active(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color {
@@ -215,6 +288,8 @@ impl button::StyleSheet for SegmentedButton {
             })),
             text_color: self.0.primary,
             border_radius: 2,
+            border_width: 0,
+            border_color: Color::TRANSPARENT,
             ..button::Style::default()
         }
     }
@@ -222,7 +297,7 @@ impl button::StyleSheet for SegmentedButton {
     fn hovered(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color {
-                a: 0.1,
+                a: 0.03,
                 ..self.0.primary
             })),
             text_color: self.0.primary,
