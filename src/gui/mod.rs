@@ -5,7 +5,7 @@ mod update;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, ReleaseChannel},
-    config::{load_config, Config, Flavor},
+    config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
     parse::FingerprintCollection,
@@ -50,12 +50,15 @@ pub enum Interaction {
     Unignore(String),
     Update(String),
     UpdateAll,
-    SortColumn(SortKey),
+    SortColumn(ColumnKey),
     FlavorSelected(Flavor),
     ResizeColumn(header::ResizeEvent),
     ScaleUp,
     ScaleDown,
     Backup,
+    ToggleColumn(bool, ColumnKey),
+    MoveColumnLeft(ColumnKey),
+    MoveColumnRight(ColumnKey),
 }
 
 #[derive(Debug)]
@@ -100,6 +103,7 @@ pub struct Ajour {
     classic_btn_state: button::State,
     scale_state: ScaleState,
     backup_state: BackupState,
+    column_settings: ColumnSettings,
 }
 
 impl Default for Ajour {
@@ -131,6 +135,7 @@ impl Default for Ajour {
             classic_btn_state: Default::default(),
             scale_state: Default::default(),
             backup_state: Default::default(),
+            column_settings: Default::default(),
         }
     }
 }
@@ -208,16 +213,19 @@ impl Application for Ajour {
             &mut self.new_release_button_state,
         );
 
-        let title_width = self.header_state.title.width;
-        let local_width = self.header_state.local_version.width;
-        let remote_width = self.header_state.remote_version.width;
-        let status_width = self.header_state.status.width;
+        let column_config = self.header_state.column_config();
 
         // Addon row titles is a row of titles above the addon scrollable.
         // This is to add titles above each section of the addon row, to let
         // the user easily identify what the value is.
-        let addon_row_titles =
-            element::addon_row_titles(color_palette, addons, &mut self.header_state);
+        let addon_row_titles = element::addon_row_titles(
+            color_palette,
+            addons,
+            &mut self.header_state.state,
+            &mut self.header_state.columns,
+            self.header_state.previous_column_key,
+            self.header_state.previous_sort_direction,
+        );
 
         // A scrollable list containing rows.
         // Each row holds data about a single addon.
@@ -234,15 +242,8 @@ impl Application for Ajour {
 
             // A container cell which has all data about the current addon.
             // If the addon is expanded, then this is also included in this container.
-            let addon_data_cell = element::addon_data_cell(
-                color_palette,
-                addon,
-                is_addon_expanded,
-                title_width,
-                local_width,
-                remote_width,
-                status_width,
-            );
+            let addon_data_cell =
+                element::addon_data_cell(color_palette, addon, is_addon_expanded, &column_config);
 
             // Adds the addon data cell to the scrollable.
             addons_scrollable = addons_scrollable.push(addon_data_cell);
@@ -264,6 +265,8 @@ impl Application for Ajour {
                 &mut self.theme_state,
                 &mut self.scale_state,
                 &mut self.backup_state,
+                &mut self.column_settings,
+                &column_config,
             );
 
             // Space below settings.
@@ -352,11 +355,63 @@ pub enum DirectoryType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
-pub enum SortKey {
+pub enum ColumnKey {
     Title,
     LocalVersion,
     RemoteVersion,
     Status,
+    Channel,
+    Author,
+    GameVersion,
+}
+
+impl ColumnKey {
+    fn title(self) -> String {
+        use ColumnKey::*;
+
+        let title = match self {
+            Title => "Addon",
+            LocalVersion => "Local",
+            RemoteVersion => "Remote",
+            Status => "Status",
+            Channel => "Channel",
+            Author => "Author",
+            GameVersion => "Game Version",
+        };
+
+        title.to_string()
+    }
+
+    fn as_string(self) -> String {
+        use ColumnKey::*;
+
+        let s = match self {
+            Title => "title",
+            LocalVersion => "local",
+            RemoteVersion => "remote",
+            Status => "status",
+            Channel => "channel",
+            Author => "author",
+            GameVersion => "game_version",
+        };
+
+        s.to_string()
+    }
+}
+
+impl From<&str> for ColumnKey {
+    fn from(s: &str) -> Self {
+        match s {
+            "title" => ColumnKey::Title,
+            "local" => ColumnKey::LocalVersion,
+            "remote" => ColumnKey::RemoteVersion,
+            "status" => ColumnKey::Status,
+            "channel" => ColumnKey::Channel,
+            "author" => ColumnKey::Author,
+            "game_version" => ColumnKey::GameVersion,
+            _ => panic!(format!("Unknown ColumnKey for {}", s)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -376,43 +431,168 @@ impl SortDirection {
 
 pub struct HeaderState {
     state: header::State,
-    previous_sort_key: Option<SortKey>,
+    previous_column_key: Option<ColumnKey>,
     previous_sort_direction: Option<SortDirection>,
-    title: ColumnState,
-    local_version: ColumnState,
-    remote_version: ColumnState,
-    status: ColumnState,
+    columns: Vec<ColumnState>,
+}
+
+impl HeaderState {
+    fn column_config(&self) -> Vec<(ColumnKey, Length, bool)> {
+        self.columns
+            .iter()
+            .map(|c| (c.key, c.width, c.hidden))
+            .collect()
+    }
 }
 
 impl Default for HeaderState {
     fn default() -> Self {
         Self {
             state: Default::default(),
-            previous_sort_key: None,
+            previous_column_key: None,
             previous_sort_direction: None,
-            title: ColumnState {
-                btn_state: Default::default(),
-                width: Length::Fill,
-            },
-            local_version: ColumnState {
-                btn_state: Default::default(),
-                width: Length::Units(150),
-            },
-            remote_version: ColumnState {
-                btn_state: Default::default(),
-                width: Length::Units(150),
-            },
-            status: ColumnState {
-                btn_state: Default::default(),
-                width: Length::Units(85),
-            },
+            columns: vec![
+                ColumnState {
+                    key: ColumnKey::Title,
+                    btn_state: Default::default(),
+                    width: Length::Fill,
+                    hidden: false,
+                    order: 0,
+                },
+                ColumnState {
+                    key: ColumnKey::LocalVersion,
+                    btn_state: Default::default(),
+                    width: Length::Units(150),
+                    hidden: false,
+                    order: 1,
+                },
+                ColumnState {
+                    key: ColumnKey::RemoteVersion,
+                    btn_state: Default::default(),
+                    width: Length::Units(150),
+                    hidden: false,
+                    order: 2,
+                },
+                ColumnState {
+                    key: ColumnKey::Status,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                    hidden: false,
+                    order: 3,
+                },
+                ColumnState {
+                    key: ColumnKey::Channel,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                    hidden: true,
+                    order: 4,
+                },
+                ColumnState {
+                    key: ColumnKey::Author,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                    hidden: true,
+                    order: 5,
+                },
+                ColumnState {
+                    key: ColumnKey::GameVersion,
+                    btn_state: Default::default(),
+                    width: Length::Units(110),
+                    hidden: true,
+                    order: 6,
+                },
+            ],
         }
     }
 }
 
 pub struct ColumnState {
+    key: ColumnKey,
     btn_state: button::State,
     width: Length,
+    hidden: bool,
+    order: usize,
+}
+
+impl From<&ColumnState> for ColumnConfigV2 {
+    fn from(column: &ColumnState) -> Self {
+        // Only `ColumnKey::Title` should be saved as Length::Fill -> width: None
+        let width = if let Length::Units(width) = column.width {
+            Some(width)
+        } else {
+            None
+        };
+
+        ColumnConfigV2 {
+            key: column.key.as_string(),
+            width,
+            hidden: column.hidden,
+        }
+    }
+}
+
+pub struct ColumnSettings {
+    pub scrollable_state: scrollable::State,
+    pub columns: Vec<ColumnSettingState>,
+}
+
+impl Default for ColumnSettings {
+    fn default() -> Self {
+        ColumnSettings {
+            scrollable_state: Default::default(),
+            columns: vec![
+                ColumnSettingState {
+                    key: ColumnKey::Title,
+                    order: 0,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::LocalVersion,
+                    order: 1,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::RemoteVersion,
+                    order: 2,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::Status,
+                    order: 3,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::Channel,
+                    order: 4,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::Author,
+                    order: 5,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::GameVersion,
+                    order: 6,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+            ],
+        }
+    }
+}
+
+pub struct ColumnSettingState {
+    pub key: ColumnKey,
+    pub order: usize,
+    pub up_btn_state: button::State,
+    pub down_btn_state: button::State,
 }
 
 pub struct ThemeState {

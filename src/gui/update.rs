@@ -1,9 +1,9 @@
 use {
-    super::{Ajour, AjourState, DirectoryType, Interaction, Message, SortDirection, SortKey},
+    super::{Ajour, AjourState, ColumnKey, DirectoryType, Interaction, Message, SortDirection},
     ajour_core::{
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
-        config::{load_config, ColumnConfig, Flavor},
+        config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
@@ -15,6 +15,7 @@ use {
     native_dialog::*,
     std::collections::HashMap,
     std::path::{Path, PathBuf},
+    widgets::header::ResizeEvent,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -28,14 +29,75 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config = config;
 
             // Set column widths from the config
-            let ColumnConfig::V1 {
-                local_version_width,
-                remote_version_width,
-                status_width,
-            } = ajour.config.column_config;
-            ajour.header_state.local_version.width = Length::Units(local_version_width);
-            ajour.header_state.remote_version.width = Length::Units(remote_version_width);
-            ajour.header_state.status.width = Length::Units(status_width);
+            match &ajour.config.column_config {
+                ColumnConfig::V1 {
+                    local_version_width,
+                    remote_version_width,
+                    status_width,
+                } => {
+                    ajour
+                        .header_state
+                        .columns
+                        .get_mut(1)
+                        .as_mut()
+                        .unwrap()
+                        .width = Length::Units(*local_version_width);
+                    ajour
+                        .header_state
+                        .columns
+                        .get_mut(2)
+                        .as_mut()
+                        .unwrap()
+                        .width = Length::Units(*remote_version_width);
+                    ajour
+                        .header_state
+                        .columns
+                        .get_mut(3)
+                        .as_mut()
+                        .unwrap()
+                        .width = Length::Units(*status_width);
+                }
+                ColumnConfig::V2 { columns } => {
+                    ajour.header_state.columns.iter_mut().for_each(|a| {
+                        if let Some((idx, column)) = columns
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(idx, column)| {
+                                if column.key == a.key.as_string() {
+                                    Some((idx, column))
+                                } else {
+                                    None
+                                }
+                            })
+                            .next()
+                        {
+                            a.width = column.width.map_or(Length::Fill, Length::Units);
+                            a.hidden = column.hidden;
+                            a.order = idx;
+                        }
+                    });
+
+                    ajour.column_settings.columns.iter_mut().for_each(|a| {
+                        if let Some(idx) = columns
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(idx, column)| {
+                                if column.key == a.key.as_string() {
+                                    Some(idx)
+                                } else {
+                                    None
+                                }
+                            })
+                            .next()
+                        {
+                            a.order = idx;
+                        }
+                    });
+
+                    ajour.header_state.columns.sort_by_key(|c| c.order);
+                    ajour.column_settings.columns.sort_by_key(|c| c.order);
+                }
+            }
 
             // Use theme from config. Set to "Dark" if not defined.
             ajour.theme_state.current_theme_name =
@@ -373,9 +435,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     .collect::<Vec<Addon>>();
 
                 // Sort the addons.
-                sort_addons(&mut addons, SortDirection::Desc, SortKey::Status);
+                sort_addons(&mut addons, SortDirection::Desc, ColumnKey::Status);
                 ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
-                ajour.header_state.previous_sort_key = Some(SortKey::Status);
+                ajour.header_state.previous_column_key = Some(ColumnKey::Status);
 
                 if flavor == ajour.config.wow.flavor {
                     // Set the state if flavor matches.
@@ -509,7 +571,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.needs_update = newer_version;
         }
-        Message::Interaction(Interaction::SortColumn(sort_key)) => {
+        Message::Interaction(Interaction::SortColumn(column_key)) => {
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
@@ -519,8 +581,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // flip the sort direction.
             let mut sort_direction = SortDirection::Asc;
 
-            if let Some(previous_sort_key) = ajour.header_state.previous_sort_key {
-                if sort_key == previous_sort_key {
+            if let Some(previous_column_key) = ajour.header_state.previous_column_key {
+                if column_key == previous_column_key {
                     if let Some(previous_sort_direction) =
                         ajour.header_state.previous_sort_direction
                     {
@@ -531,23 +593,23 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Exception would be first time ever sorting and sorting by title.
             // Since its already sorting in Asc by default, we should sort Desc.
-            if ajour.header_state.previous_sort_key.is_none() && sort_key == SortKey::Title {
+            if ajour.header_state.previous_column_key.is_none() && column_key == ColumnKey::Title {
                 sort_direction = SortDirection::Desc;
             }
 
             log::debug!(
                 "Interaction::SortColumn({:?}, {:?})",
-                sort_key,
+                column_key,
                 sort_direction
             );
 
             let flavor = ajour.config.wow.flavor;
             let mut addons = ajour.addons.entry(flavor).or_default();
 
-            sort_addons(&mut addons, sort_direction, sort_key);
+            sort_addons(&mut addons, sort_direction, column_key);
 
             ajour.header_state.previous_sort_direction = Some(sort_direction);
-            ajour.header_state.previous_sort_key = Some(sort_key);
+            ajour.header_state.previous_column_key = Some(column_key);
         }
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
@@ -598,34 +660,44 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.theme_state.themes.push((theme.name.clone(), theme));
             }
         }
-        Message::Interaction(Interaction::ResizeColumn(event)) => {
-            let column_config = &mut ajour.config.column_config;
+        Message::Interaction(Interaction::ResizeColumn(event)) => match event {
+            ResizeEvent::ResizeColumn {
+                left_name,
+                left_width,
+                right_name,
+                right_width,
+            } => {
+                let left_key = ColumnKey::from(left_name.as_str());
+                let right_key = ColumnKey::from(right_name.as_str());
 
-            match event.right_name {
-                "local" => {
-                    ajour.header_state.local_version.width = Length::Units(event.right_width);
+                let column_config = &mut ajour.config.column_config;
 
-                    column_config.update_width(event.right_name, event.right_width);
+                if let Some(column) = ajour
+                    .header_state
+                    .columns
+                    .iter_mut()
+                    .find(|c| c.key == left_key && left_key != ColumnKey::Title)
+                {
+                    column.width = Length::Units(left_width);
+
+                    column_config.update_width(&left_name, left_width);
                 }
-                "remote" => {
-                    ajour.header_state.local_version.width = Length::Units(event.left_width);
-                    ajour.header_state.remote_version.width = Length::Units(event.right_width);
 
-                    column_config.update_width(event.left_name, event.left_width);
-                    column_config.update_width(event.right_name, event.right_width);
-                }
-                "status" => {
-                    ajour.header_state.remote_version.width = Length::Units(event.left_width);
-                    ajour.header_state.status.width = Length::Units(event.right_width);
+                if let Some(column) = ajour
+                    .header_state
+                    .columns
+                    .iter_mut()
+                    .find(|c| c.key == right_key && right_key != ColumnKey::Title)
+                {
+                    column.width = Length::Units(right_width);
 
-                    column_config.update_width(event.left_name, event.left_width);
-                    column_config.update_width(event.right_name, event.right_width);
+                    column_config.update_width(&right_name, right_width);
                 }
-                _ => {}
             }
-
-            let _ = ajour.config.save();
-        }
+            ResizeEvent::Finished => {
+                let _ = ajour.config.save();
+            }
+        },
         Message::Interaction(Interaction::ScaleUp) => {
             let prev_scale = ajour.scale_state.scale;
 
@@ -720,6 +792,116 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.state = AjourState::Error(error);
         }
+        Message::Interaction(Interaction::ToggleColumn(is_checked, key)) => {
+            // We can't untoggle the addon title column
+            if key == ColumnKey::Title {
+                return Ok(Command::none());
+            }
+
+            log::debug!("Interaction::ToggleColumn({}, {:?})", is_checked, key);
+
+            if is_checked {
+                if let Some(column) = ajour.header_state.columns.iter_mut().find(|c| c.key == key) {
+                    column.hidden = false;
+                }
+            } else if let Some(column) =
+                ajour.header_state.columns.iter_mut().find(|c| c.key == key)
+            {
+                column.hidden = true;
+            }
+
+            // Persist changes to config
+            {
+                let columns: Vec<_> = ajour
+                    .header_state
+                    .columns
+                    .iter()
+                    .map(ColumnConfigV2::from)
+                    .collect();
+
+                ajour.config.column_config = ColumnConfig::V2 { columns };
+
+                let _ = ajour.config.save();
+            }
+        }
+        Message::Interaction(Interaction::MoveColumnLeft(key)) => {
+            log::debug!("Interaction::MoveColumnLeft({:?})", key);
+
+            // Update header state ordering and save to config
+            if let Some(idx) = ajour.header_state.columns.iter().position(|c| c.key == key) {
+                ajour.header_state.columns.swap(idx, idx - 1);
+
+                ajour
+                    .header_state
+                    .columns
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, column)| column.order = idx);
+
+                // Persist changes to config
+                {
+                    let columns: Vec<_> = ajour
+                        .header_state
+                        .columns
+                        .iter()
+                        .map(ColumnConfigV2::from)
+                        .collect();
+
+                    ajour.config.column_config = ColumnConfig::V2 { columns };
+
+                    let _ = ajour.config.save();
+                }
+            }
+
+            // Update column ordering in settings
+            if let Some(idx) = ajour
+                .column_settings
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.column_settings.columns.swap(idx, idx - 1);
+            }
+        }
+        Message::Interaction(Interaction::MoveColumnRight(key)) => {
+            log::debug!("Interaction::MoveColumnRight({:?})", key);
+
+            // Update header state ordering and save to config
+            if let Some(idx) = ajour.header_state.columns.iter().position(|c| c.key == key) {
+                ajour.header_state.columns.swap(idx, idx + 1);
+
+                ajour
+                    .header_state
+                    .columns
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, column)| column.order = idx);
+
+                // Persist changes to config
+                {
+                    let columns: Vec<_> = ajour
+                        .header_state
+                        .columns
+                        .iter()
+                        .map(ColumnConfigV2::from)
+                        .collect();
+
+                    ajour.config.column_config = ColumnConfig::V2 { columns };
+
+                    let _ = ajour.config.save();
+                }
+            }
+
+            // Update column ordering in settings
+            if let Some(idx) = ajour
+                .column_settings
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.column_settings.columns.swap(idx, idx + 1);
+            }
+        }
         Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
             log::error!("{}", error);
 
@@ -799,12 +981,12 @@ async fn perform_unpack_addon(
     )
 }
 
-fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: SortKey) {
-    match (sort_key, sort_direction) {
-        (SortKey::Title, SortDirection::Asc) => {
+fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {
+    match (column_key, sort_direction) {
+        (ColumnKey::Title, SortDirection::Asc) => {
             addons.sort();
         }
-        (SortKey::Title, SortDirection::Desc) => {
+        (ColumnKey::Title, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
                 a.title.cmp(&b.title).reverse().then_with(|| {
                     a.relevant_release_package()
@@ -812,14 +994,14 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: So
                 })
             });
         }
-        (SortKey::LocalVersion, SortDirection::Asc) => {
+        (ColumnKey::LocalVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
                 a.version
                     .cmp(&b.version)
                     .then_with(|| a.title.cmp(&b.title))
             });
         }
-        (SortKey::LocalVersion, SortDirection::Desc) => {
+        (ColumnKey::LocalVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
                 a.version
                     .cmp(&b.version)
@@ -827,14 +1009,14 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: So
                     .then_with(|| a.title.cmp(&b.title))
             });
         }
-        (SortKey::RemoteVersion, SortDirection::Asc) => {
+        (ColumnKey::RemoteVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
                 a.relevant_release_package()
                     .cmp(&b.relevant_release_package())
                     .then_with(|| a.cmp(&b))
             });
         }
-        (SortKey::RemoteVersion, SortDirection::Desc) => {
+        (ColumnKey::RemoteVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
                 a.relevant_release_package()
                     .cmp(&b.relevant_release_package())
@@ -842,11 +1024,32 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, sort_key: So
                     .then_with(|| a.cmp(&b))
             });
         }
-        (SortKey::Status, SortDirection::Asc) => {
+        (ColumnKey::Status, SortDirection::Asc) => {
             addons.sort_by(|a, b| a.state.cmp(&b.state).then_with(|| a.cmp(&b)));
         }
-        (SortKey::Status, SortDirection::Desc) => {
+        (ColumnKey::Status, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.state.cmp(&b.state).reverse().then_with(|| a.cmp(&b)));
+        }
+        (ColumnKey::Channel, SortDirection::Asc) => addons.sort_by(|a, b| {
+            a.release_channel
+                .to_string()
+                .cmp(&b.release_channel.to_string())
+        }),
+        (ColumnKey::Channel, SortDirection::Desc) => addons.sort_by(|a, b| {
+            a.release_channel
+                .to_string()
+                .cmp(&b.release_channel.to_string())
+                .reverse()
+        }),
+        (ColumnKey::Author, SortDirection::Asc) => addons.sort_by(|a, b| a.author.cmp(&b.author)),
+        (ColumnKey::Author, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.author.cmp(&b.author).reverse())
+        }
+        (ColumnKey::GameVersion, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.game_version.cmp(&b.game_version))
+        }
+        (ColumnKey::GameVersion, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.game_version.cmp(&b.game_version).reverse())
         }
     }
 }

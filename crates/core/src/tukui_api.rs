@@ -11,6 +11,7 @@ pub struct TukuiPackage {
     pub url: String,
     pub web_url: String,
     pub lastupdate: String,
+    pub patch: Option<String>,
 }
 
 /// Return the tukui API endpoint.
