@@ -10,7 +10,7 @@ use {
         Result,
     },
     async_std::sync::{Arc, Mutex},
-    iced::{button, Command, Length},
+    iced::{Command, Length},
     isahc::HttpClient,
     native_dialog::*,
     std::collections::HashMap,
@@ -115,13 +115,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
-            let addon = addons.iter().find(|a| a.id == id);
+            let addon = addons.iter_mut().find(|a| a.id == id);
 
             if let Some(addon) = addon {
-                // Push addon to ignored addons.
-                let ignored_addon = (addon.clone(), button::State::new());
-                let ignored_addons = ajour.ignored_addons.entry(flavor).or_default();
-                ignored_addons.push(ignored_addon);
+                addon.state = AddonState::Ignored;
 
                 // Update the config.
                 ajour
@@ -141,8 +138,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Update ajour state.
             let flavor = ajour.config.wow.flavor;
-            let ignored_addons = ajour.ignored_addons.entry(flavor).or_default();
-            ignored_addons.retain(|(a, _)| a.id != id);
+            let addons = ajour.addons.entry(flavor).or_default();
+            if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
+                // Check if addon is updatable.
+                if let Some(package) = addon.relevant_release_package() {
+                    if addon.is_updatable(package) {
+                        addon.state = AddonState::Updatable;
+                    } else {
+                        addon.state = AddonState::Ajour(None);
+                    }
+                }
+            };
 
             // Update the config.
             let ignored_addon_ids = ajour.config.addons.ignored.entry(flavor).or_default();
@@ -325,6 +331,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Ok(addons) = result {
                 log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
 
+                // Ignored addon ids.
+                let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
+
                 // Check if addons is updatable.
                 let release_channels = ajour
                     .config
@@ -355,6 +364,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             }
                         }
 
+                        if ignored_ids.iter().any(|ia| &a.id == ia) {
+                            a.state = AddonState::Ignored;
+                        };
+
                         a
                     })
                     .collect::<Vec<Addon>>();
@@ -368,16 +381,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // Set the state if flavor matches.
                     ajour.state = AjourState::Idle;
                 }
-
-                // Find and push the ignored addons.
-                let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
-                let ignored_addons: Vec<_> = addons
-                    .iter()
-                    .filter(|a| ignored_ids.iter().any(|i| i == &a.id))
-                    .map(|a| (a.clone(), button::State::new()))
-                    .collect::<Vec<(Addon, button::State)>>();
-
-                ajour.ignored_addons.insert(flavor, ignored_addons);
 
                 // Insert the addons into the HashMap.
                 ajour.addons.insert(flavor, addons);
@@ -555,6 +558,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if let Some(addon) = addons.iter_mut().find(|a| a.id == expanded_addon.id) {
                     addon.release_channel = release_channel;
 
+                    // Check if addon is updatable.
                     if let Some(package) = addon.relevant_release_package() {
                         if addon.is_updatable(package) {
                             addon.state = AddonState::Updatable;

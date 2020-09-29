@@ -27,8 +27,6 @@ static DEFAULT_PADDING: u16 = 10;
 pub fn settings_container<'a>(
     color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
-    ignored_addons_scrollable_state: &'a mut scrollable::State,
-    ignored_addons: &'a mut Vec<(Addon, button::State)>,
     config: &Config,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
@@ -164,50 +162,6 @@ pub fn settings_container<'a>(
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
-    // Title for the ignored addons scrollable.
-    let ignored_addons_title = Text::new("Ignored addons").size(14);
-    let ignored_addons_title_row = Row::new()
-        .push(ignored_addons_title)
-        .padding(DEFAULT_PADDING);
-    let mut scrollable = ignored_addon_scrollable(color_palette, ignored_addons_scrollable_state)
-        .width(Length::Fill);
-
-    if ignored_addons.is_empty() {
-        let title =
-            Text::new("If you tell Ajour to ignore an addon, it will only appear in this list.")
-                .size(14);
-        let title_container = Container::new(title)
-            .center_x()
-            .center_y()
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
-        let row = Row::new()
-            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-            .push(title_container);
-        scrollable = scrollable.push(row);
-    }
-
-    for (addon, state) in ignored_addons {
-        let title = addon.title.clone();
-        let title_text = Text::new(title).size(14);
-        let title_container = Container::new(title_text)
-            .height(Length::Units(26))
-            .width(Length::FillPortion(1))
-            .center_y()
-            .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
-        let unignore_button: Element<Interaction> =
-            Button::new(state, Text::new("Unignore").size(DEFAULT_FONT_SIZE))
-                .style(style::DefaultBoxedButton(color_palette))
-                .on_press(Interaction::Unignore(addon.id.clone()))
-                .into();
-        let row = Row::new()
-            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-            .push(unignore_button.map(Message::Interaction))
-            .push(title_container);
-
-        scrollable = scrollable.push(row);
-    }
-
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
         let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
@@ -310,8 +264,6 @@ pub fn settings_container<'a>(
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_directory_row)
-        .push(ignored_addons_title_row)
-        .push(scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
@@ -450,6 +402,13 @@ pub fn addon_data_cell(
             .center_x()
             .padding(5)
             .style(style::AddonRowSecondaryTextContainer(color_palette)),
+        AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
+            .height(default_height)
+            .width(status_width)
+            .center_y()
+            .center_x()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette)),
     };
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
@@ -538,13 +497,24 @@ pub fn addon_data_cell(
 
         let force_download_button: Element<Interaction> = force_download_button.into();
 
-        let ignore_button: Element<Interaction> = Button::new(
-            &mut addon.ignore_btn_state,
-            Text::new("Ignore").size(DEFAULT_FONT_SIZE),
-        )
-        .on_press(Interaction::Ignore(addon.id.clone()))
-        .style(style::DefaultBoxedButton(color_palette))
-        .into();
+        let is_ignored = addon.state == AddonState::Ignored;
+        let ignore_button_text = if is_ignored {
+            Text::new("Unignore").size(DEFAULT_FONT_SIZE)
+        } else {
+            Text::new("Ignore").size(DEFAULT_FONT_SIZE)
+        };
+
+        let mut ignore_button = Button::new(&mut addon.ignore_btn_state, ignore_button_text)
+            .on_press(Interaction::Ignore(addon.id.clone()))
+            .style(style::DefaultBoxedButton(color_palette));
+
+        if is_ignored {
+            ignore_button = ignore_button.on_press(Interaction::Unignore(addon.id.clone()));
+        } else {
+            ignore_button = ignore_button.on_press(Interaction::Ignore(addon.id.clone()));
+        }
+
+        let ignore_button: Element<Interaction> = ignore_button.into();
 
         let delete_button: Element<Interaction> = Button::new(
             &mut addon.delete_btn_state,
@@ -1006,14 +976,4 @@ pub fn addon_scrollable(
         .spacing(1)
         .height(Length::FillPortion(1))
         .style(style::Scrollable(color_palette))
-}
-
-pub fn ignored_addon_scrollable(
-    color_palette: ColorPalette,
-    state: &'_ mut scrollable::State,
-) -> Scrollable<'_, Message> {
-    Scrollable::new(state)
-        .spacing(1)
-        .height(Length::FillPortion(1))
-        .style(style::SecondaryScrollable(color_palette))
 }

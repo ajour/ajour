@@ -85,8 +85,6 @@ pub struct Ajour {
     config: Config,
     directory_btn_state: button::State,
     expanded_addon: Option<Addon>,
-    ignored_addons: HashMap<Flavor, Vec<(Addon, button::State)>>,
-    ignored_addons_scrollable_state: scrollable::State,
     is_showing_settings: bool,
     needs_update: Option<String>,
     new_release_button_state: button::State,
@@ -112,8 +110,6 @@ impl Default for Ajour {
             config: Config::default(),
             directory_btn_state: Default::default(),
             expanded_addon: None,
-            ignored_addons: Default::default(),
-            ignored_addons_scrollable_state: Default::default(),
             is_showing_settings: false,
             needs_update: None,
             new_release_button_state: Default::default(),
@@ -193,12 +189,6 @@ impl Application for Ajour {
         let flavor = self.config.wow.flavor;
         let addons = self.addons.entry(flavor).or_default();
 
-        // Get the ignored addons ids.
-        let ignored_strings = self.config.addons.ignored.get(&flavor).cloned();
-
-        // Get ignored addons for flavor.
-        let ignored_addons = self.ignored_addons.entry(flavor).or_default();
-
         // Check if we have any addons.
         let has_addons = !&addons.is_empty();
 
@@ -235,10 +225,7 @@ impl Application for Ajour {
             element::addon_scrollable(color_palette, &mut self.addons_scrollable_state);
 
         // Loops though the addons.
-        for addon in &mut addons
-            .iter_mut()
-            .filter(|a| !a.is_ignored(ignored_strings.as_ref()))
-        {
+        for addon in addons {
             // Checks if the current addon is expanded.
             let is_addon_expanded = match &self.expanded_addon {
                 Some(expanded_addon) => addon.id == expanded_addon.id,
@@ -273,8 +260,6 @@ impl Application for Ajour {
             let settings_container = element::settings_container(
                 color_palette,
                 &mut self.directory_btn_state,
-                &mut self.ignored_addons_scrollable_state,
-                ignored_addons,
                 &cloned_config,
                 &mut self.theme_state,
                 &mut self.scale_state,
