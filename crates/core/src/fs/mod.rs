@@ -24,7 +24,7 @@ pub fn config_dir() -> PathBuf {
     let config_dir = PathBuf::from(&home).join(".config/ajour");
 
     if !config_dir.exists() {
-        fs::create_dir(&config_dir).expect("could not create folder $HOME/.config/ajour");
+        fs::create_dir_all(&config_dir).expect("could not create folder $HOME/.config/ajour");
         log::debug!("config directory created");
     }
 
