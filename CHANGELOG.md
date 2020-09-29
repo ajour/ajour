@@ -12,6 +12,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 - You can now select which release channel you want each addon to use. Currently `alpha`, `beta` and `stable` is supported.
 
+### Changed
+- Reworked the controls for selected flavor. It should now be more obvious what is selected and what you can select.
+
 ### Fixed
 
 - Ajour now creates the `.config` dir if it does not exist on macOS and Linux.
