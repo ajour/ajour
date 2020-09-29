@@ -288,15 +288,32 @@ pub fn settings_container<'a, 'b>(
                 .any(|(key, _, hidden)| key == &column.key && !hidden)
                 || column_key == ColumnKey::Title;
 
-            let mut left_button = Button::new(&mut column.up_btn_state, Text::new(" ▲ ").size(11))
-                .style(style::DefaultButton(color_palette));
+            let mut left_button = Button::new(
+                &mut column.up_btn_state,
+                Text::new(" ▲ ").size(11).color(if !is_first {
+                    color_palette.primary
+                } else {
+                    let mut color = color_palette.primary;
+                    color.a = 0.20;
+                    color
+                }),
+            )
+            .style(style::DefaultButton(color_palette));
             if !is_first {
                 left_button = left_button.on_press(Interaction::MoveColumnLeft(column_key));
             }
 
-            let mut right_button =
-                Button::new(&mut column.down_btn_state, Text::new(" ▼ ").size(11))
-                    .style(style::DefaultButton(color_palette));
+            let mut right_button = Button::new(
+                &mut column.down_btn_state,
+                Text::new(" ▼ ").size(11).color(if !is_last {
+                    color_palette.primary
+                } else {
+                    let mut color = color_palette.primary;
+                    color.a = 0.20;
+                    color
+                }),
+            )
+            .style(style::DefaultButton(color_palette));
             if !is_last {
                 right_button = right_button.on_press(Interaction::MoveColumnRight(column_key));
             }
@@ -311,12 +328,18 @@ pub fn settings_container<'a, 'b>(
                 .center_x()
                 .center_y();
 
-            let checkbox = Checkbox::new(is_checked, title.clone(), move |is_checked| {
+            let mut checkbox = Checkbox::new(is_checked, title.clone(), move |is_checked| {
                 Message::Interaction(Interaction::ToggleColumn(is_checked, column_key))
             })
             .text_size(DEFAULT_FONT_SIZE)
-            .spacing(5)
-            .style(style::DefaultCheckbox(color_palette));
+            .spacing(5);
+
+            if column_key == ColumnKey::Title {
+                checkbox = checkbox.style(style::AlwaysCheckedCheckbox(color_palette));
+            } else {
+                checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
+            }
+
             let checkbox_container = Container::new(checkbox).padding(5);
 
             let row = Row::new()

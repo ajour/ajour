@@ -468,11 +468,14 @@ impl checkbox::StyleSheet for DefaultCheckbox {
     fn active(&self, _is_checked: bool) -> checkbox::Style {
         checkbox::Style {
             background: Background::Color(self.0.surface),
-            checkmark_color: self.0.primary,
+            checkmark_color: Color {
+                a: 0.70,
+                ..self.0.primary
+            },
             border_radius: 3,
             border_width: 2,
             border_color: Color {
-                a: 0.03,
+                a: 0.70,
                 ..self.0.primary
             },
         }
@@ -484,10 +487,30 @@ impl checkbox::StyleSheet for DefaultCheckbox {
             checkmark_color: self.0.primary,
             border_radius: 3,
             border_width: 2,
+            border_color: self.0.primary,
+        }
+    }
+}
+
+pub struct AlwaysCheckedCheckbox(pub ColorPalette);
+impl checkbox::StyleSheet for AlwaysCheckedCheckbox {
+    fn active(&self, _is_checked: bool) -> checkbox::Style {
+        checkbox::Style {
+            background: Background::Color(self.0.surface),
+            checkmark_color: Color {
+                a: 0.20,
+                ..self.0.primary
+            },
+            border_radius: 3,
+            border_width: 2,
             border_color: Color {
-                a: 0.1,
+                a: 0.20,
                 ..self.0.primary
             },
         }
+    }
+
+    fn hovered(&self, _is_checked: bool) -> checkbox::Style {
+        self.active(_is_checked)
     }
 }
