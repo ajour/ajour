@@ -36,7 +36,7 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 
 ## Features
 
-- Addons will automatic be parsed and resolved from multiple repositories:
+- Addons will be parsed automatically and resolved from multiple repositories:
   - [tukui.org](https://www.tukui.org/)
   - [curse](https://www.curseforge.com/wow/addons)
 - Support for release channels, so it's possible to select either `alpha`, `beta` or `stable` for each addon
@@ -76,7 +76,7 @@ Find instructions and a variety of custom themes [here](./THEMES.md).
 ## Contribute
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-Ajour woudn't be here without your help.  
+Ajour wouldn't be here without your help.  
 I welcome contributions of any kind, because together we can make Ajour even better.
 
 + [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=) if you are missing a vital feature.
@@ -107,7 +107,7 @@ We encourage you to raise an issue and tell us all about it! We want Ajour to su
 
 Instead of double clicking it, right click and choose "Open". That should successfully open Ajour.
 
-**_Where does Ajour stores its configurations?_**
+**_Where does Ajour store its configuration?_**
 
 Ajour will generate a folder in the following directory:
 
