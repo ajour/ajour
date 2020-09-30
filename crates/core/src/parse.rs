@@ -171,7 +171,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             // If we have a stored fingerprint on disk, we use that.
             if let Some(fingerprint) = fingerprints
                 .iter()
-                .find(|f| &f.title == dir_name && &f.modified == &modified)
+                .find(|f| &f.title == dir_name && f.modified == modified)
             {
                 let _ = num_cached.fetch_add(1, Ordering::SeqCst);
                 fingerprint.to_owned()
