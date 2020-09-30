@@ -20,6 +20,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::SystemTime;
 
 lazy_static::lazy_static! {
     static ref CACHED_GAME_INFO: Mutex<Option<GameInfo>> = Mutex::new(None);
@@ -29,6 +30,7 @@ lazy_static::lazy_static! {
 pub struct Fingerprint {
     pub title: String,
     pub hash: Option<u32>,
+    pub modified: SystemTime,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -160,8 +162,17 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .par_iter() // Easy parallelization
         .map(|dir_name| {
             let addon_dir = root_dir.join(dir_name);
+            let modified = if let Ok(metadata) = addon_dir.metadata() {
+                metadata.modified().unwrap_or_else(|_| SystemTime::now())
+            } else {
+                SystemTime::now()
+            };
+
             // If we have a stored fingerprint on disk, we use that.
-            if let Some(fingerprint) = fingerprints.iter().find(|f| &f.title == dir_name) {
+            if let Some(fingerprint) = fingerprints
+                .iter()
+                .find(|f| &f.title == dir_name && &f.modified == &modified)
+            {
                 let _ = num_cached.fetch_add(1, Ordering::SeqCst);
                 fingerprint.to_owned()
             } else {
@@ -183,6 +194,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 Fingerprint {
                     title: dir_name.to_owned(),
                     hash,
+                    modified,
                 }
             }
         })
@@ -482,10 +494,16 @@ pub async fn update_addon_fingerprint(
 
             let fingerprint_collection = collection_guard.as_mut().unwrap();
             let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
+            let modified = if let Ok(metadata) = addon_path.metadata() {
+                metadata.modified().unwrap_or_else(|_| SystemTime::now())
+            } else {
+                SystemTime::now()
+            };
 
             fingerprints.iter_mut().for_each(|fingerprint| {
                 if fingerprint.title == addon_id {
                     fingerprint.hash = Some(hash);
+                    fingerprint.modified = modified;
                 }
             });
 
