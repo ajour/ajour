@@ -25,6 +25,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 - Ajour now creates the `.config` dir if it does not exist on macOS and Linux.
   - This fixes a crash where Ajour coudn't start if the user didn't have a `.config` directory.
+- Fixed a issue where Ajour would crash if CurseForge returned Minecraft addons instead of a World of Warcraft addons.
+  - We have had a incident where a requested World of Warcraft addon was returned as a Minecraft plugin called HorsePower. This we did not expect so Ajour would crash. 
 
 ## [0.3.4] - 2020-09-26
 ### Packaging

@@ -27,7 +27,7 @@ pub struct File {
     pub file_date: String,
     pub download_url: String,
     pub release_type: u32,
-    pub game_version_flavor: String,
+    pub game_version_flavor: Option<String>,
     pub modules: Vec<Module>,
     pub is_alternate: bool,
     pub game_version_date_released: String,
