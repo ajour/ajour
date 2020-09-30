@@ -948,22 +948,28 @@ pub fn menu_container<'a>(
         retail_btn_state,
         Text::new("Retail").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedButton(color_palette));
+    .style(style::SegmentedDisabledButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::Retail));
 
     let mut classic_button = Button::new(
         classic_btn_state,
         Text::new("Classic").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedButton(color_palette));
+    .style(style::SegmentedDisabledButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::Classic));
 
     if !ajour_performing_actions && !ajour_welcome {
         match config.wow.flavor {
             Flavor::Retail => {
+                retail_button = retail_button.style(style::SegmentedSelectedButton(color_palette));
                 classic_button =
-                    classic_button.on_press(Interaction::FlavorSelected(Flavor::Classic));
+                    classic_button.style(style::SegmentedUnselectedButton(color_palette));
             }
             Flavor::Classic => {
-                retail_button = retail_button.on_press(Interaction::FlavorSelected(Flavor::Retail));
+                classic_button =
+                    classic_button.style(style::SegmentedSelectedButton(color_palette));
+                retail_button =
+                    retail_button.style(style::SegmentedUnselectedButton(color_palette));
             }
         }
     }
@@ -973,7 +979,8 @@ pub fn menu_container<'a>(
 
     let segmented_flavor_control_container = Row::new()
         .push(retail_button.map(Message::Interaction))
-        .push(classic_button.map(Message::Interaction));
+        .push(classic_button.map(Message::Interaction))
+        .spacing(0);
 
     // Displays text depending on the state of the app.
     let flavor = config.wow.flavor;

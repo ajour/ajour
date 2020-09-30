@@ -18,6 +18,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Ignored addons has been removed from settings, and is now present in the addon list with a `ignored` status.
   - Reason for this is to clean up settings view. 
 
+### Changed
+- Reworked the controls for selected flavor. It should now be more obvious what is selected and what you can select.
+
 ### Fixed
 
 - Ajour now creates the `.config` dir if it does not exist on macOS and Linux.
