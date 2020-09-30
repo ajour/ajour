@@ -145,25 +145,6 @@ pub fn settings_container<'a, 'b>(
     // Small space below content.
     let bottom_space = Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
-    // Colum wrapping all the settings content.
-    let left_column = Column::new()
-        .push(directory_info_row)
-        .push(path_data_row)
-        .push(theme_info_row)
-        .push(theme_data_row)
-        .push(scale_title_row)
-        .push(scale_buttons_row)
-        .push(bottom_space);
-
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
-
-    // Container wrapping colum.
-    let left_container = Container::new(left_column)
-        .width(Length::FillPortion(1))
-        .height(Length::Shrink)
-        .style(style::AddonRowDefaultTextContainer(color_palette));
-
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
         let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
@@ -356,23 +337,53 @@ pub fn settings_container<'a, 'b>(
         (columns_title_row, columns_scrollable)
     };
 
-    let right_column = Column::new()
+    // Colum wrapping all the settings content.
+    let left_column = Column::new()
+        .push(directory_info_row)
+        .push(path_data_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_title_row)
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_directory_row)
+        .push(bottom_space);
+
+    let middle_column = Column::new()
+        .push(scale_title_row)
+        .push(scale_buttons_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(theme_info_row)
+        .push(theme_data_row);
+
+    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
+
+    // Container wrapping colum.
+    let left_container = Container::new(left_column)
+        .width(Length::FillPortion(1))
+        .height(Length::Shrink)
+        .style(style::AddonRowDefaultTextContainer(color_palette));
+
+    let middle_container = Container::new(middle_column)
+        .width(Length::FillPortion(1))
+        .height(Length::Shrink)
+        .center_x()
+        .style(style::AddonRowDefaultTextContainer(color_palette));
+
+    let right_column = Column::new()
         .push(columns_title_row)
         .push(columns_scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
-        .height(Length::Units(245))
+        .height(Length::Units(255))
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Row to wrap each section.
     let row = Row::new()
         .push(left_spacer)
         .push(left_container)
+        .push(middle_container)
         .push(right_container)
         .push(right_spacer);
 
@@ -380,6 +391,7 @@ pub fn settings_container<'a, 'b>(
     Container::new(row)
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette))
+        .padding(DEFAULT_PADDING)
 }
 
 pub fn addon_data_cell<'a, 'b>(
