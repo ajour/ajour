@@ -243,9 +243,9 @@ impl button::StyleSheet for SegmentedUnselectedButton {
                 ..self.0.primary
             },
             border_radius: 2,
-            border_width: 0,
+            border_width: 1,
             border_color: Color {
-                a: 0.1,
+                a: 0.03,
                 ..self.0.primary
             },
             ..button::Style::default()
