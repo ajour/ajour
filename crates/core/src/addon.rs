@@ -97,6 +97,7 @@ pub struct Addon {
     pub tukui_id: Option<String>,
     pub curse_id: Option<u32>,
     pub fingerprint: Option<u32>,
+    pub game_version: Option<String>,
 
     // States for GUI
     #[cfg(feature = "gui")]
@@ -149,6 +150,7 @@ impl Addon {
             tukui_id,
             curse_id,
             fingerprint: None,
+            game_version: None,
             #[cfg(feature = "gui")]
             details_btn_state: Default::default(),
             #[cfg(feature = "gui")]
@@ -173,6 +175,7 @@ impl Addon {
     /// This function takes a `Package` and updates self with the information.
     pub fn apply_tukui_package(&mut self, package: &tukui_api::TukuiPackage) {
         self.website_url = Some(package.web_url.clone());
+        self.game_version = package.patch.clone();
 
         let version = package.version.clone();
         let download_url = package.url.clone();
@@ -245,7 +248,8 @@ impl Addon {
         self.dependencies = dependencies;
         self.version = Some(info.file.display_name.clone());
         self.curse_id = Some(info.id);
-        self.file_id = Some(info.file.id)
+        self.file_id = Some(info.file.id);
+        self.game_version = info.file.game_version.get(0).cloned();
     }
 
     /// Function returns a `bool` indicating if the user has manually ignored the addon.

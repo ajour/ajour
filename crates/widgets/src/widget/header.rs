@@ -21,7 +21,7 @@ where
     children: Vec<Element<'a, Message, Renderer>>,
     left_margin: bool,
     right_margin: bool,
-    names: Vec<&'static str>,
+    names: Vec<String>,
 }
 
 impl<'a, Message, Renderer> Header<'a, Message, Renderer>
@@ -31,7 +31,7 @@ where
 {
     pub fn new(
         state: &'a mut State,
-        headers: Vec<(&'static str, Container<'a, Message, Renderer>)>,
+        headers: Vec<(String, Container<'a, Message, Renderer>)>,
         left_margin: Option<Length>,
         right_margin: Option<Length>,
     ) -> Self {
@@ -96,20 +96,26 @@ where
     }
 
     fn trigger_resize(
-        &mut self,
-        left_name: &'static str,
+        &self,
+        left_name: String,
         left_width: u16,
-        right_name: &'static str,
+        right_name: String,
         right_width: u16,
         messages: &mut Vec<Message>,
     ) {
         if let Some((_, on_resize)) = &self.on_resize {
-            messages.push(on_resize(ResizeEvent {
+            messages.push(on_resize(ResizeEvent::ResizeColumn {
                 left_name,
                 left_width,
                 right_name,
                 right_width,
             }));
+        }
+    }
+
+    fn trigger_finished(&self, messages: &mut Vec<Message>) {
+        if let Some((_, on_resize)) = &self.on_resize {
+            messages.push(on_resize(ResizeEvent::Finished));
         }
     }
 }
@@ -213,6 +219,7 @@ where
                     if self.state.resizing {
                         self.state.resizing = false;
                         self.state.starting_cursor_pos.take();
+                        self.trigger_finished(messages);
                         return;
                     }
                 }
@@ -226,14 +233,14 @@ where
                         let max_width = left_width + right_width - 30.0;
 
                         let left_width = (left_width + delta).max(30.0).min(max_width) as u16;
-                        let left_name = self.names[self.state.resizing_idx - start_offset];
+                        let left_name = &self.names[self.state.resizing_idx - start_offset];
                         let right_width = (right_width - delta).max(30.0).min(max_width) as u16;
-                        let right_name = self.names[self.state.resizing_idx + 1 - start_offset];
+                        let right_name = &self.names[self.state.resizing_idx + 1 - start_offset];
 
                         self.trigger_resize(
-                            left_name,
+                            left_name.clone(),
                             left_width,
-                            right_name,
+                            right_name.clone(),
                             right_width,
                             messages,
                         );
@@ -318,10 +325,13 @@ where
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct ResizeEvent {
-    pub left_name: &'static str,
-    pub left_width: u16,
-    pub right_name: &'static str,
-    pub right_width: u16,
+#[derive(Debug, Clone)]
+pub enum ResizeEvent {
+    ResizeColumn {
+        left_name: String,
+        left_width: u16,
+        right_name: String,
+        right_width: u16,
+    },
+    Finished,
 }

@@ -1,5 +1,5 @@
 use ajour_core::theme::ColorPalette;
-use iced::{button, container, pick_list, scrollable, Background, Color};
+use iced::{button, checkbox, container, pick_list, scrollable, Background, Color};
 
 pub struct TextButton(pub ColorPalette);
 impl button::StyleSheet for TextButton {
@@ -460,5 +460,57 @@ impl container::StyleSheet for ChannelBadge {
             border_radius: 3,
             border_width: 1,
         }
+    }
+}
+
+pub struct DefaultCheckbox(pub ColorPalette);
+impl checkbox::StyleSheet for DefaultCheckbox {
+    fn active(&self, _is_checked: bool) -> checkbox::Style {
+        checkbox::Style {
+            background: Background::Color(self.0.surface),
+            checkmark_color: Color {
+                a: 0.70,
+                ..self.0.primary
+            },
+            border_radius: 3,
+            border_width: 2,
+            border_color: Color {
+                a: 0.70,
+                ..self.0.primary
+            },
+        }
+    }
+
+    fn hovered(&self, _is_checked: bool) -> checkbox::Style {
+        checkbox::Style {
+            background: Background::Color(self.0.surface),
+            checkmark_color: self.0.primary,
+            border_radius: 3,
+            border_width: 2,
+            border_color: self.0.primary,
+        }
+    }
+}
+
+pub struct AlwaysCheckedCheckbox(pub ColorPalette);
+impl checkbox::StyleSheet for AlwaysCheckedCheckbox {
+    fn active(&self, _is_checked: bool) -> checkbox::Style {
+        checkbox::Style {
+            background: Background::Color(self.0.surface),
+            checkmark_color: Color {
+                a: 0.20,
+                ..self.0.primary
+            },
+            border_radius: 3,
+            border_width: 2,
+            border_color: Color {
+                a: 0.20,
+                ..self.0.primary
+            },
+        }
+    }
+
+    fn hovered(&self, _is_checked: bool) -> checkbox::Style {
+        self.active(_is_checked)
     }
 }

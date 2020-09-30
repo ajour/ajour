@@ -31,6 +31,7 @@ pub struct File {
     pub modules: Vec<Module>,
     pub is_alternate: bool,
     pub game_version_date_released: String,
+    pub game_version: Vec<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

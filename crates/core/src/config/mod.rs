@@ -140,6 +140,16 @@ pub enum ColumnConfig {
         remote_version_width: u16,
         status_width: u16,
     },
+    V2 {
+        columns: Vec<ColumnConfigV2>,
+    },
+}
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
+pub struct ColumnConfigV2 {
+    pub key: String,
+    pub width: Option<u16>,
+    pub hidden: bool,
 }
 
 impl Default for ColumnConfig {
@@ -153,18 +163,57 @@ impl Default for ColumnConfig {
 }
 
 impl ColumnConfig {
-    pub fn update_width(&mut self, name: &'static str, width: u16) {
+    pub fn update_width(&mut self, key: &str, width: u16) {
         match self {
             ColumnConfig::V1 {
                 local_version_width,
                 remote_version_width,
                 status_width,
-            } => match name {
+            } => match key {
                 "local" => *local_version_width = width,
                 "remote" => *remote_version_width = width,
                 "status" => *status_width = width,
                 _ => {}
             },
+            ColumnConfig::V2 { columns } => {
+                if let Some(column) = columns.iter_mut().find(|c| c.key == key) {
+                    column.width = Some(width);
+                }
+            }
+        }
+    }
+
+    pub fn get_width(&mut self, key: &str) -> Option<u16> {
+        match self {
+            ColumnConfig::V1 {
+                local_version_width,
+                remote_version_width,
+                status_width,
+            } => match key {
+                "local" => Some(*local_version_width),
+                "remote" => Some(*remote_version_width),
+                "status" => Some(*status_width),
+                _ => None,
+            },
+            ColumnConfig::V2 { columns } => {
+                if let Some(column) = columns.iter_mut().find(|c| c.key == key) {
+                    column.width
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    pub fn get_order(&mut self, key: &str) -> Option<usize> {
+        match self {
+            ColumnConfig::V1 { .. } => match key {
+                "local" => Some(1),
+                "remote" => Some(2),
+                "status" => Some(3),
+                _ => None,
+            },
+            ColumnConfig::V2 { columns } => columns.iter_mut().position(|c| c.key == key),
         }
     }
 }

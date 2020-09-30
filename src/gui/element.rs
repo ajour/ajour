@@ -2,8 +2,8 @@
 
 use {
     super::{
-        style, AjourState, BackupState, DirectoryType, HeaderState, Interaction, Message,
-        ReleaseChannel, ScaleState, SortDirection, SortKey, ThemeState,
+        style, AjourState, BackupState, ColumnKey, ColumnSettings, ColumnState, DirectoryType,
+        Interaction, Message, ReleaseChannel, ScaleState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -13,10 +13,10 @@ use {
     },
     chrono::prelude::*,
     iced::{
-        button, scrollable, Align, Button, Column, Container, Element, HorizontalAlignment, Length,
-        PickList, Row, Scrollable, Space, Text, VerticalAlignment,
+        button, scrollable, Align, Button, Checkbox, Column, Container, Element,
+        HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
-    widgets::Header,
+    widgets::{header, Header},
 };
 
 // Default values used on multiple elements.
@@ -24,13 +24,15 @@ static DEFAULT_FONT_SIZE: u16 = 14;
 static DEFAULT_PADDING: u16 = 10;
 
 /// Container for settings.
-pub fn settings_container<'a>(
+pub fn settings_container<'a, 'b>(
     color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
     config: &Config,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
+    column_settings: &'a mut ColumnSettings,
+    column_config: &'b [(ColumnKey, Length, bool)],
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
@@ -259,11 +261,108 @@ pub fn settings_container<'a>(
         (backup_title_row, backup_directory_row, backup_now_row)
     };
 
+    let (columns_title_row, columns_scrollable) = {
+        // Title for the Columns section.
+        let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
+        let columns_title_row = Row::new().push(columns_title_text).padding(DEFAULT_PADDING);
+
+        // Scrollable for column selections
+        let mut columns_scrollable = Scrollable::new(&mut column_settings.scrollable_state)
+            .spacing(1)
+            .width(Length::Fill)
+            .height(Length::FillPortion(4))
+            .style(style::SecondaryScrollable(color_palette));
+
+        // Add each column to scrollable as checkbox + label + up / down buttons
+        let columns_len = column_settings.columns.len();
+        for (idx, column) in column_settings.columns.iter_mut().enumerate() {
+            let is_first = idx == 0;
+            let is_last = idx == columns_len - 1;
+
+            let title = column.key.title();
+
+            let column_key = column.key;
+
+            let is_checked = column_config
+                .iter()
+                .any(|(key, _, hidden)| key == &column.key && !hidden)
+                || column_key == ColumnKey::Title;
+
+            let mut left_button = Button::new(
+                &mut column.up_btn_state,
+                Text::new(" ▲ ").size(11).color(if !is_first {
+                    color_palette.primary
+                } else {
+                    let mut color = color_palette.primary;
+                    color.a = 0.20;
+                    color
+                }),
+            )
+            .style(style::DefaultButton(color_palette));
+            if !is_first {
+                left_button = left_button.on_press(Interaction::MoveColumnLeft(column_key));
+            }
+
+            let mut right_button = Button::new(
+                &mut column.down_btn_state,
+                Text::new(" ▼ ").size(11).color(if !is_last {
+                    color_palette.primary
+                } else {
+                    let mut color = color_palette.primary;
+                    color.a = 0.20;
+                    color
+                }),
+            )
+            .style(style::DefaultButton(color_palette));
+            if !is_last {
+                right_button = right_button.on_press(Interaction::MoveColumnRight(column_key));
+            }
+
+            let left_button: Element<Interaction> = left_button.into();
+            let right_button: Element<Interaction> = right_button.into();
+
+            let left_button_container = Container::new(left_button.map(Message::Interaction))
+                .center_x()
+                .center_y();
+            let right_button_container = Container::new(right_button.map(Message::Interaction))
+                .center_x()
+                .center_y();
+
+            let mut checkbox = Checkbox::new(is_checked, title.clone(), move |is_checked| {
+                Message::Interaction(Interaction::ToggleColumn(is_checked, column_key))
+            })
+            .text_size(DEFAULT_FONT_SIZE)
+            .spacing(5);
+
+            if column_key == ColumnKey::Title {
+                checkbox = checkbox.style(style::AlwaysCheckedCheckbox(color_palette));
+            } else {
+                checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
+            }
+
+            let checkbox_container = Container::new(checkbox).padding(5);
+
+            let row = Row::new()
+                .align_items(Align::Center)
+                .height(Length::Units(26))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(left_button_container)
+                .push(right_button_container)
+                .push(checkbox_container);
+
+            columns_scrollable = columns_scrollable.push(row);
+        }
+
+        (columns_title_row, columns_scrollable)
+    };
+
     let right_column = Column::new()
         .push(backup_title_row)
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_directory_row)
+        .push(columns_title_row)
+        .push(columns_scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
@@ -283,16 +382,15 @@ pub fn settings_container<'a>(
         .style(style::AddonRowDefaultTextContainer(color_palette))
 }
 
-pub fn addon_data_cell(
+pub fn addon_data_cell<'a, 'b>(
     color_palette: ColorPalette,
-    addon: &'_ mut Addon,
+    addon: &'a mut Addon,
     is_addon_expanded: bool,
-    title_width: Length,
-    local_width: Length,
-    remote_width: Length,
-    status_width: Length,
-) -> Container<'_, Message> {
+    column_config: &'b [(ColumnKey, Length, bool)],
+) -> Container<'a, Message> {
     let default_height = Length::Units(26);
+
+    let mut row_containers = vec![];
 
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
@@ -304,124 +402,258 @@ pub fn addon_data_cell(
         String::from("-")
     };
 
-    let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
-    let mut title_button = Button::new(&mut addon.details_btn_state, title)
-        .on_press(Interaction::Expand(addon.id.clone()));
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::Title && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
+        let mut title_button = Button::new(&mut addon.details_btn_state, title)
+            .on_press(Interaction::Expand(addon.id.clone()));
 
-    if release_package.as_deref().is_some() {}
+        if release_package.as_deref().is_some() {}
 
-    if is_addon_expanded {
-        title_button = title_button.style(style::SelectedTextButton(color_palette));
-    } else {
-        title_button = title_button.style(style::TextButton(color_palette));
+        if is_addon_expanded {
+            title_button = title_button.style(style::SelectedTextButton(color_palette));
+        } else {
+            title_button = title_button.style(style::TextButton(color_palette));
+        }
+
+        let title_button: Element<Interaction> = title_button.into();
+
+        let mut title_row = Row::new()
+            .push(title_button.map(Message::Interaction))
+            .spacing(3)
+            .align_items(Align::Center);
+
+        if addon.release_channel != ReleaseChannel::Stable {
+            let release_channel =
+                Container::new(Text::new(addon.release_channel.to_string()).size(10))
+                    .style(style::ChannelBadge(color_palette))
+                    .padding(3);
+
+            title_row = title_row.push(release_channel);
+        }
+
+        let title_container = Container::new(title_row)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .style(style::AddonRowDefaultTextContainer(color_palette));
+
+        row_containers.push((idx, title_container));
     }
 
-    let title_button: Element<Interaction> = title_button.into();
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::LocalVersion && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let installed_version = Text::new(version).size(DEFAULT_FONT_SIZE);
+        let installed_version_container = Container::new(installed_version)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
 
-    let mut title_row = Row::new()
-        .push(title_button.map(Message::Interaction))
-        .spacing(3)
-        .align_items(Align::Center);
-
-    if addon.release_channel != ReleaseChannel::Stable {
-        let release_channel = Container::new(Text::new(addon.release_channel.to_string()).size(10))
-            .style(style::ChannelBadge(color_palette))
-            .padding(3);
-
-        title_row = title_row.push(release_channel);
+        row_containers.push((idx, installed_version_container));
     }
 
-    let title_container = Container::new(title_row)
-        .height(default_height)
-        .width(title_width)
-        .center_y()
-        .style(style::AddonRowDefaultTextContainer(color_palette));
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::RemoteVersion && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
+        let remote_version_container = Container::new(remote_version)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
 
-    let installed_version = Text::new(version).size(DEFAULT_FONT_SIZE);
-    let installed_version_container = Container::new(installed_version)
-        .height(default_height)
-        .width(local_width)
-        .center_y()
-        .padding(5)
-        .style(style::AddonRowSecondaryTextContainer(color_palette));
+        row_containers.push((idx, remote_version_container));
+    }
 
-    let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
-    let remote_version_container = Container::new(remote_version)
-        .height(default_height)
-        .width(remote_width)
-        .center_y()
-        .padding(5)
-        .style(style::AddonRowSecondaryTextContainer(color_palette));
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::Channel && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let channel = Text::new(addon.release_channel.to_string()).size(DEFAULT_FONT_SIZE);
+        let channel_container = Container::new(channel)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
 
-    let update_button_container = match &addon.state {
-        AddonState::Ajour(string) => Container::new(
-            Text::new(string.clone().unwrap_or_else(|| "".to_string())).size(DEFAULT_FONT_SIZE),
-        )
-        .height(default_height)
-        .width(status_width)
-        .center_y()
-        .center_x()
-        .style(style::AddonRowSecondaryTextContainer(color_palette)),
-        AddonState::Updatable => {
-            let id = addon.id.clone();
-            let update_button: Element<Interaction> = Button::new(
-                &mut addon.update_btn_state,
-                Text::new("Update")
-                    .horizontal_alignment(HorizontalAlignment::Center)
-                    .size(DEFAULT_FONT_SIZE),
+        row_containers.push((idx, channel_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::Author && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let author = Text::new(addon.author.as_deref().unwrap_or("-")).size(DEFAULT_FONT_SIZE);
+        let author_container = Container::new(author)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
+
+        row_containers.push((idx, author_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::GameVersion && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let game_version =
+            Text::new(addon.game_version.as_deref().unwrap_or("-")).size(DEFAULT_FONT_SIZE);
+        let game_version_container = Container::new(game_version)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
+
+        row_containers.push((idx, game_version_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::Status && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let update_button_container = match &addon.state {
+            AddonState::Ajour(string) => Container::new(
+                Text::new(string.clone().unwrap_or_else(|| "".to_string())).size(DEFAULT_FONT_SIZE),
             )
-            .style(style::SecondaryButton(color_palette))
-            .on_press(Interaction::Update(id))
-            .into();
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .center_x()
+            .style(style::AddonRowSecondaryTextContainer(color_palette)),
+            AddonState::Updatable => {
+                let id = addon.id.clone();
+                let update_button: Element<Interaction> = Button::new(
+                    &mut addon.update_btn_state,
+                    Text::new("Update")
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .size(DEFAULT_FONT_SIZE),
+                )
+                .style(style::SecondaryButton(color_palette))
+                .on_press(Interaction::Update(id))
+                .into();
 
-            Container::new(update_button.map(Message::Interaction))
+                Container::new(update_button.map(Message::Interaction))
+                    .height(default_height)
+                    .width(*width)
+                    .center_y()
+                    .center_x()
+                    .style(style::AddonRowDefaultTextContainer(color_palette))
+            }
+            AddonState::Downloading => {
+                Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
+                    .height(default_height)
+                    .width(*width)
+                    .center_y()
+                    .center_x()
+                    .padding(5)
+                    .style(style::AddonRowSecondaryTextContainer(color_palette))
+            }
+            AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
-                .width(status_width)
+                .width(*width)
                 .center_y()
                 .center_x()
-                .style(style::AddonRowDefaultTextContainer(color_palette))
-        }
-        AddonState::Downloading => Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
-            .height(default_height)
-            .width(status_width)
-            .center_y()
-            .center_x()
-            .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette)),
-        AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
-            .height(default_height)
-            .width(status_width)
-            .center_y()
-            .center_x()
-            .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette)),
-        AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
-            .height(default_height)
-            .width(status_width)
-            .center_y()
-            .center_x()
-            .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette)),
-        AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
-            .height(default_height)
-            .width(status_width)
-            .center_y()
-            .center_x()
-            .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette)),
-    };
+                .padding(5)
+                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+            AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .center_x()
+                .padding(5)
+                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+            AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .center_x()
+                .padding(5)
+                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+        };
+
+        row_containers.push((idx, update_button_container));
+    }
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
     let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
 
-    let row = Row::new()
-        .push(left_spacer)
-        .push(title_container)
-        .push(installed_version_container)
-        .push(remote_version_container)
-        .push(update_button_container)
-        .push(right_spacer)
-        .spacing(1);
+    let mut row = Row::new().push(left_spacer).spacing(1);
+
+    // Sort columns and push them into row
+    row_containers.sort_by(|a, b| a.0.cmp(&b.0));
+    for (_, elem) in row_containers.into_iter() {
+        row = row.push(elem);
+    }
+
+    row = row.push(right_spacer);
 
     let mut addon_column = Column::new().push(row);
 
@@ -575,12 +807,12 @@ pub fn addon_data_cell(
 }
 
 fn row_title(
-    sort_key: SortKey,
-    previous_sort_key: Option<SortKey>,
+    column_key: ColumnKey,
+    previous_column_key: Option<ColumnKey>,
     previous_sort_direction: Option<SortDirection>,
     title: &str,
 ) -> String {
-    if Some(sort_key) == previous_sort_key {
+    if Some(column_key) == previous_column_key {
         match previous_sort_direction {
             Some(SortDirection::Asc) => format!("{} ▲", title),
             Some(SortDirection::Desc) => format!("{} ▼", title),
@@ -594,135 +826,53 @@ fn row_title(
 pub fn addon_row_titles<'a>(
     color_palette: ColorPalette,
     addons: &[Addon],
-    header_state: &'a mut HeaderState,
+    header_state: &'a mut header::State,
+    column_state: &'a mut [ColumnState],
+    previous_column_key: Option<ColumnKey>,
+    previous_sort_direction: Option<SortDirection>,
 ) -> Header<'a, Message> {
     // A row containing titles above the addon rows.
     let mut row_titles = vec![];
 
-    let addon_row_title = row_title(
-        SortKey::Title,
-        header_state.previous_sort_key,
-        header_state.previous_sort_direction,
-        "Addon",
-    );
+    for column in column_state.iter_mut().filter(|c| !c.hidden) {
+        let column_key = column.key;
 
-    let local_row_title = row_title(
-        SortKey::LocalVersion,
-        header_state.previous_sort_key,
-        header_state.previous_sort_direction,
-        "Local",
-    );
+        let row_title = row_title(
+            column_key,
+            previous_column_key,
+            previous_sort_direction,
+            &column.key.title(),
+        );
 
-    let remote_row_title = row_title(
-        SortKey::RemoteVersion,
-        header_state.previous_sort_key,
-        header_state.previous_sort_direction,
-        "Remote",
-    );
+        let mut row_header = Button::new(
+            &mut column.btn_state,
+            Text::new(row_title)
+                .size(DEFAULT_FONT_SIZE)
+                .width(Length::Fill),
+        )
+        .width(Length::Fill)
+        .on_press(Interaction::SortColumn(column_key));
 
-    let status_row_title = row_title(
-        SortKey::Status,
-        header_state.previous_sort_key,
-        header_state.previous_sort_direction,
-        "Status",
-    );
+        if previous_column_key == Some(column_key) {
+            row_header = row_header.style(style::SelectedColumnHeaderButton(color_palette));
+        } else {
+            row_header = row_header.style(style::ColumnHeaderButton(color_palette));
+        }
 
-    let mut addon_row_header = Button::new(
-        &mut header_state.title.btn_state,
-        Text::new(addon_row_title)
-            .size(DEFAULT_FONT_SIZE)
-            .width(Length::Fill),
-    )
-    .width(Length::Fill)
-    .on_press(Interaction::SortColumn(SortKey::Title));
+        let row_header: Element<Interaction> = row_header.into();
 
-    if header_state.previous_sort_key == Some(SortKey::Title) {
-        addon_row_header = addon_row_header.style(style::SelectedColumnHeaderButton(color_palette));
-    } else {
-        addon_row_header = addon_row_header.style(style::ColumnHeaderButton(color_palette));
-    }
+        let row_container = Container::new(row_header.map(Message::Interaction))
+            .width(column.width)
+            .style(style::SecondaryTextContainer(color_palette));
 
-    let addon_row_header: Element<Interaction> = addon_row_header.into();
-
-    let addon_row_container = Container::new(addon_row_header.map(Message::Interaction))
-        .width(header_state.title.width)
-        .style(style::SecondaryTextContainer(color_palette));
-
-    let mut local_row_header = Button::new(
-        &mut header_state.local_version.btn_state,
-        Text::new(local_row_title)
-            .size(DEFAULT_FONT_SIZE)
-            .width(Length::Fill),
-    )
-    .width(Length::Fill)
-    .on_press(Interaction::SortColumn(SortKey::LocalVersion));
-
-    if header_state.previous_sort_key == Some(SortKey::LocalVersion) {
-        local_row_header = local_row_header.style(style::SelectedColumnHeaderButton(color_palette));
-    } else {
-        local_row_header = local_row_header.style(style::ColumnHeaderButton(color_palette));
-    }
-
-    let local_row_header: Element<Interaction> = local_row_header.into();
-
-    let local_version_container = Container::new(local_row_header.map(Message::Interaction))
-        .width(header_state.local_version.width)
-        .style(style::SecondaryTextContainer(color_palette));
-
-    let mut remote_row_header = Button::new(
-        &mut header_state.remote_version.btn_state,
-        Text::new(remote_row_title)
-            .size(DEFAULT_FONT_SIZE)
-            .width(Length::Fill),
-    )
-    .width(Length::Fill)
-    .on_press(Interaction::SortColumn(SortKey::RemoteVersion));
-
-    if header_state.previous_sort_key == Some(SortKey::RemoteVersion) {
-        remote_row_header =
-            remote_row_header.style(style::SelectedColumnHeaderButton(color_palette));
-    } else {
-        remote_row_header = remote_row_header.style(style::ColumnHeaderButton(color_palette));
-    }
-
-    let remote_row_header: Element<Interaction> = remote_row_header.into();
-
-    let remote_version_container = Container::new(remote_row_header.map(Message::Interaction))
-        .width(header_state.remote_version.width)
-        .style(style::SecondaryTextContainer(color_palette));
-
-    let mut status_row_header = Button::new(
-        &mut header_state.status.btn_state,
-        Text::new(status_row_title)
-            .size(DEFAULT_FONT_SIZE)
-            .width(Length::Fill),
-    )
-    .width(Length::Fill)
-    .on_press(Interaction::SortColumn(SortKey::Status));
-
-    if header_state.previous_sort_key == Some(SortKey::Status) {
-        status_row_header =
-            status_row_header.style(style::SelectedColumnHeaderButton(color_palette));
-    } else {
-        status_row_header = status_row_header.style(style::ColumnHeaderButton(color_palette));
-    }
-
-    let status_row_header: Element<Interaction> = status_row_header.into();
-
-    let status_row_container = Container::new(status_row_header.map(Message::Interaction))
-        .width(header_state.status.width)
-        .style(style::SecondaryTextContainer(color_palette));
-
-    // Only shows row titles if we have any addons.
-    if !addons.is_empty() {
-        row_titles.push(("title", addon_row_container));
-        row_titles.push(("local", local_version_container));
-        row_titles.push(("remote", remote_version_container));
-        row_titles.push(("status", status_row_container));
+        // Only shows row titles if we have any addons.
+        if !addons.is_empty() {
+            row_titles.push((column.key.as_string(), row_container));
+        }
     }
 
     Header::new(
-        &mut header_state.state,
+        header_state,
         row_titles,
         Some(Length::Units(DEFAULT_PADDING)),
         Some(Length::Units(DEFAULT_PADDING + 5)),

@@ -11,6 +11,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Added
 
 - You can now select which release channel you want each addon to use. Currently `alpha`, `beta` and `stable` is supported.
+- Columns can now be toggled as visible and reordered from settings. In addition, 3 new optional columns have been added that can be toggled (Channel, Game Version, Author).
 
 ### Changed
 
