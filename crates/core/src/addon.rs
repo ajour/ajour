@@ -62,6 +62,7 @@ impl std::fmt::Display for ReleaseChannel {
 
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
+    Ignored,
     Ajour(Option<String>),
     Downloading,
     Fingerprint,

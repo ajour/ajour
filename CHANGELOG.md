@@ -12,6 +12,11 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 - You can now select which release channel you want each addon to use. Currently `alpha`, `beta` and `stable` is supported.
 
+### Changed
+
+- Ignored addons has been removed from settings, and is now present in the addon list with a `ignored` status.
+  - Reason for this is to clean up settings view. 
+
 ### Fixed
 
 - Ajour now creates the `.config` dir if it does not exist on macOS and Linux.
