@@ -182,6 +182,17 @@ impl button::StyleSheet for ColumnHeaderButton {
     }
 }
 
+pub struct UnclickableColumnHeaderButton(pub ColorPalette);
+impl button::StyleSheet for UnclickableColumnHeaderButton {
+    fn active(&self) -> button::Style {
+        ColumnHeaderButton(self.0).active()
+    }
+
+    fn disabled(&self) -> button::Style {
+        self.active()
+    }
+}
+
 pub struct SelectedColumnHeaderButton(pub ColorPalette);
 impl button::StyleSheet for SelectedColumnHeaderButton {
     fn active(&self) -> button::Style {
