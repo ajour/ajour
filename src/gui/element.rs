@@ -2,8 +2,8 @@
 
 use {
     super::{
-        style, AjourState, BackupState, ColumnKey, ColumnSettings, ColumnState, DirectoryType,
-        Interaction, Message, ReleaseChannel, ScaleState, SortDirection, ThemeState,
+        style, AjourMode, AjourState, BackupState, ColumnKey, ColumnSettings, ColumnState,
+        DirectoryType, Interaction, Message, ReleaseChannel, ScaleState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -808,7 +808,10 @@ pub fn addon_data_cell<'a, 'b>(
         let row = Row::new()
             .push(left_spacer)
             .push(details_container)
-            .push(right_spacer)
+            .push(Space::new(
+                Length::Units(DEFAULT_PADDING + 5),
+                Length::Units(0),
+            ))
             .spacing(1);
 
         addon_column = addon_column
@@ -900,18 +903,15 @@ pub fn addon_row_titles<'a>(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn menu_container<'a>(
+pub fn menu_addons_container<'a>(
     color_palette: ColorPalette,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
-    settings_button_state: &'a mut button::State,
     retail_btn_state: &'a mut button::State,
     classic_btn_state: &'a mut button::State,
     state: &AjourState,
     addons: &[Addon],
     config: &'a mut Config,
-    needs_update: Option<&'a str>,
-    new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(35));
@@ -1035,6 +1035,76 @@ pub fn menu_container<'a>(
         .width(Length::FillPortion(1))
         .style(style::StatusErrorTextContainer(color_palette));
 
+    // Surrounds the elements with spacers, in order to make the GUI look good.
+    settings_row = settings_row
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(refresh_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(7), Length::Units(0)))
+        .push(update_all_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(7), Length::Units(0)))
+        .push(segmented_flavor_control_container)
+        .push(status_container)
+        .push(error_container);
+
+    // Add space above settings_row.
+    let settings_column = Column::new()
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(settings_row);
+
+    // Wraps it in a container.
+    Container::new(settings_column)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn menu_container<'a>(
+    color_palette: ColorPalette,
+    mode: &AjourMode,
+    settings_button_state: &'a mut button::State,
+    addon_mode_button_state: &'a mut button::State,
+    catalog_mode_btn_state: &'a mut button::State,
+    needs_update: Option<&'a str>,
+    new_release_button_state: &'a mut button::State,
+) -> Container<'a, Message> {
+    // A row contain general settings.
+    let mut settings_row = Row::new().height(Length::Units(25));
+
+    let mut addons_mode_button = Button::new(
+        addon_mode_button_state,
+        Text::new("My Addons").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::SegmentedDisabledButton(color_palette))
+    .on_press(Interaction::ModeSelected(AjourMode::Addons));
+
+    let mut catalog_mode_button = Button::new(
+        catalog_mode_btn_state,
+        Text::new("Catalog").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::SegmentedDisabledButton(color_palette))
+    .on_press(Interaction::ModeSelected(AjourMode::Catalog));
+
+    match mode {
+        AjourMode::Addons => {
+            addons_mode_button =
+                addons_mode_button.style(style::SegmentedSelectedButton(color_palette));
+            catalog_mode_button =
+                catalog_mode_button.style(style::SegmentedUnselectedButton(color_palette));
+        }
+        AjourMode::Catalog => {
+            addons_mode_button =
+                addons_mode_button.style(style::SegmentedUnselectedButton(color_palette));
+            catalog_mode_button =
+                catalog_mode_button.style(style::SegmentedSelectedButton(color_palette));
+        }
+    }
+
+    let addons_mode_button: Element<Interaction> = addons_mode_button.into();
+    let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
+
+    let segmented_mode_control_container = Row::new()
+        .push(addons_mode_button.map(Message::Interaction))
+        .push(catalog_mode_button.map(Message::Interaction))
+        .spacing(0);
+
     let version_text = Text::new(if let Some(new_version) = needs_update {
         format!("New Ajour version available {} -> {}", VERSION, new_version)
     } else {
@@ -1060,21 +1130,11 @@ pub fn menu_container<'a>(
     .on_press(Interaction::Settings)
     .into();
 
-    // Not using default padding, just to make it look prettier UI wise
-    let top_spacer = Space::new(Length::Units(0), Length::Units(5));
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
-
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
-        .push(left_spacer)
-        .push(refresh_button.map(Message::Interaction))
-        .push(Space::new(Length::Units(7), Length::Units(0)))
-        .push(update_all_button.map(Message::Interaction))
-        .push(Space::new(Length::Units(7), Length::Units(0)))
-        .push(segmented_flavor_control_container)
-        .push(status_container)
-        .push(error_container)
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(segmented_mode_control_container)
+        .push(Space::new(Length::Fill, Length::Units(0)))
         .push(version_container);
 
     // Add download button to latest github release page if Ajour update is available.
@@ -1099,10 +1159,15 @@ pub fn menu_container<'a>(
 
     settings_row = settings_row
         .push(settings_button.map(Message::Interaction))
-        .push(right_spacer);
+        .push(Space::new(
+            Length::Units(DEFAULT_PADDING + 5),
+            Length::Units(0),
+        ));
 
     // Add space above settings_row.
-    let settings_column = Column::new().push(top_spacer).push(settings_row);
+    let settings_column = Column::new()
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(settings_row);
 
     // Wraps it in a container.
     Container::new(settings_column)

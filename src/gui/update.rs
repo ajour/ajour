@@ -268,6 +268,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Persist the newly updated config.
             let _ = &ajour.config.save();
         }
+        Message::Interaction(Interaction::ModeSelected(mode)) => {
+            log::debug!("Interaction::ModeSelected({})", mode);
+
+            // Set ajour mode.
+            ajour.mode = mode;
+        }
+
         Message::Interaction(Interaction::Expand(id)) => {
             log::debug!("Interaction::Expand({})", &id);
 

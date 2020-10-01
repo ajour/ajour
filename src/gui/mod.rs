@@ -38,6 +38,25 @@ pub enum AjourState {
     Welcome,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum AjourMode {
+    Addons,
+    Catalog,
+}
+
+impl std::fmt::Display for AjourMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                AjourMode::Addons => "Addons",
+                AjourMode::Catalog => "Catalog",
+            }
+        )
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Interaction {
     Delete(String),
@@ -59,6 +78,7 @@ pub enum Interaction {
     ToggleColumn(bool, ColumnKey),
     MoveColumnLeft(ColumnKey),
     MoveColumnRight(ColumnKey),
+    ModeSelected(AjourMode),
 }
 
 #[derive(Debug)]
@@ -95,12 +115,15 @@ pub struct Ajour {
     settings_btn_state: button::State,
     shared_client: Arc<HttpClient>,
     state: AjourState,
+    mode: AjourMode,
     update_all_btn_state: button::State,
     header_state: HeaderState,
     theme_state: ThemeState,
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     retail_btn_state: button::State,
     classic_btn_state: button::State,
+    addon_mode_btn_state: button::State,
+    catalog_mode_btn_state: button::State,
     scale_state: ScaleState,
     backup_state: BackupState,
     column_settings: ColumnSettings,
@@ -127,12 +150,15 @@ impl Default for Ajour {
                     .unwrap(),
             ),
             state: AjourState::Loading,
+            mode: AjourMode::Addons,
             update_all_btn_state: Default::default(),
             header_state: Default::default(),
             theme_state: Default::default(),
             fingerprint_collection: Arc::new(Mutex::new(None)),
             retail_btn_state: Default::default(),
             classic_btn_state: Default::default(),
+            addon_mode_btn_state: Default::default(),
+            catalog_mode_btn_state: Default::default(),
             scale_state: Default::default(),
             backup_state: Default::default(),
             column_settings: Default::default(),
@@ -201,16 +227,23 @@ impl Application for Ajour {
         // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
             color_palette,
+            &self.mode,
+            &mut self.settings_btn_state,
+            &mut self.addon_mode_btn_state,
+            &mut self.catalog_mode_btn_state,
+            self.needs_update.as_deref(),
+            &mut self.new_release_button_state,
+        );
+
+        let menu_addons_container = element::menu_addons_container(
+            color_palette,
             &mut self.update_all_btn_state,
             &mut self.refresh_btn_state,
             &mut self.retail_btn_state,
             &mut self.classic_btn_state,
-            &mut self.settings_btn_state,
             &self.state,
             addons,
             &mut self.config,
-            self.needs_update.as_deref(),
-            &mut self.new_release_button_state,
         );
 
         let column_config = self.header_state.column_config();
@@ -253,7 +286,9 @@ impl Application for Ajour {
         let bottom_space = Space::new(Length::FillPortion(1), Length::Units(10));
 
         // This column gathers all the other elements together.
-        let mut content = Column::new().push(menu_container);
+        let mut content = Column::new()
+            .push(menu_container)
+            .push(menu_addons_container);
 
         // This ensure we only draw settings, when we need to.
         if self.is_showing_settings {
