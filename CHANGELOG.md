@@ -26,7 +26,6 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ### Fixed
 
-- Fixed a issue where Ajour would start without showing any text.
 - Ajour now creates the `.config` dir if it does not exist on macOS and Linux.
   - This fixes a crash where Ajour coudn't start if the user didn't have a `.config` directory.
 - Fixed a issue where Ajour would crash if CurseForge returned Minecraft addons instead of a World of Warcraft addons.
