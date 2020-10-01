@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+
+### Packaging
+- Updated Ajour icon.
+
 ### Added
 
 - You can now select which release channel you want each addon to use. Currently `alpha`, `beta` and `stable` is supported.
