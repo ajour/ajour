@@ -28,7 +28,7 @@ isahc = { version = "0.9.6", features = ["json"] }
 image = "0.23.8"
 native-dialog = "0.4.2"
 opener = "0.4.1"
-chrono = "0.4"
+chrono = { version = "0.4", features = ['serde'] }
 log = "0.4"
 fern = "0.6"
 timeago = "0.2.1"
