@@ -367,7 +367,6 @@ pub fn settings_container<'a, 'b>(
     let middle_container = Container::new(middle_column)
         .width(Length::FillPortion(1))
         .height(Length::Shrink)
-        .center_x()
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     let right_column = Column::new()
