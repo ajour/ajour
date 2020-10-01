@@ -333,8 +333,6 @@ pub fn run() {
 
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
-    // Enforce the usage of dedicated gpu if available.
-    settings.antialiasing = true;
 
     // Sets the Window icon.
     let image = image::load_from_memory_with_format(WINDOW_ICON, ImageFormat::Ico)
