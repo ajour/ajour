@@ -2,7 +2,7 @@
   
 <h1>Ajour</h1>
 
-![Quickstart](https://github.com/casperstorm/ajour/workflows/Quickstart/badge.svg)
+![Continuous integration](https://github.com/casperstorm/ajour/workflows/Continuous-integration/badge.svg)
 ![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
 [![Discord Server](https://img.shields.io/discord/757155234500968459?color=blue&label=Discord%20Chat&logo=discord&logoColor=white&style=flat-square)](https://discord.gg/4838t9R)
 
@@ -22,6 +22,12 @@
 
 ## Introduction
 Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
+
+<div align="center">
+
+[![Download Button](./resources/download-button.png)](https://github.com/casperstorm/ajour/releases)
+
+</div>
 
 ## Screenshots
 
