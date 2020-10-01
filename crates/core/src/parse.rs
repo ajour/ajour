@@ -306,7 +306,17 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     );
 
     // Fetches fingerprint package from curse_api
-    let fingerprint_package = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
+    let mut fingerprint_package = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
+
+    // We had a case where a addon hash returned a minecraft addon.
+    // So we filter out all matches which does not have a valid flavor.
+    fingerprint_package
+        .partial_matches
+        .retain(|a| a.file.game_version_flavor.is_some());
+
+    fingerprint_package
+        .exact_matches
+        .retain(|a| a.file.game_version_flavor.is_some());
 
     // Log info about partial matches
     {

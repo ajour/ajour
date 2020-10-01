@@ -217,7 +217,8 @@ impl Addon {
 
         let flavor = format!("wow_{}", flavor.to_string());
         for file in info.latest_files.iter() {
-            if !file.is_alternate && file.game_version_flavor == flavor {
+            let game_version_flavor = file.game_version_flavor.as_ref();
+            if !file.is_alternate && game_version_flavor == Some(&flavor) {
                 let version = file.display_name.clone();
                 let download_url = file.download_url.clone();
                 let date_time = DateTime::parse_from_rfc3339(&file.file_date)
