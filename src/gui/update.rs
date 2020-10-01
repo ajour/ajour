@@ -1,5 +1,8 @@
 use {
-    super::{Ajour, AjourState, ColumnKey, DirectoryType, Interaction, Message, SortDirection},
+    super::{
+        Ajour, AjourState, CatalogColumnKey, ColumnKey, DirectoryType, Interaction, Message,
+        SortDirection,
+    },
     ajour_core::{
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
@@ -618,6 +621,46 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.header_state.previous_sort_direction = Some(sort_direction);
             ajour.header_state.previous_column_key = Some(column_key);
         }
+        Message::Interaction(Interaction::SortCatalogColumn(column_key)) => {
+            // Close settings if shown.
+            ajour.is_showing_settings = false;
+
+            // First time clicking a column should sort it in Ascending order, otherwise
+            // flip the sort direction.
+            let mut sort_direction = SortDirection::Asc;
+
+            if let Some(previous_column_key) = ajour.catalog_header_state.previous_column_key {
+                if column_key == previous_column_key {
+                    if let Some(previous_sort_direction) =
+                        ajour.catalog_header_state.previous_sort_direction
+                    {
+                        sort_direction = previous_sort_direction.toggle()
+                    }
+                }
+            }
+
+            // Exception would be first time ever sorting and sorting by title.
+            // Since its already sorting in Asc by default, we should sort Desc.
+            if ajour.catalog_header_state.previous_column_key.is_none()
+                && column_key == CatalogColumnKey::Title
+            {
+                sort_direction = SortDirection::Desc;
+            }
+
+            log::debug!(
+                "Interaction::SortCatalogColumn({:?}, {:?})",
+                column_key,
+                sort_direction
+            );
+
+            //let flavor = ajour.config.wow.flavor;
+            //let mut addons = ajour.addons.entry(flavor).or_default();
+
+            //sort_addons(&mut addons, sort_direction, column_key);
+
+            ajour.catalog_header_state.previous_sort_direction = Some(sort_direction);
+            ajour.catalog_header_state.previous_column_key = Some(column_key);
+        }
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
 
@@ -909,7 +952,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.column_settings.columns.swap(idx, idx + 1);
             }
         }
-        Message::Error(error) | Message::Parse(Err(error)) | Message::NeedsUpdate(Err(error)) => {
+        Message::CatalogDownloaded(Ok(catalog)) => {
+            log::debug!(
+                "Message::CatalogDownloaded({} addons in catalog)",
+                catalog.addon_summary_list.len()
+            );
+
+            ajour.catalog = Some(catalog);
+        }
+        Message::Error(error)
+        | Message::Parse(Err(error))
+        | Message::NeedsUpdate(Err(error))
+        | Message::CatalogDownloaded(Err(error)) => {
             log::error!("{}", error);
 
             ajour.state = AjourState::Error(error);

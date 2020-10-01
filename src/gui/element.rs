@@ -2,12 +2,14 @@
 
 use {
     super::{
-        style, AjourMode, AjourState, BackupState, ColumnKey, ColumnSettings, ColumnState,
-        DirectoryType, Interaction, Message, ReleaseChannel, ScaleState, SortDirection, ThemeState,
+        style, AjourMode, AjourState, BackupState, CatalogColumnKey, CatalogColumnState, ColumnKey,
+        ColumnSettings, ColumnState, DirectoryType, Interaction, Message, ReleaseChannel,
+        ScaleState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
         addon::{Addon, AddonState},
+        catalog::Catalog,
         config::{Config, Flavor},
         theme::ColorPalette,
     },
@@ -675,7 +677,6 @@ pub fn addon_data_cell<'a, 'b>(
             .unwrap_or_else(|| "No description for addon.".to_string());
         let author = addon.author.clone().unwrap_or_else(|| "-".to_string());
         let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-        let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
         let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
         let bottom_space = Space::new(Length::Units(0), Length::Units(4));
         let notes_title_text = Text::new("Summary").size(DEFAULT_FONT_SIZE);
@@ -824,9 +825,9 @@ pub fn addon_data_cell<'a, 'b>(
         .style(style::Row(color_palette))
 }
 
-fn row_title(
-    column_key: ColumnKey,
-    previous_column_key: Option<ColumnKey>,
+fn row_title<T: PartialEq>(
+    column_key: T,
+    previous_column_key: Option<T>,
     previous_sort_direction: Option<SortDirection>,
     title: &str,
 ) -> String {
@@ -1203,6 +1204,69 @@ pub fn status_container<'a>(
         .center_x()
         .width(Length::Fill)
         .height(Length::Fill)
+}
+
+pub fn catalog_row_titles<'a>(
+    color_palette: ColorPalette,
+    catalog: &Catalog,
+    header_state: &'a mut header::State,
+    column_state: &'a mut [CatalogColumnState],
+    previous_column_key: Option<CatalogColumnKey>,
+    previous_sort_direction: Option<SortDirection>,
+) -> Header<'a, Message> {
+    // A row containing titles above the addon rows.
+    let mut row_titles = vec![];
+
+    for column in column_state.iter_mut() {
+        let column_key = column.key;
+
+        let row_title = row_title(
+            column_key,
+            previous_column_key,
+            previous_sort_direction,
+            &column.key.title(),
+        );
+
+        let mut row_header = Button::new(
+            &mut column.btn_state,
+            Text::new(row_title)
+                .size(DEFAULT_FONT_SIZE)
+                .width(Length::Fill),
+        )
+        .width(Length::Fill);
+
+        if column_key != CatalogColumnKey::Download {
+            row_header = row_header.on_press(Interaction::SortCatalogColumn(column_key));
+        }
+
+        if previous_column_key == Some(column_key) {
+            row_header = row_header.style(style::SelectedColumnHeaderButton(color_palette));
+        } else if column_key == CatalogColumnKey::Download {
+            row_header = row_header.style(style::UnclickableColumnHeaderButton(color_palette));
+        } else {
+            row_header = row_header.style(style::ColumnHeaderButton(color_palette));
+        }
+
+        let row_header: Element<Interaction> = row_header.into();
+
+        let row_container = Container::new(row_header.map(Message::Interaction))
+            .width(column.width)
+            .style(style::SecondaryTextContainer(color_palette));
+
+        // Only shows row titles if we have any catalog results.
+        if !catalog.addon_summary_list.is_empty() {
+            row_titles.push((column.key.as_string(), row_container));
+        }
+    }
+
+    Header::new(
+        header_state,
+        row_titles,
+        Some(Length::Units(DEFAULT_PADDING)),
+        Some(Length::Units(DEFAULT_PADDING + 5)),
+    )
+    .spacing(1)
+    .height(Length::Units(25))
 }
 
 pub fn addon_scrollable(

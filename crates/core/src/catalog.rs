@@ -3,14 +3,20 @@ use crate::network::request_async;
 use crate::Result;
 
 use chrono::{DateTime, NaiveDate, Utc};
-use isahc::prelude::*;
+use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
 
 const CATALOG_URL: &str =
     "https://raw.githubusercontent.com/ogri-la/wowman-data/master/curseforge-catalog.json";
 
-pub async fn get_catalog(shared_client: &HttpClient) -> Result<Catalog> {
-    let mut resp = request_async(shared_client, CATALOG_URL, vec![], Some(30)).await?;
+pub async fn get_catalog() -> Result<Catalog> {
+    let client = HttpClient::builder()
+        .redirect_policy(RedirectPolicy::Follow)
+        .max_connections_per_host(6)
+        .build()
+        .unwrap();
+
+    let mut resp = request_async(&client, CATALOG_URL, vec![], Some(30)).await?;
 
     if resp.status().is_success() {
         let catalog = resp.json()?;
@@ -60,9 +66,7 @@ mod tests {
     #[test]
     fn test_catalog_download() {
         async_std::task::block_on(async {
-            let client = HttpClient::new().unwrap();
-
-            let catalog = get_catalog(&client).await;
+            let catalog = get_catalog().await;
 
             if let Err(e) = catalog {
                 panic!("{}", e);
