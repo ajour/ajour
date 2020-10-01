@@ -35,7 +35,8 @@ fn setup_logger() -> Result<()> {
         })
         .level(log::LevelFilter::Off)
         .level_for("panic", log::LevelFilter::Error)
-        .level_for("ajour", log::LevelFilter::Trace);
+        .level_for("ajour", log::LevelFilter::Trace)
+        .level_for("ajour_core", log::LevelFilter::Trace);
 
     #[cfg(debug_assertions)]
     {
