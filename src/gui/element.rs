@@ -360,7 +360,7 @@ pub fn settings_container<'a, 'b>(
 
     // Container wrapping colum.
     let left_container = Container::new(left_column)
-        .width(Length::FillPortion(1))
+        .width(Length::FillPortion(2))
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
