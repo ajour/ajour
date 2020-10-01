@@ -17,8 +17,6 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 - Ignored addons has been removed from settings, and is now present in the addon list with a `ignored` status.
   - Reason for this is to clean up settings view. 
-
-### Changed
 - Reworked the controls for selected flavor. It should now be more obvious what is selected and what you can select.
 - Ajour now does a better job at cache busting by looking at the modified date on a Addon folder.
 
