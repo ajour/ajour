@@ -10,6 +10,11 @@ cargo install ajour --git https://github.com/casperstorm/ajour.git
 brew cask install ajour
 ```
 
+## [Chocolatey](https://chocolatey.org/)
+```cmd
+choco install ajour
+```
+
 # Manual Installation
 
 1. [Prerequisites](#prerequisites)
