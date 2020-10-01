@@ -9,7 +9,7 @@ use std::path::PathBuf;
 pub struct RemotePackage {
     pub version: String,
     pub download_url: String,
-    pub date_time: DateTime<Utc>,
+    pub date_time: Option<DateTime<Utc>>,
     pub file_id: Option<i64>,
 }
 
@@ -179,10 +179,14 @@ impl Addon {
 
         let version = package.version.clone();
         let download_url = package.url.clone();
-        let date_time =
-            DateTime::parse_from_rfc3339(&format!("{}T15:33:15.007Z", &package.lastupdate))
-                .map(|d| d.with_timezone(&Utc))
-                .unwrap_or_else(|_| Utc::now());
+
+        let date_time = NaiveDateTime::parse_from_str(&package.lastupdate, "%Y-%m-%d")
+            .map_or(
+                NaiveDateTime::parse_from_str(&package.lastupdate, "%Y-%m-%d %H:%M:%S"),
+                Result::Ok,
+            )
+            .map(|d| Utc.from_utc_datetime(&d))
+            .ok();
 
         let package = RemotePackage {
             version,
@@ -223,7 +227,7 @@ impl Addon {
                 let download_url = file.download_url.clone();
                 let date_time = DateTime::parse_from_rfc3339(&file.file_date)
                     .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now());
+                    .ok();
                 let package = RemotePackage {
                     version,
                     download_url,

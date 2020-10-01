@@ -690,8 +690,12 @@ pub fn addon_data_cell<'a, 'b>(
         let release_date_text: String = if let Some(package) = release_package {
             let f = timeago::Formatter::new();
             let now = Local::now();
-            let readable_time = f.convert_chrono(package.date_time, now);
-            format!("is {}", readable_time)
+
+            if let Some(time) = package.date_time.as_ref() {
+                format!("is {}", f.convert_chrono(*time, now))
+            } else {
+                "".to_string()
+            }
         } else {
             "has no avaiable release".to_string()
         };
