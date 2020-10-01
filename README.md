@@ -53,6 +53,12 @@ Prebuilt binaries for macOS and Windows can be downloaded from the [GitHub relea
 
 For everyone else, a detailed instruction can be found [here](https://github.com/casperstorm/ajour/blob/master/INSTALL.md).
 
+### Chocolatey
+
+The app can also be installed via the Chocolatey package manager via `choco install ajour`.
+
+This package is automatically updated to the latest version every day at 06:00 UTC and will add a Start Menu shortcut.
+
 ## Themes
 
 <p align="left">
