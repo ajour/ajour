@@ -1,0 +1,73 @@
+name: ajour # you probably want to 'snapcraft register <name>'
+base: core18
+license: MIT
+adopt-info: ajour
+summary: A World of Warcraft addon manager written in Rust
+description: |
+  Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
+
+architectures:
+  - build-on: amd64
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: devmode # use 'strict' once you have the right plugs and slots
+
+parts:
+  desktop-glib-only:
+    source: https://github.com/ubuntu/snapcraft-desktop-helpers.git
+    source-subdir: glib-only
+    plugin: make
+    build-packages:
+      - libglib2.0-dev
+    stage-packages:
+      - libglib2.0-bin
+
+  ajour:
+    after:
+      - desktop-glib-only
+    plugin: rust
+    source: https://github.com/casperstorm/ajour.git
+    build-packages:
+      ["build-essential", "cmake", "libxft-dev", "libssl-dev", "libx11-dev"]
+    stage-packages:
+      - libfontconfig1
+      - libfreetype6
+      - libpng16-16
+      - libxau6
+      - libxcb1
+      - libxdmcp6
+      - libvulkan1
+      - libvulkan-dev
+      - mesa-vulkan-drivers
+      - libx11-6
+      - libxcursor1
+      - libxrandr2
+      - libxi6
+    override-pull: |
+      snapcraftctl pull
+      snapcraftctl set-version $(git describe --tags)
+
+apps:
+  ajour:
+    adapter: full
+    command: bin/ajour
+    command-chain:
+      - bin/desktop-launch
+
+plugs:
+  home:
+  network:
+  desktop:
+  desktop-legacy:
+  wayland:
+  unity7:
+  x11:
+  opengl:
+
+layout:
+  /usr/share/vulkan:
+    symlink: $SNAP/usr/share/vulkan
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_intel.so:
+    symlink: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_intel.so
+  /usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_radeon.so:
+    symlink: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/libvulkan_radeon.so
