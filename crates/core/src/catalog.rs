@@ -26,31 +26,31 @@ pub async fn get_catalog(shared_client: &HttpClient) -> Result<Catalog> {
 #[serde(rename_all = "kebab-case")]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Catalog {
-    spec: CatalogSpec,
-    datestamp: NaiveDate,
-    updated_datestamp: NaiveDate,
-    total: u32,
-    addon_summary_list: Vec<CatalogAddon>,
+    pub spec: CatalogSpec,
+    pub datestamp: NaiveDate,
+    pub updated_datestamp: NaiveDate,
+    pub total: u32,
+    pub addon_summary_list: Vec<CatalogAddon>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogSpec {
-    version: u16,
+    pub version: u16,
 }
 
 #[serde(rename_all = "kebab-case")]
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogAddon {
-    alt_name: String,
-    category_list: Vec<String>,
-    created_date: DateTime<Utc>,
-    description: String,
-    download_count: u64,
-    label: String,
-    name: String,
-    source: String,
-    updated_date: DateTime<Utc>,
-    uri: String,
+    pub alt_name: String,
+    pub category_list: Vec<String>,
+    pub created_date: DateTime<Utc>,
+    pub description: String,
+    pub download_count: u64,
+    pub label: String,
+    pub name: String,
+    pub source: String,
+    pub updated_date: DateTime<Utc>,
+    pub uri: String,
 }
 
 #[cfg(test)]
