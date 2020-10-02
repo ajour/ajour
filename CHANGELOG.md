@@ -18,6 +18,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 - You can now select which release channel you want each addon to use. Currently `alpha`, `beta` and `stable` is supported.
 - Columns can now be toggled as visible and reordered from settings. In addition, 3 new optional columns have been added that can be toggled (Channel, Game Version, Author).
+- Added command line options that can be specified to change the behavior of Ajour at runtime.
+  - `--data <PATH>` can be specified to use a custom data directory
+  - `--aa <true / false>` can be specified to enable / disable Anti-aliasing. Anti-aliasing is used by default if not specified.
 
 ### Changed
 
