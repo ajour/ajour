@@ -337,7 +337,9 @@ pub fn run(opts: Opts) {
 
     #[cfg(feature = "wgpu")]
     {
-        settings.antialiasing = opts.antialiasing.unwrap_or(true);
+        let antialiasing = opts.antialiasing.unwrap_or(true);
+        log::debug!("antialiasing: {}", antialiasing);
+        settings.antialiasing = antialiasing;
     }
 
     #[cfg(feature = "opengl")]
