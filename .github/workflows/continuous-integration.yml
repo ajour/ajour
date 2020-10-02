@@ -17,6 +17,10 @@ jobs:
         with:
           command: check
           args: --all
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all --no-default-features --features opengl
 
   test:
     name: Test Suite
@@ -32,6 +36,10 @@ jobs:
         with:
           command: test
           args: --workspace
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --no-default-features --features opengl
 
   fmt:
     name: Rustfmt

@@ -12,6 +12,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ## [0.3.5] - 2020-10-01
 ### Packaging
 - Updated Ajour icon.
+- Added an alternative build that uses OpenGL. This will allow Ajour to be used by the widest possible audience, and resolve issues where users couldn't use Ajour with older / certain GPU configurations. An alternative download link will be provided to users wanting to try this build over the default.
 
 ### Added
 
