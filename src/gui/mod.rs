@@ -334,9 +334,16 @@ pub fn run(opts: Opts) {
 
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
-    let aa = opts.antialiasing.unwrap_or(true);
-    log::debug!("antialiasing: {}", aa);
-    settings.antialiasing = aa;
+
+    #[cfg(feature = "wgpu")]
+    {
+        settings.antialiasing = opts.antialiasing.unwrap_or(true);
+    }
+
+    #[cfg(feature = "opengl")]
+    {
+        settings.antialiasing = opts.antialiasing.unwrap_or(false);
+    }
 
     // Sets the Window icon.
     let image = image::load_from_memory_with_format(WINDOW_ICON, ImageFormat::Ico)

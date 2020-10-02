@@ -1,4 +1,8 @@
+#[cfg(feature = "wgpu")]
 use iced_wgpu::Renderer;
+
+#[cfg(feature = "opengl")]
+use iced_glow::Renderer;
 
 mod renderer;
 mod widget;
