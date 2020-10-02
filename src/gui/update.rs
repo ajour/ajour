@@ -960,6 +960,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.catalog = Some(catalog);
         }
+        Message::Interaction(Interaction::CatalogQuery(query)) => {
+            log::debug!("Interaction::CatalogQuery({})", &query);
+
+            ajour.catalog_query_state.query = Some(query);
+        }
         Message::Error(error)
         | Message::Parse(Err(error))
         | Message::NeedsUpdate(Err(error))

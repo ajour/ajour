@@ -22,8 +22,8 @@ use {
 };
 
 // Default values used on multiple elements.
-static DEFAULT_FONT_SIZE: u16 = 14;
-static DEFAULT_PADDING: u16 = 10;
+pub static DEFAULT_FONT_SIZE: u16 = 14;
+pub static DEFAULT_PADDING: u16 = 10;
 
 /// Container for settings.
 pub fn settings_container<'a, 'b>(
