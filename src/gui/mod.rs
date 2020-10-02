@@ -2,6 +2,7 @@ mod element;
 mod style;
 mod update;
 
+use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, ReleaseChannel},
@@ -436,12 +437,25 @@ impl Application for Ajour {
 
 /// Starts the GUI.
 /// This function does not return.
-pub fn run() {
+pub fn run(opts: Opts) {
     let config: Config = Config::load_or_default().expect("loading config on application startup");
 
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
-    settings.antialiasing = true;
+
+    #[cfg(feature = "wgpu")]
+    {
+        let antialiasing = opts.antialiasing.unwrap_or(true);
+        log::debug!("antialiasing: {}", antialiasing);
+        settings.antialiasing = antialiasing;
+    }
+
+    #[cfg(feature = "opengl")]
+    {
+        let antialiasing = opts.antialiasing.unwrap_or(false);
+        log::debug!("antialiasing: {}", antialiasing);
+        settings.antialiasing = antialiasing;
+    }
 
     // Sets the Window icon.
     let image = image::load_from_memory_with_format(WINDOW_ICON, ImageFormat::Ico)

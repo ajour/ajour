@@ -9,13 +9,18 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+## [0.3.5] - 2020-10-01
 ### Packaging
 - Updated Ajour icon.
+- Added an alternative build that uses OpenGL. This will allow Ajour to be used by the widest possible audience, and resolve issues where users couldn't use Ajour with older / certain GPU configurations. An alternative download link will be provided to users wanting to try this build over the default.
 
 ### Added
 
 - You can now select which release channel you want each addon to use. Currently `alpha`, `beta` and `stable` is supported.
 - Columns can now be toggled as visible and reordered from settings. In addition, 3 new optional columns have been added that can be toggled (Channel, Game Version, Author).
+- Added command line options that can be specified to change the behavior of Ajour at runtime.
+  - `--data <PATH>` can be specified to use a custom data directory
+  - `--aa <true / false>` can be specified to enable / disable Anti-aliasing. Anti-aliasing is used by default if not specified.
 
 ### Changed
 
