@@ -344,7 +344,9 @@ pub fn run(opts: Opts) {
 
     #[cfg(feature = "opengl")]
     {
-        settings.antialiasing = opts.antialiasing.unwrap_or(false);
+        let antialiasing = opts.antialiasing.unwrap_or(false);
+        log::debug!("antialiasing: {}", antialiasing);
+        settings.antialiasing = antialiasing;
     }
 
     // Sets the Window icon.
