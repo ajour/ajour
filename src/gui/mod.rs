@@ -5,7 +5,7 @@ mod update;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, ReleaseChannel},
-    catalog::{get_catalog, Catalog},
+    catalog::{get_catalog, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
@@ -17,9 +17,10 @@ use ajour_core::{
 use async_std::sync::{Arc, Mutex};
 use chrono::NaiveDateTime;
 use iced::{
-    button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
-    Settings, Space, Subscription,
+    button, pick_list, scrollable, text_input, Application, Column, Command, Container, Element,
+    Length, Row, Settings, Space, Subscription, TextInput,
 };
+use image::ImageFormat;
 use isahc::{
     config::{Configurable, RedirectPolicy},
     HttpClient,
@@ -28,7 +29,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use widgets::header;
 
-use image::ImageFormat;
+use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
 
 #[derive(Debug)]
@@ -81,6 +82,7 @@ pub enum Interaction {
     MoveColumnLeft(ColumnKey),
     MoveColumnRight(ColumnKey),
     ModeSelected(AjourMode),
+    CatalogQuery(String),
 }
 
 #[derive(Debug)]
@@ -131,6 +133,7 @@ pub struct Ajour {
     backup_state: BackupState,
     column_settings: ColumnSettings,
     catalog: Option<Catalog>,
+    catalog_query_state: CatalogQueryState,
     catalog_header_state: CatalogHeaderState,
 }
 
@@ -168,6 +171,7 @@ impl Default for Ajour {
             backup_state: Default::default(),
             column_settings: Default::default(),
             catalog: None,
+            catalog_query_state: Default::default(),
             catalog_header_state: Default::default(),
         }
     }
@@ -335,6 +339,37 @@ impl Application for Ajour {
             }
             AjourMode::Catalog => {
                 if let Some(catalog) = &self.catalog {
+                    let query = self
+                        .catalog_query_state
+                        .query
+                        .as_deref()
+                        .unwrap_or_default();
+
+                    let catalog_query = TextInput::new(
+                        &mut self.catalog_query_state.text_input_state,
+                        "Search for an addon...",
+                        query,
+                        Interaction::CatalogQuery,
+                    )
+                    .size(DEFAULT_FONT_SIZE)
+                    .padding(10)
+                    .style(style::CatalogQueryInput(color_palette));
+
+                    let catalog_query: Element<Interaction> = catalog_query.into();
+
+                    let catalog_query_row = Row::new()
+                        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                        .push(catalog_query.map(Message::Interaction))
+                        .push(Space::new(
+                            Length::Units(DEFAULT_PADDING + 5),
+                            Length::Units(0),
+                        ));
+
+                    let catalog_query_container = Container::new(catalog_query_row)
+                        .width(Length::Fill)
+                        .height(Length::Units(35))
+                        .center_y();
+
                     let catalog_row_titles = element::catalog_row_titles(
                         color_palette,
                         catalog,
@@ -345,9 +380,14 @@ impl Application for Ajour {
                     );
 
                     // Bottom space below the scrollable.
-                    let bottom_space = Space::new(Length::FillPortion(1), Length::Units(10));
+                    let bottom_space =
+                        Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
-                    content = content.push(catalog_row_titles).push(bottom_space)
+                    content = content
+                        .push(catalog_query_container)
+                        .push(Space::new(Length::Fill, Length::Units(5)))
+                        .push(catalog_row_titles)
+                        .push(bottom_space)
                 }
             }
         }
@@ -741,6 +781,26 @@ pub struct CatalogColumnState {
     key: CatalogColumnKey,
     btn_state: button::State,
     width: Length,
+}
+
+#[derive(Default)]
+pub struct CatalogQueryState {
+    pub query: Option<String>,
+    pub text_input_state: text_input::State,
+}
+
+pub struct CatalogRow {
+    btn_state: button::State,
+    addon: CatalogAddon,
+}
+
+impl From<CatalogAddon> for CatalogRow {
+    fn from(addon: CatalogAddon) -> Self {
+        Self {
+            btn_state: Default::default(),
+            addon,
+        }
+    }
 }
 
 pub struct ThemeState {

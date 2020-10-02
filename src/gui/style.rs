@@ -1,5 +1,5 @@
 use ajour_core::theme::ColorPalette;
-use iced::{button, checkbox, container, pick_list, scrollable, Background, Color};
+use iced::{button, checkbox, container, pick_list, scrollable, text_input, Background, Color};
 
 pub struct TextButton(pub ColorPalette);
 impl button::StyleSheet for TextButton {
@@ -598,5 +598,57 @@ impl checkbox::StyleSheet for AlwaysCheckedCheckbox {
 
     fn hovered(&self, _is_checked: bool) -> checkbox::Style {
         self.active(_is_checked)
+    }
+}
+
+pub struct CatalogQueryInput(pub ColorPalette);
+impl text_input::StyleSheet for CatalogQueryInput {
+    /// Produces the style of an active text input.
+    fn active(&self) -> text_input::Style {
+        text_input::Style {
+            background: Background::Color(self.0.surface),
+            border_radius: 2,
+            border_width: 1,
+            border_color: Color {
+                a: 0.30,
+                ..self.0.primary
+            },
+        }
+    }
+
+    /// Produces the style of a focused text input.
+    fn focused(&self) -> text_input::Style {
+        text_input::Style {
+            background: Background::Color(self.0.surface),
+            border_radius: 2,
+            border_width: 1,
+            border_color: Color {
+                a: 0.70,
+                ..self.0.primary
+            },
+        }
+    }
+
+    fn placeholder_color(&self) -> Color {
+        Color {
+            a: 0.30,
+            ..self.0.primary
+        }
+    }
+
+    fn value_color(&self) -> Color {
+        self.0.primary
+    }
+
+    fn selection_color(&self) -> Color {
+        Color {
+            a: 0.30,
+            ..self.0.secondary
+        }
+    }
+
+    /// Produces the style of an hovered text input.
+    fn hovered(&self) -> text_input::Style {
+        self.focused()
     }
 }
