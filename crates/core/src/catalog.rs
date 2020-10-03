@@ -46,11 +46,37 @@ pub struct Catalog {
 pub struct CatalogAddon {
     pub id: u32,
     pub name: String,
-    pub categories: Vec<String>,
+    pub categories: Vec<CatalogCategory>,
     pub summary: String,
     pub number_of_downloads: u64,
     pub source: Source,
     pub flavors: Vec<Flavor>,
+}
+
+#[serde(transparent)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct CatalogCategory {
+    pub name: String,
+}
+
+impl CatalogCategory {
+    pub fn all_option() -> Self {
+        CatalogCategory {
+            name: String::from("All Categories"),
+        }
+    }
+}
+
+impl std::fmt::Display for CatalogCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Default for CatalogCategory {
+    fn default() -> Self {
+        CatalogCategory::all_option()
+    }
 }
 
 #[cfg(test)]

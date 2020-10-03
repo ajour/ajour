@@ -6,7 +6,7 @@ use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, ReleaseChannel},
-    catalog::{Catalog, CatalogAddon},
+    catalog::{Catalog, CatalogAddon, CatalogCategory},
     config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
@@ -85,7 +85,7 @@ pub enum Interaction {
     ModeSelected(AjourMode),
     CatalogQuery(String),
     CatalogInstall(u32),
-    CatalogCategorySelected(String),
+    CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(String),
 }
 
@@ -138,7 +138,7 @@ pub struct Ajour {
     backup_state: BackupState,
     column_settings: ColumnSettings,
     catalog: Option<Catalog>,
-    catalog_categories: Option<Vec<String>>,
+    catalog_categories: Option<Vec<CatalogCategory>>,
     catalog_query_state: CatalogQueryState,
     catalog_header_state: CatalogHeaderState,
 }
@@ -364,15 +364,15 @@ impl Application for Ajour {
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
-                    let selected_category = match self.catalog_query_state.category {
-                        None => Some(String::from("All categories")),
-                        _ => self.catalog_query_state.category.clone(),
-                    };
+
+                    // Insert the default option as the first option (placeholder)
+                    let mut categories = categories.to_owned();
+                    categories.insert(0, Default::default());
 
                     let category_picklist = PickList::new(
                         &mut self.catalog_query_state.categories_state,
-                        categories_with_all_option(categories),
-                        selected_category,
+                        categories,
+                        Some(self.catalog_query_state.category.clone()),
                         Interaction::CatalogCategorySelected,
                     )
                     .text_size(14)
@@ -512,13 +512,6 @@ impl Application for Ajour {
             .style(style::Content(color_palette))
             .into()
     }
-}
-
-fn categories_with_all_option(categories: &Vec<String>) -> Vec<String> {
-    let mut categories = categories.to_owned();
-    categories.extend(vec![String::from("All categories")]);
-    categories.rotate_right(1);
-    categories
 }
 
 /// Starts the GUI.
@@ -891,13 +884,13 @@ pub struct CatalogColumnState {
 
 pub struct CatalogQueryState {
     pub query: Option<String>,
-    pub category: Option<String>,
+    pub category: CatalogCategory,
     pub result_size: CatalogResultSize,
     pub result_sizes: [String; 4],
     pub text_input_state: text_input::State,
     pub catalog_rows: Vec<CatalogRow>,
     pub scrollable_state: scrollable::State,
-    pub categories_state: pick_list::State<String>,
+    pub categories_state: pick_list::State<CatalogCategory>,
     pub results_size_state: pick_list::State<String>,
 }
 
@@ -905,7 +898,7 @@ impl Default for CatalogQueryState {
     fn default() -> Self {
         CatalogQueryState {
             query: None,
-            category: None,
+            category: Default::default(),
             result_size: Default::default(),
             result_sizes: CatalogResultSize::all_strings(),
             text_input_state: Default::default(),

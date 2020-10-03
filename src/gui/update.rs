@@ -6,7 +6,7 @@ use {
     ajour_core::{
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
-        catalog::get_catalog,
+        catalog::{get_catalog, CatalogCategory},
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
         curse_api::latest_stable_addon_from_id,
         fs::{delete_addons, install_addon, PersistentData},
@@ -1003,10 +1003,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
             log::debug!("Interaction::CatalogCategorySelected({})", &category);
 
-            ajour.catalog_query_state.category = match category.as_str() {
-                "All categories" => None,
-                _ => Some(category),
-            };
+            ajour.catalog_query_state.category = category;
 
             query_and_sort_catalog(ajour);
         }
@@ -1272,10 +1269,10 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         catalog_rows = catalog_rows
             .into_iter()
             .filter(|a| {
-                if let Some(category) = &category {
-                    a.addon.categories.iter().any(|c| c == category)
-                } else {
+                if category == &CatalogCategory::all_option() {
                     true
+                } else {
+                    a.addon.categories.iter().any(|c| c == category)
                 }
             })
             .enumerate()
