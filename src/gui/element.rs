@@ -1068,7 +1068,7 @@ pub fn menu_container<'a>(
     new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
-    let mut settings_row = Row::new().height(Length::Units(25));
+    let mut settings_row = Row::new().height(Length::Units(30));
 
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,

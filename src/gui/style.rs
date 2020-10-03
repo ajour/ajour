@@ -536,6 +536,43 @@ impl pick_list::StyleSheet for PickList {
     }
 }
 
+pub struct SecondaryPickList(pub ColorPalette);
+impl pick_list::StyleSheet for SecondaryPickList {
+    fn menu(&self) -> pick_list::Menu {
+        pick_list::Menu {
+            text_color: self.0.on_surface,
+            background: Background::Color(self.0.background),
+            border_width: 1,
+            border_color: self.0.surface,
+            selected_background: Color {
+                a: 0.1,
+                ..self.0.primary
+            }
+            .into(),
+            selected_text_color: self.0.primary,
+        }
+    }
+
+    fn active(&self) -> pick_list::Style {
+        pick_list::Style {
+            text_color: self.0.on_surface,
+            background: Background::Color(self.0.surface),
+            border_width: 1,
+            border_color: Color {
+                a: 1.0,
+                ..self.0.background
+            },
+            border_radius: 2,
+            icon_size: 0.5,
+        }
+    }
+
+    fn hovered(&self) -> pick_list::Style {
+        let active = self.active();
+        pick_list::Style { ..active }
+    }
+}
+
 pub struct ChannelBadge(pub ColorPalette);
 impl container::StyleSheet for ChannelBadge {
     fn style(&self) -> container::Style {

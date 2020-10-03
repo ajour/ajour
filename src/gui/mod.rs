@@ -253,24 +253,11 @@ impl Application for Ajour {
             &mut self.new_release_button_state,
         );
 
-        let menu_addons_container = element::menu_addons_container(
-            color_palette,
-            &mut self.update_all_btn_state,
-            &mut self.refresh_btn_state,
-            &mut self.retail_btn_state,
-            &mut self.classic_btn_state,
-            &self.state,
-            addons,
-            &mut self.config,
-        );
-
         let column_config = self.header_state.column_config();
         let catalog_column_config = self.catalog_header_state.column_config();
 
         // This column gathers all the other elements together.
-        let mut content = Column::new()
-            .push(menu_container)
-            .push(menu_addons_container);
+        let mut content = Column::new().push(menu_container);
 
         // This ensure we only draw settings, when we need to.
         if self.is_showing_settings {
@@ -295,6 +282,19 @@ impl Application for Ajour {
 
         match self.mode {
             AjourMode::Addons => {
+                // Menu for addons.
+                let menu_addons_container = element::menu_addons_container(
+                    color_palette,
+                    &mut self.update_all_btn_state,
+                    &mut self.refresh_btn_state,
+                    &mut self.retail_btn_state,
+                    &mut self.classic_btn_state,
+                    &self.state,
+                    addons,
+                    &mut self.config,
+                );
+                content = content.push(menu_addons_container);
+
                 // Addon row titles is a row of titles above the addon scrollable.
                 // This is to add titles above each section of the addon row, to let
                 // the user easily identify what the value is.
@@ -373,7 +373,7 @@ impl Application for Ajour {
                     )
                     .text_size(14)
                     .width(Length::Units(200))
-                    .style(style::PickList(color_palette));
+                    .style(style::SecondaryPickList(color_palette));
 
                     let category_picklist: Element<Interaction> = category_picklist.into();
 
@@ -385,7 +385,7 @@ impl Application for Ajour {
                     )
                     .text_size(14)
                     .width(Length::Units(200))
-                    .style(style::PickList(color_palette));
+                    .style(style::SecondaryPickList(color_palette));
 
                     let result_size_picklist: Element<Interaction> = result_size_picklist.into();
 
