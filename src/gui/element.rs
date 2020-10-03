@@ -1255,7 +1255,7 @@ pub fn catalog_row_titles<'a>(
             .style(style::SecondaryTextContainer(color_palette));
 
         // Only shows row titles if we have any catalog results.
-        if !catalog.addon_summary_list.is_empty() {
+        if !catalog.addons.is_empty() {
             row_titles.push((column.key.as_string(), row_container));
         }
     }
@@ -1274,6 +1274,7 @@ pub fn catalog_data_cell<'a, 'b>(
     color_palette: ColorPalette,
     addon: &'a mut CatalogRow,
     column_config: &'b [(CatalogColumnKey, Length)],
+    already_installed: bool,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
 
@@ -1294,10 +1295,19 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let install = Text::new("Install").size(DEFAULT_FONT_SIZE);
-        let install_button = Button::new(install_state, install)
-            .on_press(Interaction::Install(addon_data.uri.clone()))
-            .style(style::DefaultBoxedButton(color_palette));
+        let install = Text::new(if already_installed {
+            "Installed"
+        } else {
+            "Install"
+        })
+        .size(DEFAULT_FONT_SIZE);
+        let mut install_button =
+            Button::new(install_state, install).style(style::DefaultBoxedButton(color_palette));
+
+        if !already_installed {
+            install_button =
+                install_button.on_press(Interaction::CatalogInstall(addon_data.curse_id));
+        }
 
         let install_button: Element<Interaction> = install_button.into();
 
@@ -1345,7 +1355,7 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let description = Text::new(&addon_data.description).size(DEFAULT_FONT_SIZE);
+        let description = Text::new(&addon_data.summary).size(DEFAULT_FONT_SIZE);
         let description_container = Container::new(description)
             .height(default_height)
             .width(*width)
@@ -1368,8 +1378,12 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let num_downloads = Text::new(&addon_data.download_count.to_formatted_string(&Locale::en))
-            .size(DEFAULT_FONT_SIZE);
+        let num_downloads = Text::new(
+            &addon_data
+                .number_of_downloads
+                .to_formatted_string(&Locale::en),
+        )
+        .size(DEFAULT_FONT_SIZE);
         let num_downloads_container = Container::new(num_downloads)
             .height(default_height)
             .width(*width)

@@ -6,7 +6,7 @@ use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, ReleaseChannel},
-    catalog::{get_catalog, Catalog, CatalogAddon},
+    catalog::{Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
@@ -19,7 +19,7 @@ use async_std::sync::{Arc, Mutex};
 use chrono::NaiveDateTime;
 use iced::{
     button, pick_list, scrollable, text_input, Application, Column, Command, Container, Element,
-    Length, Row, Settings, Space, Subscription, TextInput,
+    Length, PickList, Row, Settings, Space, Subscription, TextInput,
 };
 use image::ImageFormat;
 use isahc::{
@@ -84,7 +84,9 @@ pub enum Interaction {
     MoveColumnRight(ColumnKey),
     ModeSelected(AjourMode),
     CatalogQuery(String),
-    Install(String),
+    CatalogInstall(u32),
+    CatalogCategorySelected(String),
+    CatalogResultSizeSelected(String),
 }
 
 #[derive(Debug)]
@@ -135,6 +137,7 @@ pub struct Ajour {
     backup_state: BackupState,
     column_settings: ColumnSettings,
     catalog: Option<Catalog>,
+    catalog_categories: Option<Vec<String>>,
     catalog_query_state: CatalogQueryState,
     catalog_header_state: CatalogHeaderState,
 }
@@ -173,6 +176,7 @@ impl Default for Ajour {
             backup_state: Default::default(),
             column_settings: Default::default(),
             catalog: None,
+            catalog_categories: None,
             catalog_query_state: Default::default(),
             catalog_header_state: Default::default(),
         }
@@ -189,7 +193,6 @@ impl Application for Ajour {
             Command::perform(load_config(), Message::Parse),
             Command::perform(needs_update(VERSION), Message::NeedsUpdate),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
-            Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];
 
         (Ajour::default(), Command::batch(init_commands))
@@ -341,7 +344,8 @@ impl Application for Ajour {
                 }
             }
             AjourMode::Catalog => {
-                if let Some(catalog) = &self.catalog {
+                if let (Some(catalog), Some(categories)) = (&self.catalog, &self.catalog_categories)
+                {
                     let query = self
                         .catalog_query_state
                         .query
@@ -360,9 +364,35 @@ impl Application for Ajour {
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
 
+                    let category_picklist = PickList::new(
+                        &mut self.catalog_query_state.categories_state,
+                        categories,
+                        self.catalog_query_state.category.clone(),
+                        Interaction::CatalogCategorySelected,
+                    )
+                    .text_size(14)
+                    .width(Length::Units(200))
+                    .style(style::PickList(color_palette));
+
+                    let category_picklist: Element<Interaction> = category_picklist.into();
+
+                    let result_size_picklist = PickList::new(
+                        &mut self.catalog_query_state.results_size_state,
+                        &self.catalog_query_state.result_sizes[..],
+                        Some(self.catalog_query_state.result_size.to_string()),
+                        Interaction::CatalogResultSizeSelected,
+                    )
+                    .text_size(14)
+                    .width(Length::Units(200))
+                    .style(style::PickList(color_palette));
+
+                    let result_size_picklist: Element<Interaction> = result_size_picklist.into();
+
                     let catalog_query_row = Row::new()
                         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                         .push(catalog_query.map(Message::Interaction))
+                        .push(category_picklist.map(Message::Interaction))
+                        .push(result_size_picklist.map(Message::Interaction))
                         .push(Space::new(
                             Length::Units(DEFAULT_PADDING + 5),
                             Length::Units(0),
@@ -388,10 +418,15 @@ impl Application for Ajour {
                     );
 
                     for addon in self.catalog_query_state.catalog_rows.iter_mut() {
+                        let already_installed = addons
+                            .iter()
+                            .any(|a| a.curse_id == Some(addon.addon.curse_id));
+
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,
                             addon,
                             &catalog_column_config,
+                            already_installed,
                         );
 
                         catalog_scrollable = catalog_scrollable.push(catalog_data_cell);
@@ -429,11 +464,18 @@ impl Application for Ajour {
                     None
                 }
             }
-            AjourState::Loading => Some(element::status_container(
-                color_palette,
-                "Loading..",
-                "Currently parsing addons.",
-            )),
+            AjourState::Loading => match self.mode {
+                AjourMode::Addons => Some(element::status_container(
+                    color_palette,
+                    "Loading..",
+                    "Currently parsing addons.",
+                )),
+                AjourMode::Catalog => Some(element::status_container(
+                    color_palette,
+                    "Loading..",
+                    "Currently loading addon catalog.",
+                )),
+            },
             _ => None,
         };
 
@@ -821,12 +863,32 @@ pub struct CatalogColumnState {
     width: Length,
 }
 
-#[derive(Default)]
 pub struct CatalogQueryState {
     pub query: Option<String>,
+    pub category: Option<String>,
+    pub result_size: CatalogResultSize,
+    pub result_sizes: [String; 4],
     pub text_input_state: text_input::State,
     pub catalog_rows: Vec<CatalogRow>,
     pub scrollable_state: scrollable::State,
+    pub categories_state: pick_list::State<String>,
+    pub results_size_state: pick_list::State<String>,
+}
+
+impl Default for CatalogQueryState {
+    fn default() -> Self {
+        CatalogQueryState {
+            query: None,
+            category: None,
+            result_size: Default::default(),
+            result_sizes: CatalogResultSize::all_strings(),
+            text_input_state: Default::default(),
+            catalog_rows: Default::default(),
+            scrollable_state: Default::default(),
+            categories_state: Default::default(),
+            results_size_state: Default::default(),
+        }
+    }
 }
 
 pub struct CatalogRow {
@@ -840,6 +902,58 @@ impl From<CatalogAddon> for CatalogRow {
             btn_state: Default::default(),
             addon,
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum CatalogResultSize {
+    _25,
+    _50,
+    _100,
+    _500,
+}
+
+impl Default for CatalogResultSize {
+    fn default() -> Self {
+        CatalogResultSize::_25
+    }
+}
+
+impl CatalogResultSize {
+    pub fn all_strings() -> [String; 4] {
+        [
+            CatalogResultSize::_25.to_string(),
+            CatalogResultSize::_50.to_string(),
+            CatalogResultSize::_100.to_string(),
+            CatalogResultSize::_500.to_string(),
+        ]
+    }
+
+    pub fn as_usize(self) -> usize {
+        match self {
+            CatalogResultSize::_25 => 25,
+            CatalogResultSize::_50 => 50,
+            CatalogResultSize::_100 => 100,
+            CatalogResultSize::_500 => 500,
+        }
+    }
+}
+
+impl From<&str> for CatalogResultSize {
+    fn from(s: &str) -> Self {
+        match s {
+            "25" => CatalogResultSize::_25,
+            "50" => CatalogResultSize::_50,
+            "100" => CatalogResultSize::_100,
+            "500" => CatalogResultSize::_500,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl ToString for CatalogResultSize {
+    fn to_string(&self) -> String {
+        self.as_usize().to_string()
     }
 }
 

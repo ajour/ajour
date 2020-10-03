@@ -1,11 +1,12 @@
 use {
     super::{
-        Ajour, AjourState, CatalogColumnKey, CatalogRow, ColumnKey, DirectoryType, Interaction,
-        Message, SortDirection,
+        Ajour, AjourMode, AjourState, CatalogColumnKey, CatalogResultSize, CatalogRow, ColumnKey,
+        DirectoryType, Interaction, Message, SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
+        catalog::get_catalog,
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
@@ -16,7 +17,7 @@ use {
     iced::{Command, Length},
     isahc::HttpClient,
     native_dialog::*,
-    std::collections::HashMap,
+    std::collections::{HashMap, HashSet},
     std::path::{Path, PathBuf},
     widgets::header::ResizeEvent,
 };
@@ -276,6 +277,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Set ajour mode.
             ajour.mode = mode;
+
+            if mode == AjourMode::Catalog {
+                let refresh = ajour.catalog.is_none();
+
+                if refresh {
+                    let command = Command::perform(get_catalog(), Message::CatalogDownloaded);
+
+                    ajour.catalog.take();
+                    ajour.state = AjourState::Loading;
+
+                    return Ok(command);
+                }
+            }
         }
 
         Message::Interaction(Interaction::Expand(id)) => {
@@ -656,7 +670,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.catalog_header_state.previous_sort_direction = Some(sort_direction);
             ajour.catalog_header_state.previous_column_key = Some(column_key);
 
-            query_and_sort_catalog(ajour, None);
+            query_and_sort_catalog(ajour);
         }
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
@@ -952,22 +966,49 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::CatalogDownloaded(Ok(catalog)) => {
             log::debug!(
                 "Message::CatalogDownloaded({} addons in catalog)",
-                catalog.addon_summary_list.len()
+                catalog.addons.len()
             );
 
-            ajour.catalog = Some(catalog);
+            let mut categories = HashSet::new();
+            catalog.addons.iter().for_each(|a| {
+                for category in &a.categories {
+                    categories.insert(category.clone());
+                }
+            });
 
-            query_and_sort_catalog(ajour, None);
+            let mut categories: Vec<_> = categories.into_iter().collect();
+            categories.sort();
+
+            ajour.catalog_categories = Some(categories);
+
+            ajour.catalog = Some(catalog);
+            ajour.state = AjourState::Idle;
+
+            query_and_sort_catalog(ajour);
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
             log::debug!("Interaction::CatalogQuery({})", &query);
 
             ajour.catalog_query_state.query = Some(query.clone());
 
-            query_and_sort_catalog(ajour, Some(query));
+            query_and_sort_catalog(ajour);
         }
-        Message::Interaction(Interaction::Install(url)) => {
+        Message::Interaction(Interaction::CatalogInstall(url)) => {
             log::debug!("Interaction::Install({})", &url);
+        }
+        Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
+            log::debug!("Interaction::CatalogCategorySelected({})", &category);
+
+            ajour.catalog_query_state.category = Some(category.clone());
+
+            query_and_sort_catalog(ajour);
+        }
+        Message::Interaction(Interaction::CatalogResultSizeSelected(size)) => {
+            log::debug!("Interaction::CatalogResultSizeSelected({:?})", &size);
+
+            ajour.catalog_query_state.result_size = CatalogResultSize::from(size.as_str());
+
+            query_and_sort_catalog(ajour);
         }
         Message::Error(error)
         | Message::Parse(Err(error))
@@ -1137,19 +1178,23 @@ fn sort_catalog_addons(
             addons.sort_by(|a, b| a.addon.name.cmp(&b.addon.name).reverse());
         }
         (CatalogColumnKey::Description, SortDirection::Asc) => {
-            addons.sort_by(|a, b| a.addon.description.cmp(&b.addon.description));
+            addons.sort_by(|a, b| a.addon.summary.cmp(&b.addon.summary));
         }
         (CatalogColumnKey::Description, SortDirection::Desc) => {
-            addons.sort_by(|a, b| a.addon.description.cmp(&b.addon.description).reverse());
+            addons.sort_by(|a, b| a.addon.summary.cmp(&b.addon.summary).reverse());
         }
         (CatalogColumnKey::NumDownloads, SortDirection::Asc) => {
-            addons.sort_by(|a, b| a.addon.download_count.cmp(&b.addon.download_count));
+            addons.sort_by(|a, b| {
+                a.addon
+                    .number_of_downloads
+                    .cmp(&b.addon.number_of_downloads)
+            });
         }
         (CatalogColumnKey::NumDownloads, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
                 a.addon
-                    .download_count
-                    .cmp(&b.addon.download_count)
+                    .number_of_downloads
+                    .cmp(&b.addon.number_of_downloads)
                     .reverse()
             });
         }
@@ -1158,16 +1203,25 @@ fn sort_catalog_addons(
     }
 }
 
-fn query_and_sort_catalog(ajour: &mut Ajour, query: Option<String>) {
+fn query_and_sort_catalog(ajour: &mut Ajour) {
     if let Some(catalog) = &ajour.catalog {
-        let query = query.map(|s| s.to_lowercase());
+        let query = ajour
+            .catalog_query_state
+            .query
+            .as_ref()
+            .map(|s| s.to_lowercase());
+        let category = &ajour.catalog_query_state.category;
+        let result_size = ajour.catalog_query_state.result_size.as_usize();
 
         let mut catalog_rows: Vec<_> = catalog
-            .addon_summary_list
+            .addons
             .iter()
             .filter(|a| {
+                let cleaned_text =
+                    format!("{} {}", a.name.to_lowercase(), a.summary.to_lowercase());
+
                 if let Some(query) = &query {
-                    a.alt_name.contains(query)
+                    cleaned_text.contains(query)
                 } else {
                     true
                 }
@@ -1189,8 +1243,15 @@ fn query_and_sort_catalog(ajour: &mut Ajour, query: Option<String>) {
 
         catalog_rows = catalog_rows
             .into_iter()
+            .filter(|a| {
+                if let Some(category) = &category {
+                    a.addon.categories.iter().any(|c| c == category)
+                } else {
+                    true
+                }
+            })
             .enumerate()
-            .filter_map(|(idx, row)| if idx < 25 { Some(row) } else { None })
+            .filter_map(|(idx, row)| if idx < result_size { Some(row) } else { None })
             .collect();
 
         ajour.catalog_query_state.catalog_rows = catalog_rows;
