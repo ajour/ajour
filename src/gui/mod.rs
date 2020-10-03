@@ -364,11 +364,15 @@ impl Application for Ajour {
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
+                    let selected_category = match self.catalog_query_state.category {
+                        None => Some(String::from("All categories")),
+                        _ => self.catalog_query_state.category.clone(),
+                    };
 
                     let category_picklist = PickList::new(
                         &mut self.catalog_query_state.categories_state,
-                        categories,
-                        self.catalog_query_state.category.clone(),
+                        categories_with_all_option(categories),
+                        selected_category,
                         Interaction::CatalogCategorySelected,
                     )
                     .text_size(14)
@@ -497,6 +501,13 @@ impl Application for Ajour {
             .style(style::Content(color_palette))
             .into()
     }
+}
+
+fn categories_with_all_option(categories: &Vec<String>) -> Vec<String> {
+    let mut categories = categories.to_owned();
+    categories.extend(vec![String::from("All categories")]);
+    categories.rotate_right(1);
+    categories
 }
 
 /// Starts the GUI.

@@ -1003,7 +1003,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
             log::debug!("Interaction::CatalogCategorySelected({})", &category);
 
-            ajour.catalog_query_state.category = Some(category);
+            ajour.catalog_query_state.category = match category.as_str() {
+                "All categories" => None,
+                _ => Some(category),
+            };
 
             query_and_sort_catalog(ajour);
         }
