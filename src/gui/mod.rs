@@ -514,7 +514,7 @@ impl Application for Ajour {
     }
 }
 
-fn categories_with_all_option(categories: &Vec<String>) -> Vec<String> {
+fn categories_with_all_option(categories: &[String]) -> Vec<String> {
     let mut categories = categories.to_owned();
     categories.extend(vec![String::from("All categories")]);
     categories.rotate_right(1);
