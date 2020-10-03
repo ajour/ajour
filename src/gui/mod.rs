@@ -968,10 +968,10 @@ impl CatalogResultSize {
 impl From<&str> for CatalogResultSize {
     fn from(s: &str) -> Self {
         match s {
-            "25" => CatalogResultSize::_25,
-            "50" => CatalogResultSize::_50,
-            "100" => CatalogResultSize::_100,
-            "500" => CatalogResultSize::_500,
+            "Results: 25" => CatalogResultSize::_25,
+            "Results: 50" => CatalogResultSize::_50,
+            "Results: 100" => CatalogResultSize::_100,
+            "Results: 500" => CatalogResultSize::_500,
             _ => unreachable!(),
         }
     }
@@ -979,7 +979,7 @@ impl From<&str> for CatalogResultSize {
 
 impl ToString for CatalogResultSize {
     fn to_string(&self) -> String {
-        self.as_usize().to_string()
+        format!("Results: {}", self.as_usize())
     }
 }
 
