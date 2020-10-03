@@ -8,6 +8,7 @@ use {
         backup::{backup_folders, latest_backup, BackupFolder},
         catalog::get_catalog,
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
+        curse_api::latest_stable_addon_from_id,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
@@ -478,12 +479,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 );
             }
         }
-        Message::DownloadedAddon((id, result)) => {
-            log::debug!(
-                "Message::DownloadedAddon(({}, error: {}))",
-                &id,
-                result.is_err()
-            );
+        Message::DownloadedAddon((id, Ok(()))) => {
+            log::debug!("Message::DownloadedAddon(({}))", &id,);
 
             // When an addon has been successfully downloaded we begin to unpack it.
             // If it for some reason fails to download, we handle the error.
@@ -498,20 +495,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .expect("Expected a valid path");
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
-                match result {
-                    Ok(_) => {
-                        if addon.state == AddonState::Downloading {
-                            addon.state = AddonState::Unpacking;
-                            let addon = addon.clone();
-                            return Ok(Command::perform(
-                                perform_unpack_addon(addon, from_directory, to_directory),
-                                Message::UnpackedAddon,
-                            ));
-                        }
-                    }
-                    Err(err) => {
-                        ajour.state = AjourState::Error(err);
-                    }
+                dbg!("addon match");
+
+                if addon.state == AddonState::Downloading {
+                    addon.state = AddonState::Unpacking;
+                    let addon = addon.clone();
+                    return Ok(Command::perform(
+                        perform_unpack_addon(addon, from_directory, to_directory),
+                        Message::UnpackedAddon,
+                    ));
                 }
             }
         }
@@ -993,8 +985,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::Interaction(Interaction::CatalogInstall(url)) => {
-            log::debug!("Interaction::Install({})", &url);
+        Message::Interaction(Interaction::CatalogInstall(id)) => {
+            log::debug!("Interaction::CatalogInstall({})", &id);
+
+            if let Some(addon_path) = ajour
+                .config
+                .get_addon_directory_for_flavor(&ajour.config.wow.flavor)
+            {
+                let flavor = ajour.config.wow.flavor;
+
+                return Ok(Command::perform(
+                    latest_stable_addon_from_id(id, addon_path, flavor),
+                    Message::CatalogInstallAddonFetched,
+                ));
+            }
         }
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
             log::debug!("Interaction::CatalogCategorySelected({})", &category);
@@ -1010,10 +1014,31 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
+        Message::CatalogInstallAddonFetched(Ok(mut addon)) => {
+            log::debug!("Message::CatalogInstallAddonFetched({:?})", &addon.curse_id);
+
+            if let Some(addons) = ajour.addons.get_mut(&ajour.config.wow.flavor) {
+                addon.state = AddonState::Downloading;
+
+                addons.push(addon.clone());
+
+                let to_directory = ajour
+                    .config
+                    .get_temporary_addon_directory()
+                    .expect("Expected a valid path");
+
+                return Ok(Command::perform(
+                    perform_download_addon(ajour.shared_client.clone(), addon, to_directory),
+                    Message::DownloadedAddon,
+                ));
+            }
+        }
         Message::Error(error)
         | Message::Parse(Err(error))
         | Message::NeedsUpdate(Err(error))
-        | Message::CatalogDownloaded(Err(error)) => {
+        | Message::CatalogDownloaded(Err(error))
+        | Message::CatalogInstallAddonFetched(Err(error))
+        | Message::DownloadedAddon((_, Err(error))) => {
             log::error!("{}", error);
 
             ajour.state = AjourState::Error(error);

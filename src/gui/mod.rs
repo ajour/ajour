@@ -109,6 +109,7 @@ pub enum Message {
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
+    CatalogInstallAddonFetched(Result<Addon>),
 }
 
 pub struct Ajour {
@@ -453,17 +454,20 @@ impl Application for Ajour {
                 "Welcome to Ajour!",
                 "To get started, go to Settings and select your World of Warcraft directory.",
             )),
-            AjourState::Idle => {
-                if !has_addons {
-                    Some(element::status_container(
-                        color_palette,
-                        "Woops!",
-                        &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
-                    ))
-                } else {
-                    None
+            AjourState::Idle => match self.mode {
+                AjourMode::Addons => {
+                    if !has_addons {
+                        Some(element::status_container(
+                            color_palette,
+                            "Woops!",
+                            &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
+                        ))
+                    } else {
+                        None
+                    }
                 }
-            }
+                AjourMode::Catalog => None,
+            },
             AjourState::Loading => match self.mode {
                 AjourMode::Addons => Some(element::status_container(
                     color_palette,
