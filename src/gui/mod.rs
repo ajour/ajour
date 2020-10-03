@@ -84,6 +84,7 @@ pub enum Interaction {
     MoveColumnRight(ColumnKey),
     ModeSelected(AjourMode),
     CatalogQuery(String),
+    Install(String),
 }
 
 #[derive(Debug)]
@@ -260,6 +261,7 @@ impl Application for Ajour {
         );
 
         let column_config = self.header_state.column_config();
+        let catalog_column_config = self.catalog_header_state.column_config();
 
         // This column gathers all the other elements together.
         let mut content = Column::new()
@@ -380,6 +382,21 @@ impl Application for Ajour {
                         self.catalog_header_state.previous_sort_direction,
                     );
 
+                    let mut catalog_scrollable = element::addon_scrollable(
+                        color_palette,
+                        &mut self.catalog_query_state.scrollable_state,
+                    );
+
+                    for addon in self.catalog_query_state.catalog_rows.iter_mut() {
+                        let catalog_data_cell = element::catalog_data_cell(
+                            color_palette,
+                            addon,
+                            &catalog_column_config,
+                        );
+
+                        catalog_scrollable = catalog_scrollable.push(catalog_data_cell);
+                    }
+
                     // Bottom space below the scrollable.
                     let bottom_space =
                         Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
@@ -388,6 +405,7 @@ impl Application for Ajour {
                         .push(catalog_query_container)
                         .push(Space::new(Length::Fill, Length::Units(5)))
                         .push(catalog_row_titles)
+                        .push(catalog_scrollable)
                         .push(bottom_space)
                 }
             }
@@ -759,6 +777,12 @@ pub struct CatalogHeaderState {
     columns: Vec<CatalogColumnState>,
 }
 
+impl CatalogHeaderState {
+    fn column_config(&self) -> Vec<(CatalogColumnKey, Length)> {
+        self.columns.iter().map(|c| (c.key, c.width)).collect()
+    }
+}
+
 impl Default for CatalogHeaderState {
     fn default() -> Self {
         Self {
@@ -801,6 +825,8 @@ pub struct CatalogColumnState {
 pub struct CatalogQueryState {
     pub query: Option<String>,
     pub text_input_state: text_input::State,
+    pub catalog_rows: Vec<CatalogRow>,
+    pub scrollable_state: scrollable::State,
 }
 
 pub struct CatalogRow {

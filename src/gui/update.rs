@@ -1,7 +1,7 @@
 use {
     super::{
-        Ajour, AjourState, CatalogColumnKey, ColumnKey, DirectoryType, Interaction, Message,
-        SortDirection,
+        Ajour, AjourState, CatalogColumnKey, CatalogRow, ColumnKey, DirectoryType, Interaction,
+        Message, SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonState},
@@ -653,13 +653,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 sort_direction
             );
 
-            //let flavor = ajour.config.wow.flavor;
-            //let mut addons = ajour.addons.entry(flavor).or_default();
-
-            //sort_addons(&mut addons, sort_direction, column_key);
-
             ajour.catalog_header_state.previous_sort_direction = Some(sort_direction);
             ajour.catalog_header_state.previous_column_key = Some(column_key);
+
+            query_and_sort_catalog(ajour, None);
         }
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
@@ -959,11 +956,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             ajour.catalog = Some(catalog);
+
+            query_and_sort_catalog(ajour, None);
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
             log::debug!("Interaction::CatalogQuery({})", &query);
 
-            ajour.catalog_query_state.query = Some(query);
+            ajour.catalog_query_state.query = Some(query.clone());
+
+            query_and_sort_catalog(ajour, Some(query));
+        }
+        Message::Interaction(Interaction::Install(url)) => {
+            log::debug!("Interaction::Install({})", &url);
         }
         Message::Error(error)
         | Message::Parse(Err(error))
@@ -1117,5 +1121,78 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
         (ColumnKey::GameVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.game_version.cmp(&b.game_version).reverse())
         }
+    }
+}
+
+fn sort_catalog_addons(
+    addons: &mut [CatalogRow],
+    sort_direction: SortDirection,
+    column_key: CatalogColumnKey,
+) {
+    match (column_key, sort_direction) {
+        (CatalogColumnKey::Title, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.addon.name.cmp(&b.addon.name));
+        }
+        (CatalogColumnKey::Title, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.addon.name.cmp(&b.addon.name).reverse());
+        }
+        (CatalogColumnKey::Description, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.addon.description.cmp(&b.addon.description));
+        }
+        (CatalogColumnKey::Description, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.addon.description.cmp(&b.addon.description).reverse());
+        }
+        (CatalogColumnKey::NumDownloads, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.addon.download_count.cmp(&b.addon.download_count));
+        }
+        (CatalogColumnKey::NumDownloads, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.addon
+                    .download_count
+                    .cmp(&b.addon.download_count)
+                    .reverse()
+            });
+        }
+        (CatalogColumnKey::Download, SortDirection::Asc) => {}
+        (CatalogColumnKey::Download, SortDirection::Desc) => {}
+    }
+}
+
+fn query_and_sort_catalog(ajour: &mut Ajour, query: Option<String>) {
+    if let Some(catalog) = &ajour.catalog {
+        let query = query.map(|s| s.to_lowercase());
+
+        let mut catalog_rows: Vec<_> = catalog
+            .addon_summary_list
+            .iter()
+            .filter(|a| {
+                if let Some(query) = &query {
+                    a.alt_name.contains(query)
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .map(CatalogRow::from)
+            .collect();
+
+        let sort_direction = ajour
+            .catalog_header_state
+            .previous_sort_direction
+            .unwrap_or(SortDirection::Desc);
+        let column_key = ajour
+            .catalog_header_state
+            .previous_column_key
+            .unwrap_or(CatalogColumnKey::NumDownloads);
+
+        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key);
+
+        catalog_rows = catalog_rows
+            .into_iter()
+            .enumerate()
+            .filter_map(|(idx, row)| if idx < 25 { Some(row) } else { None })
+            .collect();
+
+        ajour.catalog_query_state.catalog_rows = catalog_rows;
     }
 }

@@ -2,9 +2,9 @@
 
 use {
     super::{
-        style, AjourMode, AjourState, BackupState, CatalogColumnKey, CatalogColumnState, ColumnKey,
-        ColumnSettings, ColumnState, DirectoryType, Interaction, Message, ReleaseChannel,
-        ScaleState, SortDirection, ThemeState,
+        style, AjourMode, AjourState, BackupState, CatalogColumnKey, CatalogColumnState,
+        CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType, Interaction, Message,
+        ReleaseChannel, ScaleState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -18,6 +18,7 @@ use {
         button, scrollable, Align, Button, Checkbox, Column, Container, Element,
         HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
+    num_format::{Locale, ToFormattedString},
     widgets::{header, Header},
 };
 
@@ -1267,6 +1268,134 @@ pub fn catalog_row_titles<'a>(
     )
     .spacing(1)
     .height(Length::Units(25))
+}
+
+pub fn catalog_data_cell<'a, 'b>(
+    color_palette: ColorPalette,
+    addon: &'a mut CatalogRow,
+    column_config: &'b [(CatalogColumnKey, Length)],
+) -> Container<'a, Message> {
+    let default_height = Length::Units(26);
+
+    let mut row_containers = vec![];
+
+    let addon_data = &addon.addon;
+    let install_state = &mut addon.btn_state;
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::Download {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let install = Text::new("Install").size(DEFAULT_FONT_SIZE);
+        let install_button = Button::new(install_state, install)
+            .on_press(Interaction::Install(addon_data.uri.clone()))
+            .style(style::DefaultBoxedButton(color_palette));
+
+        let install_button: Element<Interaction> = install_button.into();
+
+        let install_container = Container::new(install_button.map(Message::Interaction))
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .style(style::AddonRowDefaultTextContainer(color_palette));
+
+        row_containers.push((idx, install_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::Title {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let title = Text::new(&addon_data.name).size(DEFAULT_FONT_SIZE);
+        let title_container = Container::new(title)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
+
+        row_containers.push((idx, title_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::Description {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let description = Text::new(&addon_data.description).size(DEFAULT_FONT_SIZE);
+        let description_container = Container::new(description)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
+
+        row_containers.push((idx, description_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::NumDownloads {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let num_downloads = Text::new(&addon_data.download_count.to_formatted_string(&Locale::en))
+            .size(DEFAULT_FONT_SIZE);
+        let num_downloads_container = Container::new(num_downloads)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
+
+        row_containers.push((idx, num_downloads_container));
+    }
+
+    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
+
+    let mut row = Row::new().push(left_spacer).spacing(1);
+
+    // Sort columns and push them into row
+    row_containers.sort_by(|a, b| a.0.cmp(&b.0));
+    for (_, elem) in row_containers.into_iter() {
+        row = row.push(elem);
+    }
+
+    row = row.push(right_spacer);
+
+    Container::new(row)
+        .width(Length::Fill)
+        .style(style::Row(color_palette))
 }
 
 pub fn addon_scrollable(
