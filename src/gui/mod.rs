@@ -419,9 +419,9 @@ impl Application for Ajour {
                     );
 
                     for addon in self.catalog_query_state.catalog_rows.iter_mut() {
-                        let already_installed = addons
-                            .iter()
-                            .any(|a| a.curse_id == Some(addon.addon.curse_id));
+                        // TODO: We should make this prettier with new sources coming in.
+                        let already_installed =
+                            addons.iter().any(|a| a.curse_id == Some(addon.addon.id));
 
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,

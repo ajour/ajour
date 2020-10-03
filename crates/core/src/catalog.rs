@@ -5,7 +5,8 @@ use crate::Result;
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
 
-const CATALOG_URL: &str = "";
+const CATALOG_URL: &str =
+    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/master/catalog.json";
 
 pub async fn get_catalog() -> Result<Catalog> {
     let client = HttpClient::builder()
@@ -27,6 +28,12 @@ pub async fn get_catalog() -> Result<Catalog> {
     }
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub enum Source {
+    #[serde(alias = "curse")]
+    Curse,
+}
+
 #[serde(transparent)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct Catalog {
@@ -36,11 +43,12 @@ pub struct Catalog {
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogAddon {
-    pub curse_id: u32,
+    pub id: u32,
     pub name: String,
     pub categories: Vec<String>,
     pub summary: String,
     pub number_of_downloads: u64,
+    pub source: Source,
 }
 
 #[cfg(test)]

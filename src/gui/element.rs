@@ -1305,8 +1305,7 @@ pub fn catalog_data_cell<'a, 'b>(
             Button::new(install_state, install).style(style::DefaultBoxedButton(color_palette));
 
         if !already_installed {
-            install_button =
-                install_button.on_press(Interaction::CatalogInstall(addon_data.curse_id));
+            install_button = install_button.on_press(Interaction::CatalogInstall(addon_data.id));
         }
 
         let install_button: Element<Interaction> = install_button.into();
