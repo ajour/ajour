@@ -11,8 +11,14 @@ brew cask install ajour
 ```
 
 ## [Chocolatey](https://chocolatey.org/)
+### Standard
 ```cmd
 choco install ajour
+```
+
+### OpenGL
+```cmd
+choco install ajour-opengl
 ```
 
 # Manual Installation
