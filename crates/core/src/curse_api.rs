@@ -154,13 +154,9 @@ pub async fn latest_stable_addon_from_id(
     if resp.status().is_success() {
         let packages: Vec<Package> = resp.json()?;
 
-        let package = packages
-            .into_iter()
-            .next()
-            .ok_or(ClientError::Custom(format!(
-                "No package found for curse id {}",
-                curse_id
-            )))?;
+        let package = packages.into_iter().next().ok_or_else(|| {
+            ClientError::Custom(format!("No package found for curse id {}", curse_id))
+        })?;
 
         let flavor = format!("wow_{}", flavor);
 
@@ -168,10 +164,9 @@ pub async fn latest_stable_addon_from_id(
             .latest_files
             .iter()
             .find(|f| f.release_type == 1 && f.game_version_flavor.as_ref() == Some(&flavor))
-            .ok_or(ClientError::Custom(format!(
-                "No stable file found for curse id {}",
-                curse_id
-            )))?;
+            .ok_or_else(|| {
+                ClientError::Custom(format!("No stable file found for curse id {}", curse_id))
+            })?;
 
         // Use first module
         let id = stable_file
@@ -179,10 +174,9 @@ pub async fn latest_stable_addon_from_id(
             .iter()
             .next()
             .cloned()
-            .ok_or(ClientError::Custom(format!(
-                "No modules found for curse id {}",
-                curse_id
-            )))?
+            .ok_or_else(|| {
+                ClientError::Custom(format!("No modules found for curse id {}", curse_id))
+            })?
             .foldername;
         let title = package.name.clone();
 
@@ -208,7 +202,7 @@ pub async fn latest_stable_addon_from_id(
             title,
             author,
             notes,
-            version.clone(),
+            version,
             addon_path,
             dependencies,
             None,

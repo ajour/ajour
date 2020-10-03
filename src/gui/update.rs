@@ -981,7 +981,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogQuery(query)) => {
             log::debug!("Interaction::CatalogQuery({})", &query);
 
-            ajour.catalog_query_state.query = Some(query.clone());
+            ajour.catalog_query_state.query = Some(query);
 
             query_and_sort_catalog(ajour);
         }
@@ -1003,7 +1003,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
             log::debug!("Interaction::CatalogCategorySelected({})", &category);
 
-            ajour.catalog_query_state.category = Some(category.clone());
+            ajour.catalog_query_state.category = Some(category);
 
             query_and_sort_catalog(ajour);
         }
