@@ -1,6 +1,16 @@
 use ajour_core::theme::ColorPalette;
 use iced::{button, checkbox, container, pick_list, scrollable, text_input, Background, Color};
 
+pub struct SurfaceContainer(pub ColorPalette);
+impl container::StyleSheet for SurfaceContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(self.0.surface)),
+            ..container::Style::default()
+        }
+    }
+}
+
 pub struct TextButton(pub ColorPalette);
 impl button::StyleSheet for TextButton {
     fn active(&self) -> button::Style {
@@ -557,7 +567,7 @@ impl pick_list::StyleSheet for SecondaryPickList {
         pick_list::Style {
             text_color: self.0.on_surface,
             background: Background::Color(self.0.surface),
-            border_width: 1,
+            border_width: 0,
             border_color: Color {
                 a: 1.0,
                 ..self.0.background
@@ -644,11 +654,11 @@ impl text_input::StyleSheet for CatalogQueryInput {
     fn active(&self) -> text_input::Style {
         text_input::Style {
             background: Background::Color(self.0.surface),
-            border_radius: 2,
-            border_width: 1,
+            border_radius: 0,
+            border_width: 0,
             border_color: Color {
                 a: 0.30,
-                ..self.0.primary
+                ..self.0.surface
             },
         }
     }
@@ -669,7 +679,7 @@ impl text_input::StyleSheet for CatalogQueryInput {
     fn placeholder_color(&self) -> Color {
         Color {
             a: 0.30,
-            ..self.0.primary
+            ..self.0.on_surface
         }
     }
 

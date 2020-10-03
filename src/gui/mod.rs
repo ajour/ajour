@@ -380,6 +380,11 @@ impl Application for Ajour {
                     .style(style::SecondaryPickList(color_palette));
 
                     let category_picklist: Element<Interaction> = category_picklist.into();
+                    let category_picklist_container =
+                        Container::new(category_picklist.map(Message::Interaction))
+                            .center_y()
+                            .style(style::SurfaceContainer(color_palette))
+                            .height(Length::Fill);
 
                     let result_size_picklist = PickList::new(
                         &mut self.catalog_query_state.results_size_state,
@@ -392,16 +397,22 @@ impl Application for Ajour {
                     .style(style::SecondaryPickList(color_palette));
 
                     let result_size_picklist: Element<Interaction> = result_size_picklist.into();
+                    let result_size_picklist_container =
+                        Container::new(result_size_picklist.map(Message::Interaction))
+                            .center_y()
+                            .style(style::SurfaceContainer(color_palette))
+                            .height(Length::Fill);
 
                     let catalog_query_row = Row::new()
                         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                         .push(catalog_query.map(Message::Interaction))
-                        .push(category_picklist.map(Message::Interaction))
-                        .push(result_size_picklist.map(Message::Interaction))
+                        .push(category_picklist_container)
+                        .push(result_size_picklist_container)
                         .push(Space::new(
                             Length::Units(DEFAULT_PADDING + 5),
                             Length::Units(0),
-                        ));
+                        ))
+                        .spacing(1);
 
                     let catalog_query_container = Container::new(catalog_query_row)
                         .width(Length::Fill)
