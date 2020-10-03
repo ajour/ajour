@@ -1,3 +1,4 @@
+use crate::config::Flavor;
 use crate::error::ClientError;
 use crate::network::request_async;
 use crate::Result;
@@ -49,6 +50,7 @@ pub struct CatalogAddon {
     pub summary: String,
     pub number_of_downloads: u64,
     pub source: Source,
+    pub flavors: Vec<Flavor>,
 }
 
 #[cfg(test)]
