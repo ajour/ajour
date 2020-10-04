@@ -997,7 +997,7 @@ pub fn menu_addons_container<'a>(
     let segmented_flavor_control_container = Row::new()
         .push(retail_button.map(Message::Interaction))
         .push(classic_button.map(Message::Interaction))
-        .spacing(0);
+        .spacing(1);
 
     // Displays text depending on the state of the app.
     let flavor = config.wow.flavor;
@@ -1068,7 +1068,7 @@ pub fn menu_container<'a>(
     new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
-    let mut settings_row = Row::new().height(Length::Units(30));
+    let mut settings_row = Row::new().height(Length::Units(40));
 
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,
@@ -1105,7 +1105,7 @@ pub fn menu_container<'a>(
     let segmented_mode_control_container = Row::new()
         .push(addons_mode_button.map(Message::Interaction))
         .push(catalog_mode_button.map(Message::Interaction))
-        .spacing(0);
+        .spacing(1);
 
     let version_text = Text::new(if let Some(new_version) = needs_update {
         format!("New Ajour version available {} -> {}", VERSION, new_version)
@@ -1164,15 +1164,14 @@ pub fn menu_container<'a>(
         .push(Space::new(
             Length::Units(DEFAULT_PADDING + 5),
             Length::Units(0),
-        ));
+        ))
+        .align_items(Align::Center);
 
     // Add space above settings_row.
-    let settings_column = Column::new()
-        .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(settings_row);
+    let settings_column = Column::new().push(settings_row);
 
     // Wraps it in a container.
-    Container::new(settings_column)
+    Container::new(settings_column).style(style::SurfaceContainer(color_palette))
 }
 
 pub fn status_container<'a>(

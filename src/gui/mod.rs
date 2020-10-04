@@ -274,11 +274,14 @@ impl Application for Ajour {
             );
 
             // Space below settings.
-            let space = Space::new(Length::Fill, Length::Units(10));
+            let space = Space::new(Length::Fill, Length::Units(DEFAULT_PADDING));
 
             // Adds the settings container.
             content = content.push(settings_container).push(space);
         }
+
+        // Spacer between menu and content.
+        content = content.push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
 
         match self.mode {
             AjourMode::Addons => {
@@ -334,7 +337,8 @@ impl Application for Ajour {
                 }
 
                 // Bottom space below the scrollable.
-                let bottom_space = Space::new(Length::FillPortion(1), Length::Units(10));
+                let bottom_space =
+                    Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
                 // Adds the rest of the elements to the content column.
                 if has_addons {
@@ -501,9 +505,6 @@ impl Application for Ajour {
         if let Some(c) = container {
             content = content.push(c);
         };
-
-        // Small padding to make UI fit better.
-        content = content.padding(3);
 
         // Finally wraps everything in a container.
         Container::new(content)
