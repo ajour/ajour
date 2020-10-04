@@ -1,7 +1,7 @@
 use {
     super::{
-        Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey, CatalogRow, ColumnKey,
-        DirectoryType, Interaction, Message, SortDirection,
+        Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey, CatalogFlavor, CatalogRow,
+        CatalogSource, ColumnKey, DirectoryType, Interaction, Message, SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonState},
@@ -1021,6 +1021,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
+        Message::Interaction(Interaction::CatalogFlavorSelected(flavor)) => {
+            log::debug!("Interaction::CatalogResultSizeSelected({:?})", flavor);
+
+            ajour.catalog_query_state.flavor = flavor;
+
+            query_and_sort_catalog(ajour);
+        }
+        Message::Interaction(Interaction::CatalogSourceSelected(source)) => {
+            log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
+
+            ajour.catalog_query_state.source = source;
+
+            query_and_sort_catalog(ajour);
+        }
         Message::CatalogInstallAddonFetched(Ok(mut addon)) => {
             log::debug!("Message::CatalogInstallAddonFetched({:?})", &addon.curse_id);
 
@@ -1242,6 +1256,8 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .query
             .as_ref()
             .map(|s| s.to_lowercase());
+        let flavor = &ajour.catalog_query_state.flavor;
+        let source = &ajour.catalog_query_state.source;
         let category = &ajour.catalog_query_state.category;
         let result_size = ajour.catalog_query_state.result_size.as_usize();
 
@@ -1275,6 +1291,14 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
 
         catalog_rows = catalog_rows
             .into_iter()
+            .filter(|a| match flavor {
+                CatalogFlavor::All => true,
+                CatalogFlavor::Choice(flavor) => a.addon.flavors.iter().any(|f| f == flavor),
+            })
+            .filter(|a| match source {
+                CatalogSource::All => true,
+                CatalogSource::Choice(source) => a.addon.source == *source,
+            })
             .filter(|a| match category {
                 CatalogCategory::All => true,
                 CatalogCategory::Choice(name) => a.addon.categories.iter().any(|c| c == name),

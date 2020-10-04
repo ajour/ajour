@@ -7,7 +7,7 @@ use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
 
 const CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/master/curse.json";
+    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/master/catalog.json";
 
 pub async fn get_catalog() -> Result<Catalog> {
     let client = HttpClient::builder()
@@ -29,10 +29,12 @@ pub async fn get_catalog() -> Result<Catalog> {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Source {
     #[serde(alias = "curse")]
     Curse,
+    #[serde(alias = "tukui")]
+    Tukui,
 }
 
 #[serde(transparent)]

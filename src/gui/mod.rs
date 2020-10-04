@@ -6,7 +6,7 @@ use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, ReleaseChannel},
-    catalog::{Catalog, CatalogAddon},
+    catalog::{self, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
@@ -87,6 +87,8 @@ pub enum Interaction {
     CatalogInstall(u32),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
+    CatalogFlavorSelected(CatalogFlavor),
+    CatalogSourceSelected(CatalogSource),
 }
 
 #[derive(Debug)]
@@ -372,6 +374,40 @@ impl Application for Ajour {
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
 
+                    let flavor_picklist = PickList::new(
+                        &mut self.catalog_query_state.flavors_state,
+                        &self.catalog_query_state.flavors,
+                        Some(self.catalog_query_state.flavor),
+                        Interaction::CatalogFlavorSelected,
+                    )
+                    .text_size(14)
+                    .width(Length::Units(200))
+                    .style(style::SecondaryPickList(color_palette));
+
+                    let flavor_picklist: Element<Interaction> = flavor_picklist.into();
+                    let flavor_picklist_container =
+                        Container::new(flavor_picklist.map(Message::Interaction))
+                            .center_y()
+                            .style(style::SurfaceContainer(color_palette))
+                            .height(Length::Fill);
+
+                    let source_picklist = PickList::new(
+                        &mut self.catalog_query_state.sources_state,
+                        &self.catalog_query_state.sources,
+                        Some(self.catalog_query_state.source),
+                        Interaction::CatalogSourceSelected,
+                    )
+                    .text_size(14)
+                    .width(Length::Units(200))
+                    .style(style::SecondaryPickList(color_palette));
+
+                    let source_picklist: Element<Interaction> = source_picklist.into();
+                    let source_picklist_container =
+                        Container::new(source_picklist.map(Message::Interaction))
+                            .center_y()
+                            .style(style::SurfaceContainer(color_palette))
+                            .height(Length::Fill);
+
                     let category_picklist = PickList::new(
                         &mut self.catalog_query_state.categories_state,
                         categories,
@@ -409,6 +445,8 @@ impl Application for Ajour {
                     let catalog_query_row = Row::new()
                         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                         .push(catalog_query.map(Message::Interaction))
+                        .push(flavor_picklist_container)
+                        .push(source_picklist_container)
                         .push(category_picklist_container)
                         .push(result_size_picklist_container)
                         .push(Space::new(
@@ -900,6 +938,12 @@ pub struct CatalogQueryState {
     pub scrollable_state: scrollable::State,
     pub categories_state: pick_list::State<CatalogCategory>,
     pub results_size_state: pick_list::State<CatalogResultSize>,
+    pub flavor: CatalogFlavor,
+    pub flavors: Vec<CatalogFlavor>,
+    pub flavors_state: pick_list::State<CatalogFlavor>,
+    pub source: CatalogSource,
+    pub sources: Vec<CatalogSource>,
+    pub sources_state: pick_list::State<CatalogSource>,
 }
 
 impl Default for CatalogQueryState {
@@ -914,6 +958,12 @@ impl Default for CatalogQueryState {
             scrollable_state: Default::default(),
             categories_state: Default::default(),
             results_size_state: Default::default(),
+            flavor: CatalogFlavor::All,
+            flavors: CatalogFlavor::all(),
+            flavors_state: Default::default(),
+            source: CatalogSource::All,
+            sources: CatalogSource::all(),
+            sources_state: Default::default(),
         }
     }
 }
@@ -990,6 +1040,64 @@ impl CatalogResultSize {
 impl std::fmt::Display for CatalogResultSize {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Results: {}", self.as_usize())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum CatalogFlavor {
+    All,
+    Choice(Flavor),
+}
+
+impl CatalogFlavor {
+    pub fn all() -> Vec<CatalogFlavor> {
+        vec![
+            CatalogFlavor::All,
+            CatalogFlavor::Choice(Flavor::Retail),
+            CatalogFlavor::Choice(Flavor::Classic),
+        ]
+    }
+}
+
+impl std::fmt::Display for CatalogFlavor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            CatalogFlavor::All => "Both Flavors",
+            CatalogFlavor::Choice(flavor) => match flavor {
+                Flavor::Retail => "Retail",
+                Flavor::Classic => "Classic",
+            },
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum CatalogSource {
+    All,
+    Choice(catalog::Source),
+}
+
+impl CatalogSource {
+    pub fn all() -> Vec<CatalogSource> {
+        vec![
+            CatalogSource::All,
+            CatalogSource::Choice(catalog::Source::Curse),
+            CatalogSource::Choice(catalog::Source::Tukui),
+        ]
+    }
+}
+
+impl std::fmt::Display for CatalogSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            CatalogSource::All => "All Sources",
+            CatalogSource::Choice(source) => match source {
+                catalog::Source::Curse => "Curse",
+                catalog::Source::Tukui => "Tukui",
+            },
+        };
+        write!(f, "{}", s)
     }
 }
 
