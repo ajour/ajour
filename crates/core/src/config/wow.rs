@@ -23,9 +23,9 @@ impl Default for Wow {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub enum Flavor {
-    #[serde(alias = "retail")]
+    #[serde(alias = "retail", alias = "wow_retail")]
     Retail,
-    #[serde(alias = "classic")]
+    #[serde(alias = "classic", alias = "wow_classic")]
     Classic,
 }
 

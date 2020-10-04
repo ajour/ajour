@@ -1,5 +1,15 @@
 use ajour_core::theme::ColorPalette;
-use iced::{button, checkbox, container, pick_list, scrollable, Background, Color};
+use iced::{button, checkbox, container, pick_list, scrollable, text_input, Background, Color};
+
+pub struct SurfaceContainer(pub ColorPalette);
+impl container::StyleSheet for SurfaceContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(self.0.surface)),
+            ..container::Style::default()
+        }
+    }
+}
 
 pub struct TextButton(pub ColorPalette);
 impl button::StyleSheet for TextButton {
@@ -179,6 +189,17 @@ impl button::StyleSheet for ColumnHeaderButton {
             text_color: self.0.primary,
             ..self.active()
         }
+    }
+}
+
+pub struct UnclickableColumnHeaderButton(pub ColorPalette);
+impl button::StyleSheet for UnclickableColumnHeaderButton {
+    fn active(&self) -> button::Style {
+        ColumnHeaderButton(self.0).active()
+    }
+
+    fn disabled(&self) -> button::Style {
+        self.active()
     }
 }
 
@@ -525,6 +546,43 @@ impl pick_list::StyleSheet for PickList {
     }
 }
 
+pub struct SecondaryPickList(pub ColorPalette);
+impl pick_list::StyleSheet for SecondaryPickList {
+    fn menu(&self) -> pick_list::Menu {
+        pick_list::Menu {
+            text_color: self.0.on_surface,
+            background: Background::Color(self.0.background),
+            border_width: 1,
+            border_color: self.0.surface,
+            selected_background: Color {
+                a: 0.1,
+                ..self.0.primary
+            }
+            .into(),
+            selected_text_color: self.0.primary,
+        }
+    }
+
+    fn active(&self) -> pick_list::Style {
+        pick_list::Style {
+            text_color: self.0.on_surface,
+            background: Background::Color(self.0.surface),
+            border_width: 0,
+            border_color: Color {
+                a: 1.0,
+                ..self.0.background
+            },
+            border_radius: 2,
+            icon_size: 0.5,
+        }
+    }
+
+    fn hovered(&self) -> pick_list::Style {
+        let active = self.active();
+        pick_list::Style { ..active }
+    }
+}
+
 pub struct ChannelBadge(pub ColorPalette);
 impl container::StyleSheet for ChannelBadge {
     fn style(&self) -> container::Style {
@@ -587,5 +645,57 @@ impl checkbox::StyleSheet for AlwaysCheckedCheckbox {
 
     fn hovered(&self, _is_checked: bool) -> checkbox::Style {
         self.active(_is_checked)
+    }
+}
+
+pub struct CatalogQueryInput(pub ColorPalette);
+impl text_input::StyleSheet for CatalogQueryInput {
+    /// Produces the style of an active text input.
+    fn active(&self) -> text_input::Style {
+        text_input::Style {
+            background: Background::Color(self.0.surface),
+            border_radius: 0,
+            border_width: 0,
+            border_color: Color {
+                a: 0.30,
+                ..self.0.surface
+            },
+        }
+    }
+
+    /// Produces the style of a focused text input.
+    fn focused(&self) -> text_input::Style {
+        text_input::Style {
+            background: Background::Color(self.0.surface),
+            border_radius: 2,
+            border_width: 1,
+            border_color: Color {
+                a: 0.70,
+                ..self.0.primary
+            },
+        }
+    }
+
+    fn placeholder_color(&self) -> Color {
+        Color {
+            a: 0.30,
+            ..self.0.on_surface
+        }
+    }
+
+    fn value_color(&self) -> Color {
+        self.0.primary
+    }
+
+    fn selection_color(&self) -> Color {
+        Color {
+            a: 0.30,
+            ..self.0.secondary
+        }
+    }
+
+    /// Produces the style of an hovered text input.
+    fn hovered(&self) -> text_input::Style {
+        self.focused()
     }
 }

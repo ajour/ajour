@@ -1,10 +1,14 @@
 use crate::{
+    addon::{Addon, ReleaseChannel, RemotePackage},
+    config::Flavor,
     error::ClientError,
     network::{post_json_async, request_async},
     Result,
 };
 use isahc::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
 
@@ -135,6 +139,94 @@ pub async fn fetch_game_info() -> Result<GameInfo> {
     } else {
         Err(ClientError::Custom(format!(
             "Coudn't fetch game information. Server returned: {}",
+            resp.text()?
+        )))
+    }
+}
+
+pub async fn latest_stable_addon_from_id(
+    curse_id: u32,
+    mut addon_path: PathBuf,
+    flavor: Flavor,
+) -> Result<Addon> {
+    let url = format!("{}/addon", API_ENDPOINT);
+    let mut resp = post_json_async(url, &[curse_id], vec![], None).await?;
+    if resp.status().is_success() {
+        let packages: Vec<Package> = resp.json()?;
+
+        let package = packages.into_iter().next().ok_or_else(|| {
+            ClientError::Custom(format!("No package found for curse id {}", curse_id))
+        })?;
+
+        let flavor = format!("wow_{}", flavor);
+
+        let stable_file = package
+            .latest_files
+            .iter()
+            .find(|f| f.release_type == 1 && f.game_version_flavor.as_ref() == Some(&flavor))
+            .ok_or_else(|| {
+                ClientError::Custom(format!("No stable file found for curse id {}", curse_id))
+            })?;
+
+        // Use first module
+        let id = stable_file
+            .modules
+            .iter()
+            .next()
+            .cloned()
+            .ok_or_else(|| {
+                ClientError::Custom(format!("No modules found for curse id {}", curse_id))
+            })?
+            .foldername;
+        let title = package.name.clone();
+
+        // Will parse from `.toc` when app is opened next
+        let author = None;
+        let notes = None;
+
+        addon_path.push(&id);
+
+        // Use rest of the modules
+        let dependencies = stable_file
+            .modules
+            .iter()
+            .enumerate()
+            .filter(|(idx, _)| *idx > 0)
+            .map(|(_, m)| m.foldername.clone())
+            .collect();
+
+        let version = Some(stable_file.display_name.clone());
+
+        let mut addon = Addon::new(
+            id,
+            title,
+            author,
+            notes,
+            version,
+            addon_path,
+            dependencies,
+            None,
+            None,
+            Some(curse_id),
+        );
+
+        let mut remote_packages = HashMap::new();
+        let package = RemotePackage {
+            version: stable_file.display_name.clone(),
+            download_url: stable_file.download_url.clone(),
+            date_time: None,
+            file_id: None,
+        };
+
+        remote_packages.insert(ReleaseChannel::Stable, package);
+
+        addon.remote_packages = remote_packages;
+        addon.release_channel = ReleaseChannel::Stable;
+
+        Ok(addon)
+    } else {
+        Err(ClientError::Custom(format!(
+            "Couldn't fetch details for addon. Server returned: {}",
             resp.text()?
         )))
     }

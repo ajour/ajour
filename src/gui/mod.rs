@@ -6,6 +6,7 @@ use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, ReleaseChannel},
+    catalog::{Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
@@ -17,9 +18,10 @@ use ajour_core::{
 use async_std::sync::{Arc, Mutex};
 use chrono::NaiveDateTime;
 use iced::{
-    button, pick_list, scrollable, Application, Column, Command, Container, Element, Length,
-    Settings, Space, Subscription,
+    button, pick_list, scrollable, text_input, Application, Column, Command, Container, Element,
+    Length, PickList, Row, Settings, Space, Subscription, TextInput,
 };
+use image::ImageFormat;
 use isahc::{
     config::{Configurable, RedirectPolicy},
     HttpClient,
@@ -28,7 +30,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use widgets::header;
 
-use image::ImageFormat;
+use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
 
 #[derive(Debug)]
@@ -37,6 +39,25 @@ pub enum AjourState {
     Idle,
     Loading,
     Welcome,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum AjourMode {
+    Addons,
+    Catalog,
+}
+
+impl std::fmt::Display for AjourMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                AjourMode::Addons => "Addons",
+                AjourMode::Catalog => "Catalog",
+            }
+        )
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +73,7 @@ pub enum Interaction {
     Update(String),
     UpdateAll,
     SortColumn(ColumnKey),
+    SortCatalogColumn(CatalogColumnKey),
     FlavorSelected(Flavor),
     ResizeColumn(header::ResizeEvent),
     ScaleUp,
@@ -60,6 +82,11 @@ pub enum Interaction {
     ToggleColumn(bool, ColumnKey),
     MoveColumnLeft(ColumnKey),
     MoveColumnRight(ColumnKey),
+    ModeSelected(AjourMode),
+    CatalogQuery(String),
+    CatalogInstall(u32),
+    CatalogCategorySelected(String),
+    CatalogResultSizeSelected(String),
 }
 
 #[derive(Debug)]
@@ -81,6 +108,8 @@ pub enum Message {
     RuntimeEvent(iced_native::Event),
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime>),
+    CatalogDownloaded(Result<Catalog>),
+    CatalogInstallAddonFetched(Result<Addon>),
 }
 
 pub struct Ajour {
@@ -96,16 +125,23 @@ pub struct Ajour {
     settings_btn_state: button::State,
     shared_client: Arc<HttpClient>,
     state: AjourState,
+    mode: AjourMode,
     update_all_btn_state: button::State,
     header_state: HeaderState,
     theme_state: ThemeState,
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     retail_btn_state: button::State,
     classic_btn_state: button::State,
+    addon_mode_btn_state: button::State,
+    catalog_mode_btn_state: button::State,
     scale_state: ScaleState,
     backup_state: BackupState,
     column_settings: ColumnSettings,
     onboarding_directory_btn_state: button::State,
+    catalog: Option<Catalog>,
+    catalog_categories: Option<Vec<String>>,
+    catalog_query_state: CatalogQueryState,
+    catalog_header_state: CatalogHeaderState,
 }
 
 impl Default for Ajour {
@@ -129,15 +165,22 @@ impl Default for Ajour {
                     .unwrap(),
             ),
             state: AjourState::Loading,
+            mode: AjourMode::Addons,
             update_all_btn_state: Default::default(),
             header_state: Default::default(),
             theme_state: Default::default(),
             fingerprint_collection: Arc::new(Mutex::new(None)),
             retail_btn_state: Default::default(),
             classic_btn_state: Default::default(),
+            addon_mode_btn_state: Default::default(),
+            catalog_mode_btn_state: Default::default(),
             scale_state: Default::default(),
             backup_state: Default::default(),
             column_settings: Default::default(),
+            catalog: None,
+            catalog_categories: None,
+            catalog_query_state: Default::default(),
+            catalog_header_state: Default::default(),
             onboarding_directory_btn_state: Default::default(),
         }
     }
@@ -204,56 +247,16 @@ impl Application for Ajour {
         // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
             color_palette,
-            &mut self.update_all_btn_state,
-            &mut self.refresh_btn_state,
-            &mut self.retail_btn_state,
-            &mut self.classic_btn_state,
+            &self.mode,
             &mut self.settings_btn_state,
-            &self.state,
-            addons,
-            &mut self.config,
+            &mut self.addon_mode_btn_state,
+            &mut self.catalog_mode_btn_state,
             self.needs_update.as_deref(),
             &mut self.new_release_button_state,
         );
 
         let column_config = self.header_state.column_config();
-
-        // Addon row titles is a row of titles above the addon scrollable.
-        // This is to add titles above each section of the addon row, to let
-        // the user easily identify what the value is.
-        let addon_row_titles = element::addon_row_titles(
-            color_palette,
-            addons,
-            &mut self.header_state.state,
-            &mut self.header_state.columns,
-            self.header_state.previous_column_key,
-            self.header_state.previous_sort_direction,
-        );
-
-        // A scrollable list containing rows.
-        // Each row holds data about a single addon.
-        let mut addons_scrollable =
-            element::addon_scrollable(color_palette, &mut self.addons_scrollable_state);
-
-        // Loops though the addons.
-        for addon in addons {
-            // Checks if the current addon is expanded.
-            let is_addon_expanded = match &self.expanded_addon {
-                Some(expanded_addon) => addon.id == expanded_addon.id,
-                None => false,
-            };
-
-            // A container cell which has all data about the current addon.
-            // If the addon is expanded, then this is also included in this container.
-            let addon_data_cell =
-                element::addon_data_cell(color_palette, addon, is_addon_expanded, &column_config);
-
-            // Adds the addon data cell to the scrollable.
-            addons_scrollable = addons_scrollable.push(addon_data_cell);
-        }
-
-        // Bottom space below the scrollable.
-        let bottom_space = Space::new(Length::FillPortion(1), Length::Units(10));
+        let catalog_column_config = self.catalog_header_state.column_config();
 
         // This column gathers all the other elements together.
         let mut content = Column::new().push(menu_container);
@@ -273,18 +276,196 @@ impl Application for Ajour {
             );
 
             // Space below settings.
-            let space = Space::new(Length::Fill, Length::Units(10));
+            let space = Space::new(Length::Fill, Length::Units(DEFAULT_PADDING));
 
             // Adds the settings container.
             content = content.push(settings_container).push(space);
         }
 
-        // Adds the rest of the elements to the content column.
-        if has_addons {
-            content = content
-                .push(addon_row_titles)
-                .push(addons_scrollable)
-                .push(bottom_space)
+        // Spacer between menu and content.
+        content = content.push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
+
+        match self.mode {
+            AjourMode::Addons => {
+                // Menu for addons.
+                let menu_addons_container = element::menu_addons_container(
+                    color_palette,
+                    &mut self.update_all_btn_state,
+                    &mut self.refresh_btn_state,
+                    &mut self.retail_btn_state,
+                    &mut self.classic_btn_state,
+                    &self.state,
+                    addons,
+                    &mut self.config,
+                );
+                content = content.push(menu_addons_container);
+
+                // Addon row titles is a row of titles above the addon scrollable.
+                // This is to add titles above each section of the addon row, to let
+                // the user easily identify what the value is.
+                let addon_row_titles = element::addon_row_titles(
+                    color_palette,
+                    addons,
+                    &mut self.header_state.state,
+                    &mut self.header_state.columns,
+                    self.header_state.previous_column_key,
+                    self.header_state.previous_sort_direction,
+                );
+
+                // A scrollable list containing rows.
+                // Each row holds data about a single addon.
+                let mut addons_scrollable =
+                    element::addon_scrollable(color_palette, &mut self.addons_scrollable_state);
+
+                // Loops though the addons.
+                for addon in addons {
+                    // Checks if the current addon is expanded.
+                    let is_addon_expanded = match &self.expanded_addon {
+                        Some(expanded_addon) => addon.id == expanded_addon.id,
+                        None => false,
+                    };
+
+                    // A container cell which has all data about the current addon.
+                    // If the addon is expanded, then this is also included in this container.
+                    let addon_data_cell = element::addon_data_cell(
+                        color_palette,
+                        addon,
+                        is_addon_expanded,
+                        &column_config,
+                    );
+
+                    // Adds the addon data cell to the scrollable.
+                    addons_scrollable = addons_scrollable.push(addon_data_cell);
+                }
+
+                // Bottom space below the scrollable.
+                let bottom_space =
+                    Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
+
+                // Adds the rest of the elements to the content column.
+                if has_addons {
+                    content = content
+                        .push(addon_row_titles)
+                        .push(addons_scrollable)
+                        .push(bottom_space)
+                }
+            }
+            AjourMode::Catalog => {
+                if let (Some(catalog), Some(categories)) = (&self.catalog, &self.catalog_categories)
+                {
+                    let query = self
+                        .catalog_query_state
+                        .query
+                        .as_deref()
+                        .unwrap_or_default();
+
+                    let catalog_query = TextInput::new(
+                        &mut self.catalog_query_state.text_input_state,
+                        "Search for an addon...",
+                        query,
+                        Interaction::CatalogQuery,
+                    )
+                    .size(DEFAULT_FONT_SIZE)
+                    .padding(10)
+                    .style(style::CatalogQueryInput(color_palette));
+
+                    let catalog_query: Element<Interaction> = catalog_query.into();
+                    let selected_category = match self.catalog_query_state.category {
+                        None => Some(String::from("All categories")),
+                        _ => self.catalog_query_state.category.clone(),
+                    };
+
+                    let category_picklist = PickList::new(
+                        &mut self.catalog_query_state.categories_state,
+                        categories_with_all_option(categories),
+                        selected_category,
+                        Interaction::CatalogCategorySelected,
+                    )
+                    .text_size(14)
+                    .width(Length::Units(200))
+                    .style(style::SecondaryPickList(color_palette));
+
+                    let category_picklist: Element<Interaction> = category_picklist.into();
+                    let category_picklist_container =
+                        Container::new(category_picklist.map(Message::Interaction))
+                            .center_y()
+                            .style(style::SurfaceContainer(color_palette))
+                            .height(Length::Fill);
+
+                    let result_size_picklist = PickList::new(
+                        &mut self.catalog_query_state.results_size_state,
+                        &self.catalog_query_state.result_sizes[..],
+                        Some(self.catalog_query_state.result_size.to_string()),
+                        Interaction::CatalogResultSizeSelected,
+                    )
+                    .text_size(14)
+                    .width(Length::Units(200))
+                    .style(style::SecondaryPickList(color_palette));
+
+                    let result_size_picklist: Element<Interaction> = result_size_picklist.into();
+                    let result_size_picklist_container =
+                        Container::new(result_size_picklist.map(Message::Interaction))
+                            .center_y()
+                            .style(style::SurfaceContainer(color_palette))
+                            .height(Length::Fill);
+
+                    let catalog_query_row = Row::new()
+                        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                        .push(catalog_query.map(Message::Interaction))
+                        .push(category_picklist_container)
+                        .push(result_size_picklist_container)
+                        .push(Space::new(
+                            Length::Units(DEFAULT_PADDING + 5),
+                            Length::Units(0),
+                        ))
+                        .spacing(1);
+
+                    let catalog_query_container = Container::new(catalog_query_row)
+                        .width(Length::Fill)
+                        .height(Length::Units(35))
+                        .center_y();
+
+                    let catalog_row_titles = element::catalog_row_titles(
+                        color_palette,
+                        catalog,
+                        &mut self.catalog_header_state.state,
+                        &mut self.catalog_header_state.columns,
+                        self.catalog_header_state.previous_column_key,
+                        self.catalog_header_state.previous_sort_direction,
+                    );
+
+                    let mut catalog_scrollable = element::addon_scrollable(
+                        color_palette,
+                        &mut self.catalog_query_state.scrollable_state,
+                    );
+
+                    for addon in self.catalog_query_state.catalog_rows.iter_mut() {
+                        // TODO: We should make this prettier with new sources coming in.
+                        let already_installed =
+                            addons.iter().any(|a| a.curse_id == Some(addon.addon.id));
+
+                        let catalog_data_cell = element::catalog_data_cell(
+                            color_palette,
+                            addon,
+                            &catalog_column_config,
+                            already_installed,
+                        );
+
+                        catalog_scrollable = catalog_scrollable.push(catalog_data_cell);
+                    }
+
+                    // Bottom space below the scrollable.
+                    let bottom_space =
+                        Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
+
+                    content = content
+                        .push(catalog_query_container)
+                        .push(Space::new(Length::Fill, Length::Units(5)))
+                        .push(catalog_row_titles)
+                        .push(catalog_scrollable)
+                        .push(bottom_space)
+                }
+            }
         }
 
         // Status messages.
@@ -296,35 +477,38 @@ impl Application for Ajour {
                 AjourState::Welcome,
                 Some(&mut self.onboarding_directory_btn_state),
             )),
-            AjourState::Idle => {
-                if !has_addons {
-                    Some(element::status_container(
-                        color_palette,
-                        "Woops!",
-                        &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
-                        AjourState::Idle,
-                        None,
-                    ))
-                } else {
-                    None
+            AjourState::Idle => match self.mode {
+                AjourMode::Addons => {
+                    if !has_addons {
+                        Some(element::status_container(
+                            color_palette,
+                            "Woops!",
+                            &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
+                        ))
+                    } else {
+                        None
+                    }
                 }
-            }
-            AjourState::Loading => Some(element::status_container(
-                color_palette,
-                "Loading..",
-                "Currently parsing addons.",
-                AjourState::Loading,
-                None,
-            )),
+                AjourMode::Catalog => None,
+            },
+            AjourState::Loading => match self.mode {
+                AjourMode::Addons => Some(element::status_container(
+                    color_palette,
+                    "Loading..",
+                    "Currently parsing addons.",
+                )),
+                AjourMode::Catalog => Some(element::status_container(
+                    color_palette,
+                    "Loading..",
+                    "Currently loading addon catalog.",
+                )),
+            },
             _ => None,
         };
 
         if let Some(c) = container {
             content = content.push(c);
         };
-
-        // Small padding to make UI fit better.
-        content = content.padding(3);
 
         // Finally wraps everything in a container.
         Container::new(content)
@@ -333,6 +517,13 @@ impl Application for Ajour {
             .style(style::Content(color_palette))
             .into()
     }
+}
+
+fn categories_with_all_option(categories: &[String]) -> Vec<String> {
+    let mut categories = categories.to_owned();
+    categories.extend(vec![String::from("All categories")]);
+    categories.rotate_right(1);
+    categories
 }
 
 /// Starts the GUI.
@@ -614,6 +805,187 @@ pub struct ColumnSettingState {
     pub order: usize,
     pub up_btn_state: button::State,
     pub down_btn_state: button::State,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
+pub enum CatalogColumnKey {
+    Title,
+    Description,
+    NumDownloads,
+    Download,
+}
+
+impl CatalogColumnKey {
+    fn title(self) -> String {
+        use CatalogColumnKey::*;
+
+        let title = match self {
+            Title => "Addon",
+            Description => "Description",
+            NumDownloads => "# Downloads",
+            Download => "Download",
+        };
+
+        title.to_string()
+    }
+
+    fn as_string(self) -> String {
+        use CatalogColumnKey::*;
+
+        let s = match self {
+            Title => "addon",
+            Description => "description",
+            NumDownloads => "num_downloads",
+            Download => "download",
+        };
+
+        s.to_string()
+    }
+}
+
+pub struct CatalogHeaderState {
+    state: header::State,
+    previous_column_key: Option<CatalogColumnKey>,
+    previous_sort_direction: Option<SortDirection>,
+    columns: Vec<CatalogColumnState>,
+}
+
+impl CatalogHeaderState {
+    fn column_config(&self) -> Vec<(CatalogColumnKey, Length)> {
+        self.columns.iter().map(|c| (c.key, c.width)).collect()
+    }
+}
+
+impl Default for CatalogHeaderState {
+    fn default() -> Self {
+        Self {
+            state: Default::default(),
+            previous_column_key: None,
+            previous_sort_direction: None,
+            columns: vec![
+                CatalogColumnState {
+                    key: CatalogColumnKey::Title,
+                    btn_state: Default::default(),
+                    width: Length::Units(150),
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::Description,
+                    btn_state: Default::default(),
+                    width: Length::Fill,
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::NumDownloads,
+                    btn_state: Default::default(),
+                    width: Length::Units(105),
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::Download,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                },
+            ],
+        }
+    }
+}
+
+pub struct CatalogColumnState {
+    key: CatalogColumnKey,
+    btn_state: button::State,
+    width: Length,
+}
+
+pub struct CatalogQueryState {
+    pub query: Option<String>,
+    pub category: Option<String>,
+    pub result_size: CatalogResultSize,
+    pub result_sizes: [String; 4],
+    pub text_input_state: text_input::State,
+    pub catalog_rows: Vec<CatalogRow>,
+    pub scrollable_state: scrollable::State,
+    pub categories_state: pick_list::State<String>,
+    pub results_size_state: pick_list::State<String>,
+}
+
+impl Default for CatalogQueryState {
+    fn default() -> Self {
+        CatalogQueryState {
+            query: None,
+            category: None,
+            result_size: Default::default(),
+            result_sizes: CatalogResultSize::all_strings(),
+            text_input_state: Default::default(),
+            catalog_rows: Default::default(),
+            scrollable_state: Default::default(),
+            categories_state: Default::default(),
+            results_size_state: Default::default(),
+        }
+    }
+}
+
+pub struct CatalogRow {
+    btn_state: button::State,
+    addon: CatalogAddon,
+}
+
+impl From<CatalogAddon> for CatalogRow {
+    fn from(addon: CatalogAddon) -> Self {
+        Self {
+            btn_state: Default::default(),
+            addon,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum CatalogResultSize {
+    _25,
+    _50,
+    _100,
+    _500,
+}
+
+impl Default for CatalogResultSize {
+    fn default() -> Self {
+        CatalogResultSize::_25
+    }
+}
+
+impl CatalogResultSize {
+    pub fn all_strings() -> [String; 4] {
+        [
+            CatalogResultSize::_25.to_string(),
+            CatalogResultSize::_50.to_string(),
+            CatalogResultSize::_100.to_string(),
+            CatalogResultSize::_500.to_string(),
+        ]
+    }
+
+    pub fn as_usize(self) -> usize {
+        match self {
+            CatalogResultSize::_25 => 25,
+            CatalogResultSize::_50 => 50,
+            CatalogResultSize::_100 => 100,
+            CatalogResultSize::_500 => 500,
+        }
+    }
+}
+
+impl From<&str> for CatalogResultSize {
+    fn from(s: &str) -> Self {
+        match s {
+            "Results: 25" => CatalogResultSize::_25,
+            "Results: 50" => CatalogResultSize::_50,
+            "Results: 100" => CatalogResultSize::_100,
+            "Results: 500" => CatalogResultSize::_500,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl ToString for CatalogResultSize {
+    fn to_string(&self) -> String {
+        format!("Results: {}", self.as_usize())
+    }
 }
 
 pub struct ThemeState {
