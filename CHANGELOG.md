@@ -9,6 +9,10 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+### Changed
+- Tidy up Settings
+- Better onboarding the first time you start Ajour.
+
 ## [0.3.5] - 2020-10-01
 ### Packaging
 - Updated Ajour icon.
