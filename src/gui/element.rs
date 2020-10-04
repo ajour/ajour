@@ -954,7 +954,10 @@ pub fn menu_addons_container<'a>(
     // Enable refresh_button if:
     //   - No addon is performing any task.
     //   - Ajour isn't loading
-    if !addons_performing_actions && !ajour_performing_actions {
+    if !addons_performing_actions
+        && !ajour_performing_actions
+        && !matches!(state, AjourState::Welcome)
+    {
         refresh_button = refresh_button.on_press(Interaction::Refresh);
     }
 
@@ -1061,6 +1064,7 @@ pub fn menu_addons_container<'a>(
 pub fn menu_container<'a>(
     color_palette: ColorPalette,
     mode: &AjourMode,
+    state: &AjourState,
     settings_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
@@ -1074,15 +1078,13 @@ pub fn menu_container<'a>(
         addon_mode_button_state,
         Text::new("My Addons").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette))
-    .on_press(Interaction::ModeSelected(AjourMode::Addons));
+    .style(style::SegmentedDisabledButton(color_palette));
 
     let mut catalog_mode_button = Button::new(
         catalog_mode_btn_state,
         Text::new("Catalog").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette))
-    .on_press(Interaction::ModeSelected(AjourMode::Catalog));
+    .style(style::SegmentedDisabledButton(color_palette));
 
     match mode {
         AjourMode::Addons => {
@@ -1097,6 +1099,19 @@ pub fn menu_container<'a>(
             catalog_mode_button =
                 catalog_mode_button.style(style::SegmentedSelectedButton(color_palette));
         }
+    }
+
+    // If we are onboarding, we disable the mode buttons and set proper styling.
+    if !matches!(state, AjourState::Welcome) {
+        addons_mode_button =
+            addons_mode_button.on_press(Interaction::ModeSelected(AjourMode::Addons));
+        catalog_mode_button =
+            catalog_mode_button.on_press(Interaction::ModeSelected(AjourMode::Catalog));
+    } else {
+        addons_mode_button =
+            addons_mode_button.style(style::SegmentedDisabledButton(color_palette));
+        catalog_mode_button =
+            catalog_mode_button.style(style::SegmentedDisabledButton(color_palette));
     }
 
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
