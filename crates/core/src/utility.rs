@@ -72,7 +72,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_wow_path() {
+    fn test_wow_path_resolution() {
         // Tests known result
 
         let classic_addon_path =
