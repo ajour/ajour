@@ -85,7 +85,7 @@ pub enum Interaction {
     ModeSelected(AjourMode),
     CatalogQuery(String),
     CatalogInstall(u32),
-    CatalogCategorySelected(String),
+    CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(String),
 }
 
@@ -138,7 +138,7 @@ pub struct Ajour {
     backup_state: BackupState,
     column_settings: ColumnSettings,
     catalog: Option<Catalog>,
-    catalog_categories: Option<Vec<String>>,
+    catalog_categories: Option<Vec<CatalogCategory>>,
     catalog_query_state: CatalogQueryState,
     catalog_header_state: CatalogHeaderState,
 }
@@ -368,15 +368,11 @@ impl Application for Ajour {
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
-                    let selected_category = match self.catalog_query_state.category {
-                        None => Some(String::from("All categories")),
-                        _ => self.catalog_query_state.category.clone(),
-                    };
 
                     let category_picklist = PickList::new(
                         &mut self.catalog_query_state.categories_state,
-                        categories_with_all_option(categories),
-                        selected_category,
+                        categories,
+                        Some(self.catalog_query_state.category.clone()),
                         Interaction::CatalogCategorySelected,
                     )
                     .text_size(14)
@@ -513,13 +509,6 @@ impl Application for Ajour {
             .style(style::Content(color_palette))
             .into()
     }
-}
-
-fn categories_with_all_option(categories: &[String]) -> Vec<String> {
-    let mut categories = categories.to_owned();
-    categories.extend(vec![String::from("All categories")]);
-    categories.rotate_right(1);
-    categories
 }
 
 /// Starts the GUI.
@@ -892,13 +881,13 @@ pub struct CatalogColumnState {
 
 pub struct CatalogQueryState {
     pub query: Option<String>,
-    pub category: Option<String>,
+    pub category: CatalogCategory,
     pub result_size: CatalogResultSize,
     pub result_sizes: [String; 4],
     pub text_input_state: text_input::State,
     pub catalog_rows: Vec<CatalogRow>,
     pub scrollable_state: scrollable::State,
-    pub categories_state: pick_list::State<String>,
+    pub categories_state: pick_list::State<CatalogCategory>,
     pub results_size_state: pick_list::State<String>,
 }
 
@@ -906,7 +895,7 @@ impl Default for CatalogQueryState {
     fn default() -> Self {
         CatalogQueryState {
             query: None,
-            category: None,
+            category: Default::default(),
             result_size: Default::default(),
             result_sizes: CatalogResultSize::all_strings(),
             text_input_state: Default::default(),
@@ -929,6 +918,27 @@ impl From<CatalogAddon> for CatalogRow {
             btn_state: Default::default(),
             addon,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum CatalogCategory {
+    All,
+    Choice(String),
+}
+
+impl std::fmt::Display for CatalogCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CatalogCategory::All => write!(f, "{}", "All Categories"),
+            CatalogCategory::Choice(name) => write!(f, "{}", name),
+        }
+    }
+}
+
+impl Default for CatalogCategory {
+    fn default() -> Self {
+        CatalogCategory::All
     }
 }
 
