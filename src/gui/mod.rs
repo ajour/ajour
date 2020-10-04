@@ -105,6 +105,7 @@ pub struct Ajour {
     scale_state: ScaleState,
     backup_state: BackupState,
     column_settings: ColumnSettings,
+    onboarding_directory_btn_state: button::State,
 }
 
 impl Default for Ajour {
@@ -137,6 +138,7 @@ impl Default for Ajour {
             scale_state: Default::default(),
             backup_state: Default::default(),
             column_settings: Default::default(),
+            onboarding_directory_btn_state: Default::default(),
         }
     }
 }
@@ -290,7 +292,9 @@ impl Application for Ajour {
             AjourState::Welcome => Some(element::status_container(
                 color_palette,
                 "Welcome to Ajour!",
-                "To get started, go to Settings and select your World of Warcraft directory.",
+                "Please select your World of Warcraft directory",
+                AjourState::Welcome,
+                Some(&mut self.onboarding_directory_btn_state),
             )),
             AjourState::Idle => {
                 if !has_addons {
@@ -298,6 +302,8 @@ impl Application for Ajour {
                         color_palette,
                         "Woops!",
                         &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
+                        AjourState::Idle,
+                        None,
                     ))
                 } else {
                     None
@@ -307,6 +313,8 @@ impl Application for Ajour {
                 color_palette,
                 "Loading..",
                 "Currently parsing addons.",
+                AjourState::Loading,
+                None,
             )),
             _ => None,
         };

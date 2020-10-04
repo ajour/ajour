@@ -1112,6 +1112,8 @@ pub fn status_container<'a>(
     color_palette: ColorPalette,
     title: &str,
     description: &str,
+    state: AjourState,
+    onboarding_directory_btn_state: Option<&'a mut button::State>,
 ) -> Container<'a, Message> {
     let title = Text::new(title)
         .size(DEFAULT_FONT_SIZE)
@@ -1129,10 +1131,33 @@ pub fn status_container<'a>(
         .width(Length::Fill)
         .style(style::SecondaryTextContainer(color_palette));
 
-    let colum = Column::new()
+    let mut colum = Column::new()
         .push(title_container)
         .push(Space::new(Length::Units(0), Length::Units(2)))
         .push(description_container);
+
+    match (state, onboarding_directory_btn_state) {
+        (AjourState::Welcome, Some(btn_state)) => {
+            let onboarding_button_title_container =
+                Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
+                    .width(Length::Units(100))
+                    .center_x()
+                    .align_x(Align::Center);
+            let onboarding_button: Element<Interaction> =
+                Button::new(btn_state, onboarding_button_title_container)
+                    .width(Length::Units(100))
+                    .style(style::DefaultBoxedButton(color_palette))
+                    .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+                    .into();
+
+            colum = colum
+                .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+                .push(onboarding_button.map(Message::Interaction))
+                .align_items(Align::Center);
+        }
+        _ => {}
+    }
+
     Container::new(colum)
         .center_y()
         .center_x()
