@@ -1337,7 +1337,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::AddonRowDefaultTextContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
