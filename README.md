@@ -21,7 +21,7 @@
 - [Acknowledgement](#acknowledgement)
 
 ## Introduction
-Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports macOS and Windows.
+Ajour is a World of Warcraft addon manager written in Rust with a strong focus on performance and simplicity. The project is completely advertisement free, privacy respecting and open source. Ajour currently supports Windows, macOS and Linux.
 
 <div align="center">
 
@@ -100,10 +100,6 @@ The plan is to have a stable, polished release in time for the Shadowlands launc
 **_What features are planned?_**
 
 We have a roadmap [here](https://github.com/casperstorm/ajour/projects/2).
-
-**_When can we expect a Linux version?_**
-
-Ajour is being developed and tested on macOS and Windows, but should work on Linux if installed from source.
 
 **_What should I do if some addon isn't showing or updating correctly?_**
 

@@ -137,6 +137,7 @@ pub struct Ajour {
     scale_state: ScaleState,
     backup_state: BackupState,
     column_settings: ColumnSettings,
+    onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
     catalog_categories: Option<Vec<CatalogCategory>>,
     catalog_query_state: CatalogQueryState,
@@ -176,6 +177,7 @@ impl Default for Ajour {
             scale_state: Default::default(),
             backup_state: Default::default(),
             column_settings: Default::default(),
+            onboarding_directory_btn_state: Default::default(),
             catalog: None,
             catalog_categories: None,
             catalog_query_state: Default::default(),
@@ -246,6 +248,7 @@ impl Application for Ajour {
         let menu_container = element::menu_container(
             color_palette,
             &self.mode,
+            &self.state,
             &mut self.settings_btn_state,
             &mut self.addon_mode_btn_state,
             &mut self.catalog_mode_btn_state,
@@ -467,7 +470,9 @@ impl Application for Ajour {
             AjourState::Welcome => Some(element::status_container(
                 color_palette,
                 "Welcome to Ajour!",
-                "To get started, go to Settings and select your World of Warcraft directory.",
+                "Please select your World of Warcraft directory",
+                AjourState::Welcome,
+                Some(&mut self.onboarding_directory_btn_state),
             )),
             AjourState::Idle => match self.mode {
                 AjourMode::Addons => {
@@ -476,6 +481,8 @@ impl Application for Ajour {
                             color_palette,
                             "Woops!",
                             &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
+                            AjourState::Idle,
+                            None,
                         ))
                     } else {
                         None
@@ -488,11 +495,15 @@ impl Application for Ajour {
                     color_palette,
                     "Loading..",
                     "Currently parsing addons.",
+                    AjourState::Loading,
+                    None,
                 )),
                 AjourMode::Catalog => Some(element::status_container(
                     color_palette,
                     "Loading..",
                     "Currently loading addon catalog.",
+                    AjourState::Loading,
+                    None,
                 )),
             },
             _ => None,
