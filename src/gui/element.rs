@@ -36,9 +36,6 @@ pub fn settings_container<'a, 'b>(
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
-    let directory_info_row = Row::new()
-        .push(directory_info_text)
-        .padding(DEFAULT_PADDING);
 
     // Directory button for World of Warcraft directory selection.
     let directory_button: Element<Interaction> = Button::new(
@@ -48,9 +45,6 @@ pub fn settings_container<'a, 'b>(
     .style(style::DefaultBoxedButton(color_palette))
     .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
     .into();
-
-    // We add some margin left to adjust to the rest of the content.
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
 
     // Directory text, written next to directory button to let the user
     // know what has been selected..
@@ -64,22 +58,19 @@ pub fn settings_container<'a, 'b>(
         .size(14)
         .vertical_alignment(VerticalAlignment::Center);
     let directory_data_text_container = Container::new(directory_data_text)
+        .height(Length::Units(25))
         .center_y()
-        .padding(5)
         .style(style::SecondaryTextContainer(color_palette));
 
     // Data row for the World of Warcraft directory selection.
     let path_data_row = Row::new()
-        .push(left_spacer)
         .push(directory_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(directory_data_text_container);
 
     // Title for the theme pick list.
     let theme_info_text = Text::new("Theme").size(14);
     let theme_info_row = Row::new().push(theme_info_text).padding(DEFAULT_PADDING);
-
-    // We add some margin left to adjust to the rest of the content.
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
 
     let theme_names = theme_state
         .themes
@@ -98,7 +89,7 @@ pub fn settings_container<'a, 'b>(
     .style(style::PickList(color_palette));
 
     // Data row for theme picker list.
-    let theme_data_row = Row::new().push(left_spacer).push(theme_pick_list);
+    let theme_data_row = Row::new().push(theme_pick_list);
 
     // Scale buttons for application scale factoring.
     let (scale_title_row, scale_buttons_row) = {
@@ -121,20 +112,16 @@ pub fn settings_container<'a, 'b>(
         .on_press(Interaction::ScaleUp)
         .into();
 
-        // We add some margin left to adjust to the rest of the content.
-        let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-
         let current_scale_text = Text::new(format!("  {:.2}  ", scale_state.scale))
             .size(DEFAULT_FONT_SIZE)
             .vertical_alignment(VerticalAlignment::Center);
         let current_scale_container = Container::new(current_scale_text)
+            .height(Length::Units(25))
             .center_y()
-            .padding(5)
             .style(style::SecondaryTextContainer(color_palette));
 
         // Data row for the World of Warcraft directory selection.
         let scale_buttons_row = Row::new()
-            .push(left_spacer)
             .push(scale_down_button.map(Message::Interaction))
             .push(current_scale_container)
             .push(scale_up_button.map(Message::Interaction));
@@ -148,7 +135,7 @@ pub fn settings_container<'a, 'b>(
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
         let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
-        let backup_title_row = Row::new().push(backup_title_text).padding(DEFAULT_PADDING);
+        let backup_title_row = Row::new().push(backup_title_text);
 
         // Directory button for Backup directory selection.
         let directory_button: Element<Interaction> = Button::new(
@@ -170,29 +157,34 @@ pub fn settings_container<'a, 'b>(
             .size(DEFAULT_FONT_SIZE)
             .vertical_alignment(VerticalAlignment::Center);
         let directory_data_text_container = Container::new(directory_data_text)
+            .height(Length::Units(25))
             .center_y()
-            .padding(5)
             .style(style::SecondaryTextContainer(color_palette));
 
         // Data row for the Backup directory selection.
         let backup_directory_row = Row::new()
-            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_button.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_data_text_container);
 
         // Row to show actual backup button along with info about the latest
         // backup date/time. Will give a description of what Backup is when no
         // directory is chosen
-        let mut backup_now_row =
-            Row::new().push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
+        let mut backup_now_row = Row::new();
 
         // Show button / last backup info if directory is shown, otherwise
         // show description about the backup process
         if config.backup_directory.is_some() {
+            let backup_button_title_container =
+                Container::new(Text::new("Backup Now").size(DEFAULT_FONT_SIZE))
+                    .width(Length::FillPortion(1))
+                    .center_x()
+                    .align_x(Align::Center);
             let mut backup_button = Button::new(
                 &mut backup_state.backup_now_btn_state,
-                Text::new("Backup Now").size(DEFAULT_FONT_SIZE),
+                backup_button_title_container,
             )
+            .width(Length::Units(100))
             .style(style::DefaultBoxedButton(color_palette));
 
             // Only show button as clickable if it's not currently backing up and
@@ -217,14 +209,15 @@ pub fn settings_container<'a, 'b>(
             };
 
             let backup_status_text_container = Container::new(backup_status_text)
+                .height(Length::Units(25))
                 .center_y()
-                .padding(5)
                 .style(style::SecondaryTextContainer(color_palette));
 
             let backup_button: Element<Interaction> = backup_button.into();
 
             backup_now_row = backup_now_row
                 .push(backup_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                 .push(backup_status_text_container);
         } else {
             let backup_status_text =
@@ -233,6 +226,7 @@ pub fn settings_container<'a, 'b>(
                     .vertical_alignment(VerticalAlignment::Center);
 
             let backup_status_text_container = Container::new(backup_status_text)
+                .height(Length::Units(25))
                 .center_y()
                 .style(style::SecondaryTextContainer(color_palette));
 
@@ -339,10 +333,16 @@ pub fn settings_container<'a, 'b>(
 
     // Colum wrapping all the settings content.
     let left_column = Column::new()
-        .push(directory_info_row)
-        .push(path_data_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(directory_info_text)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(path_data_row)
+        .push(Space::new(
+            Length::Units(0),
+            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
+        ))
         .push(backup_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_directory_row)
@@ -360,12 +360,12 @@ pub fn settings_container<'a, 'b>(
 
     // Container wrapping colum.
     let left_container = Container::new(left_column)
-        .width(Length::FillPortion(2))
+        .width(Length::FillPortion(1))
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     let middle_container = Container::new(middle_column)
-        .width(Length::FillPortion(1))
+        .width(Length::Units(150))
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
@@ -374,23 +374,23 @@ pub fn settings_container<'a, 'b>(
         .push(columns_scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
-        .width(Length::FillPortion(1))
+        .width(Length::Units(200))
         .height(Length::Units(255))
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Row to wrap each section.
     let row = Row::new()
         .push(left_spacer)
-        .push(left_container)
-        .push(middle_container)
         .push(right_container)
+        .push(middle_container)
+        .push(left_container)
         .push(right_spacer);
 
     // Returns the final container.
     Container::new(row)
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette))
-        .padding(DEFAULT_PADDING)
+        .padding(DEFAULT_PADDING + DEFAULT_PADDING)
 }
 
 pub fn addon_data_cell<'a, 'b>(
