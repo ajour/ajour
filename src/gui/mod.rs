@@ -86,7 +86,7 @@ pub enum Interaction {
     CatalogQuery(String),
     CatalogInstall(u32),
     CatalogCategorySelected(CatalogCategory),
-    CatalogResultSizeSelected(String),
+    CatalogResultSizeSelected(CatalogResultSize),
 }
 
 #[derive(Debug)]
@@ -388,8 +388,8 @@ impl Application for Ajour {
 
                     let result_size_picklist = PickList::new(
                         &mut self.catalog_query_state.results_size_state,
-                        &self.catalog_query_state.result_sizes[..],
-                        Some(self.catalog_query_state.result_size.to_string()),
+                        &self.catalog_query_state.result_sizes,
+                        Some(self.catalog_query_state.result_size),
                         Interaction::CatalogResultSizeSelected,
                     )
                     .text_size(14)
@@ -883,12 +883,12 @@ pub struct CatalogQueryState {
     pub query: Option<String>,
     pub category: CatalogCategory,
     pub result_size: CatalogResultSize,
-    pub result_sizes: [String; 4],
+    pub result_sizes: Vec<CatalogResultSize>,
     pub text_input_state: text_input::State,
     pub catalog_rows: Vec<CatalogRow>,
     pub scrollable_state: scrollable::State,
     pub categories_state: pick_list::State<CatalogCategory>,
-    pub results_size_state: pick_list::State<String>,
+    pub results_size_state: pick_list::State<CatalogResultSize>,
 }
 
 impl Default for CatalogQueryState {
@@ -897,7 +897,7 @@ impl Default for CatalogQueryState {
             query: None,
             category: Default::default(),
             result_size: Default::default(),
-            result_sizes: CatalogResultSize::all_strings(),
+            result_sizes: CatalogResultSize::all(),
             text_input_state: Default::default(),
             catalog_rows: Default::default(),
             scrollable_state: Default::default(),
@@ -930,7 +930,7 @@ pub enum CatalogCategory {
 impl std::fmt::Display for CatalogCategory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CatalogCategory::All => write!(f, "{}", "All Categories"),
+            CatalogCategory::All => write!(f, "All Categories"),
             CatalogCategory::Choice(name) => write!(f, "{}", name),
         }
     }
@@ -942,7 +942,7 @@ impl Default for CatalogCategory {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum CatalogResultSize {
     _25,
     _50,
@@ -957,12 +957,12 @@ impl Default for CatalogResultSize {
 }
 
 impl CatalogResultSize {
-    pub fn all_strings() -> [String; 4] {
-        [
-            CatalogResultSize::_25.to_string(),
-            CatalogResultSize::_50.to_string(),
-            CatalogResultSize::_100.to_string(),
-            CatalogResultSize::_500.to_string(),
+    pub fn all() -> Vec<CatalogResultSize> {
+        vec![
+            CatalogResultSize::_25,
+            CatalogResultSize::_50,
+            CatalogResultSize::_100,
+            CatalogResultSize::_500,
         ]
     }
 
@@ -976,21 +976,9 @@ impl CatalogResultSize {
     }
 }
 
-impl From<&str> for CatalogResultSize {
-    fn from(s: &str) -> Self {
-        match s {
-            "Results: 25" => CatalogResultSize::_25,
-            "Results: 50" => CatalogResultSize::_50,
-            "Results: 100" => CatalogResultSize::_100,
-            "Results: 500" => CatalogResultSize::_500,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl ToString for CatalogResultSize {
-    fn to_string(&self) -> String {
-        format!("Results: {}", self.as_usize())
+impl std::fmt::Display for CatalogResultSize {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Results: {}", self.as_usize())
     }
 }
 

@@ -1,7 +1,7 @@
 use {
     super::{
-        Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey, CatalogResultSize,
-        CatalogRow, ColumnKey, DirectoryType, Interaction, Message, SortDirection,
+        Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey, CatalogRow, ColumnKey,
+        DirectoryType, Interaction, Message, SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonState},
@@ -1017,7 +1017,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogResultSizeSelected(size)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", &size);
 
-            ajour.catalog_query_state.result_size = CatalogResultSize::from(size.as_str());
+            ajour.catalog_query_state.result_size = size;
 
             query_and_sort_catalog(ajour);
         }
