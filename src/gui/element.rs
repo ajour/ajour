@@ -1217,26 +1217,23 @@ pub fn status_container<'a>(
         .push(Space::new(Length::Units(0), Length::Units(2)))
         .push(description_container);
 
-    match (state, onboarding_directory_btn_state) {
-        (AjourState::Welcome, Some(btn_state)) => {
-            let onboarding_button_title_container =
-                Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
-                    .width(Length::Units(100))
-                    .center_x()
-                    .align_x(Align::Center);
-            let onboarding_button: Element<Interaction> =
-                Button::new(btn_state, onboarding_button_title_container)
-                    .width(Length::Units(100))
-                    .style(style::DefaultBoxedButton(color_palette))
-                    .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
-                    .into();
+    if let (_, Some(btn_state)) = (AjourState::Welcome, onboarding_directory_btn_state) {
+        let onboarding_button_title_container =
+            Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
+                .width(Length::Units(100))
+                .center_x()
+                .align_x(Align::Center);
+        let onboarding_button: Element<Interaction> =
+            Button::new(btn_state, onboarding_button_title_container)
+                .width(Length::Units(100))
+                .style(style::DefaultBoxedButton(color_palette))
+                .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+                .into();
 
-            colum = colum
-                .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-                .push(onboarding_button.map(Message::Interaction))
-                .align_items(Align::Center);
-        }
-        _ => {}
+        colum = colum
+            .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+            .push(onboarding_button.map(Message::Interaction))
+            .align_items(Align::Center);
     }
 
     Container::new(colum)
