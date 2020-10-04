@@ -1,12 +1,12 @@
 use {
     super::{
-        Ajour, AjourMode, AjourState, CatalogColumnKey, CatalogResultSize, CatalogRow, ColumnKey,
-        DirectoryType, Interaction, Message, SortDirection,
+        Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey, CatalogResultSize,
+        CatalogRow, ColumnKey, DirectoryType, Interaction, Message, SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
-        catalog::{get_catalog, CatalogCategory},
+        catalog::get_catalog,
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
         curse_api::latest_stable_addon_from_id,
         fs::{delete_addons, install_addon, PersistentData},
@@ -968,8 +968,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             });
 
-            let mut categories: Vec<_> = categories.into_iter().collect();
+            // Map category strings to Category enum
+            let mut categories: Vec<_> = categories
+                .into_iter()
+                .map(CatalogCategory::Choice)
+                .collect();
             categories.sort();
+
+            // Unshift the All Categories option into the vec
+            categories.insert(0, CatalogCategory::All);
 
             ajour.catalog_categories = Some(categories);
 
@@ -1268,12 +1275,9 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
 
         catalog_rows = catalog_rows
             .into_iter()
-            .filter(|a| {
-                if category == &CatalogCategory::all_option() {
-                    true
-                } else {
-                    a.addon.categories.iter().any(|c| c == category)
-                }
+            .filter(|a| match category {
+                CatalogCategory::All => true,
+                CatalogCategory::Choice(name) => a.addon.categories.iter().any(|c| c == name),
             })
             .enumerate()
             .filter_map(|(idx, row)| if idx < result_size { Some(row) } else { None })

@@ -6,7 +6,7 @@ use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, ReleaseChannel},
-    catalog::{Catalog, CatalogAddon, CatalogCategory},
+    catalog::{Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
@@ -364,10 +364,6 @@ impl Application for Ajour {
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
-
-                    // Insert the default option as the first option (placeholder)
-                    let mut categories = categories.to_owned();
-                    categories.insert(0, Default::default());
 
                     let category_picklist = PickList::new(
                         &mut self.catalog_query_state.categories_state,
@@ -921,6 +917,27 @@ impl From<CatalogAddon> for CatalogRow {
             btn_state: Default::default(),
             addon,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum CatalogCategory {
+    All,
+    Choice(String),
+}
+
+impl std::fmt::Display for CatalogCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CatalogCategory::All => write!(f, "{}", "All Categories"),
+            CatalogCategory::Choice(name) => write!(f, "{}", name),
+        }
+    }
+}
+
+impl Default for CatalogCategory {
+    fn default() -> Self {
+        CatalogCategory::All
     }
 }
 
