@@ -495,8 +495,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .expect("Expected a valid path");
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
-                dbg!("addon match");
-
                 if addon.state == AddonState::Downloading {
                     addon.state = AddonState::Unpacking;
                     let addon = addon.clone();
@@ -992,15 +990,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::Interaction(Interaction::CatalogInstall(id)) => {
+        Message::Interaction(Interaction::CatalogInstall(flavor, id)) => {
             log::debug!("Interaction::CatalogInstall({})", &id);
 
-            if let Some(addon_path) = ajour
-                .config
-                .get_addon_directory_for_flavor(&ajour.config.wow.flavor)
-            {
-                let flavor = ajour.config.wow.flavor;
-
+            if let Some(addon_path) = ajour.config.get_addon_directory_for_flavor(&flavor) {
                 return Ok(Command::perform(
                     latest_stable_addon_from_id(id, addon_path, flavor),
                     Message::CatalogInstallAddonFetched,
@@ -1244,8 +1237,10 @@ fn sort_catalog_addons(
                     .reverse()
             });
         }
-        (CatalogColumnKey::Download, SortDirection::Asc) => {}
-        (CatalogColumnKey::Download, SortDirection::Desc) => {}
+        (CatalogColumnKey::InstallRetail, SortDirection::Asc) => {}
+        (CatalogColumnKey::InstallRetail, SortDirection::Desc) => {}
+        (CatalogColumnKey::InstallClassic, SortDirection::Asc) => {}
+        (CatalogColumnKey::InstallClassic, SortDirection::Desc) => {}
     }
 }
 

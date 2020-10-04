@@ -1193,7 +1193,6 @@ pub fn status_container<'a>(
     color_palette: ColorPalette,
     title: &str,
     description: &str,
-    state: AjourState,
     onboarding_directory_btn_state: Option<&'a mut button::State>,
 ) -> Container<'a, Message> {
     let title = Text::new(title)
@@ -1272,13 +1271,17 @@ pub fn catalog_row_titles<'a>(
         )
         .width(Length::Fill);
 
-        if column_key != CatalogColumnKey::Download {
+        if column_key != CatalogColumnKey::InstallRetail
+            || column_key != CatalogColumnKey::InstallClassic
+        {
             row_header = row_header.on_press(Interaction::SortCatalogColumn(column_key));
         }
 
         if previous_column_key == Some(column_key) {
             row_header = row_header.style(style::SelectedColumnHeaderButton(color_palette));
-        } else if column_key == CatalogColumnKey::Download {
+        } else if column_key == CatalogColumnKey::InstallRetail
+            || column_key == CatalogColumnKey::InstallClassic
+        {
             row_header = row_header.style(style::UnclickableColumnHeaderButton(color_palette));
         } else {
             row_header = row_header.style(style::ColumnHeaderButton(color_palette));
@@ -1310,20 +1313,27 @@ pub fn catalog_data_cell<'a, 'b>(
     color_palette: ColorPalette,
     addon: &'a mut CatalogRow,
     column_config: &'b [(CatalogColumnKey, Length)],
-    already_installed: bool,
+    retail_downloading: bool,
+    retail_installed: bool,
+    classic_downloading: bool,
+    classic_installed: bool,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
 
     let mut row_containers = vec![];
 
     let addon_data = &addon.addon;
-    let install_state = &mut addon.btn_state;
+    let retail_install_state = &mut addon.retail_install_state;
+    let classic_install_state = &mut addon.classic_install_state;
+
+    let retail_exists = addon_data.flavors.contains(&Flavor::Retail);
+    let classic_exists = addon_data.flavors.contains(&Flavor::Classic);
 
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::Download {
+            if *key == CatalogColumnKey::InstallRetail {
                 Some((idx, width))
             } else {
                 None
@@ -1331,28 +1341,78 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let install = Text::new(if already_installed {
+        let retail_install = Text::new(if !retail_exists {
+            "Not Available"
+        } else if retail_downloading {
+            "Downloading"
+        } else if retail_installed {
             "Installed"
         } else {
-            "Install"
+            "Install Retail"
         })
         .size(DEFAULT_FONT_SIZE);
-        let mut install_button =
-            Button::new(install_state, install).style(style::DefaultBoxedButton(color_palette));
 
-        if !already_installed {
-            install_button = install_button.on_press(Interaction::CatalogInstall(addon_data.id));
+        let mut retail_install_button = Button::new(retail_install_state, retail_install)
+            .style(style::DefaultBoxedButton(color_palette));
+
+        if !retail_installed && !retail_downloading && retail_exists {
+            retail_install_button = retail_install_button
+                .on_press(Interaction::CatalogInstall(Flavor::Retail, addon_data.id));
         }
 
-        let install_button: Element<Interaction> = install_button.into();
+        let retail_install_button: Element<Interaction> = retail_install_button.into();
 
-        let install_container = Container::new(install_button.map(Message::Interaction))
-            .height(default_height)
-            .width(*width)
-            .center_y()
-            .style(style::AddonRowDefaultTextContainer(color_palette));
+        let retail_install_container =
+            Container::new(retail_install_button.map(Message::Interaction))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .style(style::AddonRowDefaultTextContainer(color_palette));
 
-        row_containers.push((idx, install_container));
+        row_containers.push((idx, retail_install_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::InstallClassic {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let classic_install = Text::new(if !classic_exists {
+            "Not Available"
+        } else if classic_downloading {
+            "Downloading"
+        } else if classic_installed {
+            "Installed"
+        } else {
+            "Install Classic"
+        })
+        .size(DEFAULT_FONT_SIZE);
+
+        let mut classic_install_button = Button::new(classic_install_state, classic_install)
+            .style(style::DefaultBoxedButton(color_palette));
+
+        if !classic_installed && !classic_downloading && classic_exists {
+            classic_install_button = classic_install_button
+                .on_press(Interaction::CatalogInstall(Flavor::Classic, addon_data.id));
+        }
+
+        let classic_install_button: Element<Interaction> = classic_install_button.into();
+
+        let classic_install_container =
+            Container::new(classic_install_button.map(Message::Interaction))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .style(style::AddonRowDefaultTextContainer(color_palette));
+
+        row_containers.push((idx, classic_install_container));
     }
 
     if let Some((idx, width)) = column_config

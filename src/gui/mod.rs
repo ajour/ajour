@@ -5,7 +5,7 @@ mod update;
 use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
-    addon::{Addon, ReleaseChannel},
+    addon::{Addon, AddonState, ReleaseChannel},
     catalog::{self, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
@@ -84,7 +84,7 @@ pub enum Interaction {
     MoveColumnRight(ColumnKey),
     ModeSelected(AjourMode),
     CatalogQuery(String),
-    CatalogInstall(u32),
+    CatalogInstall(Flavor, u32),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
     CatalogFlavorSelected(CatalogFlavor),
@@ -238,12 +238,19 @@ impl Application for Ajour {
             .1
             .palette;
 
-        // Get addons for current flavor.
         let flavor = self.config.wow.flavor;
-        let addons = self.addons.entry(flavor).or_default();
+        let other_flavor = if flavor == Flavor::Retail {
+            Flavor::Classic
+        } else {
+            Flavor::Retail
+        };
 
         // Check if we have any addons.
-        let has_addons = !&addons.is_empty();
+        let has_addons = {
+            let addons = self.addons.entry(flavor).or_default();
+
+            !&addons.is_empty()
+        };
 
         // Menu container at the top of the applications.
         // This has all global buttons, such as Settings, Update All, etc.
@@ -290,6 +297,12 @@ impl Application for Ajour {
 
         match self.mode {
             AjourMode::Addons => {
+                // Get mutable addons for current flavor.
+                let addons = self.addons.entry(flavor).or_default();
+
+                // Check if we have any addons.
+                let has_addons = !&addons.is_empty();
+
                 // Menu for addons.
                 let menu_addons_container = element::menu_addons_container(
                     color_palette,
@@ -356,6 +369,10 @@ impl Application for Ajour {
             AjourMode::Catalog => {
                 if let (Some(catalog), Some(categories)) = (&self.catalog, &self.catalog_categories)
                 {
+                    let default = vec![];
+                    let addons = self.addons.get(&flavor).unwrap_or(&default);
+                    let other_flavor_addons = self.addons.get(&other_flavor).unwrap_or(&default);
+
                     let query = self
                         .catalog_query_state
                         .query
@@ -381,7 +398,7 @@ impl Application for Ajour {
                         Interaction::CatalogFlavorSelected,
                     )
                     .text_size(14)
-                    .width(Length::Units(200))
+                    .width(Length::Units(150))
                     .style(style::SecondaryPickList(color_palette));
 
                     let flavor_picklist: Element<Interaction> = flavor_picklist.into();
@@ -398,7 +415,7 @@ impl Application for Ajour {
                         Interaction::CatalogSourceSelected,
                     )
                     .text_size(14)
-                    .width(Length::Units(200))
+                    .width(Length::Units(150))
                     .style(style::SecondaryPickList(color_palette));
 
                     let source_picklist: Element<Interaction> = source_picklist.into();
@@ -415,7 +432,7 @@ impl Application for Ajour {
                         Interaction::CatalogCategorySelected,
                     )
                     .text_size(14)
-                    .width(Length::Units(200))
+                    .width(Length::Units(150))
                     .style(style::SecondaryPickList(color_palette));
 
                     let category_picklist: Element<Interaction> = category_picklist.into();
@@ -432,7 +449,7 @@ impl Application for Ajour {
                         Interaction::CatalogResultSizeSelected,
                     )
                     .text_size(14)
-                    .width(Length::Units(200))
+                    .width(Length::Units(150))
                     .style(style::SecondaryPickList(color_palette));
 
                     let result_size_picklist: Element<Interaction> = result_size_picklist.into();
@@ -476,14 +493,52 @@ impl Application for Ajour {
 
                     for addon in self.catalog_query_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
-                        let already_installed =
-                            addons.iter().any(|a| a.curse_id == Some(addon.addon.id));
+                        let retail_installed = if flavor == Flavor::Retail {
+                            addons.iter().any(|a| a.curse_id == Some(addon.addon.id))
+                        } else {
+                            other_flavor_addons
+                                .iter()
+                                .any(|a| a.curse_id == Some(addon.addon.id))
+                        };
+                        let retail_downloading = if flavor == Flavor::Retail {
+                            addons.iter().any(|a| {
+                                a.curse_id == Some(addon.addon.id)
+                                    && a.state == AddonState::Downloading
+                            })
+                        } else {
+                            other_flavor_addons.iter().any(|a| {
+                                a.curse_id == Some(addon.addon.id)
+                                    && a.state == AddonState::Downloading
+                            })
+                        };
+
+                        let classic_installed = if flavor == Flavor::Classic {
+                            addons.iter().any(|a| a.curse_id == Some(addon.addon.id))
+                        } else {
+                            other_flavor_addons
+                                .iter()
+                                .any(|a| a.curse_id == Some(addon.addon.id))
+                        };
+                        let classic_downloading = if flavor == Flavor::Classic {
+                            addons.iter().any(|a| {
+                                a.curse_id == Some(addon.addon.id)
+                                    && a.state == AddonState::Downloading
+                            })
+                        } else {
+                            other_flavor_addons.iter().any(|a| {
+                                a.curse_id == Some(addon.addon.id)
+                                    && a.state == AddonState::Downloading
+                            })
+                        };
 
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,
                             addon,
                             &catalog_column_config,
-                            already_installed,
+                            retail_downloading,
+                            retail_installed,
+                            classic_downloading,
+                            classic_installed,
                         );
 
                         catalog_scrollable = catalog_scrollable.push(catalog_data_cell);
@@ -509,7 +564,6 @@ impl Application for Ajour {
                 color_palette,
                 "Welcome to Ajour!",
                 "Please select your World of Warcraft directory",
-                AjourState::Welcome,
                 Some(&mut self.onboarding_directory_btn_state),
             )),
             AjourState::Idle => match self.mode {
@@ -519,7 +573,6 @@ impl Application for Ajour {
                             color_palette,
                             "Woops!",
                             &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
-                            AjourState::Idle,
                             None,
                         ))
                     } else {
@@ -533,14 +586,12 @@ impl Application for Ajour {
                     color_palette,
                     "Loading..",
                     "Currently parsing addons.",
-                    AjourState::Loading,
                     None,
                 )),
                 AjourMode::Catalog => Some(element::status_container(
                     color_palette,
                     "Loading..",
                     "Currently loading addon catalog.",
-                    AjourState::Loading,
                     None,
                 )),
             },
@@ -846,7 +897,8 @@ pub enum CatalogColumnKey {
     Title,
     Description,
     NumDownloads,
-    Download,
+    InstallRetail,
+    InstallClassic,
 }
 
 impl CatalogColumnKey {
@@ -857,7 +909,8 @@ impl CatalogColumnKey {
             Title => "Addon",
             Description => "Description",
             NumDownloads => "# Downloads",
-            Download => "Download",
+            CatalogColumnKey::InstallRetail => "",
+            CatalogColumnKey::InstallClassic => "",
         };
 
         title.to_string()
@@ -870,7 +923,8 @@ impl CatalogColumnKey {
             Title => "addon",
             Description => "description",
             NumDownloads => "num_downloads",
-            Download => "download",
+            CatalogColumnKey::InstallRetail => "install_retail",
+            CatalogColumnKey::InstallClassic => "install_classic",
         };
 
         s.to_string()
@@ -913,7 +967,12 @@ impl Default for CatalogHeaderState {
                     width: Length::Units(105),
                 },
                 CatalogColumnState {
-                    key: CatalogColumnKey::Download,
+                    key: CatalogColumnKey::InstallRetail,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::InstallClassic,
                     btn_state: Default::default(),
                     width: Length::Units(85),
                 },
@@ -969,14 +1028,16 @@ impl Default for CatalogQueryState {
 }
 
 pub struct CatalogRow {
-    btn_state: button::State,
+    retail_install_state: button::State,
+    classic_install_state: button::State,
     addon: CatalogAddon,
 }
 
 impl From<CatalogAddon> for CatalogRow {
     fn from(addon: CatalogAddon) -> Self {
         Self {
-            btn_state: Default::default(),
+            retail_install_state: Default::default(),
+            classic_install_state: Default::default(),
             addon,
         }
     }
