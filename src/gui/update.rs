@@ -6,13 +6,13 @@ use {
     ajour_core::{
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
-        catalog::get_catalog,
+        catalog::{self, get_catalog},
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
-        curse_api::latest_stable_addon_from_id,
+        curse_api,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
-        Result,
+        tukui_api, Result,
     },
     async_std::sync::{Arc, Mutex},
     iced::{Command, Length},
@@ -988,14 +988,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::Interaction(Interaction::CatalogInstall(flavor, id)) => {
-            log::debug!("Interaction::CatalogInstall({})", &id);
+        Message::Interaction(Interaction::CatalogInstall(source, flavor, id)) => {
+            log::debug!(
+                "Interaction::CatalogInstall({}, {}, {})",
+                source,
+                flavor,
+                &id
+            );
 
             if let Some(addon_path) = ajour.config.get_addon_directory_for_flavor(&flavor) {
-                return Ok(Command::perform(
-                    latest_stable_addon_from_id(id, addon_path, flavor),
-                    Message::CatalogInstallAddonFetched,
-                ));
+                let command = match source {
+                    catalog::Source::Curse => Command::perform(
+                        curse_api::latest_stable_addon_from_id(id, addon_path, flavor),
+                        Message::CatalogInstallAddonFetched,
+                    ),
+                    catalog::Source::Tukui => Command::perform(
+                        tukui_api::latest_stable_addon_from_id(id, addon_path, flavor),
+                        Message::CatalogInstallAddonFetched,
+                    ),
+                };
+
+                return Ok(command);
             }
         }
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {

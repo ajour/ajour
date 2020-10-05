@@ -1356,8 +1356,11 @@ pub fn catalog_data_cell<'a, 'b>(
             .style(style::DefaultBoxedButton(color_palette));
 
         if !retail_installed && !retail_downloading && retail_exists {
-            retail_install_button = retail_install_button
-                .on_press(Interaction::CatalogInstall(Flavor::Retail, addon_data.id));
+            retail_install_button = retail_install_button.on_press(Interaction::CatalogInstall(
+                addon_data.source,
+                Flavor::Retail,
+                addon_data.id,
+            ));
         }
 
         let retail_install_button: Element<Interaction> = retail_install_button.into();
@@ -1399,8 +1402,11 @@ pub fn catalog_data_cell<'a, 'b>(
             .style(style::DefaultBoxedButton(color_palette));
 
         if !classic_installed && !classic_downloading && classic_exists {
-            classic_install_button = classic_install_button
-                .on_press(Interaction::CatalogInstall(Flavor::Classic, addon_data.id));
+            classic_install_button = classic_install_button.on_press(Interaction::CatalogInstall(
+                addon_data.source,
+                Flavor::Classic,
+                addon_data.id,
+            ));
         }
 
         let classic_install_button: Element<Interaction> = classic_install_button.into();
