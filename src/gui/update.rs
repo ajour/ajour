@@ -12,7 +12,9 @@ use {
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
-        tukui_api, Result,
+        utility::wow_path_resolution,
+        Result,
+        tukui_api,
     },
     async_std::sync::{Arc, Mutex},
     iced::{Command, Length},
@@ -304,8 +306,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::None,
             ));
         }
-        Message::UpdateWowDirectory(path) => {
-            log::debug!("Message::UpdateWowDirectory({:?})", &path);
+        Message::UpdateWowDirectory(chosen_path) => {
+            log::debug!("Message::UpdateWowDirectory(Chosen({:?}))", &chosen_path);
+            let path = wow_path_resolution(chosen_path);
+            log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
 
             // Clear addons.
             ajour.addons = HashMap::new();

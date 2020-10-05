@@ -9,6 +9,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+### Added
+- Logic for falling back to root World of Warcraft directory if a sub-folder was chosen
+
 ### Changed
 - Tidy up Settings
 - Better onboarding the first time you start Ajour.
