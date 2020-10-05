@@ -46,8 +46,10 @@ pub async fn needs_update(current_version: &str) -> Result<Option<String>> {
 /// Logic to help pick the right World of Warcraft folder. We want the root folder.
 pub fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
     if let Some(path) = path {
+        // Known folders in World of Warcraft dir
+        let known_folders = ["_retail_", "_classic_", "_ptr_"];
+
         // If chosen path has any of the known Wow folders, we have the right one.
-        let known_folders = ["_retail_", "_classic_"];
         for folder in known_folders.iter() {
             if path.join(folder).exists() {
                 return Some(path);
@@ -57,8 +59,10 @@ pub fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
         // Iterate ancestors. If we find any of the known folders we can guess the root.
         for ancestor in path.as_path().ancestors() {
             if let Some(file_name) = ancestor.file_name() {
-                if file_name == OsStr::new("_retail_") || file_name == OsStr::new("_classic_") {
-                    return ancestor.parent().map(|p| p.to_path_buf());
+                for folder in known_folders.iter() {
+                    if file_name == OsStr::new(folder) {
+                        return ancestor.parent().map(|p| p.to_path_buf());
+                    }
                 }
             }
         }
