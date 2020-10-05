@@ -7,7 +7,7 @@ use crate::VERSION;
 use ajour_core::{
     addon::{Addon, AddonState, ReleaseChannel},
     catalog::{self, Catalog, CatalogAddon},
-    config::{load_config, ColumnConfigV2, Config, Flavor},
+    config::{load_config, ColumnConfigType, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
     parse::FingerprintCollection,
@@ -75,7 +75,7 @@ pub enum Interaction {
     SortColumn(ColumnKey),
     SortCatalogColumn(CatalogColumnKey),
     FlavorSelected(Flavor),
-    ResizeColumn(header::ResizeEvent),
+    ResizeColumn(ColumnConfigType, header::ResizeEvent),
     ScaleUp,
     ScaleDown,
     Backup,
@@ -387,6 +387,7 @@ impl Application for Ajour {
                     )
                     .size(DEFAULT_FONT_SIZE)
                     .padding(10)
+                    .width(Length::FillPortion(1))
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
@@ -398,7 +399,7 @@ impl Application for Ajour {
                         Interaction::CatalogFlavorSelected,
                     )
                     .text_size(14)
-                    .width(Length::Units(150))
+                    .width(Length::Fill)
                     .style(style::SecondaryPickList(color_palette));
 
                     let flavor_picklist: Element<Interaction> = flavor_picklist.into();
@@ -406,7 +407,8 @@ impl Application for Ajour {
                         Container::new(flavor_picklist.map(Message::Interaction))
                             .center_y()
                             .style(style::SurfaceContainer(color_palette))
-                            .height(Length::Fill);
+                            .height(Length::Fill)
+                            .width(Length::FillPortion(1));
 
                     let source_picklist = PickList::new(
                         &mut self.catalog_query_state.sources_state,
@@ -415,7 +417,7 @@ impl Application for Ajour {
                         Interaction::CatalogSourceSelected,
                     )
                     .text_size(14)
-                    .width(Length::Units(150))
+                    .width(Length::Fill)
                     .style(style::SecondaryPickList(color_palette));
 
                     let source_picklist: Element<Interaction> = source_picklist.into();
@@ -423,7 +425,8 @@ impl Application for Ajour {
                         Container::new(source_picklist.map(Message::Interaction))
                             .center_y()
                             .style(style::SurfaceContainer(color_palette))
-                            .height(Length::Fill);
+                            .height(Length::Fill)
+                            .width(Length::FillPortion(1));
 
                     let category_picklist = PickList::new(
                         &mut self.catalog_query_state.categories_state,
@@ -432,7 +435,7 @@ impl Application for Ajour {
                         Interaction::CatalogCategorySelected,
                     )
                     .text_size(14)
-                    .width(Length::Units(150))
+                    .width(Length::Fill)
                     .style(style::SecondaryPickList(color_palette));
 
                     let category_picklist: Element<Interaction> = category_picklist.into();
@@ -440,7 +443,8 @@ impl Application for Ajour {
                         Container::new(category_picklist.map(Message::Interaction))
                             .center_y()
                             .style(style::SurfaceContainer(color_palette))
-                            .height(Length::Fill);
+                            .height(Length::Fill)
+                            .width(Length::FillPortion(1));
 
                     let result_size_picklist = PickList::new(
                         &mut self.catalog_query_state.results_size_state,
@@ -449,7 +453,7 @@ impl Application for Ajour {
                         Interaction::CatalogResultSizeSelected,
                     )
                     .text_size(14)
-                    .width(Length::Units(150))
+                    .width(Length::Fill)
                     .style(style::SecondaryPickList(color_palette));
 
                     let result_size_picklist: Element<Interaction> = result_size_picklist.into();
@@ -457,7 +461,8 @@ impl Application for Ajour {
                         Container::new(result_size_picklist.map(Message::Interaction))
                             .center_y()
                             .style(style::SurfaceContainer(color_palette))
-                            .height(Length::Fill);
+                            .height(Length::Fill)
+                            .width(Length::FillPortion(1));
 
                     let catalog_query_row = Row::new()
                         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
@@ -946,6 +951,20 @@ impl CatalogColumnKey {
     }
 }
 
+impl From<&str> for CatalogColumnKey {
+    fn from(s: &str) -> Self {
+        match s {
+            "addon" => CatalogColumnKey::Title,
+            "description" => CatalogColumnKey::Description,
+            "source" => CatalogColumnKey::Source,
+            "num_downloads" => CatalogColumnKey::NumDownloads,
+            "install_retail" => CatalogColumnKey::InstallRetail,
+            "install_classic" => CatalogColumnKey::InstallClassic,
+            _ => panic!(format!("Unknown CatalogColumnKey for {}", s)),
+        }
+    }
+}
+
 pub struct CatalogHeaderState {
     state: header::State,
     previous_column_key: Option<CatalogColumnKey>,
@@ -1005,6 +1024,23 @@ pub struct CatalogColumnState {
     key: CatalogColumnKey,
     btn_state: button::State,
     width: Length,
+}
+
+impl From<&CatalogColumnState> for ColumnConfigV2 {
+    fn from(column: &CatalogColumnState) -> Self {
+        // Only `CatalogColumnKey::Description` should be saved as Length::Fill -> width: None
+        let width = if let Length::Units(width) = column.width {
+            Some(width)
+        } else {
+            None
+        };
+
+        ColumnConfigV2 {
+            key: column.key.as_string(),
+            width,
+            hidden: false,
+        }
+    }
 }
 
 pub struct CatalogQueryState {

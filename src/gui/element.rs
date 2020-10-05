@@ -10,7 +10,7 @@ use {
     ajour_core::{
         addon::{Addon, AddonState},
         catalog::Catalog,
-        config::{Config, Flavor},
+        config::{ColumnConfigType, Config, Flavor},
         theme::ColorPalette,
     },
     chrono::prelude::*,
@@ -914,7 +914,7 @@ pub fn addon_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(event))
+        Message::Interaction(Interaction::ResizeColumn(ColumnConfigType::MyAddons, event))
     })
 }
 
@@ -1321,6 +1321,9 @@ pub fn catalog_row_titles<'a>(
     )
     .spacing(1)
     .height(Length::Units(25))
+    .on_resize(3, |event| {
+        Message::Interaction(Interaction::ResizeColumn(ColumnConfigType::Catalog, event))
+    })
 }
 
 pub fn catalog_data_cell<'a, 'b>(

@@ -7,7 +7,7 @@ use {
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
         catalog::{self, get_catalog},
-        config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
+        config::{load_config, ColumnConfig, ColumnConfigType, ColumnConfigV2, Flavor},
         curse_api,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
@@ -96,6 +96,66 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             .next()
                         {
                             a.order = idx;
+                        }
+                    });
+
+                    ajour.header_state.columns.sort_by_key(|c| c.order);
+                    ajour.column_settings.columns.sort_by_key(|c| c.order);
+                }
+                ColumnConfig::V3 {
+                    my_addons_columns,
+                    catalog_columns,
+                } => {
+                    ajour.header_state.columns.iter_mut().for_each(|a| {
+                        if let Some((idx, column)) = my_addons_columns
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(idx, column)| {
+                                if column.key == a.key.as_string() {
+                                    Some((idx, column))
+                                } else {
+                                    None
+                                }
+                            })
+                            .next()
+                        {
+                            a.width = column.width.map_or(Length::Fill, Length::Units);
+                            a.hidden = column.hidden;
+                            a.order = idx;
+                        }
+                    });
+
+                    ajour.column_settings.columns.iter_mut().for_each(|a| {
+                        if let Some(idx) = my_addons_columns
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(idx, column)| {
+                                if column.key == a.key.as_string() {
+                                    Some(idx)
+                                } else {
+                                    None
+                                }
+                            })
+                            .next()
+                        {
+                            a.order = idx;
+                        }
+                    });
+
+                    ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
+                        if let Some((_idx, column)) = catalog_columns
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(idx, column)| {
+                                if column.key == a.key.as_string() {
+                                    Some((idx, column))
+                                } else {
+                                    None
+                                }
+                            })
+                            .next()
+                        {
+                            a.width = column.width.map_or(Length::Fill, Length::Units);
                         }
                     });
 
@@ -711,42 +771,59 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.theme_state.themes.push((theme.name.clone(), theme));
             }
         }
-        Message::Interaction(Interaction::ResizeColumn(event)) => match event {
+        Message::Interaction(Interaction::ResizeColumn(column_type, event)) => match event {
             ResizeEvent::ResizeColumn {
                 left_name,
                 left_width,
                 right_name,
                 right_width,
-            } => {
-                let left_key = ColumnKey::from(left_name.as_str());
-                let right_key = ColumnKey::from(right_name.as_str());
+            } => match column_type {
+                ColumnConfigType::MyAddons => {
+                    let left_key = ColumnKey::from(left_name.as_str());
+                    let right_key = ColumnKey::from(right_name.as_str());
 
-                let column_config = &mut ajour.config.column_config;
+                    if let Some(column) = ajour
+                        .header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == left_key && left_key != ColumnKey::Title)
+                    {
+                        column.width = Length::Units(left_width);
+                    }
 
-                if let Some(column) = ajour
-                    .header_state
-                    .columns
-                    .iter_mut()
-                    .find(|c| c.key == left_key && left_key != ColumnKey::Title)
-                {
-                    column.width = Length::Units(left_width);
-
-                    column_config.update_width(&left_name, left_width);
+                    if let Some(column) = ajour
+                        .header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == right_key && right_key != ColumnKey::Title)
+                    {
+                        column.width = Length::Units(right_width);
+                    }
                 }
+                ColumnConfigType::Catalog => {
+                    let left_key = CatalogColumnKey::from(left_name.as_str());
+                    let right_key = CatalogColumnKey::from(right_name.as_str());
 
-                if let Some(column) = ajour
-                    .header_state
-                    .columns
-                    .iter_mut()
-                    .find(|c| c.key == right_key && right_key != ColumnKey::Title)
-                {
-                    column.width = Length::Units(right_width);
+                    if let Some(column) =
+                        ajour.catalog_header_state.columns.iter_mut().find(|c| {
+                            c.key == left_key && left_key != CatalogColumnKey::Description
+                        })
+                    {
+                        column.width = Length::Units(left_width);
+                    }
 
-                    column_config.update_width(&right_name, right_width);
+                    if let Some(column) =
+                        ajour.catalog_header_state.columns.iter_mut().find(|c| {
+                            c.key == right_key && right_key != CatalogColumnKey::Description
+                        })
+                    {
+                        column.width = Length::Units(right_width);
+                    }
                 }
-            }
+            },
             ResizeEvent::Finished => {
-                let _ = ajour.config.save();
+                // Persist changes to config
+                save_column_configs(ajour);
             }
         },
         Message::Interaction(Interaction::ScaleUp) => {
@@ -862,18 +939,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
 
             // Persist changes to config
-            {
-                let columns: Vec<_> = ajour
-                    .header_state
-                    .columns
-                    .iter()
-                    .map(ColumnConfigV2::from)
-                    .collect();
-
-                ajour.config.column_config = ColumnConfig::V2 { columns };
-
-                let _ = ajour.config.save();
-            }
+            save_column_configs(ajour);
         }
         Message::Interaction(Interaction::MoveColumnLeft(key)) => {
             log::debug!("Interaction::MoveColumnLeft({:?})", key);
@@ -890,18 +956,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     .for_each(|(idx, column)| column.order = idx);
 
                 // Persist changes to config
-                {
-                    let columns: Vec<_> = ajour
-                        .header_state
-                        .columns
-                        .iter()
-                        .map(ColumnConfigV2::from)
-                        .collect();
-
-                    ajour.config.column_config = ColumnConfig::V2 { columns };
-
-                    let _ = ajour.config.save();
-                }
+                save_column_configs(ajour);
             }
 
             // Update column ordering in settings
@@ -929,18 +984,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     .for_each(|(idx, column)| column.order = idx);
 
                 // Persist changes to config
-                {
-                    let columns: Vec<_> = ajour
-                        .header_state
-                        .columns
-                        .iter()
-                        .map(ColumnConfigV2::from)
-                        .collect();
-
-                    ajour.config.column_config = ColumnConfig::V2 { columns };
-
-                    let _ = ajour.config.save();
-                }
+                save_column_configs(ajour);
             }
 
             // Update column ordering in settings
@@ -1335,4 +1379,27 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
 
         ajour.catalog_query_state.catalog_rows = catalog_rows;
     }
+}
+
+fn save_column_configs(ajour: &mut Ajour) {
+    let my_addons_columns: Vec<_> = ajour
+        .header_state
+        .columns
+        .iter()
+        .map(ColumnConfigV2::from)
+        .collect();
+
+    let catalog_columns: Vec<_> = ajour
+        .catalog_header_state
+        .columns
+        .iter()
+        .map(ColumnConfigV2::from)
+        .collect();
+
+    ajour.config.column_config = ColumnConfig::V3 {
+        my_addons_columns,
+        catalog_columns,
+    };
+
+    let _ = ajour.config.save();
 }
