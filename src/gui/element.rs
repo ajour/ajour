@@ -41,13 +41,18 @@ pub fn settings_container<'a, 'b>(
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
 
     // Directory button for World of Warcraft directory selection.
-    let directory_button: Element<Interaction> = Button::new(
-        directory_button_state,
-        Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DefaultBoxedButton(color_palette))
-    .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
-    .into();
+    let directory_button_title_container =
+        Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
+            .width(Length::FillPortion(1))
+            .center_x()
+            .align_x(Align::Center);
+
+    let directory_button: Element<Interaction> =
+        Button::new(directory_button_state, directory_button_title_container)
+            .width(Length::Units(100))
+            .style(style::DefaultBoxedButton(color_palette))
+            .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+            .into();
 
     // Directory text, written next to directory button to let the user
     // know what has been selected..
@@ -141,10 +146,16 @@ pub fn settings_container<'a, 'b>(
         let backup_title_row = Row::new().push(backup_title_text);
 
         // Directory button for Backup directory selection.
+        let directory_button_title_container =
+            Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
+                .width(Length::FillPortion(1))
+                .center_x()
+                .align_x(Align::Center);
         let directory_button: Element<Interaction> = Button::new(
             &mut backup_state.directory_btn_state,
-            Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
+            directory_button_title_container,
         )
+        .width(Length::Units(100))
         .style(style::DefaultBoxedButton(color_palette))
         .on_press(Interaction::OpenDirectory(DirectoryType::Backup))
         .into();
@@ -1455,7 +1466,6 @@ pub fn catalog_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .center_x()
             .padding(5)
             .style(style::AddonRowDefaultTextContainer(color_palette));
 
