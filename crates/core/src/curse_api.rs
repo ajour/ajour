@@ -172,8 +172,7 @@ pub async fn latest_stable_addon_from_id(
         // Use first module
         let id = stable_file
             .modules
-            .iter()
-            .next()
+            .get(0)
             .cloned()
             .ok_or_else(|| {
                 ClientError::Custom(format!("No modules found for curse id {}", curse_id))
