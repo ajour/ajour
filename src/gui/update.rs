@@ -12,9 +12,9 @@ use {
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
+        tukui_api,
         utility::wow_path_resolution,
         Result,
-        tukui_api,
     },
     async_std::sync::{Arc, Mutex},
     iced::{Command, Length},
@@ -1108,7 +1108,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             if let Some(addons) = ajour.addons.get_mut(&flavor) {
-                if addons.iter_mut().find(|a| a.id == id.to_string()).is_some() {
+                if addons.iter_mut().any(|a| a.id == id.to_string()) {
                     addons.retain(|a| a.id != id.to_string());
                 }
 
