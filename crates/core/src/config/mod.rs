@@ -77,8 +77,7 @@ impl Config {
     /// temporary zip archives.
     /// For now it will use the parent of the Addons folder.
     /// This will return `None` if no `wow_directory` is set in the config.
-    pub fn get_temporary_addon_directory(&self) -> Option<PathBuf> {
-        let flavor = self.wow.flavor;
+    pub fn get_temporary_addon_directory(&self, flavor: Flavor) -> Option<PathBuf> {
         match self.get_addon_directory_for_flavor(&flavor) {
             Some(dir) => {
                 // The path to the directory which hold the temporary zip archives

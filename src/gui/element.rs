@@ -1465,6 +1465,29 @@ pub fn catalog_data_cell<'a, 'b>(
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::Source {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let source = Text::new(&format!("{}", addon_data.source)).size(DEFAULT_FONT_SIZE);
+        let source_container = Container::new(source)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowDefaultTextContainer(color_palette));
+
+        row_containers.push((idx, source_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
             if *key == CatalogColumnKey::NumDownloads {
                 Some((idx, width))
             } else {

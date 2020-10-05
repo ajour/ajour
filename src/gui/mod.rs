@@ -93,25 +93,25 @@ pub enum Interaction {
 
 #[derive(Debug)]
 pub enum Message {
-    DownloadedAddon((String, Result<()>)),
+    DownloadedAddon((Flavor, String, Result<()>)),
     Error(ClientError),
     Interaction(Interaction),
     NeedsUpdate(Result<Option<String>>),
     None(()),
     Parse(Result<Config>),
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
-    UpdateFingerprint((String, Result<()>)),
+    UpdateFingerprint((Flavor, String, Result<()>)),
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
-    UnpackedAddon((String, Result<()>)),
+    UnpackedAddon((Flavor, String, Result<()>)),
     UpdateWowDirectory(Option<PathBuf>),
     UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
-    CatalogInstallAddonFetched(Result<Addon>),
+    CatalogInstallAddonFetched(Result<(Flavor, Addon)>),
 }
 
 pub struct Ajour {
@@ -896,6 +896,7 @@ pub struct ColumnSettingState {
 pub enum CatalogColumnKey {
     Title,
     Description,
+    Source,
     NumDownloads,
     InstallRetail,
     InstallClassic,
@@ -908,6 +909,7 @@ impl CatalogColumnKey {
         let title = match self {
             Title => "Addon",
             Description => "Description",
+            Source => "Source",
             NumDownloads => "# Downloads",
             CatalogColumnKey::InstallRetail => "",
             CatalogColumnKey::InstallClassic => "",
@@ -922,6 +924,7 @@ impl CatalogColumnKey {
         let s = match self {
             Title => "addon",
             Description => "description",
+            Source => "source",
             NumDownloads => "num_downloads",
             CatalogColumnKey::InstallRetail => "install_retail",
             CatalogColumnKey::InstallClassic => "install_classic",
@@ -960,6 +963,11 @@ impl Default for CatalogHeaderState {
                     key: CatalogColumnKey::Description,
                     btn_state: Default::default(),
                     width: Length::Fill,
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::Source,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::NumDownloads,

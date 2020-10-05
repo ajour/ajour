@@ -148,7 +148,7 @@ pub async fn latest_stable_addon_from_id(
     curse_id: u32,
     mut addon_path: PathBuf,
     flavor: Flavor,
-) -> Result<Addon> {
+) -> Result<(Flavor, Addon)> {
     let url = format!("{}/addon", API_ENDPOINT);
     let mut resp = post_json_async(url, &[curse_id], vec![], None).await?;
     if resp.status().is_success() {
@@ -158,12 +158,13 @@ pub async fn latest_stable_addon_from_id(
             ClientError::Custom(format!("No package found for curse id {}", curse_id))
         })?;
 
-        let flavor = format!("wow_{}", flavor);
-
         let stable_file = package
             .latest_files
             .iter()
-            .find(|f| f.release_type == 1 && f.game_version_flavor.as_ref() == Some(&flavor))
+            .find(|f| {
+                f.release_type == 1
+                    && f.game_version_flavor.as_ref() == Some(&format!("wow_{}", flavor))
+            })
             .ok_or_else(|| {
                 ClientError::Custom(format!("No stable file found for curse id {}", curse_id))
             })?;
@@ -223,7 +224,7 @@ pub async fn latest_stable_addon_from_id(
         addon.remote_packages = remote_packages;
         addon.release_channel = ReleaseChannel::Stable;
 
-        Ok(addon)
+        Ok((flavor, addon))
     } else {
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",
