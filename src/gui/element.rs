@@ -1345,18 +1345,24 @@ pub fn catalog_data_cell<'a, 'b>(
         .next()
     {
         let retail_install = Text::new(if !retail_exists {
-            "Not Available"
+            "N/A"
         } else if retail_downloading {
             "Downloading"
         } else if retail_installed {
             "Installed"
         } else {
-            "Install Retail"
+            "Retail"
         })
         .size(DEFAULT_FONT_SIZE);
 
-        let mut retail_install_button = Button::new(retail_install_state, retail_install)
-            .style(style::DefaultBoxedButton(color_palette));
+        let retail_install_wrapper = Container::new(retail_install)
+            .width(*width)
+            .center_x()
+            .align_x(Align::Center);
+
+        let mut retail_install_button = Button::new(retail_install_state, retail_install_wrapper)
+            .style(style::DefaultBoxedButton(color_palette))
+            .width(*width);
 
         if !retail_installed && !retail_downloading && retail_exists {
             retail_install_button = retail_install_button.on_press(Interaction::CatalogInstall(
@@ -1391,18 +1397,25 @@ pub fn catalog_data_cell<'a, 'b>(
         .next()
     {
         let classic_install = Text::new(if !classic_exists {
-            "Not Available"
+            "N/A"
         } else if classic_downloading {
             "Downloading"
         } else if classic_installed {
             "Installed"
         } else {
-            "Install Classic"
+            "Classic"
         })
         .size(DEFAULT_FONT_SIZE);
 
-        let mut classic_install_button = Button::new(classic_install_state, classic_install)
-            .style(style::DefaultBoxedButton(color_palette));
+        let classic_install_wrapper = Container::new(classic_install)
+            .width(*width)
+            .center_x()
+            .align_x(Align::Center);
+
+        let mut classic_install_button =
+            Button::new(classic_install_state, classic_install_wrapper)
+                .style(style::DefaultBoxedButton(color_palette))
+                .width(*width);
 
         if !classic_installed && !classic_downloading && classic_exists {
             classic_install_button = classic_install_button.on_press(Interaction::CatalogInstall(
@@ -1418,6 +1431,7 @@ pub fn catalog_data_cell<'a, 'b>(
             Container::new(classic_install_button.map(Message::Interaction))
                 .height(default_height)
                 .width(*width)
+                .center_x()
                 .center_y()
                 .style(style::AddonRowDefaultTextContainer(color_palette));
 
@@ -1441,6 +1455,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
+            .center_x()
             .padding(5)
             .style(style::AddonRowDefaultTextContainer(color_palette));
 
