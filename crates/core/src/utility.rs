@@ -77,8 +77,6 @@ mod tests {
 
     #[test]
     fn test_wow_path_resolution() {
-        // Tests known result
-
         let classic_addon_path =
             PathBuf::from(r"/Applications/World of Warcraft/_classic_/Interface/Addons");
         let retail_addon_path =
