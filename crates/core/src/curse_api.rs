@@ -146,9 +146,10 @@ pub async fn fetch_game_info() -> Result<GameInfo> {
 
 pub async fn latest_stable_addon_from_id(
     curse_id: u32,
+    mut addon: Addon,
     mut addon_path: PathBuf,
     flavor: Flavor,
-) -> Result<(Flavor, Addon)> {
+) -> Result<(u32, Flavor, Addon)> {
     let url = format!("{}/addon", API_ENDPOINT);
     let mut resp = post_json_async(url, &[curse_id], vec![], None).await?;
     if resp.status().is_success() {
@@ -180,10 +181,6 @@ pub async fn latest_stable_addon_from_id(
             .foldername;
         let title = package.name.clone();
 
-        // Will parse from `.toc` when app is opened next
-        let author = None;
-        let notes = None;
-
         addon_path.push(&id);
 
         // Use rest of the modules
@@ -197,18 +194,12 @@ pub async fn latest_stable_addon_from_id(
 
         let version = Some(stable_file.display_name.clone());
 
-        let mut addon = Addon::new(
-            id,
-            title,
-            author,
-            notes,
-            version,
-            addon_path,
-            dependencies,
-            None,
-            None,
-            Some(curse_id),
-        );
+        addon.id = id;
+        addon.title = title;
+        addon.version = version;
+        addon.path = addon_path;
+        addon.curse_id = Some(curse_id);
+        addon.dependencies = dependencies;
 
         let mut remote_packages = HashMap::new();
         let package = RemotePackage {
@@ -223,7 +214,7 @@ pub async fn latest_stable_addon_from_id(
         addon.remote_packages = remote_packages;
         addon.release_channel = ReleaseChannel::Stable;
 
-        Ok((flavor, addon))
+        Ok((curse_id, flavor, addon))
     } else {
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",

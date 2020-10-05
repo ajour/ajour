@@ -1040,14 +1040,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 &id
             );
 
+            // We create an empty addon we can add to the list of addons.
+            // This will later be updated by a more rich addon.
+            let mut empty_addon = Addon::empty(&id.to_string());
+            empty_addon.state = AddonState::Downloading;
+
+            match source {
+                catalog::Source::Tukui => empty_addon.tukui_id = Some(id.to_string()),
+                catalog::Source::Curse => empty_addon.curse_id = Some(id),
+            }
+
+            let addons = ajour.addons.entry(flavor).or_default();
+            addons.push(empty_addon.clone());
+
             if let Some(addon_path) = ajour.config.get_addon_directory_for_flavor(&flavor) {
                 let command = match source {
                     catalog::Source::Curse => Command::perform(
-                        curse_api::latest_stable_addon_from_id(id, addon_path, flavor),
+                        curse_api::latest_stable_addon_from_id(id, empty_addon, addon_path, flavor),
                         Message::CatalogInstallAddonFetched,
                     ),
                     catalog::Source::Tukui => Command::perform(
-                        tukui_api::latest_stable_addon_from_id(id, addon_path, flavor),
+                        tukui_api::latest_stable_addon_from_id(id, empty_addon, addon_path, flavor),
                         Message::CatalogInstallAddonFetched,
                     ),
                 };
@@ -1083,7 +1096,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::CatalogInstallAddonFetched(Ok((flavor, mut addon))) => {
+        Message::CatalogInstallAddonFetched(Ok((id, flavor, mut addon))) => {
             log::debug!(
                 "Message::CatalogInstallAddonFetched({:?}, {:?})",
                 flavor,
@@ -1091,9 +1104,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             if let Some(addons) = ajour.addons.get_mut(&flavor) {
-                addon.state = AddonState::Downloading;
+                if addons.iter_mut().find(|a| a.id == id.to_string()).is_some() {
+                    addons.retain(|a| a.id != id.to_string());
+                }
 
                 addons.push(addon.clone());
+                addon.state = AddonState::Downloading;
 
                 let to_directory = ajour
                     .config

@@ -170,6 +170,44 @@ impl Addon {
         }
     }
 
+    pub fn empty(id: &str) -> Self {
+        Addon {
+            id: id.to_string(),
+            title: id.to_string(),
+            author: None,
+            notes: None,
+            version: None,
+            release_channel: Default::default(),
+            remote_packages: HashMap::new(),
+            file_id: None,
+            website_url: None,
+            path: Default::default(),
+            dependencies: Default::default(),
+            state: AddonState::Ajour(None),
+            wowi_id: None,
+            tukui_id: None,
+            curse_id: None,
+            fingerprint: None,
+            game_version: None,
+            #[cfg(feature = "gui")]
+            details_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            update_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            force_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            delete_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            ignore_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            unignore_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            website_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            pick_release_channel_state: Default::default(),
+        }
+    }
+
     /// Package from Tukui.
     ///
     /// This function takes a `Package` and updates self with the information.
