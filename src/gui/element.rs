@@ -73,7 +73,7 @@ pub fn settings_container<'a, 'b>(
 
     // Title for the theme pick list.
     let theme_info_text = Text::new("Theme").size(14);
-    let theme_info_row = Row::new().push(theme_info_text).padding(DEFAULT_PADDING);
+    let theme_info_row = Row::new().push(theme_info_text);
 
     let theme_names = theme_state
         .themes
@@ -97,7 +97,7 @@ pub fn settings_container<'a, 'b>(
     // Scale buttons for application scale factoring.
     let (scale_title_row, scale_buttons_row) = {
         let scale_title = Text::new("UI Scale").size(DEFAULT_FONT_SIZE);
-        let scale_title_row = Row::new().push(scale_title).padding(DEFAULT_PADDING);
+        let scale_title_row = Row::new().push(scale_title);
 
         let scale_down_button: Element<Interaction> = Button::new(
             &mut scale_state.down_btn_state,
@@ -352,10 +352,13 @@ pub fn settings_container<'a, 'b>(
         .push(bottom_space);
 
     let middle_column = Column::new()
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_buttons_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(theme_info_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(theme_data_row);
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
