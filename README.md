@@ -89,7 +89,7 @@ I welcome contributions of any kind, because together we can make Ajour even bet
 + I love [pull requests](https://github.com/casperstorm/ajour/pulls) and [bug reports](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
 + Don't hesitate to [tell me my Rust programming is bad](https://github.com/casperstorm/ajour/issues/new), but please tell me
   why.
-+ Join our [our Discord server](https://discord.gg/4838t9R) and say hey.
++ Join our [Discord server](https://discord.gg/4838t9R) and say hey.
 
 ## FAQ
 
