@@ -10,7 +10,15 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ## [Unreleased]
 
 ### Added
+- It is now possible to install addons through Ajour in the catalog
+  - This is a long awaited, but we wanted to get it right. You can easily and quickly search, filter and install addons.
 - Logic for falling back to root World of Warcraft directory if a sub-folder was chosen
+  - We solved a UX problem with some coding logic. It was not always clear that Ajour requires the World of Warcraft root folder.
+
+### Changed
+- Tidy up Settings
+- Better onboarding the first time you start Ajour
+  - We have added a nice button to the welcome message to let users easily get going by selecting the World of Warcraft path
 
 ## [0.3.5] - 2020-10-01
 ### Packaging
