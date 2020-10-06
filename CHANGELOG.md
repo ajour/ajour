@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Fixed
+- Fixed fingerprinting where some addons would fail during fingerprinting due to invalid UTF-8 characters and missing files. These addons now successfully fingerprint.
 
 ## [0.4.0] - 2020-10-6
 ### Added
