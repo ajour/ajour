@@ -1028,7 +1028,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.catalog_search_state.categories = categories;
 
             ajour.catalog = Some(catalog);
-            ajour.state = AjourState::Idle;
 
             query_and_sort_catalog(ajour);
         }
