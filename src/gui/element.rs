@@ -16,6 +16,7 @@ use {
         button, scrollable, Align, Button, Checkbox, Column, Container, Element,
         HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
+    tr::tr,
     widgets::{header, Header},
 };
 
@@ -35,7 +36,7 @@ pub fn settings_container<'a, 'b>(
     column_config: &'b [(ColumnKey, Length, bool)],
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
-    let directory_info_text = Text::new("World of Warcraft directory").size(14);
+    let directory_info_text = Text::new(tr!("World of Warcraft directory")).size(14);
     let directory_info_row = Row::new()
         .push(directory_info_text)
         .padding(DEFAULT_PADDING);
@@ -43,7 +44,7 @@ pub fn settings_container<'a, 'b>(
     // Directory button for World of Warcraft directory selection.
     let directory_button: Element<Interaction> = Button::new(
         directory_button_state,
-        Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
+        Text::new(tr!("Select Directory")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultBoxedButton(color_palette))
     .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
@@ -54,12 +55,13 @@ pub fn settings_container<'a, 'b>(
 
     // Directory text, written next to directory button to let the user
     // know what has been selected..
+    let directory_text = tr!("No directory is set");
     let path_str = config
         .wow
         .directory
         .as_ref()
         .and_then(|p| p.to_str())
-        .unwrap_or("No directory is set");
+        .unwrap_or(&directory_text);
     let directory_data_text = Text::new(path_str)
         .size(14)
         .vertical_alignment(VerticalAlignment::Center);
@@ -75,7 +77,7 @@ pub fn settings_container<'a, 'b>(
         .push(directory_data_text_container);
 
     // Title for the theme pick list.
-    let theme_info_text = Text::new("Theme").size(14);
+    let theme_info_text = Text::new(tr!("Theme")).size(14);
     let theme_info_row = Row::new().push(theme_info_text).padding(DEFAULT_PADDING);
 
     // We add some margin left to adjust to the rest of the content.
@@ -102,7 +104,7 @@ pub fn settings_container<'a, 'b>(
 
     // Scale buttons for application scale factoring.
     let (scale_title_row, scale_buttons_row) = {
-        let scale_title = Text::new("UI Scale").size(DEFAULT_FONT_SIZE);
+        let scale_title = Text::new(tr!("UI Scale")).size(DEFAULT_FONT_SIZE);
         let scale_title_row = Row::new().push(scale_title).padding(DEFAULT_PADDING);
 
         let scale_down_button: Element<Interaction> = Button::new(
@@ -147,13 +149,13 @@ pub fn settings_container<'a, 'b>(
 
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
-        let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
+        let backup_title_text = Text::new(tr!("Backup")).size(DEFAULT_FONT_SIZE);
         let backup_title_row = Row::new().push(backup_title_text).padding(DEFAULT_PADDING);
 
         // Directory button for Backup directory selection.
         let directory_button: Element<Interaction> = Button::new(
             &mut backup_state.directory_btn_state,
-            Text::new("Select Directory").size(DEFAULT_FONT_SIZE),
+            Text::new(tr!("Select Directory")).size(DEFAULT_FONT_SIZE),
         )
         .style(style::DefaultBoxedButton(color_palette))
         .on_press(Interaction::OpenDirectory(DirectoryType::Backup))
@@ -161,11 +163,12 @@ pub fn settings_container<'a, 'b>(
 
         // Directory text, written next to directory button to let the user
         // know what has been selected.
+        let directory_text = tr!("No directory is set");
         let path_str = config
             .backup_directory
             .as_ref()
             .and_then(|p| p.to_str())
-            .unwrap_or("No directory is set");
+            .unwrap_or(&directory_text);
         let directory_data_text = Text::new(path_str)
             .size(DEFAULT_FONT_SIZE)
             .vertical_alignment(VerticalAlignment::Center);
@@ -191,7 +194,7 @@ pub fn settings_container<'a, 'b>(
         if config.backup_directory.is_some() {
             let mut backup_button = Button::new(
                 &mut backup_state.backup_now_btn_state,
-                Text::new("Backup Now").size(DEFAULT_FONT_SIZE),
+                Text::new(tr!("Backup Now")).size(DEFAULT_FONT_SIZE),
             )
             .style(style::DefaultBoxedButton(color_palette));
 
@@ -202,16 +205,16 @@ pub fn settings_container<'a, 'b>(
             }
 
             let backup_status_text = if backup_state.backing_up {
-                Text::new("Backing up...")
+                Text::new(tr!("Backing up..."))
                     .size(DEFAULT_FONT_SIZE)
                     .vertical_alignment(VerticalAlignment::Center)
             } else {
                 let as_of = backup_state
                     .last_backup
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
-                    .unwrap_or_else(|| "Never".to_string());
+                    .unwrap_or_else(|| tr!("Never").to_string());
 
-                Text::new(&format!("Last backup: {}", as_of))
+                Text::new(&tr!("Last backup: {}", as_of))
                     .size(DEFAULT_FONT_SIZE)
                     .vertical_alignment(VerticalAlignment::Center)
             };
@@ -228,7 +231,7 @@ pub fn settings_container<'a, 'b>(
                 .push(backup_status_text_container);
         } else {
             let backup_status_text =
-                Text::new("Back up your AddOns and WTF folder to the chosen directory")
+                Text::new(tr!("Back up your AddOns and WTF folder to the chosen directory"))
                     .size(DEFAULT_FONT_SIZE)
                     .vertical_alignment(VerticalAlignment::Center);
 
@@ -244,7 +247,7 @@ pub fn settings_container<'a, 'b>(
 
     let (columns_title_row, columns_scrollable) = {
         // Title for the Columns section.
-        let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
+        let columns_title_text = Text::new(tr!("Columns")).size(DEFAULT_FONT_SIZE);
         let columns_title_row = Row::new().push(columns_title_text).padding(DEFAULT_PADDING);
 
         // Scrollable for column selections
@@ -603,7 +606,7 @@ pub fn addon_data_cell<'a, 'b>(
                 let id = addon.id.clone();
                 let update_button: Element<Interaction> = Button::new(
                     &mut addon.update_btn_state,
-                    Text::new("Update")
+                    Text::new(tr!("Update"))
                         .horizontal_alignment(HorizontalAlignment::Center)
                         .size(DEFAULT_FONT_SIZE),
                 )
@@ -619,7 +622,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .style(style::AddonRowDefaultTextContainer(color_palette))
             }
             AddonState::Downloading => {
-                Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
+                Container::new(Text::new(tr!("Downloading")).size(DEFAULT_FONT_SIZE))
                     .height(default_height)
                     .width(*width)
                     .center_y()
@@ -627,21 +630,21 @@ pub fn addon_data_cell<'a, 'b>(
                     .padding(5)
                     .style(style::AddonRowSecondaryTextContainer(color_palette))
             }
-            AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
+            AddonState::Unpacking => Container::new(Text::new(tr!("Unpacking")).size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
                 .style(style::AddonRowSecondaryTextContainer(color_palette)),
-            AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
+            AddonState::Fingerprint => Container::new(Text::new(tr!("Hashing")).size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
                 .style(style::AddonRowSecondaryTextContainer(color_palette)),
-            AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
+            AddonState::Ignored => Container::new(Text::new(tr!("Ignored")).size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
@@ -672,16 +675,16 @@ pub fn addon_data_cell<'a, 'b>(
         let notes = addon
             .notes
             .clone()
-            .unwrap_or_else(|| "No description for addon.".to_string());
+            .unwrap_or_else(|| tr!("No description for addon.").to_string());
         let author = addon.author.clone().unwrap_or_else(|| "-".to_string());
         let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
         let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
         let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
         let bottom_space = Space::new(Length::Units(0), Length::Units(4));
-        let notes_title_text = Text::new("Summary").size(DEFAULT_FONT_SIZE);
+        let notes_title_text = Text::new(tr!("Summary")).size(DEFAULT_FONT_SIZE);
         let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
         let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
-        let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
+        let author_title_text = Text::new(tr!("Author(s)")).size(DEFAULT_FONT_SIZE);
         let author_title_container =
             Container::new(author_title_text).style(style::DefaultTextContainer(color_palette));
         let notes_title_container =
@@ -697,7 +700,7 @@ pub fn addon_data_cell<'a, 'b>(
                 "".to_string()
             }
         } else {
-            "has no avaiable release".to_string()
+            tr!("has no avaiable release").to_string()
         };
         let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
         let release_date_text_container = Container::new(release_date_text)
@@ -705,7 +708,7 @@ pub fn addon_data_cell<'a, 'b>(
             .padding(5)
             .style(style::SecondaryTextContainer(color_palette));
 
-        let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
+        let release_channel_title = Text::new(tr!("Remote release channel")).size(DEFAULT_FONT_SIZE);
         let release_channel_title_container =
             Container::new(release_channel_title).style(style::DefaultTextContainer(color_palette));
         let release_channel_list = PickList::new(
@@ -720,7 +723,7 @@ pub fn addon_data_cell<'a, 'b>(
 
         let mut website_button = Button::new(
             &mut addon.website_btn_state,
-            Text::new("Website").size(DEFAULT_FONT_SIZE),
+            Text::new(tr!("Website")).size(DEFAULT_FONT_SIZE),
         )
         .style(style::DefaultBoxedButton(color_palette));
 
@@ -732,7 +735,7 @@ pub fn addon_data_cell<'a, 'b>(
 
         let mut force_download_button = Button::new(
             &mut addon.force_btn_state,
-            Text::new("Force update").size(DEFAULT_FONT_SIZE),
+            Text::new(tr!("Force update")).size(DEFAULT_FONT_SIZE),
         )
         .style(style::DefaultBoxedButton(color_palette));
 
@@ -746,9 +749,9 @@ pub fn addon_data_cell<'a, 'b>(
 
         let is_ignored = addon.state == AddonState::Ignored;
         let ignore_button_text = if is_ignored {
-            Text::new("Unignore").size(DEFAULT_FONT_SIZE)
+            Text::new(tr!("Unignore")).size(DEFAULT_FONT_SIZE)
         } else {
-            Text::new("Ignore").size(DEFAULT_FONT_SIZE)
+            Text::new(tr!("Ignore")).size(DEFAULT_FONT_SIZE)
         };
 
         let mut ignore_button = Button::new(&mut addon.ignore_btn_state, ignore_button_text)
@@ -765,7 +768,7 @@ pub fn addon_data_cell<'a, 'b>(
 
         let delete_button: Element<Interaction> = Button::new(
             &mut addon.delete_btn_state,
-            Text::new("Delete").size(DEFAULT_FONT_SIZE),
+            Text::new(tr!("Delete")).size(DEFAULT_FONT_SIZE),
         )
         .on_press(Interaction::Delete(addon.id.clone()))
         .style(style::DeleteBoxedButton(color_palette))
@@ -918,13 +921,13 @@ pub fn menu_container<'a>(
 
     let mut update_all_button = Button::new(
         update_all_button_state,
-        Text::new("Update All").size(DEFAULT_FONT_SIZE),
+        Text::new(tr!("Update All")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultBoxedButton(color_palette));
 
     let mut refresh_button = Button::new(
         refresh_button_state,
-        Text::new("Refresh").size(DEFAULT_FONT_SIZE),
+        Text::new(tr!("Refresh")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultBoxedButton(color_palette));
 
@@ -961,14 +964,14 @@ pub fn menu_container<'a>(
 
     let mut retail_button = Button::new(
         retail_btn_state,
-        Text::new("Retail").size(DEFAULT_FONT_SIZE),
+        Text::new(tr!("Retail")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::SegmentedDisabledButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Retail));
 
     let mut classic_button = Button::new(
         classic_btn_state,
-        Text::new("Classic").size(DEFAULT_FONT_SIZE),
+        Text::new(tr!("Classic")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::SegmentedDisabledButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Classic));
@@ -1006,7 +1009,7 @@ pub fn menu_container<'a>(
         .count();
 
     let status_text = match state {
-        AjourState::Idle => Text::new(format!(
+        AjourState::Idle => Text::new(tr!(
             "{} {} addons loaded",
             parent_addons_count,
             config.wow.flavor.to_string()
@@ -1036,7 +1039,7 @@ pub fn menu_container<'a>(
         .style(style::StatusErrorTextContainer(color_palette));
 
     let version_text = Text::new(if let Some(new_version) = needs_update {
-        format!("New Ajour version available {} -> {}", VERSION, new_version)
+        tr!("New Ajour version available {} -> {}", VERSION, new_version)
     } else {
         VERSION.to_owned()
     })
@@ -1052,7 +1055,7 @@ pub fn menu_container<'a>(
 
     let settings_button: Element<Interaction> = Button::new(
         settings_button_state,
-        Text::new("Settings")
+        Text::new(tr!("Settings"))
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
@@ -1081,7 +1084,7 @@ pub fn menu_container<'a>(
     if needs_update.is_some() {
         let mut new_release_button = Button::new(
             new_release_button_state,
-            Text::new("Download").size(DEFAULT_FONT_SIZE),
+            Text::new(tr!("Download")).size(DEFAULT_FONT_SIZE),
         )
         .style(style::SecondaryButton(color_palette));
 

@@ -16,3 +16,7 @@
 
 # Editor config
 .vscode/
+
+# Translation files exclusions
+/i18n/pot
+/i18n/mo

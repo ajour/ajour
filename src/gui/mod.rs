@@ -26,6 +26,7 @@ use isahc::{
 use std::collections::HashMap;
 use std::path::PathBuf;
 use widgets::header;
+use tr::tr;
 
 use image::ImageFormat;
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
@@ -288,15 +289,15 @@ impl Application for Ajour {
         let container: Option<Container<Message>> = match self.state {
             AjourState::Welcome => Some(element::status_container(
                 color_palette,
-                "Welcome to Ajour!",
-                "To get started, go to Settings and select your World of Warcraft directory.",
+                &tr!("Welcome to Ajour!"),
+                &tr!("To get started, go to Settings and select your World of Warcraft directory."),
             )),
             AjourState::Idle => {
                 if !has_addons {
                     Some(element::status_container(
                         color_palette,
-                        "Woops!",
-                        &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
+                        &tr!("Woops!"),
+                        &tr!("You have no {} addons", flavor.to_string().to_lowercase()),
                     ))
                 } else {
                     None
@@ -304,8 +305,8 @@ impl Application for Ajour {
             }
             AjourState::Loading => Some(element::status_container(
                 color_palette,
-                "Loading..",
-                "Currently parsing addons.",
+                &tr!("Loading.."),
+                &tr!("Currently parsing addons."),
             )),
             _ => None,
         };
@@ -369,13 +370,13 @@ impl ColumnKey {
         use ColumnKey::*;
 
         let title = match self {
-            Title => "Addon",
-            LocalVersion => "Local",
-            RemoteVersion => "Remote",
-            Status => "Status",
-            Channel => "Channel",
-            Author => "Author",
-            GameVersion => "Game Version",
+            Title => tr!("Addon"),
+            LocalVersion => tr!("Local"),
+            RemoteVersion => tr!("Remote"),
+            Status => tr!("Status"),
+            Channel => tr!("Channel"),
+            Author => tr!("Author"),
+            GameVersion => tr!("Game Version"),
         };
 
         title.to_string()

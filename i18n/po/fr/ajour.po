@@ -1,0 +1,220 @@
+# French translations for ajour package.
+# Copyright (C) 2020 THE ajour'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the ajour package.
+# Jeremie CARPENTIER-ROY <jeremie.carpentier.roy@gmail.com>, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ajour 0.3.5\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-10-06 13:51+0000\n"
+"PO-Revision-Date: 2020-10-05 15:32-0400\n"
+"Last-Translator: Jeremie Carpentier-Roy <jeremie.carpentier.roy@gmail.com>\n"
+"Language-Team: French\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#. Title for the World of Warcraft directory selection.
+#: src/gui/element.rs:39
+msgid "World of Warcraft directory"
+msgstr "Répertoire d'installation"
+
+#: src/gui/element.rs:47 src/gui/element.rs:158
+msgid "Select Directory"
+msgstr "Sélectionner"
+
+#. Directory text, written next to directory button to let the user
+#. know what has been selected.
+#: src/gui/element.rs:58 src/gui/element.rs:166
+msgid "No directory is set"
+msgstr "Aucun répertoire n'est sélectionné"
+
+#. Title for the theme pick list.
+#: src/gui/element.rs:80
+msgid "Theme"
+msgstr "Thème"
+
+#: src/gui/element.rs:107
+msgid "UI Scale"
+msgstr "Échelle de l'interface"
+
+#. Title for the Backup section.
+#: src/gui/element.rs:152
+msgid "Backup"
+msgstr "Répertoire de sauvegarde"
+
+#: src/gui/element.rs:197
+msgid "Backup Now"
+msgstr "Sauvegarder maintenant"
+
+#: src/gui/element.rs:208
+msgid "Backing up..."
+msgstr "Sauvegarde en cours..."
+
+#: src/gui/element.rs:215
+msgid "Never"
+msgstr "Jamais"
+
+#: src/gui/element.rs:217
+msgid "Last backup: {}"
+msgstr "Dernière sauvegarde : {}"
+
+#: src/gui/element.rs:234
+msgid "Back up your AddOns and WTF folder to the chosen directory"
+msgstr "Sauvegarder les répertoires AddOns et WTF à l'emplacement choisi"
+
+#. Title for the Columns section.
+#: src/gui/element.rs:250
+msgid "Columns"
+msgstr "Colonnes"
+
+#: src/gui/element.rs:609
+msgid "Update"
+msgstr "Mettre à jour"
+
+#: src/gui/element.rs:625
+msgid "Downloading"
+msgstr "Téléchargement"
+
+#: src/gui/element.rs:633
+msgid "Unpacking"
+msgstr "Extraction"
+
+#: src/gui/element.rs:640
+msgid "Hashing"
+msgstr "Hachage"
+
+#: src/gui/element.rs:647
+msgid "Ignored"
+msgstr "Ignoré"
+
+#: src/gui/element.rs:678
+msgid "No description for addon."
+msgstr "Aucune description"
+
+#: src/gui/element.rs:684
+msgid "Summary"
+msgstr "Résumé"
+
+#: src/gui/element.rs:687
+msgid "Author(s)"
+msgstr "Auteur(s)"
+
+#: src/gui/element.rs:703
+msgid "has no avaiable release"
+msgstr "Aucune version publiée disponible"
+
+#: src/gui/element.rs:711
+msgid "Remote release channel"
+msgstr "Canal de publication distant"
+
+#: src/gui/element.rs:726
+msgid "Website"
+msgstr "Site web"
+
+#: src/gui/element.rs:738
+msgid "Force update"
+msgstr "Forcer la mise à jour"
+
+#: src/gui/element.rs:752
+msgid "Unignore"
+msgstr "Dé-ignorer"
+
+#: src/gui/element.rs:754
+msgid "Ignore"
+msgstr "Ignorer"
+
+#: src/gui/element.rs:771
+msgid "Delete"
+msgstr "Supprimer"
+
+#: src/gui/element.rs:924
+msgid "Update All"
+msgstr "Tout mettre à jour"
+
+#: src/gui/element.rs:930
+msgid "Refresh"
+msgstr "Rafraîchir"
+
+#: src/gui/element.rs:967
+msgid "Retail"
+msgstr ""
+
+#: src/gui/element.rs:974
+msgid "Classic"
+msgstr ""
+
+#: src/gui/element.rs:1013
+msgid "{} {} addons loaded"
+msgstr "{} addons {} chargés"
+
+#: src/gui/element.rs:1042
+msgid "New Ajour version available {} -> {}"
+msgstr "Nouvelle version d'Ajour disponible {} -> {}"
+
+#: src/gui/element.rs:1058
+msgid "Settings"
+msgstr "Paramètres"
+
+#: src/gui/element.rs:1087
+msgid "Download"
+msgstr "Télécharger"
+
+#. Status messages.
+#: src/gui/mod.rs:289
+msgid "Welcome to Ajour!"
+msgstr "Bienvenue dans Ajour!"
+
+#: src/gui/mod.rs:290
+msgid ""
+"To get started, go to Settings and select your World of Warcraft directory."
+msgstr ""
+"Pour commencer, aller dans les Paramètres et sélectionner le répertoire "
+"d'installation de World of Warcraft."
+
+#: src/gui/mod.rs:291
+msgid "Woops!"
+msgstr "Oups!"
+
+#: src/gui/mod.rs:292
+msgid "Loading.."
+msgstr "Téléchargement.."
+
+#: src/gui/mod.rs:293
+msgid "Currently parsing addons."
+msgstr "Parcours des addons..."
+
+#: src/gui/mod.rs:305
+msgid "You have no {} addons"
+msgstr "Vous n'avez pas d'addons {}"
+
+#: src/gui/mod.rs:378
+msgid "Addon"
+msgstr ""
+
+#: src/gui/mod.rs:379
+msgid "Local"
+msgstr ""
+
+#: src/gui/mod.rs:380
+msgid "Remote"
+msgstr "Distant"
+
+#: src/gui/mod.rs:381
+msgid "Status"
+msgstr "Statut"
+
+#: src/gui/mod.rs:382
+msgid "Channel"
+msgstr "Canal"
+
+#: src/gui/mod.rs:383
+msgid "Author"
+msgstr "Auteur"
+
+#: src/gui/mod.rs:384
+msgid "Game Version"
+msgstr "Version du jeu"

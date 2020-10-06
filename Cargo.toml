@@ -28,6 +28,9 @@ log = "0.4"
 fern = "0.6"
 timeago = "0.2.1"
 log-panics = { version = "2.0", features=['with-backtrace'] }
+i18n-embed = { version = "0.8", features = ["gettext-system", "desktop-requester"]}
+tr = "0.1.3"
+rust-embed = "5.6.0"
 
 [build-dependencies]
 embed-resource = "1.3.3"

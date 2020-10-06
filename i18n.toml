@@ -1,0 +1,13 @@
+# (Required) The language identifier of the language used in the
+# source code for gettext system, and the primary fallback language
+# (for which all strings must be present) when using the fluent
+# system.
+fallback_language = "en"
+
+[gettext]
+# (Required) The languages that the software will be translated into.
+target_languages = ["fr"]
+
+# (Required) Path to the output directory, relative to `i18n.toml` of the crate
+# being localized.
+output_dir = "i18n"

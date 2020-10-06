@@ -7,6 +7,14 @@ mod gui;
 
 use ajour_core::Result;
 
+use rust_embed::RustEmbed;
+
+use i18n_embed::{gettext::gettext_language_loader, DesktopLanguageRequester};
+
+#[derive(RustEmbed)]
+#[folder = "i18n/mo"] // path to the compiled localization resources
+struct Translations;
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main() {
@@ -15,7 +23,19 @@ pub fn main() {
 
     log_panics::init();
 
+    log::debug!("{}", locale_config::Locale::user_default());
+
     log::debug!("Ajour {} has started.", VERSION);
+
+    let translations = Translations {};
+    let language_loader = gettext_language_loader!();
+
+    // Use the language requester for the desktop platform (linux, windows, mac).
+    // There is also a requester available for the web-sys WASM platform called
+    // WebLanguageRequester, or you can implement your own.
+    let requested_languages = DesktopLanguageRequester::requested_languages();
+
+    let _result = i18n_embed::select(&language_loader, &translations, &requested_languages);
 
     // Start the GUI
     gui::run();
