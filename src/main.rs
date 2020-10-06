@@ -23,8 +23,6 @@ pub fn main() {
 
     log_panics::init();
 
-    log::debug!("{}", locale_config::Locale::user_default());
-
     log::debug!("Ajour {} has started.", VERSION);
 
     let translations = Translations {};
