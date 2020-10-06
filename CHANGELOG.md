@@ -9,6 +9,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+## [0.4.0] - 2020-10-6
 ### Added
 - It is now possible to install addons through Ajour in the catalog
   - This is a long awaited, but we wanted to get it right. You can easily and quickly search, filter and install addons.
