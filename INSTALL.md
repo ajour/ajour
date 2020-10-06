@@ -74,7 +74,6 @@ make app
 cp -r target/release/osx/Ajour.app /Applications/
 ```
 
-
 ### Compatibility build
 Ajour is built using `wgpu` which has [requirements](https://github.com/gfx-rs/wgpu#supported-platforms) which might not be achievable by all.  
 It is therefore possible to build a compatability build using `opengl` as renderer instead. Performance should be close to 1:1.
