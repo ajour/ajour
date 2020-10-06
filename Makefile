@@ -57,10 +57,10 @@ appimage: ## Bundle release binary as AppImage
 	@rm -rf $(APPIMAGE_DIR)
 
 vulkan: ## Build vulkan
-	cargo build --release
+	@cargo build --release
 
-opengl: ## Build vulkan
-	cargo build --release --no-default-features --features opengl
+opengl: ## Build opengl
+	@cargo build --release --no-default-features --features opengl
 
 clean: ## Remove all artifacts
 	-rm -rf $(APP_DIR)
