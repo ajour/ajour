@@ -340,6 +340,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ModeSelected(mode)) => {
             log::debug!("Interaction::ModeSelected({:?})", mode);
 
+            // Close settings if shown.
+            ajour.is_showing_settings = false;
+
             // Set ajour mode.
             ajour.mode = mode;
 
@@ -1031,6 +1034,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             query_and_sort_catalog(ajour);
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
+            // Close settings if shown.
+            ajour.is_showing_settings = false;
+
+            // Catalog search query
             ajour.catalog_search_state.query = Some(query);
 
             query_and_sort_catalog(ajour);
@@ -1042,6 +1049,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 flavor,
                 &id
             );
+
+            // Close settings if shown.
+            ajour.is_showing_settings = false;
 
             // We create an empty addon we can add to the list of addons.
             // This will later be updated by a more rich addon.
@@ -1073,7 +1083,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
             log::debug!("Interaction::CatalogCategorySelected({})", &category);
+            // Close settings if shown.
+            ajour.is_showing_settings = false;
 
+            // Select category
             ajour.catalog_search_state.category = category;
 
             query_and_sort_catalog(ajour);
@@ -1081,6 +1094,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogResultSizeSelected(size)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", &size);
 
+            // Close settings if shown.
+            ajour.is_showing_settings = false;
+
+            // Catalog result size
             ajour.catalog_search_state.result_size = size;
 
             query_and_sort_catalog(ajour);
@@ -1088,6 +1105,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogFlavorSelected(flavor)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", flavor);
 
+            // Close settings if shown.
+            ajour.is_showing_settings = false;
+
+            // Catalog flavor
             ajour.catalog_search_state.flavor = flavor;
 
             query_and_sort_catalog(ajour);
@@ -1095,6 +1116,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogSourceSelected(source)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
 
+            // Close settings if shown.
+            ajour.is_showing_settings = false;
+
+            // Catalog source
             ajour.catalog_search_state.source = source;
 
             query_and_sort_catalog(ajour);
