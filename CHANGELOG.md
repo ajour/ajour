@@ -9,14 +9,32 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+## [0.4.0] - 2020-10-06
+### Added
+- The catalog has been implemented 📦
+  - This is long awaited, but we wanted to get it right. You can now easily and quickly search, filter and install addons
+  - This first release of the catalog will come with CurseForge as source and in the next release we will add Tukui as well
+- Logic for falling back to root World of Warcraft directory if a sub-folder was chosen
+  - We solved a UX problem with some coding logic. It was not always clear that Ajour requires the World of Warcraft root folder
+
+### Changed
+- Tidy up Settings
+- Better onboarding the first time you start Ajour
+  - We have added a nice button to the welcome message to let users easily get going by selecting the World of Warcraft path
+
 ## [0.3.5] - 2020-10-01
 ### Packaging
 - Updated Ajour icon.
+- Added an alternative build that uses OpenGL. This will allow Ajour to be used by the widest possible audience, and resolve issues where users couldn't use Ajour with older / certain GPU configurations. An alternative download link will be provided to users wanting to try this build over the default.
+- Added AppImage release that can be used on linux distro
 
 ### Added
 
 - You can now select which release channel you want each addon to use. Currently `alpha`, `beta` and `stable` is supported.
 - Columns can now be toggled as visible and reordered from settings. In addition, 3 new optional columns have been added that can be toggled (Channel, Game Version, Author).
+- Added command line options that can be specified to change the behavior of Ajour at runtime.
+  - `--data <PATH>` can be specified to use a custom data directory
+  - `--aa <true / false>` can be specified to enable / disable Anti-aliasing. Anti-aliasing is used by default if not specified.
 
 ### Changed
 

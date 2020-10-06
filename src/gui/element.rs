@@ -2,12 +2,14 @@
 
 use {
     super::{
-        style, AjourState, BackupState, ColumnKey, ColumnSettings, ColumnState, DirectoryType,
-        Interaction, Message, ReleaseChannel, ScaleState, SortDirection, ThemeState,
+        style, AjourMode, AjourState, BackupState, CatalogColumnKey, CatalogColumnState,
+        CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType, Interaction, Message,
+        ReleaseChannel, ScaleState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
         addon::{Addon, AddonState},
+        catalog::Catalog,
         config::{Config, Flavor},
         theme::ColorPalette,
     },
@@ -17,12 +19,13 @@ use {
         HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
     tr::tr,
+    num_format::{Locale, ToFormattedString},
     widgets::{header, Header},
 };
 
 // Default values used on multiple elements.
-static DEFAULT_FONT_SIZE: u16 = 14;
-static DEFAULT_PADDING: u16 = 10;
+pub static DEFAULT_FONT_SIZE: u16 = 14;
+pub static DEFAULT_PADDING: u16 = 10;
 
 /// Container for settings.
 pub fn settings_container<'a, 'b>(
@@ -37,21 +40,20 @@ pub fn settings_container<'a, 'b>(
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new(tr!("World of Warcraft directory")).size(14);
-    let directory_info_row = Row::new()
-        .push(directory_info_text)
-        .padding(DEFAULT_PADDING);
 
     // Directory button for World of Warcraft directory selection.
-    let directory_button: Element<Interaction> = Button::new(
-        directory_button_state,
-        Text::new(tr!("Select Directory")).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DefaultBoxedButton(color_palette))
-    .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
-    .into();
+    let directory_button_title_container =
+        Container::new(Text::new(tr!("Select Directory")).size(DEFAULT_FONT_SIZE))
+            .width(Length::FillPortion(1))
+            .center_x()
+            .align_x(Align::Center);
 
-    // We add some margin left to adjust to the rest of the content.
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+    let directory_button: Element<Interaction> =
+        Button::new(directory_button_state, directory_button_title_container)
+            .width(Length::Units(100))
+            .style(style::DefaultBoxedButton(color_palette))
+            .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+            .into();
 
     // Directory text, written next to directory button to let the user
     // know what has been selected..
@@ -66,22 +68,19 @@ pub fn settings_container<'a, 'b>(
         .size(14)
         .vertical_alignment(VerticalAlignment::Center);
     let directory_data_text_container = Container::new(directory_data_text)
+        .height(Length::Units(25))
         .center_y()
-        .padding(5)
         .style(style::SecondaryTextContainer(color_palette));
 
     // Data row for the World of Warcraft directory selection.
     let path_data_row = Row::new()
-        .push(left_spacer)
         .push(directory_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(directory_data_text_container);
 
     // Title for the theme pick list.
     let theme_info_text = Text::new(tr!("Theme")).size(14);
-    let theme_info_row = Row::new().push(theme_info_text).padding(DEFAULT_PADDING);
-
-    // We add some margin left to adjust to the rest of the content.
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+    let theme_info_row = Row::new().push(theme_info_text);
 
     let theme_names = theme_state
         .themes
@@ -100,12 +99,12 @@ pub fn settings_container<'a, 'b>(
     .style(style::PickList(color_palette));
 
     // Data row for theme picker list.
-    let theme_data_row = Row::new().push(left_spacer).push(theme_pick_list);
+    let theme_data_row = Row::new().push(theme_pick_list);
 
     // Scale buttons for application scale factoring.
     let (scale_title_row, scale_buttons_row) = {
         let scale_title = Text::new(tr!("UI Scale")).size(DEFAULT_FONT_SIZE);
-        let scale_title_row = Row::new().push(scale_title).padding(DEFAULT_PADDING);
+        let scale_title_row = Row::new().push(scale_title);
 
         let scale_down_button: Element<Interaction> = Button::new(
             &mut scale_state.down_btn_state,
@@ -123,20 +122,16 @@ pub fn settings_container<'a, 'b>(
         .on_press(Interaction::ScaleUp)
         .into();
 
-        // We add some margin left to adjust to the rest of the content.
-        let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-
         let current_scale_text = Text::new(format!("  {:.2}  ", scale_state.scale))
             .size(DEFAULT_FONT_SIZE)
             .vertical_alignment(VerticalAlignment::Center);
         let current_scale_container = Container::new(current_scale_text)
+            .height(Length::Units(25))
             .center_y()
-            .padding(5)
             .style(style::SecondaryTextContainer(color_palette));
 
         // Data row for the World of Warcraft directory selection.
         let scale_buttons_row = Row::new()
-            .push(left_spacer)
             .push(scale_down_button.map(Message::Interaction))
             .push(current_scale_container)
             .push(scale_up_button.map(Message::Interaction));
@@ -150,13 +145,19 @@ pub fn settings_container<'a, 'b>(
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
         let backup_title_text = Text::new(tr!("Backup")).size(DEFAULT_FONT_SIZE);
-        let backup_title_row = Row::new().push(backup_title_text).padding(DEFAULT_PADDING);
+        let backup_title_row = Row::new().push(backup_title_text);
 
         // Directory button for Backup directory selection.
+        let directory_button_title_container =
+            Container::new(Text::new(tr!("Select Directory")).size(DEFAULT_FONT_SIZE))
+                .width(Length::FillPortion(1))
+                .center_x()
+                .align_x(Align::Center);
         let directory_button: Element<Interaction> = Button::new(
             &mut backup_state.directory_btn_state,
-            Text::new(tr!("Select Directory")).size(DEFAULT_FONT_SIZE),
+            directory_button_title_container,
         )
+        .width(Length::Units(100))
         .style(style::DefaultBoxedButton(color_palette))
         .on_press(Interaction::OpenDirectory(DirectoryType::Backup))
         .into();
@@ -173,29 +174,34 @@ pub fn settings_container<'a, 'b>(
             .size(DEFAULT_FONT_SIZE)
             .vertical_alignment(VerticalAlignment::Center);
         let directory_data_text_container = Container::new(directory_data_text)
+            .height(Length::Units(25))
             .center_y()
-            .padding(5)
             .style(style::SecondaryTextContainer(color_palette));
 
         // Data row for the Backup directory selection.
         let backup_directory_row = Row::new()
-            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_button.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_data_text_container);
 
         // Row to show actual backup button along with info about the latest
         // backup date/time. Will give a description of what Backup is when no
         // directory is chosen
-        let mut backup_now_row =
-            Row::new().push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
+        let mut backup_now_row = Row::new();
 
         // Show button / last backup info if directory is shown, otherwise
         // show description about the backup process
         if config.backup_directory.is_some() {
+            let backup_button_title_container =
+                Container::new(Text::new(tr!("Backup Now")).size(DEFAULT_FONT_SIZE))
+                    .width(Length::FillPortion(1))
+                    .center_x()
+                    .align_x(Align::Center);
             let mut backup_button = Button::new(
                 &mut backup_state.backup_now_btn_state,
-                Text::new(tr!("Backup Now")).size(DEFAULT_FONT_SIZE),
+                backup_button_title_container,
             )
+            .width(Length::Units(100))
             .style(style::DefaultBoxedButton(color_palette));
 
             // Only show button as clickable if it's not currently backing up and
@@ -220,14 +226,15 @@ pub fn settings_container<'a, 'b>(
             };
 
             let backup_status_text_container = Container::new(backup_status_text)
+                .height(Length::Units(25))
                 .center_y()
-                .padding(5)
                 .style(style::SecondaryTextContainer(color_palette));
 
             let backup_button: Element<Interaction> = backup_button.into();
 
             backup_now_row = backup_now_row
                 .push(backup_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                 .push(backup_status_text_container);
         } else {
             let backup_status_text =
@@ -236,6 +243,7 @@ pub fn settings_container<'a, 'b>(
                     .vertical_alignment(VerticalAlignment::Center);
 
             let backup_status_text_container = Container::new(backup_status_text)
+                .height(Length::Units(25))
                 .center_y()
                 .style(style::SecondaryTextContainer(color_palette));
 
@@ -342,20 +350,29 @@ pub fn settings_container<'a, 'b>(
 
     // Colum wrapping all the settings content.
     let left_column = Column::new()
-        .push(directory_info_row)
-        .push(path_data_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(directory_info_text)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(path_data_row)
+        .push(Space::new(
+            Length::Units(0),
+            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
+        ))
         .push(backup_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_directory_row)
         .push(bottom_space);
 
     let middle_column = Column::new()
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_buttons_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(theme_info_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(theme_data_row);
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
@@ -363,12 +380,12 @@ pub fn settings_container<'a, 'b>(
 
     // Container wrapping colum.
     let left_container = Container::new(left_column)
-        .width(Length::FillPortion(2))
+        .width(Length::FillPortion(1))
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     let middle_container = Container::new(middle_column)
-        .width(Length::FillPortion(1))
+        .width(Length::Units(150))
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
@@ -377,23 +394,23 @@ pub fn settings_container<'a, 'b>(
         .push(columns_scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
-        .width(Length::FillPortion(1))
+        .width(Length::Units(200))
         .height(Length::Units(255))
         .style(style::AddonRowDefaultTextContainer(color_palette));
 
     // Row to wrap each section.
     let row = Row::new()
         .push(left_spacer)
-        .push(left_container)
-        .push(middle_container)
         .push(right_container)
+        .push(middle_container)
+        .push(left_container)
         .push(right_spacer);
 
     // Returns the final container.
     Container::new(row)
         .height(Length::Shrink)
         .style(style::AddonRowDefaultTextContainer(color_palette))
-        .padding(DEFAULT_PADDING)
+        .padding(DEFAULT_PADDING + DEFAULT_PADDING)
 }
 
 pub fn addon_data_cell<'a, 'b>(
@@ -678,7 +695,6 @@ pub fn addon_data_cell<'a, 'b>(
             .unwrap_or_else(|| tr!("No description for addon.").to_string());
         let author = addon.author.clone().unwrap_or_else(|| "-".to_string());
         let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-        let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
         let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
         let bottom_space = Space::new(Length::Units(0), Length::Units(4));
         let notes_title_text = Text::new(tr!("Summary")).size(DEFAULT_FONT_SIZE);
@@ -811,7 +827,10 @@ pub fn addon_data_cell<'a, 'b>(
         let row = Row::new()
             .push(left_spacer)
             .push(details_container)
-            .push(right_spacer)
+            .push(Space::new(
+                Length::Units(DEFAULT_PADDING + 5),
+                Length::Units(0),
+            ))
             .spacing(1);
 
         addon_column = addon_column
@@ -824,9 +843,9 @@ pub fn addon_data_cell<'a, 'b>(
         .style(style::Row(color_palette))
 }
 
-fn row_title(
-    column_key: ColumnKey,
-    previous_column_key: Option<ColumnKey>,
+fn row_title<T: PartialEq>(
+    column_key: T,
+    previous_column_key: Option<T>,
     previous_sort_direction: Option<SortDirection>,
     title: &str,
 ) -> String {
@@ -898,23 +917,20 @@ pub fn addon_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(event))
+        Message::Interaction(Interaction::ResizeColumn(AjourMode::MyAddons, event))
     })
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn menu_container<'a>(
+pub fn menu_addons_container<'a>(
     color_palette: ColorPalette,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
-    settings_button_state: &'a mut button::State,
     retail_btn_state: &'a mut button::State,
     classic_btn_state: &'a mut button::State,
     state: &AjourState,
     addons: &[Addon],
     config: &'a mut Config,
-    needs_update: Option<&'a str>,
-    new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(35));
@@ -955,7 +971,10 @@ pub fn menu_container<'a>(
     // Enable refresh_button if:
     //   - No addon is performing any task.
     //   - Ajour isn't loading
-    if !addons_performing_actions && !ajour_performing_actions {
+    if !addons_performing_actions
+        && !ajour_performing_actions
+        && !matches!(state, AjourState::Welcome)
+    {
         refresh_button = refresh_button.on_press(Interaction::Refresh);
     }
 
@@ -998,7 +1017,7 @@ pub fn menu_container<'a>(
     let segmented_flavor_control_container = Row::new()
         .push(retail_button.map(Message::Interaction))
         .push(classic_button.map(Message::Interaction))
-        .spacing(0);
+        .spacing(1);
 
     // Displays text depending on the state of the app.
     let flavor = config.wow.flavor;
@@ -1038,6 +1057,88 @@ pub fn menu_container<'a>(
         .width(Length::FillPortion(1))
         .style(style::StatusErrorTextContainer(color_palette));
 
+    // Surrounds the elements with spacers, in order to make the GUI look good.
+    settings_row = settings_row
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(refresh_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(7), Length::Units(0)))
+        .push(update_all_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(7), Length::Units(0)))
+        .push(segmented_flavor_control_container)
+        .push(status_container)
+        .push(error_container);
+
+    // Add space above settings_row.
+    let settings_column = Column::new()
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(settings_row);
+
+    // Wraps it in a container.
+    Container::new(settings_column)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn menu_container<'a>(
+    color_palette: ColorPalette,
+    mode: &AjourMode,
+    state: &AjourState,
+    settings_button_state: &'a mut button::State,
+    addon_mode_button_state: &'a mut button::State,
+    catalog_mode_btn_state: &'a mut button::State,
+    needs_update: Option<&'a str>,
+    new_release_button_state: &'a mut button::State,
+) -> Container<'a, Message> {
+    // A row contain general settings.
+    let mut settings_row = Row::new().height(Length::Units(40));
+
+    let mut addons_mode_button = Button::new(
+        addon_mode_button_state,
+        Text::new("My Addons").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::SegmentedDisabledButton(color_palette));
+
+    let mut catalog_mode_button = Button::new(
+        catalog_mode_btn_state,
+        Text::new("Catalog").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::SegmentedDisabledButton(color_palette));
+
+    match mode {
+        AjourMode::MyAddons => {
+            addons_mode_button =
+                addons_mode_button.style(style::SegmentedSelectedButton(color_palette));
+            catalog_mode_button =
+                catalog_mode_button.style(style::SegmentedUnselectedButton(color_palette));
+        }
+        AjourMode::Catalog => {
+            addons_mode_button =
+                addons_mode_button.style(style::SegmentedUnselectedButton(color_palette));
+            catalog_mode_button =
+                catalog_mode_button.style(style::SegmentedSelectedButton(color_palette));
+        }
+    }
+
+    // If we are onboarding, we disable the mode buttons and set proper styling.
+    if !matches!(state, AjourState::Welcome | AjourState::Loading) {
+        addons_mode_button =
+            addons_mode_button.on_press(Interaction::ModeSelected(AjourMode::MyAddons));
+        catalog_mode_button =
+            catalog_mode_button.on_press(Interaction::ModeSelected(AjourMode::Catalog));
+    } else {
+        addons_mode_button =
+            addons_mode_button.style(style::SegmentedDisabledButton(color_palette));
+        catalog_mode_button =
+            catalog_mode_button.style(style::SegmentedDisabledButton(color_palette));
+    }
+
+    let addons_mode_button: Element<Interaction> = addons_mode_button.into();
+    let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
+
+    let segmented_mode_control_container = Row::new()
+        .push(addons_mode_button.map(Message::Interaction))
+        .push(catalog_mode_button.map(Message::Interaction))
+        .spacing(1);
+
     let version_text = Text::new(if let Some(new_version) = needs_update {
         tr!("New Ajour version available {} -> {}", VERSION, new_version)
     } else {
@@ -1063,21 +1164,11 @@ pub fn menu_container<'a>(
     .on_press(Interaction::Settings)
     .into();
 
-    // Not using default padding, just to make it look prettier UI wise
-    let top_spacer = Space::new(Length::Units(0), Length::Units(5));
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
-
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
-        .push(left_spacer)
-        .push(refresh_button.map(Message::Interaction))
-        .push(Space::new(Length::Units(7), Length::Units(0)))
-        .push(update_all_button.map(Message::Interaction))
-        .push(Space::new(Length::Units(7), Length::Units(0)))
-        .push(segmented_flavor_control_container)
-        .push(status_container)
-        .push(error_container)
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(segmented_mode_control_container)
+        .push(Space::new(Length::Fill, Length::Units(0)))
         .push(version_container);
 
     // Add download button to latest github release page if Ajour update is available.
@@ -1102,19 +1193,24 @@ pub fn menu_container<'a>(
 
     settings_row = settings_row
         .push(settings_button.map(Message::Interaction))
-        .push(right_spacer);
+        .push(Space::new(
+            Length::Units(DEFAULT_PADDING + 5),
+            Length::Units(0),
+        ))
+        .align_items(Align::Center);
 
     // Add space above settings_row.
-    let settings_column = Column::new().push(top_spacer).push(settings_row);
+    let settings_column = Column::new().push(settings_row);
 
     // Wraps it in a container.
-    Container::new(settings_column)
+    Container::new(settings_column).style(style::SurfaceContainer(color_palette))
 }
 
 pub fn status_container<'a>(
     color_palette: ColorPalette,
     title: &str,
     description: &str,
+    onboarding_directory_btn_state: Option<&'a mut button::State>,
 ) -> Container<'a, Message> {
     let title = Text::new(title)
         .size(DEFAULT_FONT_SIZE)
@@ -1132,15 +1228,346 @@ pub fn status_container<'a>(
         .width(Length::Fill)
         .style(style::SecondaryTextContainer(color_palette));
 
-    let colum = Column::new()
+    let mut colum = Column::new()
         .push(title_container)
         .push(Space::new(Length::Units(0), Length::Units(2)))
         .push(description_container);
+
+    if let (_, Some(btn_state)) = (AjourState::Welcome, onboarding_directory_btn_state) {
+        let onboarding_button_title_container =
+            Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
+                .width(Length::Units(100))
+                .center_x()
+                .align_x(Align::Center);
+        let onboarding_button: Element<Interaction> =
+            Button::new(btn_state, onboarding_button_title_container)
+                .width(Length::Units(100))
+                .style(style::DefaultBoxedButton(color_palette))
+                .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+                .into();
+
+        colum = colum
+            .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+            .push(onboarding_button.map(Message::Interaction))
+            .align_items(Align::Center);
+    }
+
     Container::new(colum)
         .center_y()
         .center_x()
         .width(Length::Fill)
         .height(Length::Fill)
+}
+
+pub fn catalog_row_titles<'a>(
+    color_palette: ColorPalette,
+    catalog: &Catalog,
+    header_state: &'a mut header::State,
+    column_state: &'a mut [CatalogColumnState],
+    previous_column_key: Option<CatalogColumnKey>,
+    previous_sort_direction: Option<SortDirection>,
+) -> Header<'a, Message> {
+    // A row containing titles above the addon rows.
+    let mut row_titles = vec![];
+
+    for column in column_state.iter_mut() {
+        let column_key = column.key;
+
+        let row_title = row_title(
+            column_key,
+            previous_column_key,
+            previous_sort_direction,
+            &column.key.title(),
+        );
+
+        let mut row_header = Button::new(
+            &mut column.btn_state,
+            Text::new(row_title)
+                .size(DEFAULT_FONT_SIZE)
+                .width(Length::Fill),
+        )
+        .width(Length::Fill);
+
+        if column_key != CatalogColumnKey::InstallRetail
+            || column_key != CatalogColumnKey::InstallClassic
+        {
+            row_header = row_header.on_press(Interaction::SortCatalogColumn(column_key));
+        }
+
+        if previous_column_key == Some(column_key) {
+            row_header = row_header.style(style::SelectedColumnHeaderButton(color_palette));
+        } else if column_key == CatalogColumnKey::InstallRetail
+            || column_key == CatalogColumnKey::InstallClassic
+        {
+            row_header = row_header.style(style::UnclickableColumnHeaderButton(color_palette));
+        } else {
+            row_header = row_header.style(style::ColumnHeaderButton(color_palette));
+        }
+
+        let row_header: Element<Interaction> = row_header.into();
+
+        let row_container = Container::new(row_header.map(Message::Interaction))
+            .width(column.width)
+            .style(style::SecondaryTextContainer(color_palette));
+
+        // Only shows row titles if we have any catalog results.
+        if !catalog.addons.is_empty() {
+            row_titles.push((column.key.as_string(), row_container));
+        }
+    }
+
+    Header::new(
+        header_state,
+        row_titles,
+        Some(Length::Units(DEFAULT_PADDING)),
+        Some(Length::Units(DEFAULT_PADDING + 5)),
+    )
+    .spacing(1)
+    .height(Length::Units(25))
+    .on_resize(3, |event| {
+        Message::Interaction(Interaction::ResizeColumn(AjourMode::Catalog, event))
+    })
+}
+
+pub fn catalog_data_cell<'a, 'b>(
+    color_palette: ColorPalette,
+    addon: &'a mut CatalogRow,
+    column_config: &'b [(CatalogColumnKey, Length)],
+    retail_downloading: bool,
+    retail_installed: bool,
+    classic_downloading: bool,
+    classic_installed: bool,
+) -> Container<'a, Message> {
+    let default_height = Length::Units(26);
+
+    let mut row_containers = vec![];
+
+    let addon_data = &addon.addon;
+    let retail_install_state = &mut addon.retail_install_state;
+    let classic_install_state = &mut addon.classic_install_state;
+
+    let retail_exists = addon_data.flavors.contains(&Flavor::Retail);
+    let classic_exists = addon_data.flavors.contains(&Flavor::Classic);
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::InstallRetail {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let retail_install = Text::new(if !retail_exists {
+            "N/A"
+        } else if retail_downloading {
+            "Downloading"
+        } else if retail_installed {
+            "Installed"
+        } else {
+            "Retail"
+        })
+        .size(DEFAULT_FONT_SIZE);
+
+        let retail_install_wrapper = Container::new(retail_install)
+            .width(*width)
+            .center_x()
+            .align_x(Align::Center);
+
+        let mut retail_install_button = Button::new(retail_install_state, retail_install_wrapper)
+            .style(style::DefaultBoxedButton(color_palette))
+            .width(*width);
+
+        if !retail_installed && !retail_downloading && retail_exists {
+            retail_install_button = retail_install_button.on_press(Interaction::CatalogInstall(
+                addon_data.source,
+                Flavor::Retail,
+                addon_data.id,
+            ));
+        }
+
+        let retail_install_button: Element<Interaction> = retail_install_button.into();
+
+        let retail_install_container =
+            Container::new(retail_install_button.map(Message::Interaction))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .style(style::AddonRowDefaultTextContainer(color_palette));
+
+        row_containers.push((idx, retail_install_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::InstallClassic {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let classic_install = Text::new(if !classic_exists {
+            "N/A"
+        } else if classic_downloading {
+            "Downloading"
+        } else if classic_installed {
+            "Installed"
+        } else {
+            "Classic"
+        })
+        .size(DEFAULT_FONT_SIZE);
+
+        let classic_install_wrapper = Container::new(classic_install)
+            .width(*width)
+            .center_x()
+            .align_x(Align::Center);
+
+        let mut classic_install_button =
+            Button::new(classic_install_state, classic_install_wrapper)
+                .style(style::DefaultBoxedButton(color_palette))
+                .width(*width);
+
+        if !classic_installed && !classic_downloading && classic_exists {
+            classic_install_button = classic_install_button.on_press(Interaction::CatalogInstall(
+                addon_data.source,
+                Flavor::Classic,
+                addon_data.id,
+            ));
+        }
+
+        let classic_install_button: Element<Interaction> = classic_install_button.into();
+
+        let classic_install_container =
+            Container::new(classic_install_button.map(Message::Interaction))
+                .height(default_height)
+                .width(*width)
+                .center_x()
+                .center_y()
+                .style(style::AddonRowDefaultTextContainer(color_palette));
+
+        row_containers.push((idx, classic_install_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::Title {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let title = Text::new(&addon_data.name).size(DEFAULT_FONT_SIZE);
+        let title_container = Container::new(title)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowDefaultTextContainer(color_palette));
+
+        row_containers.push((idx, title_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::Description {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let description = Text::new(&addon_data.summary).size(DEFAULT_FONT_SIZE);
+        let description_container = Container::new(description)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
+
+        row_containers.push((idx, description_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::Source {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let source = Text::new(&format!("{}", addon_data.source)).size(DEFAULT_FONT_SIZE);
+        let source_container = Container::new(source)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowDefaultTextContainer(color_palette));
+
+        row_containers.push((idx, source_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::NumDownloads {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let num_downloads = Text::new(
+            &addon_data
+                .number_of_downloads
+                .to_formatted_string(&Locale::en),
+        )
+        .size(DEFAULT_FONT_SIZE);
+        let num_downloads_container = Container::new(num_downloads)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::AddonRowSecondaryTextContainer(color_palette));
+
+        row_containers.push((idx, num_downloads_container));
+    }
+
+    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
+
+    let mut row = Row::new().push(left_spacer).spacing(1);
+
+    // Sort columns and push them into row
+    row_containers.sort_by(|a, b| a.0.cmp(&b.0));
+    for (_, elem) in row_containers.into_iter() {
+        row = row.push(elem);
+    }
+
+    row = row.push(right_spacer);
+
+    Container::new(row)
+        .width(Length::Fill)
+        .style(style::Row(color_palette))
 }
 
 pub fn addon_scrollable(

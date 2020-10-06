@@ -3,8 +3,10 @@
 // https://msdn.microsoft.com/en-us/library/4cc7ya5b.aspx for more information.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod cli;
 mod gui;
 
+use ajour_core::fs::CONFIG_DIR;
 use ajour_core::Result;
 
 use rust_embed::RustEmbed;
@@ -18,6 +20,14 @@ struct Translations;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main() {
+    let opts = cli::get_opts();
+
+    if let Some(data_dir) = &opts.data_directory {
+        let mut config_dir = CONFIG_DIR.lock().unwrap();
+
+        *config_dir = data_dir.clone();
+    }
+
     // Setup the logger
     setup_logger().expect("setup logging");
 
@@ -36,7 +46,7 @@ pub fn main() {
     let _result = i18n_embed::select(&language_loader, &translations, &requested_languages);
 
     // Start the GUI
-    gui::run();
+    gui::run(opts);
 }
 
 #[allow(clippy::unnecessary_operation)]
