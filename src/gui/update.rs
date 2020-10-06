@@ -6,7 +6,7 @@ use {
     ajour_core::{
         addon::{Addon, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
-        catalog::{self, get_catalog},
+        catalog,
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
         curse_api,
         fs::{delete_addons, install_addon, PersistentData},
@@ -345,16 +345,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Set ajour mode.
             ajour.mode = mode;
-
-            if mode == AjourMode::Catalog {
-                let refresh = ajour.catalog.is_none();
-
-                if refresh {
-                    let command = Command::perform(get_catalog(), Message::CatalogDownloaded);
-
-                    ajour.state = AjourState::Loading;
-
-                    return Ok(command);
+            match mode {
+                AjourMode::Catalog => {
+                    let refresh = ajour.catalog.is_none();
+                    if refresh {
+                        ajour.state = AjourState::Loading;
+                    }
+                }
+                AjourMode::MyAddons => {
+                    ajour.state = AjourState::Idle;
                 }
             }
         }

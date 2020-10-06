@@ -6,6 +6,7 @@ use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
     addon::{Addon, AddonState, ReleaseChannel},
+    catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
@@ -196,6 +197,7 @@ impl Application for Ajour {
             Command::perform(load_config(), Message::Parse),
             Command::perform(needs_update(VERSION), Message::NeedsUpdate),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
+            Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];
 
         (Ajour::default(), Command::batch(init_commands))
