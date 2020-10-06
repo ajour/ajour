@@ -1502,7 +1502,7 @@ dependencies = [
  "log",
  "objc",
  "osmesa-sys",
- "parking_lot",
+ "parking_lot 0.10.2",
  "wayland-client",
  "winapi 0.3.9",
  "winit",
@@ -3898,7 +3898,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5dece29f3cd403aabf4056595eabe4b9af56b8bfae12445f097cf8666a41829"
 dependencies = [
  "arrayvec 0.5.1",
- "parking_lot",
+ "parking_lot 0.10.2",
  "raw-window-handle",
  "smallvec",
  "wgpu-core",

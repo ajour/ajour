@@ -1093,13 +1093,13 @@ pub fn menu_container<'a>(
 
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,
-        Text::new("My Addons").size(DEFAULT_FONT_SIZE),
+        Text::new(tr!("My Addons")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::SegmentedDisabledButton(color_palette));
 
     let mut catalog_mode_button = Button::new(
         catalog_mode_btn_state,
-        Text::new("Catalog").size(DEFAULT_FONT_SIZE),
+        Text::new(tr!("Catalog")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::SegmentedDisabledButton(color_palette));
 
@@ -1235,7 +1235,7 @@ pub fn status_container<'a>(
 
     if let (_, Some(btn_state)) = (AjourState::Welcome, onboarding_directory_btn_state) {
         let onboarding_button_title_container =
-            Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
+            Container::new(Text::new(tr!("Select Directory")).size(DEFAULT_FONT_SIZE))
                 .width(Length::Units(100))
                 .center_x()
                 .align_x(Align::Center);

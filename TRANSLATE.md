@@ -1,5 +1,5 @@
-# Adding a translation
-In order to add a translation, there are several steps to take, which are described in this document.
+# Adding a new target language
+In order to add a new target language for translation, there are several steps to take, which are described in this document.
 
 ## Pre-requisites
 The following tools are necessary to add a new translation and parse the codebase for strings to translate.
@@ -45,3 +45,10 @@ cargo run
 ```
 
 **Important: This translation system takes into account the locale of your system (Windows, Mac or Linux) to make a decision on which strings to display in the application. So if your system is not in the proper locale, you will not see your translations.**
+
+# Translate a string in the code.
+In order for a string to be picked up by the `cargo i18n` command and therefore added to a translation `.po` file, it needs to be wrapped with the tr macro, like so:
+
+```
+tr!("Some text to translate")
+```

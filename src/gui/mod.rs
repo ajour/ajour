@@ -381,7 +381,7 @@ impl Application for Ajour {
 
                     let catalog_query = TextInput::new(
                         &mut self.catalog_search_state.query_state,
-                        "Search for an addon...",
+                        &tr!("Search for an addon..."),
                         query,
                         Interaction::CatalogQuery,
                     )
@@ -579,8 +579,8 @@ impl Application for Ajour {
         let container: Option<Container<Message>> = match self.state {
             AjourState::Welcome => Some(element::status_container(
                 color_palette,
-                tr!("Welcome to Ajour!"),
-                tr!("Please select your World of Warcraft directory"),
+                &tr!("Welcome to Ajour!"),
+                &tr!("Please select your World of Warcraft directory"),
                 Some(&mut self.onboarding_directory_btn_state),
             )),
             AjourState::Idle => match self.mode {
@@ -588,7 +588,7 @@ impl Application for Ajour {
                     if !has_addons {
                         Some(element::status_container(
                             color_palette,
-                            tr!("Woops!"),
+                            &tr!("Woops!"),
                             &tr!("You have no {} addons.", flavor.to_string().to_lowercase()),
                             None,
                         ))
@@ -601,14 +601,14 @@ impl Application for Ajour {
             AjourState::Loading => match self.mode {
                 AjourMode::MyAddons => Some(element::status_container(
                     color_palette,
-                    tr!("Loading.."),
-                    tr!("Currently parsing addons."),
+                    &tr!("Loading.."),
+                    &tr!("Currently parsing addons."),
                     None,
                 )),
                 AjourMode::Catalog => Some(element::status_container(
                     color_palette,
-                    tr!("Loading.."),
-                    tr!("Currently loading addon catalog."),
+                    &tr!("Loading.."),
+                    &tr!("Currently loading addon catalog."),
                     None,
                 )),
             },
@@ -1181,10 +1181,10 @@ impl CatalogFlavor {
 impl std::fmt::Display for CatalogFlavor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            CatalogFlavor::All => "Both Flavors",
+            CatalogFlavor::All => tr!("Both Flavors"),
             CatalogFlavor::Choice(flavor) => match flavor {
-                Flavor::Retail => "Retail",
-                Flavor::Classic => "Classic",
+                Flavor::Retail => tr!("Retail"),
+                Flavor::Classic => tr!("Classic"),
             },
         };
         write!(f, "{}", s)
