@@ -1116,7 +1116,7 @@ pub fn menu_container<'a>(
     }
 
     // If we are onboarding, we disable the mode buttons and set proper styling.
-    if !matches!(state, AjourState::Welcome) {
+    if !matches!(state, AjourState::Welcome | AjourState::Loading) {
         addons_mode_button =
             addons_mode_button.on_press(Interaction::ModeSelected(AjourMode::MyAddons));
         catalog_mode_button =
