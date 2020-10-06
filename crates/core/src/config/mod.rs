@@ -165,12 +165,6 @@ impl Default for ColumnConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum ColumnConfigType {
-    MyAddons,
-    Catalog,
-}
-
 /// Returns a Config.
 ///
 /// This functions handles the initialization of a Config.

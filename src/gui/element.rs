@@ -10,7 +10,7 @@ use {
     ajour_core::{
         addon::{Addon, AddonState},
         catalog::Catalog,
-        config::{ColumnConfigType, Config, Flavor},
+        config::{Config, Flavor},
         theme::ColorPalette,
     },
     chrono::prelude::*,
@@ -914,7 +914,7 @@ pub fn addon_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(ColumnConfigType::MyAddons, event))
+        Message::Interaction(Interaction::ResizeColumn(AjourMode::MyAddons, event))
     })
 }
 
@@ -1101,7 +1101,7 @@ pub fn menu_container<'a>(
     .style(style::SegmentedDisabledButton(color_palette));
 
     match mode {
-        AjourMode::Addons => {
+        AjourMode::MyAddons => {
             addons_mode_button =
                 addons_mode_button.style(style::SegmentedSelectedButton(color_palette));
             catalog_mode_button =
@@ -1118,7 +1118,7 @@ pub fn menu_container<'a>(
     // If we are onboarding, we disable the mode buttons and set proper styling.
     if !matches!(state, AjourState::Welcome) {
         addons_mode_button =
-            addons_mode_button.on_press(Interaction::ModeSelected(AjourMode::Addons));
+            addons_mode_button.on_press(Interaction::ModeSelected(AjourMode::MyAddons));
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(AjourMode::Catalog));
     } else {
@@ -1322,7 +1322,7 @@ pub fn catalog_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(ColumnConfigType::Catalog, event))
+        Message::Interaction(Interaction::ResizeColumn(AjourMode::Catalog, event))
     })
 }
 

@@ -7,7 +7,7 @@ use crate::VERSION;
 use ajour_core::{
     addon::{Addon, AddonState, ReleaseChannel},
     catalog::{self, Catalog, CatalogAddon},
-    config::{load_config, ColumnConfigType, ColumnConfigV2, Config, Flavor},
+    config::{load_config, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
     parse::FingerprintCollection,
@@ -43,7 +43,7 @@ pub enum AjourState {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum AjourMode {
-    Addons,
+    MyAddons,
     Catalog,
 }
 
@@ -53,7 +53,7 @@ impl std::fmt::Display for AjourMode {
             f,
             "{}",
             match self {
-                AjourMode::Addons => "Addons",
+                AjourMode::MyAddons => "My Addons",
                 AjourMode::Catalog => "Catalog",
             }
         )
@@ -75,7 +75,7 @@ pub enum Interaction {
     SortColumn(ColumnKey),
     SortCatalogColumn(CatalogColumnKey),
     FlavorSelected(Flavor),
-    ResizeColumn(ColumnConfigType, header::ResizeEvent),
+    ResizeColumn(AjourMode, header::ResizeEvent),
     ScaleUp,
     ScaleDown,
     Backup,
@@ -141,8 +141,7 @@ pub struct Ajour {
     column_settings: ColumnSettings,
     onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
-    catalog_categories: Option<Vec<CatalogCategory>>,
-    catalog_query_state: CatalogQueryState,
+    catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
 }
 
@@ -167,7 +166,7 @@ impl Default for Ajour {
                     .unwrap(),
             ),
             state: AjourState::Loading,
-            mode: AjourMode::Addons,
+            mode: AjourMode::MyAddons,
             update_all_btn_state: Default::default(),
             header_state: Default::default(),
             theme_state: Default::default(),
@@ -181,8 +180,7 @@ impl Default for Ajour {
             column_settings: Default::default(),
             onboarding_directory_btn_state: Default::default(),
             catalog: None,
-            catalog_categories: None,
-            catalog_query_state: Default::default(),
+            catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
         }
     }
@@ -296,7 +294,7 @@ impl Application for Ajour {
         content = content.push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
 
         match self.mode {
-            AjourMode::Addons => {
+            AjourMode::MyAddons => {
                 // Get mutable addons for current flavor.
                 let addons = self.addons.entry(flavor).or_default();
 
@@ -367,20 +365,19 @@ impl Application for Ajour {
                 }
             }
             AjourMode::Catalog => {
-                if let (Some(catalog), Some(categories)) = (&self.catalog, &self.catalog_categories)
-                {
+                if let Some(catalog) = &self.catalog {
                     let default = vec![];
                     let addons = self.addons.get(&flavor).unwrap_or(&default);
                     let other_flavor_addons = self.addons.get(&other_flavor).unwrap_or(&default);
 
                     let query = self
-                        .catalog_query_state
+                        .catalog_search_state
                         .query
                         .as_deref()
                         .unwrap_or_default();
 
                     let catalog_query = TextInput::new(
-                        &mut self.catalog_query_state.text_input_state,
+                        &mut self.catalog_search_state.query_state,
                         "Search for an addon...",
                         query,
                         Interaction::CatalogQuery,
@@ -393,9 +390,9 @@ impl Application for Ajour {
                     let catalog_query: Element<Interaction> = catalog_query.into();
 
                     let flavor_picklist = PickList::new(
-                        &mut self.catalog_query_state.flavors_state,
-                        &self.catalog_query_state.flavors,
-                        Some(self.catalog_query_state.flavor),
+                        &mut self.catalog_search_state.flavors_state,
+                        &self.catalog_search_state.flavors,
+                        Some(self.catalog_search_state.flavor),
                         Interaction::CatalogFlavorSelected,
                     )
                     .text_size(14)
@@ -411,9 +408,9 @@ impl Application for Ajour {
                             .width(Length::FillPortion(1));
 
                     let source_picklist = PickList::new(
-                        &mut self.catalog_query_state.sources_state,
-                        &self.catalog_query_state.sources,
-                        Some(self.catalog_query_state.source),
+                        &mut self.catalog_search_state.sources_state,
+                        &self.catalog_search_state.sources,
+                        Some(self.catalog_search_state.source),
                         Interaction::CatalogSourceSelected,
                     )
                     .text_size(14)
@@ -429,9 +426,9 @@ impl Application for Ajour {
                             .width(Length::FillPortion(1));
 
                     let category_picklist = PickList::new(
-                        &mut self.catalog_query_state.categories_state,
-                        categories,
-                        Some(self.catalog_query_state.category.clone()),
+                        &mut self.catalog_search_state.categories_state,
+                        &self.catalog_search_state.categories,
+                        Some(self.catalog_search_state.category.clone()),
                         Interaction::CatalogCategorySelected,
                     )
                     .text_size(14)
@@ -447,9 +444,9 @@ impl Application for Ajour {
                             .width(Length::FillPortion(1));
 
                     let result_size_picklist = PickList::new(
-                        &mut self.catalog_query_state.results_size_state,
-                        &self.catalog_query_state.result_sizes,
-                        Some(self.catalog_query_state.result_size),
+                        &mut self.catalog_search_state.result_sizes_state,
+                        &self.catalog_search_state.result_sizes,
+                        Some(self.catalog_search_state.result_size),
                         Interaction::CatalogResultSizeSelected,
                     )
                     .text_size(14)
@@ -493,10 +490,10 @@ impl Application for Ajour {
 
                     let mut catalog_scrollable = element::addon_scrollable(
                         color_palette,
-                        &mut self.catalog_query_state.scrollable_state,
+                        &mut self.catalog_search_state.scrollable_state,
                     );
 
-                    for addon in self.catalog_query_state.catalog_rows.iter_mut() {
+                    for addon in self.catalog_search_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
                         let retail_installed = if flavor == Flavor::Retail {
                             addons.iter().any(|a| {
@@ -584,7 +581,7 @@ impl Application for Ajour {
                 Some(&mut self.onboarding_directory_btn_state),
             )),
             AjourState::Idle => match self.mode {
-                AjourMode::Addons => {
+                AjourMode::MyAddons => {
                     if !has_addons {
                         Some(element::status_container(
                             color_palette,
@@ -599,7 +596,7 @@ impl Application for Ajour {
                 AjourMode::Catalog => None,
             },
             AjourState::Loading => match self.mode {
-                AjourMode::Addons => Some(element::status_container(
+                AjourMode::MyAddons => Some(element::status_container(
                     color_palette,
                     "Loading..",
                     "Currently parsing addons.",
@@ -1043,16 +1040,17 @@ impl From<&CatalogColumnState> for ColumnConfigV2 {
     }
 }
 
-pub struct CatalogQueryState {
-    pub query: Option<String>,
-    pub category: CatalogCategory,
-    pub result_size: CatalogResultSize,
-    pub result_sizes: Vec<CatalogResultSize>,
-    pub text_input_state: text_input::State,
+pub struct CatalogSearchState {
     pub catalog_rows: Vec<CatalogRow>,
     pub scrollable_state: scrollable::State,
+    pub query: Option<String>,
+    pub query_state: text_input::State,
+    pub result_size: CatalogResultSize,
+    pub result_sizes: Vec<CatalogResultSize>,
+    pub result_sizes_state: pick_list::State<CatalogResultSize>,
+    pub category: CatalogCategory,
+    pub categories: Vec<CatalogCategory>,
     pub categories_state: pick_list::State<CatalogCategory>,
-    pub results_size_state: pick_list::State<CatalogResultSize>,
     pub flavor: CatalogFlavor,
     pub flavors: Vec<CatalogFlavor>,
     pub flavors_state: pick_list::State<CatalogFlavor>,
@@ -1061,18 +1059,19 @@ pub struct CatalogQueryState {
     pub sources_state: pick_list::State<CatalogSource>,
 }
 
-impl Default for CatalogQueryState {
+impl Default for CatalogSearchState {
     fn default() -> Self {
-        CatalogQueryState {
-            query: None,
-            category: Default::default(),
-            result_size: Default::default(),
-            result_sizes: CatalogResultSize::all(),
-            text_input_state: Default::default(),
+        CatalogSearchState {
             catalog_rows: Default::default(),
             scrollable_state: Default::default(),
+            query: None,
+            query_state: Default::default(),
+            result_size: Default::default(),
+            result_sizes: CatalogResultSize::all(),
+            result_sizes_state: Default::default(),
+            category: Default::default(),
+            categories: Default::default(),
             categories_state: Default::default(),
-            results_size_state: Default::default(),
             flavor: CatalogFlavor::All,
             flavors: CatalogFlavor::all(),
             flavors_state: Default::default(),
