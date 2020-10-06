@@ -1,9 +1,3 @@
-## Makefile which is used to generate a .app and .dmg for MacOS.
-##
-## Credits:
-## This Makefile is heaviliy inspirred by Alacrittys.
-## https://github.com/alacritty/alacritty/blob/master/Makefile
-
 TARGET = ajour
 
 RESOURCES_DIR = resources
