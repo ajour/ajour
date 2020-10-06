@@ -16,6 +16,10 @@ APP_BINARY = $(RELEASE_DIR)/$(TARGET)
 APP_BINARY_DIR  = $(APP_DIR)/$(APP_NAME)/Contents/MacOS
 APP_RESOURCES_DIR = $(APP_DIR)/$(APP_NAME)/Contents/Resources
 
+APPIMAGE_DIR = $(RELEASE_DIR)/AppDir
+APPIMAGE_DESKTOP_FILE = $(RESOURCES_DIR)/linux/ajour.desktop
+APPIMAGE_LOGO_FILE = $(RESOURCES_DIR)/logo/256x256/ajour.png
+
 DMG_NAME = Ajour.dmg
 DMG_DIR = $(RELEASE_DIR)/osx
 
@@ -54,6 +58,15 @@ $(DMG_NAME): $(APP_NAME)
 
 install: $(DMG_NAME) ## Mount disk image
 	@open $(DMG_DIR)/$(DMG_NAME)
+
+appimage: ## Bundle release binary as AppImage
+	OUTPUT=ajour.AppImage linuxdeploy-x86_64.AppImage \
+		--appdir $(APPIMAGE_DIR) \
+		-e $(APP_BINARY) \
+		-d $(APPIMAGE_DESKTOP_FILE) \
+		-i $(APPIMAGE_LOGO_FILE) \
+		--output appimage
+	@rm -rf $(APPIMAGE_DIR)
 
 .PHONY: app binary clean dmg install $(TARGET)
 

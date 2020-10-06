@@ -1,5 +1,8 @@
 use crate::{addon::Addon, Result};
-use async_std::{fs::File, prelude::*};
+use async_std::{
+    fs::{create_dir_all, File},
+    prelude::*,
+};
 use isahc::prelude::*;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -69,11 +72,14 @@ pub async fn download_addon(
         let mut resp =
             request_async(shared_client, package.download_url.clone(), vec![], None).await?;
         let body = resp.body_mut();
+
+        if !to_directory.exists() {
+            create_dir_all(to_directory).await?;
+        }
+
         let zip_path = to_directory.join(&addon.id);
         let mut buffer = [0; 8000]; // 8KB
-        let mut file = File::create(&zip_path)
-            .await
-            .expect("failed to create file for download!");
+        let mut file = File::create(&zip_path).await?;
 
         loop {
             match body.read(&mut buffer).await {

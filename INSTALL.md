@@ -83,5 +83,3 @@ To build a compatability build add the flag `--no-default-features --features op
 ```sh
 cargo build --release --no-default-features --features opengl
 ```
-
-
