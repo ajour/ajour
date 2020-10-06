@@ -21,6 +21,7 @@ brew cask install ajour
 2. [Building](#building)
     1. [Linux/Windows](#linux--windows)
     2. [macOS](#macos)
+    3. [Compatibility build](#compatibility-build)
         
         
 ## Prerequisites
@@ -71,4 +72,15 @@ target/release/ajour
 ```sh
 make app
 cp -r target/release/osx/Ajour.app /Applications/
+```
+
+
+### Compatibility build
+Ajour is built using `wgpu` which has [requirements](https://github.com/gfx-rs/wgpu#supported-platforms) which might not be achievable by all.  
+It is therefore possible to build a compatability build using `opengl` as renderer instead. Performance should be close to 1:1.
+
+To build a compatability build add the flag `--no-default-features --features opengl`
+
+```sh
+cargo build --release --no-default-features --features opengl
 ```
