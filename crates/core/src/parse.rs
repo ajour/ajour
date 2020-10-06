@@ -642,17 +642,13 @@ pub fn fingerprint_addon_dir(
                     .as_str();
                 // Path might be case insensitive and have windows separators. Find it
                 let path_match = path_match.replace("\\", "/");
-                let parent = path.parent().ok_or_else(|| {
-                    ClientError::FingerprintError(format!("No parent directory for {:?}", path))
-                })?;
-                let file_to_find = parent.join(Path::new(&path_match));
-                let real_path = find_file(&file_to_find).ok_or_else(|| {
-                    ClientError::FingerprintError(format!(
-                        "Unable to find file: {:?}",
-                        file_to_find
-                    ))
-                })?;
-                to_parse.push_back(real_path);
+                if let Some(parent) = path.parent() {
+                    let file_to_find = parent.join(Path::new(&path_match));
+
+                    if let Some(real_path) = find_file(&file_to_find) {
+                        to_parse.push_back(real_path);
+                    }
+                }
             }
         }
     }
