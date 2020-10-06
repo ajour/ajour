@@ -351,6 +351,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     if refresh {
                         ajour.state = AjourState::Loading;
                     }
+                    ajour.state = AjourState::Idle;
                 }
                 AjourMode::MyAddons => {
                     ajour.state = AjourState::Idle;
