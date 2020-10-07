@@ -58,24 +58,30 @@ jobs:
           command: build
           args: --release --no-default-features --features opengl
 
-      - name: Upload AppImage
-        if: ${{ matrix.os == 'ubuntu' }} 
+      - name: Upload AppImage Vulkan
+        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'vulkan' }} 
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
           path: ajour.AppImage
+      - name: Upload AppImage OpenGL
+        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'opengl' }} 
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
+          path: ajour-opengl.AppImage
       - name: Upload dmg
         if: ${{ matrix.os == 'macos' }} 
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
-          path: ajour.dmg
+          path: target/release/osx/ajour.dmg
       - name: Upload exe
         if: ${{ matrix.os == 'windows' }} 
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
-          path: ajour.exe
+          path: target/release/ajour.exe
 
   create-release:
     needs: release
@@ -103,7 +109,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./ubuntu-vulkan-artifact/ajour
+          asset_path: ./ubuntu-vulkan-artifact/ajour.AppImage
           asset_name: ajour.AppImage
           asset_content_type: application/x-executable
 
@@ -113,7 +119,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./ubuntu-opengl-artifact/ajour
+          asset_path: ./ubuntu-opengl-artifact/ajour-opengl.AppImage
           asset_name: ajour-opengl.AppImage
           asset_content_type: application/x-executable
 
@@ -123,7 +129,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./windows-vulkan-artifact/ajour
+          asset_path: ./windows-vulkan-artifact/ajour.exe
           asset_name: ajour.exe
           asset_content_type: application/x-dosexec
 
@@ -133,7 +139,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./windows-opengl-artifact/ajour
+          asset_path: ./windows-opengl-artifact/ajour.exe
           asset_name: ajour-opengl.exe
           asset_content_type: application/x-dosexec
 
@@ -143,7 +149,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./macos-vulkan-artifact/ajour
+          asset_path: ./macos-vulkan-artifact/ajour.dmg
           asset_name: ajour.dmg
           asset_content_type: application/octet-stream
 
@@ -153,6 +159,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./macos-opengl-artifact/ajour
+          asset_path: ./macos-opengl-artifact/ajour.dmg
           asset_name: ajour-opengl.dmg
           asset_content_type: application/octet-stream
