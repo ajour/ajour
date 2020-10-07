@@ -10,6 +10,7 @@ APP_BINARY = $(RELEASE_DIR)/$(TARGET)
 APP_BINARY_DIR  = $(APP_DIR)/$(APP_NAME)/Contents/MacOS
 APP_RESOURCES_DIR = $(APP_DIR)/$(APP_NAME)/Contents/Resources
 
+APPIMAGE_NAME = ajour.AppImage
 APPIMAGE_DIR = $(RELEASE_DIR)/AppDir
 APPIMAGE_DESKTOP_FILE = $(RESOURCES_DIR)/linux/ajour.desktop
 APPIMAGE_LOGO_FILE = $(RESOURCES_DIR)/logo/256x256/ajour.png
@@ -29,7 +30,8 @@ help: ## Prints help for targets with comments
 macos: ## Sets macOS Deployment target
 	MACOSX_DEPLOYMENT_TARGET="10.11"
 
-app: ## Clone Ajour.app template and mount binary
+app: | $(APP_NAME) ## Clone Ajour.app template and mount binary
+$(APP_NAME): $(TARGET)
 	@mkdir -p $(APP_BINARY_DIR)
 	@mkdir -p $(APP_RESOURCES_DIR)
 	@cp -fRp $(APP_TEMPLATE) $(APP_DIR)
@@ -37,7 +39,8 @@ app: ## Clone Ajour.app template and mount binary
 	@touch -r "$(APP_BINARY)" "$(APP_DIR)/$(APP_NAME)"
 	@echo "Created '$@' in '$(APP_DIR)'"
 
-dmg: ## Pack Ajour.app into .dmg
+dmg: | $(DMG_NAME) ## Pack Ajour.app into .dmg
+$(DMG_NAME): $(APP_NAME)
 	@echo "Packing disk image..."
 	@ln -sf /Applications $(DMG_DIR)/Applications
 	@hdiutil create $(DMG_DIR)/$(DMG_NAME) \
@@ -47,8 +50,9 @@ dmg: ## Pack Ajour.app into .dmg
 		-ov -format UDZO
 	@echo "Packed '$@' in '$(APP_DIR)'"
 
-appimage: ## Bundle release binary as AppImage
-	OUTPUT=ajour.AppImage ./linuxdeploy-x86_64.AppImage \
+appimage: | $(APPIMAGE_NAME) ## Bundle release binary as AppImage
+$(APPIMAGE_NAME):
+	OUTPUT=$(APPIMAGE_NAME) ./linuxdeploy-x86_64.AppImage \
 		--appdir $(APPIMAGE_DIR) \
 		-e $(APP_BINARY) \
 		-d $(APPIMAGE_DESKTOP_FILE) \
@@ -56,11 +60,13 @@ appimage: ## Bundle release binary as AppImage
 		--output appimage
 	@rm -rf $(APPIMAGE_DIR)
 
-vulkan: ## Build vulkan
-	@cargo build --release
+vulkan: | $(TARGET) ## Build vulkan
+$(TARGET):
+	cargo build --release
 
-opengl: ## Build opengl
-	@cargo build --release --no-default-features --features opengl
+opengl: | $(TARGET) ## Build opengl
+$(TARGET):
+	cargo build --release --no-default-features --features opengl
 
 clean: ## Remove all artifacts
 	-rm -rf $(APP_DIR)
