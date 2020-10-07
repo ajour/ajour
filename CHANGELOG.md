@@ -11,12 +11,13 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Fixed
 - Fixed fingerprinting where some addons would fail during fingerprinting due to invalid UTF-8 characters and missing files. These addons now successfully fingerprint.
 
-## [0.4.0] - 2020-10-6
+## [0.4.0] - 2020-10-06
 ### Added
-- It is now possible to install addons through Ajour in the catalog
-  - This is a long awaited, but we wanted to get it right. You can easily and quickly search, filter and install addons.
+- The catalog has been implemented 📦
+  - This is long awaited, but we wanted to get it right. You can now easily and quickly search, filter and install addons
+  - This first release of the catalog will come with CurseForge as source and in the next release we will add Tukui as well
 - Logic for falling back to root World of Warcraft directory if a sub-folder was chosen
-  - We solved a UX problem with some coding logic. It was not always clear that Ajour requires the World of Warcraft root folder.
+  - We solved a UX problem with some coding logic. It was not always clear that Ajour requires the World of Warcraft root folder
 
 ### Changed
 - Tidy up Settings
