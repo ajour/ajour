@@ -62,11 +62,11 @@ $(APPIMAGE_NAME):
 
 vulkan: | $(TARGET) ## Build vulkan
 $(TARGET):
-	cargo build --release
+	@cargo build --release
 
 opengl: | $(TARGET) ## Build opengl
 $(TARGET):
-	cargo build --release --no-default-features --features opengl
+	@cargo build --release --no-default-features --features opengl
 
 clean: ## Remove all artifacts
 	-rm -rf $(APP_DIR)
