@@ -760,6 +760,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             };
         }
+        Message::LanguageSelected(language_name) => {
+            log::debug!("Message::LanguageSelected({:?})", &language_name);
+
+            ajour.language_state.current_language_name = language_name.clone();
+
+            ajour.config.language = Some(language_name);
+            let _ = ajour.config.save();
+        }
         Message::ThemeSelected(theme_name) => {
             log::debug!("Message::ThemeSelected({:?})", &theme_name);
 

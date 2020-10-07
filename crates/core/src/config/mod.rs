@@ -22,6 +22,8 @@ pub struct Config {
 
     pub theme: Option<String>,
 
+    pub language: Option<String>,
+
     #[serde(default)]
     pub column_config: ColumnConfig,
 

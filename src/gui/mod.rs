@@ -103,6 +103,7 @@ pub enum Message {
     Parse(Result<Config>),
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
     UpdateFingerprint((Flavor, String, Result<()>)),
+    LanguageSelected(String),
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
@@ -132,6 +133,7 @@ pub struct Ajour {
     mode: AjourMode,
     update_all_btn_state: button::State,
     header_state: HeaderState,
+    language_state: LanguageState,
     theme_state: ThemeState,
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     retail_btn_state: button::State,
@@ -171,6 +173,7 @@ impl Default for Ajour {
             mode: AjourMode::MyAddons,
             update_all_btn_state: Default::default(),
             header_state: Default::default(),
+            language_state: Default::default(),
             theme_state: Default::default(),
             fingerprint_collection: Arc::new(Mutex::new(None)),
             retail_btn_state: Default::default(),
@@ -279,6 +282,7 @@ impl Application for Ajour {
                 color_palette,
                 &mut self.directory_btn_state,
                 &cloned_config,
+                &mut self.language_state,
                 &mut self.theme_state,
                 &mut self.scale_state,
                 &mut self.backup_state,
@@ -1225,6 +1229,26 @@ pub struct ThemeState {
     themes: Vec<(String, Theme)>,
     current_theme_name: String,
     pick_list_state: pick_list::State<String>,
+}
+
+pub struct LanguageState {
+    languages: Vec<String>,
+    current_language_name: String,
+    pick_list_state: pick_list::State<String>,
+}
+
+impl Default for LanguageState{
+    fn default() -> Self {
+        let mut languages = vec![];
+        languages.push("EN".to_string());
+        languages.push("FR".to_string());
+
+        LanguageState {
+            languages,
+            current_language_name: "EN".to_string(),
+            pick_list_state: Default::default(),
+        }
+    }
 }
 
 impl Default for ThemeState {

@@ -4,7 +4,7 @@ use {
     super::{
         style, AjourMode, AjourState, BackupState, CatalogColumnKey, CatalogColumnState,
         CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType, Interaction, Message,
-        ReleaseChannel, ScaleState, SortDirection, ThemeState,
+        ReleaseChannel, ScaleState, SortDirection, ThemeState, LanguageState
     },
     crate::VERSION,
     ajour_core::{
@@ -32,6 +32,7 @@ pub fn settings_container<'a, 'b>(
     color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
     config: &Config,
+    language_state : &'a mut LanguageState,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
@@ -77,6 +78,29 @@ pub fn settings_container<'a, 'b>(
         .push(directory_button.map(Message::Interaction))
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(directory_data_text_container);
+
+    // Title for the language pick list
+    let language_info_text = Text::new(tr!("Language")).size(14);
+    let language_info_row = Row::new().push(language_info_text);
+
+    let language_codes = language_state
+        .languages
+        .iter()
+        .cloned()
+        .map(|name|name)
+        .collect::<Vec<_>>();
+    let language_pick_list = PickList::new(
+        &mut language_state.pick_list_state,
+        language_codes,
+        Some(language_state.current_language_name.clone()),
+        Message::LanguageSelected,
+    )
+    .text_size(14)
+    .width(Length::Units(100))
+    .style(style::PickList(color_palette));
+
+    // Data row for language pick list
+    let language_data_row = Row::new().push(language_pick_list);
 
     // Title for the theme pick list.
     let theme_info_text = Text::new(tr!("Theme")).size(14);
@@ -373,7 +397,12 @@ pub fn settings_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(theme_info_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(theme_data_row);
+        .push(theme_data_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(language_info_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(language_data_row);
+
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
     let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
