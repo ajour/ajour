@@ -113,6 +113,7 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
     CatalogInstallAddonFetched(Result<(u32, Flavor, Addon)>),
+    TukuiTocUpdated(Result<()>),
 }
 
 pub struct Ajour {

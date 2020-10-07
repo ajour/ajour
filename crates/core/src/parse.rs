@@ -11,6 +11,7 @@ use crate::{
     tukui_api::fetch_remote_package,
     Result,
 };
+use async_std::prelude::*;
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use rayon::prelude::*;
@@ -831,6 +832,38 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
         tukui_id,
         curse_id,
     ))
+}
+
+pub async fn write_toc_value(toc_path: &PathBuf, key: &str, value: &str) -> Result<()> {
+    println!("Writing to TOC {:?}  {} {}", toc_path, key, value);
+    let new = format!("## {}: {}", key, value);
+    async_std::fs::OpenOptions::new()
+        .append(true)
+        .open(toc_path)
+        .await?
+        .write(new.as_bytes())
+        .await?;
+    Ok(())
+}
+
+/// Helper function to parse a given TOC file and get the value for a key
+pub fn parse_toc_key(toc_path: &PathBuf, key: &str) -> Option<String> {
+    let file = if let Ok(file) = File::open(toc_path) {
+        file
+    } else {
+        return None;
+    };
+    let reader = BufReader::new(file);
+    let re_toc = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
+
+    for line in reader.lines().filter_map(|l| l.ok()) {
+        for cap in re_toc.captures_iter(line.as_str()) {
+            if key == &cap["key"] {
+                return Some(cap["value"].to_string());
+            }
+        }
+    }
+    None
 }
 
 /// Helper function to split a comma separated string into `Vec<String>`.

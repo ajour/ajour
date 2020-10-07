@@ -1,4 +1,7 @@
-use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits};
+use crate::{
+    config::Flavor, curse_api, parse::parse_toc_key, parse::write_toc_value, tukui_api,
+    utility::strip_non_digits, Result,
+};
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -214,6 +217,7 @@ impl Addon {
     pub fn apply_tukui_package(&mut self, package: &tukui_api::TukuiPackage) {
         self.website_url = Some(package.web_url.clone());
         self.game_version = package.patch.clone();
+        self.tukui_id = Some(package.id.clone());
 
         let version = package.version.clone();
         let download_url = package.url.clone();
@@ -221,7 +225,7 @@ impl Addon {
         let date_time = NaiveDateTime::parse_from_str(&package.lastupdate, "%Y-%m-%d")
             .map_or(
                 NaiveDateTime::parse_from_str(&package.lastupdate, "%Y-%m-%d %H:%M:%S"),
-                Result::Ok,
+                std::result::Result::Ok,
             )
             .map(|d| Utc.from_utc_datetime(&d))
             .ok();
@@ -295,6 +299,15 @@ impl Addon {
         self.game_version = info.file.game_version.get(0).cloned();
     }
 
+    pub async fn apply_tukui_toc_update(&self) -> Result<()> {
+        let tukui_id_key = "X-Tukui-ProjectID";
+        let toc_path = self.toc_path();
+        if parse_toc_key(&toc_path, tukui_id_key).is_none() {
+            write_toc_value(&toc_path, tukui_id_key, &self.tukui_id.clone().unwrap()).await?;
+        }
+        Ok(())
+    }
+
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
     pub fn is_ignored(&self, ignored: Option<&Vec<String>>) -> bool {
         match ignored {
@@ -325,6 +338,12 @@ impl Addon {
         }
 
         false
+    }
+
+    /// Returns the path to the toc file
+    pub fn toc_path(&self) -> PathBuf {
+        println!("Path is {:?}", self.path);
+        self.path.join(format!("{}.toc", self.id))
     }
 
     /// Returns the relevant release_package for the addon.

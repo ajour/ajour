@@ -644,8 +644,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 } else {
                     addon.state = AddonState::Ajour(Some("Error".to_owned()));
                 }
+
+                // if its a tukio addon
+                if addon.tukui_id.is_some() {
+                    return Ok(Command::perform(
+                        perform_tukui_toc_update(addon.clone()),
+                        Message::TukuiTocUpdated,
+                    ));
+                }
             }
         }
+        Message::TukuiTocUpdated(_) => {}
         Message::NeedsUpdate(Ok(newer_version)) => {
             log::debug!("Message::NeedsUpdate({:?})", &newer_version);
 
@@ -1241,6 +1250,10 @@ async fn perform_unpack_addon(
         addon.id.clone(),
         install_addon(&addon, &from_directory, &to_directory).await,
     )
+}
+
+async fn perform_tukui_toc_update(addon: Addon) -> Result<()> {
+    addon.apply_tukui_toc_update().await
 }
 
 fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {

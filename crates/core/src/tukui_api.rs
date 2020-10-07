@@ -7,6 +7,7 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, Deserialize)]
 /// Struct for applying tukui details to an `Addon`.
 pub struct TukuiPackage {
+    pub id: String,
     pub name: String,
     pub version: String,
     pub url: String,
