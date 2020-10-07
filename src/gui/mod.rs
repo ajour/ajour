@@ -1201,8 +1201,7 @@ impl CatalogSource {
         vec![
             CatalogSource::All,
             CatalogSource::Choice(catalog::Source::Curse),
-            // FIXME: Uncomment once Tukui catalog is enabled
-            //CatalogSource::Choice(catalog::Source::Tukui),
+            CatalogSource::Choice(catalog::Source::Tukui),
         ]
     }
 }
