@@ -302,8 +302,10 @@ impl Addon {
     pub async fn apply_tukui_toc_update(&self) -> Result<()> {
         let tukui_id_key = "X-Tukui-ProjectID";
         let toc_path = self.toc_path();
-        if parse_toc_key(&toc_path, tukui_id_key).is_none() {
-            write_toc_value(&toc_path, tukui_id_key, &self.tukui_id.clone().unwrap()).await?;
+        if let Some(tukui_id) = self.tukui_id.clone() {
+            if parse_toc_key(&toc_path, tukui_id_key).is_none() {
+                write_toc_value(&toc_path, tukui_id_key, &tukui_id).await?;
+            }
         }
         Ok(())
     }
@@ -342,7 +344,6 @@ impl Addon {
 
     /// Returns the path to the toc file
     pub fn toc_path(&self) -> PathBuf {
-        println!("Path is {:?}", self.path);
         self.path.join(format!("{}.toc", self.id))
     }
 
