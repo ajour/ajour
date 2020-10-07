@@ -1,0 +1,158 @@
+name: "Release matrix"
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Specify tag to create'
+        required: true
+
+jobs:
+  
+  release:
+    name: "Release"
+    strategy:
+      matrix:
+        os: [windows, ubuntu, macos] 
+        gfx: [vulkan, opengl]
+    runs-on: ${{ matrix.os }}-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: "Linux Vulkan?"
+        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'vulkan' }} 
+        run: |
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          make binary appimage
+      - name: "Linux OpenGL?"
+        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'opengl' }} 
+        run: |
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          make binary appimage OPENGL=1
+
+      - name: "MacOS Vulkan?"
+        if: ${{ matrix.os == 'macos' && matrix.gfx == 'vulkan' }} 
+        run: make binary dmg
+      - name: "MacOS OpenGL?"
+        if: ${{ matrix.os == 'macos' && matrix.gfx == 'opengl' }} 
+        run: make binary dmg OpenGL=1
+
+      - name: "Windows Vulkan?"
+        if: ${{ matrix.os == 'windows' && matrix.gfx == 'vulkan' }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      - name: "Windows OpenGL?"
+        if: ${{ matrix.os == 'windows' && matrix.gfx == 'opengl' }} 
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --no-default-features --features opengl
+
+      - name: Upload AppImage
+        if: ${{ matrix.os == 'ubuntu' }} 
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
+          path: ajour.AppImage
+      - name: Upload dmg
+        if: ${{ matrix.os == 'macos' }} 
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
+          path: ajour.dmg
+      - name: Upload exe
+        if: ${{ matrix.os == 'windows' }} 
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
+          path: ajour.exe
+
+  create-release:
+    needs: release
+    name: "Create Release"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          release_name: ${{ github.event.inputs.tag }}
+          draft: true
+          prerelease: false
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Upload Linux Vulkan asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./ubuntu-vulkan-artifact/ajour
+          asset_name: ajour.AppImage
+          asset_content_type: application/x-executable
+
+      - name: Upload Linux OpenGL asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./ubuntu-opengl-artifact/ajour
+          asset_name: ajour-opengl.AppImage
+          asset_content_type: application/x-executable
+
+      - name: Upload Windows Vulkan asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./windows-vulkan-artifact/ajour
+          asset_name: ajour.exe
+          asset_content_type: application/x-dosexec
+
+      - name: Upload Windows OpenGL asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./windows-opengl-artifact/ajour
+          asset_name: ajour-opengl.exe
+          asset_content_type: application/x-dosexec
+
+      - name: Upload MacOS Vulkan asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./macos-vulkan-artifact/ajour
+          asset_name: ajour.dmg
+          asset_content_type: application/octet-stream
+
+      - name: Upload MacOS OpenGL asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./macos-opengl-artifact/ajour
+          asset_name: ajour-opengl.dmg
+          asset_content_type: application/octet-stream
