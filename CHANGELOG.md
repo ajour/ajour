@@ -9,6 +9,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Fixed
+- Fixed a case where we would choose alpha even though it was older than stable.
 - Fixed fingerprinting where some addons would fail during fingerprinting due to invalid UTF-8 characters and missing files. These addons now successfully fingerprint.
 
 ## [0.4.0] - 2020-10-06

@@ -341,6 +341,13 @@ impl Addon {
             } else {
                 false
             };
+        let stable_newer_than_alpha =
+            if let (Some(stable_package), Some(alpha_package)) = (stable_package, alpha_package) {
+                // If stable is newer than alpha, we return that instead.
+                stable_package.file_id > alpha_package.file_id
+            } else {
+                false
+            };
         let beta_newer_than_alpha =
             if let (Some(beta_package), Some(alpha_package)) = (beta_package, alpha_package) {
                 // If beta is newer than alpha, we return that instead.
@@ -365,6 +372,10 @@ impl Addon {
                     }
 
                     return beta_package;
+                }
+
+                if stable_newer_than_alpha {
+                    return stable_package;
                 }
 
                 alpha_package
