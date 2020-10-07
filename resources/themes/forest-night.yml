@@ -1,0 +1,8 @@
+name: Forest Night
+palette:
+  primary: '#a7c080'
+  secondary: '#d39bb6'
+  surface: '#3c474d'
+  on_surface: '#d8caac'
+  background: '#323d43'
+  error: '#e68183'
