@@ -22,7 +22,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 pub fn update_all_addons() -> Result<()> {
-    log::info!("Updating all addons...");
+    log::info!("Checking for addon updates...");
 
     task::block_on(async {
         let config = load_config().await?;
@@ -91,6 +91,26 @@ pub fn update_all_addons() -> Result<()> {
 
         log::info!("{} addons have an update available", num_updates);
 
+        addons_to_update
+            .iter()
+            .for_each(|(_, _, flavor, addon, ..)| {
+                let current_version = addon.version.as_deref().unwrap_or_default();
+                let new_version = addon
+                    .relevant_release_package()
+                    .map(|p| p.version.clone())
+                    .unwrap_or_default();
+
+                log::info!(
+                    "\t{} - {}, {} -> {}",
+                    &addon.id,
+                    flavor,
+                    current_version,
+                    new_version
+                );
+            });
+
+        log::info!("Updating... this may take a minute");
+
         // Call `update_addon` on each addon concurrently
         for result in join_all(addons_to_update.into_iter().map(update_addon)).await {
             // Log any errors updating an addon
@@ -124,8 +144,6 @@ async fn update_addon(
         PathBuf,
     ),
 ) -> Result<()> {
-    log::info!("\t{} - {}", &addon.id, flavor);
-
     // Download the update to the temp directory
     download_addon(&shared_client, &addon, &temp_directory).await?;
 
