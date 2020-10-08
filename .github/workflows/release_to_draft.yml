@@ -43,7 +43,7 @@ jobs:
         run: make binary dmg
       - name: "MacOS OpenGL?"
         if: ${{ matrix.os == 'macos' && matrix.gfx == 'opengl' }} 
-        run: make binary dmg OpenGL=1
+        run: make binary dmg OPENGL=1
 
       - name: "Windows wgpu?"
         if: ${{ matrix.os == 'windows' && matrix.gfx == 'wgpu' }}
@@ -64,12 +64,18 @@ jobs:
         with:
           name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
           path: ajour-opengl.AppImage
-      - name: Upload dmg
-        if: ${{ matrix.os == 'macos' }} 
+      - name: Upload dmg wgpu
+        if: ${{ matrix.os == 'macos' && matrix.gfx == 'wgpu' }} 
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
           path: target/release/osx/ajour.dmg
+      - name: Upload dmg OpenGL
+        if: ${{ matrix.os == 'macos' && matrix.gfx == 'opengl' }} 
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
+          path: target/release/osx/ajour-opengl.dmg
       - name: Upload exe
         if: ${{ matrix.os == 'windows' }} 
         uses: actions/upload-artifact@v2
@@ -141,6 +147,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./macos-opengl-artifact/ajour.dmg
+          asset_path: ./macos-opengl-artifact/ajour-opengl.dmg
           asset_name: ajour-opengl.dmg
           asset_content_type: application/octet-stream
