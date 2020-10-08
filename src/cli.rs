@@ -11,6 +11,7 @@ pub fn get_opts() -> Result<Opts, clap::Error> {
     Opts::from_iter_safe(args)
 }
 
+#[allow(unused_variables)]
 pub fn validate_opts_or_exit(
     opts_result: Result<Opts, clap::Error>,
     is_cli: bool,
