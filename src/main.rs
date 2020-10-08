@@ -29,20 +29,18 @@ pub fn main() {
         #[cfg(not(debug_assertions))]
         let is_debug = false;
 
-        #[cfg(target_os = "windows")]
-        let is_windows = true;
-        #[cfg(not(target_os = "windows"))]
-        let is_windows = false;
-
         let is_cli = opts.command.is_some();
 
         // Workaround to output to console even though we compile with windows_subsystem = "windows"
         // in release mode
-        if is_windows && is_cli && !is_debug {
-            use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
+        #[cfg(target_os = "windows")]
+        {
+            if is_cli && !is_debug {
+                use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
 
-            unsafe {
-                AttachConsole(ATTACH_PARENT_PROCESS);
+                unsafe {
+                    AttachConsole(ATTACH_PARENT_PROCESS);
+                }
             }
         }
 
