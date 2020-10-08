@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         os: [windows, ubuntu, macos] 
-        gfx: [vulkan, opengl]
+        gfx: [wgpu, opengl]
     runs-on: ${{ matrix.os }}-latest
 
     steps:
@@ -25,8 +25,8 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: "Linux Vulkan?"
-        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'vulkan' }} 
+      - name: "Linux wgpu?"
+        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'wgpu' }} 
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
@@ -38,15 +38,15 @@ jobs:
           chmod +x linuxdeploy-x86_64.AppImage
           make binary appimage OPENGL=1
 
-      - name: "MacOS Vulkan?"
-        if: ${{ matrix.os == 'macos' && matrix.gfx == 'vulkan' }} 
+      - name: "MacOS wgpu?"
+        if: ${{ matrix.os == 'macos' && matrix.gfx == 'wgpu' }} 
         run: make binary dmg
       - name: "MacOS OpenGL?"
         if: ${{ matrix.os == 'macos' && matrix.gfx == 'opengl' }} 
         run: make binary dmg OpenGL=1
 
-      - name: "Windows Vulkan?"
-        if: ${{ matrix.os == 'windows' && matrix.gfx == 'vulkan' }}
+      - name: "Windows wgpu?"
+        if: ${{ matrix.os == 'windows' && matrix.gfx == 'wgpu' }}
         uses: actions-rs/cargo@v1
         with:
           command: build
@@ -58,8 +58,8 @@ jobs:
           command: build
           args: --release --no-default-features --features opengl
 
-      - name: Upload AppImage Vulkan
-        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'vulkan' }} 
+      - name: Upload AppImage wgpu
+        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'wgpu' }} 
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
@@ -103,13 +103,13 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v2
 
-      - name: Upload Linux Vulkan asset
+      - name: Upload Linux wgpu asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./ubuntu-vulkan-artifact/ajour.AppImage
+          asset_path: ./ubuntu-wgpu-artifact/ajour.AppImage
           asset_name: ajour.AppImage
           asset_content_type: application/x-executable
 
@@ -123,13 +123,13 @@ jobs:
           asset_name: ajour-opengl.AppImage
           asset_content_type: application/x-executable
 
-      - name: Upload Windows Vulkan asset
+      - name: Upload Windows wgpu asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./windows-vulkan-artifact/ajour.exe
+          asset_path: ./windows-wgpu-artifact/ajour.exe
           asset_name: ajour.exe
           asset_content_type: application/x-dosexec
 
@@ -143,13 +143,13 @@ jobs:
           asset_name: ajour-opengl.exe
           asset_content_type: application/x-dosexec
 
-      - name: Upload MacOS Vulkan asset
+      - name: Upload MacOS wgpu asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./macos-vulkan-artifact/ajour.dmg
+          asset_path: ./macos-wgpu-artifact/ajour.dmg
           asset_name: ajour.dmg
           asset_content_type: application/octet-stream
 
