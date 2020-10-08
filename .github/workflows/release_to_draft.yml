@@ -1,4 +1,4 @@
-name: "Release matrix"
+name: "Release to draft"
 
 on:
   workflow_dispatch:
@@ -47,16 +47,10 @@ jobs:
 
       - name: "Windows wgpu?"
         if: ${{ matrix.os == 'windows' && matrix.gfx == 'wgpu' }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
+        run: make binary
       - name: "Windows OpenGL?"
         if: ${{ matrix.os == 'windows' && matrix.gfx == 'opengl' }} 
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --no-default-features --features opengl
+        run: make binary OPENGL=1
 
       - name: Upload AppImage wgpu
         if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'wgpu' }} 
@@ -87,13 +81,13 @@ jobs:
     needs: release
     name: "Create Release"
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Create Release
         id: create-release
         uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.event.inputs.tag }}
           release_name: ${{ github.event.inputs.tag }}
@@ -105,8 +99,6 @@ jobs:
 
       - name: Upload Linux wgpu asset
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./ubuntu-wgpu-artifact/ajour.AppImage
@@ -115,8 +107,6 @@ jobs:
 
       - name: Upload Linux OpenGL asset
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./ubuntu-opengl-artifact/ajour-opengl.AppImage
@@ -125,8 +115,6 @@ jobs:
 
       - name: Upload Windows wgpu asset
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./windows-wgpu-artifact/ajour.exe
@@ -135,8 +123,6 @@ jobs:
 
       - name: Upload Windows OpenGL asset
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./windows-opengl-artifact/ajour.exe
@@ -145,8 +131,6 @@ jobs:
 
       - name: Upload MacOS wgpu asset
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./macos-wgpu-artifact/ajour.dmg
@@ -155,8 +139,6 @@ jobs:
 
       - name: Upload MacOS OpenGL asset
         uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./macos-opengl-artifact/ajour.dmg
