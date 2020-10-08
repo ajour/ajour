@@ -74,5 +74,7 @@ $(APPIMAGE_NAME): $(TARGET)
 		--output appimage
 	@rm -rf $(APPIMAGE_DIR)
 
+.PHONY: app binary dmg appimage
+
 clean: ## Remove all artifacts
 	-rm -rf $(APP_DIR)
