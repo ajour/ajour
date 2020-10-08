@@ -1,6 +1,9 @@
 use crate::VERSION;
 
-use structopt::{clap, StructOpt};
+use structopt::{
+    clap::{self, AppSettings},
+    StructOpt,
+};
 
 use std::env;
 use std::path::PathBuf;
@@ -61,7 +64,8 @@ pub fn validate_opts_or_exit(
 #[structopt(name = "Ajour",
             about = env!("CARGO_PKG_DESCRIPTION"),
             version = VERSION,
-            author = env!("CARGO_PKG_AUTHORS"))]
+            author = env!("CARGO_PKG_AUTHORS"),
+            setting = AppSettings::DisableHelpSubcommand)]
 pub struct Opts {
     #[structopt(long = "data", help = "Path to a custom data directory for the app")]
     pub data_directory: Option<PathBuf>,
