@@ -129,7 +129,7 @@ impl button::StyleSheet for DefaultBoxedButton {
     fn active(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color {
-                a: 0.15,
+                a: 0.30,
                 ..self.0.normal.primary
             })),
             text_color: self.0.bright.primary,
@@ -153,7 +153,7 @@ impl button::StyleSheet for DefaultBoxedButton {
                 ..self.0.normal.primary
             })),
             text_color: Color {
-                a: 0.15,
+                a: 0.50,
                 ..self.0.bright.primary
             },
             ..self.active()
@@ -296,7 +296,7 @@ impl button::StyleSheet for SelectedColumnHeaderButton {
         button::Style {
             background: Some(Background::Color(self.0.base.background)),
             text_color: Color {
-                ..self.0.normal.primary
+                ..self.0.bright.primary
             },
             border_radius: 2,
             ..button::Style::default()
@@ -483,7 +483,7 @@ impl pick_list::StyleSheet for PickList {
             text_color: self.0.bright.surface,
             background: Background::Color(self.0.base.background),
             border_width: 1,
-            border_color: self.0.base.background,
+            border_color: self.0.base.foreground,
             selected_background: Background::Color(Color {
                 a: 0.15,
                 ..self.0.normal.primary
@@ -496,7 +496,7 @@ impl pick_list::StyleSheet for PickList {
         pick_list::Style {
             text_color: self.0.bright.surface,
             background: self.0.base.background.into(),
-            border_width: 0,
+            border_width: 1,
             border_color: self.0.base.foreground,
             border_radius: 2,
             icon_size: 0.5,
@@ -506,10 +506,6 @@ impl pick_list::StyleSheet for PickList {
     fn hovered(&self) -> pick_list::Style {
         let active = self.active();
         pick_list::Style {
-            background: Background::Color(Color {
-                a: 0.15,
-                ..self.0.normal.primary
-            }),
             text_color: self.0.bright.primary,
             ..active
         }

@@ -64,7 +64,7 @@ impl Theme {
                     foreground: hex_to_color("#191919").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#3F1E90").unwrap(),
+                    primary: hex_to_color("#3f2b56").unwrap(),
                     secondary: hex_to_color("#2D2D1E").unwrap(),
                     surface: hex_to_color("#828282").unwrap(),
                     error: hex_to_color("#992B2B").unwrap(),
@@ -88,13 +88,13 @@ impl Theme {
                     foreground: hex_to_color("#F5F5F5").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#7733D6").unwrap(),
+                    primary: hex_to_color("#d0caff").unwrap(),
                     secondary: hex_to_color("#F9D659").unwrap(),
                     surface: hex_to_color("#828282").unwrap(),
                     error: hex_to_color("#992B2B").unwrap(),
                 },
                 bright: BrightColors {
-                    primary: hex_to_color("#BA84FC").unwrap(),
+                    primary: hex_to_color("#9580ff").unwrap(),
                     secondary: hex_to_color("#EAA326").unwrap(),
                     surface: hex_to_color("#000000").unwrap(),
                     error: hex_to_color("#C13047").unwrap(),
@@ -122,6 +122,102 @@ impl Theme {
                     secondary: hex_to_color("#a37f12").unwrap(),
                     surface: hex_to_color("#93a1a1").unwrap(),
                     error: hex_to_color("#EE2F36").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn solarized_light() -> Theme {
+        Theme {
+            name: "Solarized Light".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#fdf6e3").unwrap(),
+                    foreground: hex_to_color("#eee8d5").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#1A615B").unwrap(),
+                    secondary: hex_to_color("#6E540C").unwrap(),
+                    surface: hex_to_color("#95a3a2").unwrap(),
+                    error: hex_to_color("#b80f15").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#2aa096").unwrap(),
+                    secondary: hex_to_color("#a37f12").unwrap(),
+                    surface: hex_to_color("#596e75").unwrap(),
+                    error: hex_to_color("#EE2F36").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn outrun() -> Theme {
+        Theme {
+            name: "Outrun".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#0d0821").unwrap(),
+                    foreground: hex_to_color("#110A2B").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#330442").unwrap(),
+                    secondary: hex_to_color("#1d1131").unwrap(),
+                    surface: hex_to_color("#484e81").unwrap(),
+                    error: hex_to_color("#671a30").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#ff00ff").unwrap(),
+                    secondary: hex_to_color("#ff963a").unwrap(),
+                    surface: hex_to_color("#757dc8").unwrap(),
+                    error: hex_to_color("#db2c3e").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn sort() -> Theme {
+        Theme {
+            name: "Sort".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#1c1c1c").unwrap(),
+                    foreground: hex_to_color("#262626").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#2d3d2f").unwrap(),
+                    secondary: hex_to_color("#2e3739").unwrap(),
+                    surface: hex_to_color("#8a8a8a").unwrap(),
+                    error: hex_to_color("#713e40").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#81ca8c").unwrap(),
+                    secondary: hex_to_color("#81abbd").unwrap(),
+                    surface: hex_to_color("#bcbcbc").unwrap(),
+                    error: hex_to_color("#FF474E").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn dracula() -> Theme {
+        Theme {
+            name: "Dracula".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#282a36").unwrap(),
+                    foreground: hex_to_color("#353746").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#483e61").unwrap(),
+                    secondary: hex_to_color("#354348").unwrap(),
+                    surface: hex_to_color("#a2a4a3").unwrap(),
+                    error: hex_to_color("#764667").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#bd94f9").unwrap(),
+                    secondary: hex_to_color("#49eb7a").unwrap(),
+                    surface: hex_to_color("#f4f8f3").unwrap(),
+                    error: hex_to_color("#ff7ac6").unwrap(),
                 },
             },
         }
