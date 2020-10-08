@@ -65,7 +65,7 @@ impl Theme {
                 },
                 normal: NormalColors {
                     primary: iced_native::Color::from_rgb(0.47, 0.20, 0.84),
-                    secondary: iced_native::Color::from_rgb(0.57, 0.50, 0.29),
+                    secondary: iced_native::Color::from_rgb(0.18, 0.18, 0.12),
                     surface: iced_native::Color::from_rgb(0.51, 0.51, 0.51),
                     error: iced_native::Color::from_rgb(0.60, 0.17, 0.17),
                 },
@@ -79,19 +79,29 @@ impl Theme {
         }
     }
 
-    // pub fn light() -> Theme {
-    //     Theme {
-    //         name: "Light".to_string(),
-    //         palette: ColorPalette {
-    //             primary: iced_native::Color::from_rgb(0.39, 0.0, 0.93),
-    //             secondary: iced_native::Color::from_rgb(0.0, 0.85, 0.77),
-    //             surface: iced_native::Color::from_rgb(0.96, 0.96, 0.96),
-    //             on_surface: iced_native::Color::from_rgb(0.0, 0.0, 0.0),
-    //             background: iced_native::Color::from_rgb(1.0, 1.0, 1.0),
-    //             error: iced_native::Color::from_rgb(0.68, 0.0, 0.12),
-    //         },
-    //     }
-    // }
+    pub fn light() -> Theme {
+        Theme {
+            name: "Light".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: iced_native::Color::from_rgb(1.0, 1.0, 1.0),
+                    foreground: iced_native::Color::from_rgb(0.95, 0.95, 0.95),
+                },
+                normal: NormalColors {
+                    primary: iced_native::Color::from_rgb(0.47, 0.20, 0.84),
+                    secondary: iced_native::Color::from_rgb(0.98, 0.84, 0.35),
+                    surface: iced_native::Color::from_rgb(0.51, 0.51, 0.51),
+                    error: iced_native::Color::from_rgb(0.60, 0.17, 0.17),
+                },
+                bright: BrightColors {
+                    primary: iced_native::Color::from_rgb(0.73, 0.52, 0.99),
+                    secondary: iced_native::Color::from_rgb(0.92, 0.64, 0.15),
+                    surface: iced_native::Color::from_rgb(0.0, 0.0, 0.0),
+                    error: iced_native::Color::from_rgb(0.76, 0.19, 0.28),
+                },
+            },
+        }
+    }
 }
 
 impl PartialEq for Theme {

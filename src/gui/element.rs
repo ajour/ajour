@@ -614,15 +614,16 @@ pub fn addon_data_cell<'a, 'b>(
             .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Updatable => {
                 let id = addon.id.clone();
-                let update_button: Element<Interaction> = Button::new(
-                    &mut addon.update_btn_state,
-                    Text::new("Update")
-                        .horizontal_alignment(HorizontalAlignment::Center)
-                        .size(DEFAULT_FONT_SIZE),
-                )
-                .style(style::SecondaryButton(color_palette))
-                .on_press(Interaction::Update(id))
-                .into();
+                let update_wrapper = Container::new(Text::new("Update").size(DEFAULT_FONT_SIZE))
+                    .width(*width)
+                    .center_x()
+                    .align_x(Align::Center);
+                let update_button: Element<Interaction> =
+                    Button::new(&mut addon.update_btn_state, update_wrapper)
+                        .width(Length::FillPortion(1))
+                        .style(style::SecondaryBoxedButton(color_palette))
+                        .on_press(Interaction::Update(id))
+                        .into();
 
                 Container::new(update_button.map(Message::Interaction))
                     .height(default_height)
@@ -1143,7 +1144,7 @@ pub fn menu_container<'a>(
     let mut version_container = Container::new(version_text).center_y().padding(5);
     if needs_update.is_some() {
         version_container =
-            version_container.style(style::NormalErrorBackgroundContainer(color_palette));
+            version_container.style(style::NormalErrorForegroundContainer(color_palette));
     } else {
         version_container =
             version_container.style(style::NormalForegroundContainer(color_palette));

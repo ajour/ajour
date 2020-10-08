@@ -1230,7 +1230,7 @@ impl Default for ThemeState {
     fn default() -> Self {
         let mut themes = vec![];
         themes.push(("Dark".to_string(), Theme::dark()));
-        // themes.push(("Light".to_string(), Theme::light()));
+        themes.push(("Light".to_string(), Theme::light()));
 
         ThemeState {
             themes,

@@ -161,6 +161,43 @@ impl button::StyleSheet for DefaultBoxedButton {
     }
 }
 
+pub struct SecondaryBoxedButton(pub ColorPalette);
+impl button::StyleSheet for SecondaryBoxedButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.15,
+                ..self.0.normal.secondary
+            })),
+            text_color: self.0.bright.secondary,
+            border_radius: 2,
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(self.0.normal.secondary)),
+            text_color: self.0.bright.secondary,
+            ..self.active()
+        }
+    }
+
+    fn disabled(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color {
+                a: 0.05,
+                ..self.0.normal.secondary
+            })),
+            text_color: Color {
+                a: 0.15,
+                ..self.0.bright.secondary
+            },
+            ..self.active()
+        }
+    }
+}
+
 pub struct SecondaryButton(pub ColorPalette);
 impl button::StyleSheet for SecondaryButton {
     fn active(&self) -> button::Style {
@@ -259,7 +296,7 @@ impl button::StyleSheet for SelectedColumnHeaderButton {
         button::Style {
             background: Some(Background::Color(self.0.base.background)),
             text_color: Color {
-                ..self.0.bright.primary
+                ..self.0.normal.primary
             },
             border_radius: 2,
             ..button::Style::default()
@@ -268,7 +305,10 @@ impl button::StyleSheet for SelectedColumnHeaderButton {
 
     fn hovered(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(self.0.normal.primary)),
+            background: Some(Background::Color(Color {
+                a: 0.15,
+                ..self.0.normal.primary
+            })),
             text_color: self.0.bright.primary,
             ..self.active()
         }
