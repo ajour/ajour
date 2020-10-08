@@ -405,7 +405,7 @@ impl Application for Ajour {
                     let flavor_picklist_container =
                         Container::new(flavor_picklist.map(Message::Interaction))
                             .center_y()
-                            .style(style::SurfaceContainer(color_palette))
+                            .style(style::NormalForegroundContainer(color_palette))
                             .height(Length::Fill)
                             .width(Length::FillPortion(1));
 
@@ -423,7 +423,7 @@ impl Application for Ajour {
                     let source_picklist_container =
                         Container::new(source_picklist.map(Message::Interaction))
                             .center_y()
-                            .style(style::SurfaceContainer(color_palette))
+                            .style(style::NormalForegroundContainer(color_palette))
                             .height(Length::Fill)
                             .width(Length::FillPortion(1));
 
@@ -441,7 +441,7 @@ impl Application for Ajour {
                     let category_picklist_container =
                         Container::new(category_picklist.map(Message::Interaction))
                             .center_y()
-                            .style(style::SurfaceContainer(color_palette))
+                            .style(style::NormalForegroundContainer(color_palette))
                             .height(Length::Fill)
                             .width(Length::FillPortion(1));
 
@@ -459,7 +459,7 @@ impl Application for Ajour {
                     let result_size_picklist_container =
                         Container::new(result_size_picklist.map(Message::Interaction))
                             .center_y()
-                            .style(style::SurfaceContainer(color_palette))
+                            .style(style::NormalForegroundContainer(color_palette))
                             .height(Length::Fill)
                             .width(Length::FillPortion(1));
 
@@ -622,7 +622,7 @@ impl Application for Ajour {
         Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .style(style::Content(color_palette))
+            .style(style::NormalBackgroundContainer(color_palette))
             .into()
     }
 }
@@ -1230,7 +1230,7 @@ impl Default for ThemeState {
     fn default() -> Self {
         let mut themes = vec![];
         themes.push(("Dark".to_string(), Theme::dark()));
-        themes.push(("Light".to_string(), Theme::light()));
+        // themes.push(("Light".to_string(), Theme::light()));
 
         ThemeState {
             themes,

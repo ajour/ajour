@@ -68,7 +68,7 @@ pub fn settings_container<'a, 'b>(
     let directory_data_text_container = Container::new(directory_data_text)
         .height(Length::Units(25))
         .center_y()
-        .style(style::SecondaryTextContainer(color_palette));
+        .style(style::NormalForegroundContainer(color_palette));
 
     // Data row for the World of Warcraft directory selection.
     let path_data_row = Row::new()
@@ -126,7 +126,7 @@ pub fn settings_container<'a, 'b>(
         let current_scale_container = Container::new(current_scale_text)
             .height(Length::Units(25))
             .center_y()
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::BrightBackgroundContainer(color_palette));
 
         // Data row for the World of Warcraft directory selection.
         let scale_buttons_row = Row::new()
@@ -173,7 +173,7 @@ pub fn settings_container<'a, 'b>(
         let directory_data_text_container = Container::new(directory_data_text)
             .height(Length::Units(25))
             .center_y()
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         // Data row for the Backup directory selection.
         let backup_directory_row = Row::new()
@@ -225,7 +225,7 @@ pub fn settings_container<'a, 'b>(
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::SecondaryTextContainer(color_palette));
+                .style(style::NormalForegroundContainer(color_palette));
 
             let backup_button: Element<Interaction> = backup_button.into();
 
@@ -242,7 +242,7 @@ pub fn settings_container<'a, 'b>(
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::SecondaryTextContainer(color_palette));
+                .style(style::NormalForegroundContainer(color_palette));
 
             backup_now_row = backup_now_row.push(backup_status_text_container);
         }
@@ -280,11 +280,9 @@ pub fn settings_container<'a, 'b>(
             let mut left_button = Button::new(
                 &mut column.up_btn_state,
                 Text::new(" ▲ ").size(11).color(if !is_first {
-                    color_palette.primary
+                    color_palette.bright.primary
                 } else {
-                    let mut color = color_palette.primary;
-                    color.a = 0.20;
-                    color
+                    color_palette.normal.primary
                 }),
             )
             .style(style::DefaultButton(color_palette));
@@ -295,11 +293,9 @@ pub fn settings_container<'a, 'b>(
             let mut right_button = Button::new(
                 &mut column.down_btn_state,
                 Text::new(" ▼ ").size(11).color(if !is_last {
-                    color_palette.primary
+                    color_palette.bright.primary
                 } else {
-                    let mut color = color_palette.primary;
-                    color.a = 0.20;
-                    color
+                    color_palette.normal.primary
                 }),
             )
             .style(style::DefaultButton(color_palette));
@@ -379,12 +375,12 @@ pub fn settings_container<'a, 'b>(
     let left_container = Container::new(left_column)
         .width(Length::FillPortion(1))
         .height(Length::Shrink)
-        .style(style::AddonRowDefaultTextContainer(color_palette));
+        .style(style::BrightForegroundContainer(color_palette));
 
     let middle_container = Container::new(middle_column)
         .width(Length::Units(150))
         .height(Length::Shrink)
-        .style(style::AddonRowDefaultTextContainer(color_palette));
+        .style(style::BrightForegroundContainer(color_palette));
 
     let right_column = Column::new()
         .push(columns_title_row)
@@ -393,7 +389,7 @@ pub fn settings_container<'a, 'b>(
     let right_container = Container::new(right_column)
         .width(Length::Units(200))
         .height(Length::Units(255))
-        .style(style::AddonRowDefaultTextContainer(color_palette));
+        .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
     let row = Row::new()
@@ -406,7 +402,7 @@ pub fn settings_container<'a, 'b>(
     // Returns the final container.
     Container::new(row)
         .height(Length::Shrink)
-        .style(style::AddonRowDefaultTextContainer(color_palette))
+        .style(style::BrightForegroundContainer(color_palette))
         .padding(DEFAULT_PADDING + DEFAULT_PADDING)
 }
 
@@ -449,9 +445,9 @@ pub fn addon_data_cell<'a, 'b>(
         if release_package.as_deref().is_some() {}
 
         if is_addon_expanded {
-            title_button = title_button.style(style::SelectedTextButton(color_palette));
+            title_button = title_button.style(style::SelectedBrightTextButton(color_palette));
         } else {
-            title_button = title_button.style(style::TextButton(color_palette));
+            title_button = title_button.style(style::BrightTextButton(color_palette));
         }
 
         let title_button: Element<Interaction> = title_button.into();
@@ -474,7 +470,7 @@ pub fn addon_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::AddonRowDefaultTextContainer(color_palette));
+            .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
@@ -497,7 +493,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, installed_version_container));
     }
@@ -520,7 +516,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -543,7 +539,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, channel_container));
     }
@@ -566,7 +562,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, author_container));
     }
@@ -590,7 +586,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -615,7 +611,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .center_x()
-            .style(style::AddonRowSecondaryTextContainer(color_palette)),
+            .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Updatable => {
                 let id = addon.id.clone();
                 let update_button: Element<Interaction> = Button::new(
@@ -633,7 +629,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .width(*width)
                     .center_y()
                     .center_x()
-                    .style(style::AddonRowDefaultTextContainer(color_palette))
+                    .style(style::BrightForegroundContainer(color_palette))
             }
             AddonState::Downloading => {
                 Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
@@ -642,7 +638,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .center_y()
                     .center_x()
                     .padding(5)
-                    .style(style::AddonRowSecondaryTextContainer(color_palette))
+                    .style(style::NormalForegroundContainer(color_palette))
             }
             AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
@@ -650,21 +646,21 @@ pub fn addon_data_cell<'a, 'b>(
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+                .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+                .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+                .style(style::NormalForegroundContainer(color_palette)),
         };
 
         row_containers.push((idx, update_button_container));
@@ -698,10 +694,10 @@ pub fn addon_data_cell<'a, 'b>(
         let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
         let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
         let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
-        let author_title_container =
-            Container::new(author_title_text).style(style::DefaultTextContainer(color_palette));
+        let author_title_container = Container::new(author_title_text)
+            .style(style::BrightForegroundContainer(color_palette));
         let notes_title_container =
-            Container::new(notes_title_text).style(style::DefaultTextContainer(color_palette));
+            Container::new(notes_title_text).style(style::BrightForegroundContainer(color_palette));
 
         let release_date_text: String = if let Some(package) = release_package {
             let f = timeago::Formatter::new();
@@ -719,11 +715,11 @@ pub fn addon_data_cell<'a, 'b>(
         let release_date_text_container = Container::new(release_date_text)
             .center_y()
             .padding(5)
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
-        let release_channel_title_container =
-            Container::new(release_channel_title).style(style::DefaultTextContainer(color_palette));
+        let release_channel_title_container = Container::new(release_channel_title)
+            .style(style::BrightForegroundContainer(color_palette));
         let release_channel_list = PickList::new(
             &mut addon.pick_release_channel_state,
             &ReleaseChannel::ALL[..],
@@ -819,7 +815,7 @@ pub fn addon_data_cell<'a, 'b>(
         let details_container = Container::new(column)
             .width(Length::Fill)
             .padding(20)
-            .style(style::AddonRowDetailsContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         let row = Row::new()
             .push(left_spacer)
@@ -897,7 +893,7 @@ pub fn addon_row_titles<'a>(
 
         let row_container = Container::new(row_header.map(Message::Interaction))
             .width(column.width)
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
 
         // Only shows row titles if we have any addons.
         if !addons.is_empty() {
@@ -1037,7 +1033,7 @@ pub fn menu_addons_container<'a>(
     let status_container = Container::new(status_text)
         .center_y()
         .padding(5)
-        .style(style::SecondaryTextContainer(color_palette));
+        .style(style::NormalBackgroundContainer(color_palette));
 
     // Displays an error, if any has occured.
     let error_text = if let AjourState::Error(e) = state {
@@ -1052,7 +1048,7 @@ pub fn menu_addons_container<'a>(
         .center_x()
         .padding(5)
         .width(Length::FillPortion(1))
-        .style(style::StatusErrorTextContainer(color_palette));
+        .style(style::NormalErrorBackgroundContainer(color_palette));
 
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
@@ -1146,9 +1142,11 @@ pub fn menu_container<'a>(
 
     let mut version_container = Container::new(version_text).center_y().padding(5);
     if needs_update.is_some() {
-        version_container = version_container.style(style::StatusErrorTextContainer(color_palette));
+        version_container =
+            version_container.style(style::NormalErrorBackgroundContainer(color_palette));
     } else {
-        version_container = version_container.style(style::SecondaryTextContainer(color_palette));
+        version_container =
+            version_container.style(style::NormalForegroundContainer(color_palette));
     }
 
     let settings_button: Element<Interaction> = Button::new(
@@ -1200,7 +1198,7 @@ pub fn menu_container<'a>(
     let settings_column = Column::new().push(settings_row);
 
     // Wraps it in a container.
-    Container::new(settings_column).style(style::SurfaceContainer(color_palette))
+    Container::new(settings_column).style(style::BrightForegroundContainer(color_palette))
 }
 
 pub fn status_container<'a>(
@@ -1215,7 +1213,7 @@ pub fn status_container<'a>(
         .horizontal_alignment(HorizontalAlignment::Center);
     let title_container = Container::new(title)
         .width(Length::Fill)
-        .style(style::DefaultTextContainer(color_palette));
+        .style(style::BrightBackgroundContainer(color_palette));
 
     let description = Text::new(description)
         .size(DEFAULT_FONT_SIZE)
@@ -1223,7 +1221,7 @@ pub fn status_container<'a>(
         .horizontal_alignment(HorizontalAlignment::Center);
     let description_container = Container::new(description)
         .width(Length::Fill)
-        .style(style::SecondaryTextContainer(color_palette));
+        .style(style::NormalBackgroundContainer(color_palette));
 
     let mut colum = Column::new()
         .push(title_container)
@@ -1305,7 +1303,7 @@ pub fn catalog_row_titles<'a>(
 
         let row_container = Container::new(row_header.map(Message::Interaction))
             .width(column.width)
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
 
         // Only shows row titles if we have any catalog results.
         if !catalog.addons.is_empty() {
@@ -1393,7 +1391,7 @@ pub fn catalog_data_cell<'a, 'b>(
                 .height(default_height)
                 .width(*width)
                 .center_y()
-                .style(style::AddonRowDefaultTextContainer(color_palette));
+                .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, retail_install_container));
     }
@@ -1447,7 +1445,7 @@ pub fn catalog_data_cell<'a, 'b>(
                 .width(*width)
                 .center_x()
                 .center_y()
-                .style(style::AddonRowDefaultTextContainer(color_palette));
+                .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, classic_install_container));
     }
@@ -1470,7 +1468,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowDefaultTextContainer(color_palette));
+            .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
@@ -1493,7 +1491,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, description_container));
     }
@@ -1515,8 +1513,9 @@ pub fn catalog_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
+            .center_x()
             .padding(5)
-            .style(style::AddonRowDefaultTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
     }
@@ -1544,7 +1543,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, num_downloads_container));
     }

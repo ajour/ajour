@@ -16,7 +16,15 @@ pub struct Theme {
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
-pub struct ColorPalette {
+pub struct BaseColors {
+    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    pub background: iced_native::Color,
+    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    pub foreground: iced_native::Color,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct NormalColors {
     #[serde(deserialize_with = "deserialize_color_hex_string")]
     pub primary: iced_native::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
@@ -24,11 +32,26 @@ pub struct ColorPalette {
     #[serde(deserialize_with = "deserialize_color_hex_string")]
     pub surface: iced_native::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
-    pub on_surface: iced_native::Color,
+    pub error: iced_native::Color,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct BrightColors {
     #[serde(deserialize_with = "deserialize_color_hex_string")]
-    pub background: iced_native::Color,
+    pub primary: iced_native::Color,
+    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    pub secondary: iced_native::Color,
+    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    pub surface: iced_native::Color,
     #[serde(deserialize_with = "deserialize_color_hex_string")]
     pub error: iced_native::Color,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct ColorPalette {
+    pub base: BaseColors,
+    pub normal: NormalColors,
+    pub bright: BrightColors,
 }
 
 impl Theme {
@@ -36,29 +59,39 @@ impl Theme {
         Theme {
             name: "Dark".to_string(),
             palette: ColorPalette {
-                primary: iced_native::Color::from_rgb(0.73, 0.52, 0.99),
-                secondary: iced_native::Color::from_rgb(0.88, 0.74, 0.28),
-                surface: iced_native::Color::from_rgb(0.12, 0.12, 0.12),
-                on_surface: iced_native::Color::from_rgb(0.88, 0.88, 0.88),
-                background: iced_native::Color::from_rgb(0.07, 0.07, 0.07),
-                error: iced_native::Color::from_rgb(0.76, 0.19, 0.28),
+                base: BaseColors {
+                    background: iced_native::Color::from_rgb(0.07, 0.07, 0.07),
+                    foreground: iced_native::Color::from_rgb(0.12, 0.12, 0.12),
+                },
+                normal: NormalColors {
+                    primary: iced_native::Color::from_rgb(0.47, 0.20, 0.84),
+                    secondary: iced_native::Color::from_rgb(0.57, 0.50, 0.29),
+                    surface: iced_native::Color::from_rgb(0.51, 0.51, 0.51),
+                    error: iced_native::Color::from_rgb(0.60, 0.17, 0.17),
+                },
+                bright: BrightColors {
+                    primary: iced_native::Color::from_rgb(0.73, 0.52, 0.99),
+                    secondary: iced_native::Color::from_rgb(0.88, 0.74, 0.28),
+                    surface: iced_native::Color::from_rgb(0.88, 0.88, 0.88),
+                    error: iced_native::Color::from_rgb(0.76, 0.19, 0.28),
+                },
             },
         }
     }
 
-    pub fn light() -> Theme {
-        Theme {
-            name: "Light".to_string(),
-            palette: ColorPalette {
-                primary: iced_native::Color::from_rgb(0.39, 0.0, 0.93),
-                secondary: iced_native::Color::from_rgb(0.0, 0.85, 0.77),
-                surface: iced_native::Color::from_rgb(0.96, 0.96, 0.96),
-                on_surface: iced_native::Color::from_rgb(0.0, 0.0, 0.0),
-                background: iced_native::Color::from_rgb(1.0, 1.0, 1.0),
-                error: iced_native::Color::from_rgb(0.68, 0.0, 0.12),
-            },
-        }
-    }
+    // pub fn light() -> Theme {
+    //     Theme {
+    //         name: "Light".to_string(),
+    //         palette: ColorPalette {
+    //             primary: iced_native::Color::from_rgb(0.39, 0.0, 0.93),
+    //             secondary: iced_native::Color::from_rgb(0.0, 0.85, 0.77),
+    //             surface: iced_native::Color::from_rgb(0.96, 0.96, 0.96),
+    //             on_surface: iced_native::Color::from_rgb(0.0, 0.0, 0.0),
+    //             background: iced_native::Color::from_rgb(1.0, 1.0, 1.0),
+    //             error: iced_native::Color::from_rgb(0.68, 0.0, 0.12),
+    //         },
+    //     }
+    // }
 }
 
 impl PartialEq for Theme {
