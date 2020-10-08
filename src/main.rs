@@ -14,37 +14,30 @@ use ajour_core::Result;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main() {
-    let opts = cli::get_opts();
+    let opts_result = cli::get_opts();
+
+    #[cfg(debug_assertions)]
+    let is_debug = true;
+    #[cfg(not(debug_assertions))]
+    let is_debug = false;
+
+    // If this is a clap error, we map to None since we are going to exit and display
+    // and error message anyway, this value won't matter. If it's not an error,
+    // the underlying `command` will drive this variable
+    let is_cli = opts_result
+        .as_ref()
+        .map(|o| &o.command)
+        .unwrap_or(&None)
+        .is_some();
+
+    let opts = cli::validate_opts_or_exit(opts_result, is_cli, is_debug);
+
+    setup_logger(is_cli, is_debug).expect("setup logging");
 
     if let Some(data_dir) = &opts.data_directory {
         let mut config_dir = CONFIG_DIR.lock().unwrap();
 
         *config_dir = data_dir.clone();
-    }
-
-    // Setup the logger
-    {
-        #[cfg(debug_assertions)]
-        let is_debug = true;
-        #[cfg(not(debug_assertions))]
-        let is_debug = false;
-
-        let is_cli = opts.command.is_some();
-
-        // Workaround to output to console even though we compile with windows_subsystem = "windows"
-        // in release mode
-        #[cfg(target_os = "windows")]
-        {
-            if is_cli && !is_debug {
-                use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
-
-                unsafe {
-                    AttachConsole(ATTACH_PARENT_PROCESS);
-                }
-            }
-        }
-
-        setup_logger(is_cli, is_debug).expect("setup logging");
     }
 
     log_panics::init();

@@ -109,7 +109,9 @@ pub fn update_all_addons() -> Result<()> {
                 );
             });
 
-        log::info!("Updating... this may take a minute");
+        if num_updates > 0 {
+            log::info!("Updating... this may take a minute");
+        }
 
         // Call `update_addon` on each addon concurrently
         for result in join_all(addons_to_update.into_iter().map(update_addon)).await {
