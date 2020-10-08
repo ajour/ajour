@@ -22,14 +22,19 @@ pub fn main() {
     let is_debug = false;
 
     // If this is a clap error, we map to None since we are going to exit and display
-    // and error message anyway, this value won't matter. If it's not an error,
-    // the underlying `command` will drive this variable
+    // an error message anyway and this value won't matter. If it's not an error,
+    // the underlying `command` will drive this variable. If a `command` is passed
+    // on the command line, Ajour functions as a CLI instead of launching the GUI.
     let is_cli = opts_result
         .as_ref()
         .map(|o| &o.command)
         .unwrap_or(&None)
         .is_some();
 
+    // This function validates whether or not we need to exit and print any message
+    // due to arguments passed on the command line. If not, it will return a
+    // parsed `Opts` struct. This also handles setting up our windows release build
+    // fix that allows us to print to the console when not using the GUI.
     let opts = cli::validate_opts_or_exit(opts_result, is_cli, is_debug);
 
     setup_logger(is_cli, is_debug).expect("setup logging");
