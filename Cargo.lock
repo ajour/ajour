@@ -55,6 +55,7 @@ dependencies = [
  "chrono",
  "embed-resource",
  "fern",
+ "futures",
  "iced",
  "iced_futures",
  "iced_native",
@@ -68,6 +69,7 @@ dependencies = [
  "structopt",
  "timeago",
  "widgets",
+ "winapi 0.3.9",
 ]
 
 [[package]]

@@ -16,4 +16,12 @@ pub struct Opts {
     pub data_directory: Option<PathBuf>,
     #[structopt(long = "aa", help = "Enable / Disable Anti-aliasing (true / false)")]
     pub antialiasing: Option<bool>,
+    #[structopt(subcommand)]
+    pub command: Option<Command>,
+}
+
+#[derive(Debug, StructOpt)]
+pub enum Command {
+    /// Update all addons from the command line then exit
+    Update,
 }
