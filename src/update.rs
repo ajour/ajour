@@ -127,6 +127,8 @@ pub fn update_all_addons() -> Result<()> {
             log::error!("{} addons failed to update", num_errors);
         } else if num_updates > 0 {
             log::info!("All addons updated successfully!");
+        } else if num_updates == 0 {
+            log::info!("All addons are up to date!");
         }
 
         Result::Ok(())
