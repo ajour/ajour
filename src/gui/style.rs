@@ -128,12 +128,13 @@ pub struct DefaultBoxedButton(pub ColorPalette);
 impl button::StyleSheet for DefaultBoxedButton {
     fn active(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(Color {
-                a: 0.30,
+            border_color: Color {
+                a: 0.5,
                 ..self.0.normal.primary
-            })),
-            text_color: self.0.bright.primary,
+            },
+            border_width: 1,
             border_radius: 2,
+            text_color: self.0.bright.primary,
             ..button::Style::default()
         }
     }
@@ -247,10 +248,7 @@ impl button::StyleSheet for DeleteBoxedButton {
 
     fn hovered(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(Color {
-                a: 0.55,
-                ..self.0.normal.error
-            })),
+            background: Some(Background::Color(self.0.normal.error)),
             text_color: self.0.bright.error,
             ..self.active()
         }
@@ -350,11 +348,12 @@ pub struct SegmentedUnselectedButton(pub ColorPalette);
 impl button::StyleSheet for SegmentedUnselectedButton {
     fn active(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(Color {
-                a: 0.15,
-                ..self.0.normal.primary
-            })),
             text_color: self.0.bright.primary,
+            border_color: Color {
+                a: 0.5,
+                ..self.0.normal.primary
+            },
+            border_width: 1,
             border_radius: 2,
             ..button::Style::default()
         }
@@ -363,7 +362,6 @@ impl button::StyleSheet for SegmentedUnselectedButton {
     fn hovered(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(self.0.normal.primary)),
-            text_color: self.0.bright.primary,
             ..self.active()
         }
     }
@@ -486,7 +484,7 @@ impl pick_list::StyleSheet for PickList {
             text_color: self.0.bright.surface,
             background: Background::Color(self.0.base.background),
             border_width: 1,
-            border_color: self.0.base.foreground,
+            border_color: self.0.base.background,
             selected_background: Background::Color(Color {
                 a: 0.15,
                 ..self.0.normal.primary

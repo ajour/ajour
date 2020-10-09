@@ -933,13 +933,13 @@ pub fn menu_addons_container<'a>(
         update_all_button_state,
         Text::new("Update All").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(color_palette));
+    .style(style::DefaultButton(color_palette));
 
     let mut refresh_button = Button::new(
         refresh_button_state,
         Text::new("Refresh").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(color_palette));
+    .style(style::DefaultButton(color_palette));
 
     // Is any addon performing an action.
     let addons_performing_actions = addons
@@ -1134,7 +1134,7 @@ pub fn menu_container<'a>(
         .spacing(1);
 
     let version_text = Text::new(if let Some(new_version) = needs_update {
-        format!("New Ajour version available {} -> {}", VERSION, new_version)
+        format!("New Ajour version available {} > {}", VERSION, new_version)
     } else {
         VERSION.to_owned()
     })
@@ -1156,7 +1156,7 @@ pub fn menu_container<'a>(
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(color_palette))
+    .style(style::DefaultButton(color_palette))
     .on_press(Interaction::Settings)
     .into();
 
@@ -1173,7 +1173,7 @@ pub fn menu_container<'a>(
             new_release_button_state,
             Text::new("Download").size(DEFAULT_FONT_SIZE),
         )
-        .style(style::SecondaryBoxedButton(color_palette));
+        .style(style::SecondaryButton(color_palette));
 
         new_release_button = new_release_button.on_press(Interaction::OpenLink(
             "https://github.com/casperstorm/ajour/releases/latest".to_owned(),
