@@ -16,6 +16,7 @@
 - [Features](#features)
 - [Install](#install)
 - [Themes](#themes)
+- [Command Line](#command-line)
 - [Contribute](#contribute)
 - [FAQ](#faq)
 - [Acknowledgement](#acknowledgement)
@@ -62,6 +63,12 @@ For everyone else, a detailed instruction can be found [here](https://github.com
 ## Themes
 
 Find instructions for building your own themes [here](./THEMES.md).
+
+## Command Line
+
+Ajour accepts arguments and can even run certain operations on the command line without launching the GUI, such as updating all addons. This makes it possible to manage your addon collection through scripts and scheduling.
+
+You can pass `--help` to see a full list of supported flags, options and commands.
 
 ## Contribute
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
@@ -112,7 +119,7 @@ We wanted to create an application which natively compiles to both Windows, Linu
 
 ## Other addon managers
 
-If Ajour isn't your cup of tea, then [Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated [list of other addon managers](https://ogri-la.github.io/wow-addon-managers/).
+If Ajour isn't your cup of tea, then [Ogri'la](https://github.com/ogri-la) has done a great job of [cataloguing addon managers](https://ogri-la.github.io/wow-addon-managers/).
 
 ## Acknowledgement
 
