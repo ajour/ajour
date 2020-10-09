@@ -61,21 +61,6 @@ For everyone else, a detailed instruction can be found [here](https://github.com
 
 ## Themes
 
-<p align="left">
-  <img width="200"
-       alt="Ajour with Ayu Dark theme"
-       src="./resources/themes/ayu-dark.png">
-    <img width="200"
-       alt="Ajour with Gruvbox Dark theme"
-       src="./resources/themes/gruvbox-dark.png">
-      <img width="200"
-       alt="Ajour with Nord theme"
-       src="./resources/themes/nord.png">
-    <img width="200"
-       alt="Ajour with Outrun theme"
-       src="./resources/themes/outrun.png">
-</p>
-
 Find instructions for building your own themes [here](./THEMES.md).
 
 ## Contribute
