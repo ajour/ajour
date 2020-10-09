@@ -345,20 +345,24 @@ impl Theme {
 }
 
 fn hex_to_color(hex: &str) -> Option<iced_native::Color> {
-    let hash = &hex[0..1];
-    let r = u8::from_str_radix(&hex[1..3], 16);
-    let g = u8::from_str_radix(&hex[3..5], 16);
-    let b = u8::from_str_radix(&hex[5..7], 16);
+    if hex.len() == 7 {
+        let hash = &hex[0..1];
+        let r = u8::from_str_radix(&hex[1..3], 16);
+        let g = u8::from_str_radix(&hex[3..5], 16);
+        let b = u8::from_str_radix(&hex[5..7], 16);
 
-    match (hash, r, g, b) {
-        ("#", Ok(r), Ok(g), Ok(b)) => Some(iced_native::Color {
-            r: r as f32 / 255.0,
-            g: g as f32 / 255.0,
-            b: b as f32 / 255.0,
-            a: 1.0,
-        }),
-        _ => None,
+        return match (hash, r, g, b) {
+            ("#", Ok(r), Ok(g), Ok(b)) => Some(iced_native::Color {
+                r: r as f32 / 255.0,
+                g: g as f32 / 255.0,
+                b: b as f32 / 255.0,
+                a: 1.0,
+            }),
+            _ => None,
+        };
     }
+
+    None
 }
 
 impl PartialEq for Theme {
@@ -451,12 +455,19 @@ mod tests {
         let theme_str = "---
         name: Test
         palette:
-            primary: '#ABCDEF'
-            secondary: '#000000'
-            surface: '#FFFFFF'
-            on_surface: '#012345'
-            background: '#543210'
-            error: '#FEDCBA'
+          base:
+            background: '#484793'
+            foreground: '#484793'
+          normal:
+            primary: '#484793'
+            secondary: '#484793'
+            surface: '#484793'
+            error: '#484793'
+          bright:
+            primary: '#484793'
+            secondary: '#484793'
+            surface: '#484793'
+            error: '#484793'
         ";
 
         serde_yaml::from_str::<Theme>(theme_str).unwrap();
