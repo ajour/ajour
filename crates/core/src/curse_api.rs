@@ -163,7 +163,7 @@ pub async fn fetch_game_info() -> Result<GameInfo> {
     }
 }
 
-pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<(u32, Flavor, Addon)> {
+pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<Addon> {
     let packages: Vec<Package> = fetch_remote_packages_by_ids(&[curse_id]).await?;
 
     let package = packages.into_iter().next().ok_or_else(|| {
@@ -210,5 +210,5 @@ pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<(u32, Flavor,
 
     addon.set_title(package.name.clone());
 
-    Ok((curse_id, flavor, addon))
+    Ok(addon)
 }

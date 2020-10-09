@@ -114,7 +114,7 @@ pub enum Message {
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
-    CatalogInstallAddonFetched(Result<(u32, Flavor, Addon)>),
+    CatalogInstallAddonFetched((Flavor, u32, Result<Addon>)),
     FetchedCurseChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
     FetchedTukuiChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
 }
