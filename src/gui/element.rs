@@ -621,7 +621,7 @@ pub fn addon_data_cell<'a, 'b>(
                 let update_button: Element<Interaction> =
                     Button::new(&mut addon.update_btn_state, update_wrapper)
                         .width(Length::FillPortion(1))
-                        .style(style::SecondaryBoxedButton(color_palette))
+                        .style(style::SecondaryButton(color_palette))
                         .on_press(Interaction::Update(id))
                         .into();
 
@@ -1173,7 +1173,7 @@ pub fn menu_container<'a>(
             new_release_button_state,
             Text::new("Download").size(DEFAULT_FONT_SIZE),
         )
-        .style(style::SecondaryButton(color_palette));
+        .style(style::SecondaryBoxedButton(color_palette));
 
         new_release_button = new_release_button.on_press(Interaction::OpenLink(
             "https://github.com/casperstorm/ajour/releases/latest".to_owned(),

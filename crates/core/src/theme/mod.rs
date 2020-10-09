@@ -65,7 +65,7 @@ impl Theme {
                 },
                 normal: NormalColors {
                     primary: hex_to_color("#3f2b56").unwrap(),
-                    secondary: hex_to_color("#2D2D1E").unwrap(),
+                    secondary: hex_to_color("#4a3c1c").unwrap(),
                     surface: hex_to_color("#828282").unwrap(),
                     error: hex_to_color("#992B2B").unwrap(),
                 },
@@ -161,7 +161,7 @@ impl Theme {
                 },
                 normal: NormalColors {
                     primary: hex_to_color("#330442").unwrap(),
-                    secondary: hex_to_color("#1d1131").unwrap(),
+                    secondary: hex_to_color("#6e3e2e").unwrap(),
                     surface: hex_to_color("#484e81").unwrap(),
                     error: hex_to_color("#671a30").unwrap(),
                 },
@@ -185,7 +185,7 @@ impl Theme {
                 },
                 normal: NormalColors {
                     primary: hex_to_color("#2d3d2f").unwrap(),
-                    secondary: hex_to_color("#2e3739").unwrap(),
+                    secondary: hex_to_color("#3f4f56").unwrap(),
                     surface: hex_to_color("#8a8a8a").unwrap(),
                     error: hex_to_color("#713e40").unwrap(),
                 },
@@ -209,9 +209,9 @@ impl Theme {
                 },
                 normal: NormalColors {
                     primary: hex_to_color("#483e61").unwrap(),
-                    secondary: hex_to_color("#354348").unwrap(),
+                    secondary: hex_to_color("#386e50").unwrap(),
                     surface: hex_to_color("#a2a4a3").unwrap(),
-                    error: hex_to_color("#764667").unwrap(),
+                    error: hex_to_color("#A13034").unwrap(),
                 },
                 bright: BrightColors {
                     primary: hex_to_color("#bd94f9").unwrap(),
