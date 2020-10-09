@@ -350,16 +350,15 @@ fn hex_to_color(hex: &str) -> Option<iced_native::Color> {
     let g = u8::from_str_radix(&hex[3..5], 16);
     let b = u8::from_str_radix(&hex[5..7], 16);
 
-    if hash == "#" && r.is_ok() && g.is_ok() && b.is_ok() {
-        return Some(iced_native::Color {
-            r: r.unwrap() as f32 / 255.0,
-            g: g.unwrap() as f32 / 255.0,
-            b: b.unwrap() as f32 / 255.0,
+    match (hash, r, g, b) {
+        ("#", Ok(r), Ok(g), Ok(b)) => Some(iced_native::Color {
+            r: r as f32 / 255.0,
+            g: g as f32 / 255.0,
+            b: b as f32 / 255.0,
             a: 1.0,
-        });
+        }),
+        _ => None,
     }
-
-    None
 }
 
 impl PartialEq for Theme {

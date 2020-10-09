@@ -1135,14 +1135,10 @@ pub fn menu_container<'a>(
     .size(DEFAULT_FONT_SIZE)
     .horizontal_alignment(HorizontalAlignment::Right);
 
-    let mut version_container = Container::new(version_text).center_y().padding(5);
-    if needs_update.is_some() {
-        version_container =
-            version_container.style(style::NormalForegroundContainer(color_palette));
-    } else {
-        version_container =
-            version_container.style(style::NormalForegroundContainer(color_palette));
-    }
+    let version_container = Container::new(version_text)
+        .center_y()
+        .padding(5)
+        .style(style::NormalForegroundContainer(color_palette));
 
     let settings_button: Element<Interaction> = Button::new(
         settings_button_state,
