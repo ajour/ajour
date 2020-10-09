@@ -11,7 +11,6 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Added
 - Added a command line option to update all addons with an update without launching the GUI. Process will exit after completing.
   - Use `ajour update` from command line
-  - `ajour --help` can be used to see all command line options
 
 ### Fixed
 - Fixed a case where we would choose alpha even though it was older than stable.
