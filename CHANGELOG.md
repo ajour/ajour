@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Added
+- Added a command line option to update all addons with an update without launching the GUI. Process will exit after completing.
+  - Use `ajour update` from command line
+
 ### Fixed
 - Fixed a case where we would choose alpha even though it was older than stable.
 - Fixed fingerprinting where some addons would fail during fingerprinting due to invalid UTF-8 characters and missing files. These addons now successfully fingerprint.

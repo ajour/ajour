@@ -16,6 +16,7 @@
 - [Features](#features)
 - [Install](#install)
 - [Themes](#themes)
+- [Command Line](#command-line)
 - [Contribute](#contribute)
 - [FAQ](#faq)
 - [Acknowledgement](#acknowledgement)
@@ -78,6 +79,12 @@ For everyone else, a detailed instruction can be found [here](https://github.com
 
 Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.  
 Find instructions and a variety of custom themes [here](./THEMES.md).
+
+## Command Line
+
+Ajour accepts arguments and can even run certain operations on the command line without launching the GUI, such as updating all addons. This makes it possible to manage your addon collection through scripts and scheduling.
+
+You can pass `--help` to see a full list of supported flags, options and commands.
 
 ## Contribute
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
