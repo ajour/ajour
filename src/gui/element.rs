@@ -735,7 +735,7 @@ pub fn addon_data_cell<'a, 'b>(
             &mut addon.website_btn_state,
             Text::new("Website").size(DEFAULT_FONT_SIZE),
         )
-        .style(style::DefaultBoxedButton(color_palette));
+        .style(style::DefaultButton(color_palette));
 
         if let Some(link) = addon.website_url.clone() {
             website_button = website_button.on_press(Interaction::OpenLink(link));
@@ -747,7 +747,7 @@ pub fn addon_data_cell<'a, 'b>(
             &mut addon.force_btn_state,
             Text::new("Force update").size(DEFAULT_FONT_SIZE),
         )
-        .style(style::DefaultBoxedButton(color_palette));
+        .style(style::DefaultButton(color_palette));
 
         // If we have a release package on addon, enable force update.
         if release_package.is_some() {
@@ -766,7 +766,7 @@ pub fn addon_data_cell<'a, 'b>(
 
         let mut ignore_button = Button::new(&mut addon.ignore_btn_state, ignore_button_text)
             .on_press(Interaction::Ignore(addon.id.clone()))
-            .style(style::DefaultBoxedButton(color_palette));
+            .style(style::DefaultButton(color_palette));
 
         if is_ignored {
             ignore_button = ignore_button.on_press(Interaction::Unignore(addon.id.clone()));
@@ -781,7 +781,7 @@ pub fn addon_data_cell<'a, 'b>(
             Text::new("Delete").size(DEFAULT_FONT_SIZE),
         )
         .on_press(Interaction::Delete(addon.id.clone()))
-        .style(style::DeleteBoxedButton(color_palette))
+        .style(style::DefaultDeleteButton(color_palette))
         .into();
 
         let test_row = Row::new()
@@ -816,7 +816,7 @@ pub fn addon_data_cell<'a, 'b>(
         let details_container = Container::new(column)
             .width(Length::Fill)
             .padding(20)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::FadedNormalForegroundContainer(color_palette));
 
         let row = Row::new()
             .push(left_spacer)
@@ -979,28 +979,25 @@ pub fn menu_addons_container<'a>(
         retail_btn_state,
         Text::new("Retail").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette))
+    .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Retail));
 
     let mut classic_button = Button::new(
         classic_btn_state,
         Text::new("Classic").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette))
+    .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Classic));
 
     if !ajour_performing_actions && !ajour_welcome {
         match config.wow.flavor {
             Flavor::Retail => {
-                retail_button = retail_button.style(style::SegmentedSelectedButton(color_palette));
-                classic_button =
-                    classic_button.style(style::SegmentedUnselectedButton(color_palette));
+                retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
             }
             Flavor::Classic => {
-                classic_button =
-                    classic_button.style(style::SegmentedSelectedButton(color_palette));
-                retail_button =
-                    retail_button.style(style::SegmentedUnselectedButton(color_palette));
+                classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
             }
         }
     }
@@ -1089,26 +1086,24 @@ pub fn menu_container<'a>(
         addon_mode_button_state,
         Text::new("My Addons").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette));
+    .style(style::DisabledDefaultButton(color_palette));
 
     let mut catalog_mode_button = Button::new(
         catalog_mode_btn_state,
         Text::new("Catalog").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette));
+    .style(style::DisabledDefaultButton(color_palette));
 
     match mode {
         AjourMode::MyAddons => {
             addons_mode_button =
-                addons_mode_button.style(style::SegmentedSelectedButton(color_palette));
-            catalog_mode_button =
-                catalog_mode_button.style(style::SegmentedUnselectedButton(color_palette));
+                addons_mode_button.style(style::SelectedDefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
         }
         AjourMode::Catalog => {
-            addons_mode_button =
-                addons_mode_button.style(style::SegmentedUnselectedButton(color_palette));
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
-                catalog_mode_button.style(style::SegmentedSelectedButton(color_palette));
+                catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
         }
     }
 
@@ -1119,10 +1114,9 @@ pub fn menu_container<'a>(
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(AjourMode::Catalog));
     } else {
-        addons_mode_button =
-            addons_mode_button.style(style::SegmentedDisabledButton(color_palette));
+        addons_mode_button = addons_mode_button.style(style::DisabledDefaultButton(color_palette));
         catalog_mode_button =
-            catalog_mode_button.style(style::SegmentedDisabledButton(color_palette));
+            catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
     }
 
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
@@ -1374,7 +1368,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .align_x(Align::Center);
 
         let mut retail_install_button = Button::new(retail_install_state, retail_install_wrapper)
-            .style(style::DefaultBoxedButton(color_palette))
+            .style(style::DefaultButton(color_palette))
             .width(*width);
 
         if !retail_installed && !retail_downloading && retail_exists {
@@ -1427,7 +1421,7 @@ pub fn catalog_data_cell<'a, 'b>(
 
         let mut classic_install_button =
             Button::new(classic_install_state, classic_install_wrapper)
-                .style(style::DefaultBoxedButton(color_palette))
+                .style(style::DefaultButton(color_palette))
                 .width(*width);
 
         if !classic_installed && !classic_downloading && classic_exists {

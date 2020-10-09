@@ -1239,6 +1239,8 @@ impl Default for ThemeState {
         themes.push(("Nord".to_string(), Theme::nord()));
         themes.push(("Solarized Dark".to_string(), Theme::solarized_dark()));
         themes.push(("Solarized Light".to_string(), Theme::solarized_light()));
+        themes.push(("Horde".to_string(), Theme::horde()));
+        themes.push(("Alliance".to_string(), Theme::alliance()));
 
         ThemeState {
             themes,

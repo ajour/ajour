@@ -61,7 +61,7 @@ impl Theme {
             palette: ColorPalette {
                 base: BaseColors {
                     background: hex_to_color("#111111").unwrap(),
-                    foreground: hex_to_color("#191919").unwrap(),
+                    foreground: hex_to_color("#161616").unwrap(),
                 },
                 normal: NormalColors {
                     primary: hex_to_color("#3f2b56").unwrap(),
@@ -290,6 +290,54 @@ impl Theme {
                     secondary: hex_to_color("#5e81ac").unwrap(),
                     surface: hex_to_color("#eceff4").unwrap(),
                     error: hex_to_color("#bf616a").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn horde() -> Theme {
+        Theme {
+            name: "Horde".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#161313").unwrap(),
+                    foreground: hex_to_color("#211C1C").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#331E1F").unwrap(),
+                    secondary: hex_to_color("#542A18").unwrap(),
+                    surface: hex_to_color("#5E5B5A").unwrap(),
+                    error: hex_to_color("#44282a").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#953e43").unwrap(),
+                    secondary: hex_to_color("#e27342").unwrap(),
+                    surface: hex_to_color("#9B9897").unwrap(),
+                    error: hex_to_color("#953e43").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn alliance() -> Theme {
+        Theme {
+            name: "Alliance".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#03284D").unwrap(),
+                    foreground: hex_to_color("#032C54").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#57460E").unwrap(),
+                    secondary: hex_to_color("#57460E").unwrap(),
+                    surface: hex_to_color("#7F8387").unwrap(),
+                    error: hex_to_color("#5b3a5e").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#ac8a1b").unwrap(),
+                    secondary: hex_to_color("#ac8a1b").unwrap(),
+                    surface: hex_to_color("#D1D7DE").unwrap(),
+                    error: hex_to_color("#953e43").unwrap(),
                 },
             },
         }

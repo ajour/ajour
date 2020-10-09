@@ -23,6 +23,21 @@ impl container::StyleSheet for NormalForegroundContainer {
     }
 }
 
+pub struct FadedNormalForegroundContainer(pub ColorPalette);
+impl container::StyleSheet for FadedNormalForegroundContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(Color {
+                a: 0.80,
+                ..self.0.base.foreground
+            })),
+
+            text_color: Some(self.0.normal.surface),
+            ..container::Style::default()
+        }
+    }
+}
+
 pub struct NormalBackgroundContainer(pub ColorPalette);
 impl container::StyleSheet for NormalBackgroundContainer {
     fn style(&self) -> container::Style {
@@ -119,6 +134,16 @@ impl button::StyleSheet for DefaultButton {
         button::Style {
             background: Some(Background::Color(self.0.normal.primary)),
             text_color: self.0.bright.primary,
+            ..self.active()
+        }
+    }
+
+    fn disabled(&self) -> button::Style {
+        button::Style {
+            text_color: Color {
+                a: 0.25,
+                ..self.0.normal.surface
+            },
             ..self.active()
         }
     }
@@ -232,23 +257,22 @@ impl button::StyleSheet for SecondaryButton {
     }
 }
 
-pub struct DeleteBoxedButton(pub ColorPalette);
-impl button::StyleSheet for DeleteBoxedButton {
+pub struct DefaultDeleteButton(pub ColorPalette);
+impl button::StyleSheet for DefaultDeleteButton {
     fn active(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(Color {
-                a: 0.15,
-                ..self.0.normal.error
-            })),
-            text_color: self.0.bright.error,
             border_radius: 2,
+            text_color: self.0.bright.error,
             ..button::Style::default()
         }
     }
 
     fn hovered(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(self.0.normal.error)),
+            background: Some(Background::Color(Color {
+                a: 0.35,
+                ..self.0.normal.error
+            })),
             text_color: self.0.bright.error,
             ..self.active()
         }
@@ -316,20 +340,14 @@ impl button::StyleSheet for SelectedColumnHeaderButton {
     }
 }
 
-pub struct SegmentedDisabledButton(pub ColorPalette);
-impl button::StyleSheet for SegmentedDisabledButton {
+pub struct DisabledDefaultButton(pub ColorPalette);
+impl button::StyleSheet for DisabledDefaultButton {
     fn active(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color::TRANSPARENT)),
             text_color: Color {
-                a: 0.5,
-                ..self.0.normal.primary
-            },
-            border_radius: 2,
-            border_width: 0,
-            border_color: Color {
-                a: 0.5,
-                ..self.0.normal.primary
+                a: 0.25,
+                ..self.0.normal.surface
             },
             ..button::Style::default()
         }
@@ -344,42 +362,13 @@ impl button::StyleSheet for SegmentedDisabledButton {
     }
 }
 
-pub struct SegmentedUnselectedButton(pub ColorPalette);
-impl button::StyleSheet for SegmentedUnselectedButton {
-    fn active(&self) -> button::Style {
-        button::Style {
-            text_color: self.0.bright.primary,
-            border_color: Color {
-                a: 0.5,
-                ..self.0.normal.primary
-            },
-            border_width: 1,
-            border_radius: 2,
-            ..button::Style::default()
-        }
-    }
-
-    fn hovered(&self) -> button::Style {
-        button::Style {
-            background: Some(Background::Color(self.0.normal.primary)),
-            ..self.active()
-        }
-    }
-
-    fn disabled(&self) -> button::Style {
-        button::Style { ..self.active() }
-    }
-}
-
-pub struct SegmentedSelectedButton(pub ColorPalette);
-impl button::StyleSheet for SegmentedSelectedButton {
+pub struct SelectedDefaultButton(pub ColorPalette);
+impl button::StyleSheet for SelectedDefaultButton {
     fn active(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(self.0.normal.primary)),
             text_color: self.0.bright.primary,
             border_radius: 2,
-            border_width: 0,
-            border_color: Color::TRANSPARENT,
             ..button::Style::default()
         }
     }
