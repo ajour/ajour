@@ -51,14 +51,26 @@ pub fn update_all_addons() -> Result<()> {
                     .await
             {
                 // Get any saved release channel preferences from config
-                let default = HashMap::new();
                 let release_channels = config
                     .addons
                     .release_channels
                     .get(flavor)
-                    .unwrap_or(&default);
+                    .cloned()
+                    .unwrap_or_else(HashMap::new);
 
-                for mut addon in addons {
+                // Get any ingnored addons from the config
+                let ignored_ids = config
+                    .addons
+                    .ignored
+                    .get(flavor)
+                    .cloned()
+                    .unwrap_or_else(Vec::new);
+
+                // Filter out any ignored addons
+                for mut addon in addons
+                    .into_iter()
+                    .filter(|a| !ignored_ids.iter().any(|i| i == &a.id))
+                {
                     // Apply release channel preference
                     if let Some(channel) = release_channels.get(&addon.id) {
                         addon.release_channel = *channel;
