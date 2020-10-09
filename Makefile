@@ -1,9 +1,3 @@
-## Makefile which is used to generate a .app and .dmg for MacOS.
-##
-## Credits:
-## This Makefile is heaviliy inspirred by Alacrittys.
-## https://github.com/alacritty/alacritty/blob/master/Makefile
-
 TARGET = ajour
 
 RESOURCES_DIR = resources
@@ -16,27 +10,41 @@ APP_BINARY = $(RELEASE_DIR)/$(TARGET)
 APP_BINARY_DIR  = $(APP_DIR)/$(APP_NAME)/Contents/MacOS
 APP_RESOURCES_DIR = $(APP_DIR)/$(APP_NAME)/Contents/Resources
 
+APPIMAGE_NAME ?=
 APPIMAGE_DIR = $(RELEASE_DIR)/AppDir
 APPIMAGE_DESKTOP_FILE = $(RESOURCES_DIR)/linux/ajour.desktop
 APPIMAGE_LOGO_FILE = $(RESOURCES_DIR)/logo/256x256/ajour.png
 
-DMG_NAME = Ajour.dmg
+DMG_NAME ?=
 DMG_DIR = $(RELEASE_DIR)/osx
+
+OPENGL ?=
+MACOS ?=
+
+ifdef MACOS
+  ENV :=MACOSX_DEPLOYMENT_TARGET="10.11"
+endif
+
+ifdef OPENGL
+  DMG_NAME :=ajour-opengl.dmg
+  APPIMAGE_NAME :=ajour-opengl.AppImage
+  FEATURE_FLAG :=--no-default-features --features opengl
+else
+  DMG_NAME :=ajour.dmg
+  APPIMAGE_NAME :=ajour.AppImage
+  FEATURE_FLAG :=
+endif
 
 vpath $(TARGET) $(RELEASE_DIR)
 vpath $(APP_NAME) $(APP_DIR)
 vpath $(DMG_NAME) $(APP_DIR)
 
-all: help
 
-help: ## Prints help for targets with comments
-	@grep -E '^[a-zA-Z._-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
-binary: | $(TARGET) ## Build release binary with cargo
+binary: $(TARGET) ## Build release binary with cargo
 $(TARGET):
-	MACOSX_DEPLOYMENT_TARGET="10.11" cargo build --release
+	$(ENV) cargo build --release $(FEATURE_FLAG)
 
-app: | $(APP_NAME) ## Clone Ajour.app template and mount binary
+app: $(APP_NAME) ## Clone Ajour.app template and mount binary
 $(APP_NAME): $(TARGET)
 	@mkdir -p $(APP_BINARY_DIR)
 	@mkdir -p $(APP_RESOURCES_DIR)
@@ -45,7 +53,7 @@ $(APP_NAME): $(TARGET)
 	@touch -r "$(APP_BINARY)" "$(APP_DIR)/$(APP_NAME)"
 	@echo "Created '$@' in '$(APP_DIR)'"
 
-dmg: | $(DMG_NAME) ## Pack Ajour.app into .dmg
+dmg: $(DMG_NAME) ## Pack Ajour.app into .dmg
 $(DMG_NAME): $(APP_NAME)
 	@echo "Packing disk image..."
 	@ln -sf /Applications $(DMG_DIR)/Applications
@@ -56,11 +64,9 @@ $(DMG_NAME): $(APP_NAME)
 		-ov -format UDZO
 	@echo "Packed '$@' in '$(APP_DIR)'"
 
-install: $(DMG_NAME) ## Mount disk image
-	@open $(DMG_DIR)/$(DMG_NAME)
-
-appimage: ## Bundle release binary as AppImage
-	OUTPUT=ajour.AppImage linuxdeploy-x86_64.AppImage \
+appimage: $(APPIMAGE_NAME) ## Bundle release binary as AppImage
+$(APPIMAGE_NAME): $(TARGET)
+	OUTPUT=$(APPIMAGE_NAME) ./linuxdeploy-x86_64.AppImage \
 		--appdir $(APPIMAGE_DIR) \
 		-e $(APP_BINARY) \
 		-d $(APPIMAGE_DESKTOP_FILE) \
@@ -68,7 +74,7 @@ appimage: ## Bundle release binary as AppImage
 		--output appimage
 	@rm -rf $(APPIMAGE_DIR)
 
-.PHONY: app binary clean dmg install $(TARGET)
+.PHONY: app binary dmg appimage
 
 clean: ## Remove all artifacts
 	-rm -rf $(APP_DIR)
