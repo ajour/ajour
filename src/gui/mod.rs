@@ -1234,6 +1234,9 @@ impl Default for ThemeState {
         themes.push(("Outrun".to_string(), Theme::outrun()));
         themes.push(("Sort".to_string(), Theme::sort()));
         themes.push(("Dracula".to_string(), Theme::dracula()));
+        themes.push(("Ayu".to_string(), Theme::ayu()));
+        themes.push(("Gruvbox".to_string(), Theme::gruvbox()));
+        themes.push(("Nord".to_string(), Theme::nord()));
         themes.push(("Solarized Dark".to_string(), Theme::solarized_dark()));
         themes.push(("Solarized Light".to_string(), Theme::solarized_light()));
 

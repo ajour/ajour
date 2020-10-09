@@ -247,7 +247,10 @@ impl button::StyleSheet for DeleteBoxedButton {
 
     fn hovered(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(self.0.normal.error)),
+            background: Some(Background::Color(Color {
+                a: 0.55,
+                ..self.0.normal.error
+            })),
             text_color: self.0.bright.error,
             ..self.active()
         }

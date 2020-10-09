@@ -222,6 +222,78 @@ impl Theme {
             },
         }
     }
+
+    pub fn ayu() -> Theme {
+        Theme {
+            name: "Ayu".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#1f2430").unwrap(),
+                    foreground: hex_to_color("#232834").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#987a47").unwrap(),
+                    secondary: hex_to_color("#315e6b").unwrap(),
+                    surface: hex_to_color("#60697a").unwrap(),
+                    error: hex_to_color("#712a34").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#ffcc66").unwrap(),
+                    secondary: hex_to_color("#5ccfe6").unwrap(),
+                    surface: hex_to_color("#cbccc6").unwrap(),
+                    error: hex_to_color("#ff3333").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn gruvbox() -> Theme {
+        Theme {
+            name: "Gruvbox".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#282828").unwrap(),
+                    foreground: hex_to_color("#3c3836").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#63612f").unwrap(),
+                    secondary: hex_to_color("#695133").unwrap(),
+                    surface: hex_to_color("#928374").unwrap(),
+                    error: hex_to_color("#81302e").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#98971a").unwrap(),
+                    secondary: hex_to_color("#d79921").unwrap(),
+                    surface: hex_to_color("#ebdbb2").unwrap(),
+                    error: hex_to_color("#cc241d").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn nord() -> Theme {
+        Theme {
+            name: "Nord".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#2e3440").unwrap(),
+                    foreground: hex_to_color("#3b4252").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#485b60").unwrap(),
+                    secondary: hex_to_color("#425066").unwrap(),
+                    surface: hex_to_color("#9196a1").unwrap(),
+                    error: hex_to_color("#894f5a").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#8fbcbb").unwrap(),
+                    secondary: hex_to_color("#5e81ac").unwrap(),
+                    surface: hex_to_color("#eceff4").unwrap(),
+                    error: hex_to_color("#bf616a").unwrap(),
+                },
+            },
+        }
+    }
 }
 
 fn hex_to_color(hex: &str) -> Option<iced_native::Color> {
