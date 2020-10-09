@@ -1228,7 +1228,7 @@ pub fn status_container<'a>(
         let onboarding_button: Element<Interaction> =
             Button::new(btn_state, onboarding_button_title_container)
                 .width(Length::Units(100))
-                .style(style::DefaultBoxedButton(color_palette))
+                .style(style::DefaultButton(color_palette))
                 .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
                 .into();
 

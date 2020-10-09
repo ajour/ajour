@@ -1,9 +1,0 @@
-name: Solarlized Light
-palette:
-  primary: '#c84b1b'
-  secondary: '#1f85d0'
-  surface: '#eee8d5'
-  on_surface: '#596e75'
-  background: '#fdf6e3'
-  error: '#b33232'
-
