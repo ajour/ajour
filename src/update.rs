@@ -18,7 +18,6 @@ use futures::future::join_all;
 use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 pub fn update_all_addons() -> Result<()> {
@@ -56,7 +55,7 @@ pub fn update_all_addons() -> Result<()> {
                     .release_channels
                     .get(flavor)
                     .cloned()
-                    .unwrap_or_else(HashMap::new);
+                    .unwrap_or_default();
 
                 // Get any ingnored addons from the config
                 let ignored_ids = config
@@ -64,7 +63,7 @@ pub fn update_all_addons() -> Result<()> {
                     .ignored
                     .get(flavor)
                     .cloned()
-                    .unwrap_or_else(Vec::new);
+                    .unwrap_or_default();
 
                 // Filter out any ignored addons
                 for mut addon in addons
