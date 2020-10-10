@@ -51,6 +51,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
   - This is a breaking changes for old themes, which needs to be refactored to the new format. By default if the theme does not conform to the new format, Ajour will simply not try to parse it.
 - Added a command line option to update all addons with an update without launching the GUI. Process will exit after completing.
   - Use `ajour update` from command line
+- Ajour can now self update when a new release is available.
+  - User is presented with an "Update" buton instead of a "Download" button when a new release is available. Upon clicking, the new release will be downloaded in the background, replace the existing executable file, and will be relaunched as the new version.
 
 ### Fixed
 - Fixed a case where we would choose alpha even though it was older than stable.

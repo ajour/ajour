@@ -1,7 +1,11 @@
-use crate::{network::request_async, Result};
+use crate::error::ClientError;
+use crate::network::{download_file, request_async};
+use crate::Result;
+
 use isahc::prelude::*;
 use regex::Regex;
 use serde::Deserialize;
+
 use std::ffi::OsStr;
 use std::path::PathBuf;
 
@@ -31,31 +35,146 @@ pub fn regex_html_tags_to_space() -> Regex {
     regex::Regex::new(r"&nbsp;|&quot;|&lt;|&gt;|&amp;|gt;|lt;|&#x27;|<.+?>").unwrap()
 }
 
-#[derive(Deserialize)]
-struct Release {
-    tag_name: String,
+#[derive(Debug, Deserialize, Clone)]
+pub struct Release {
+    pub tag_name: String,
+    pub assets: Vec<ReleaseAsset>,
 }
 
-pub async fn needs_update(current_version: &str) -> Result<Option<String>> {
+#[derive(Debug, Deserialize, Clone)]
+pub struct ReleaseAsset {
+    pub name: String,
+    #[serde(rename = "browser_download_url")]
+    pub download_url: String,
+}
+
+pub async fn get_latest_release() -> Option<Release> {
     log::debug!("checking for application update");
 
-    let client = HttpClient::new()?;
+    let client = HttpClient::new().ok()?;
 
     let mut resp = request_async(
         &client,
-        "https://api.github.com/repos/casperstorm/ajour/releases/latest",
+        "https://api.github.com/repos/tarkah/ajour_self_update_test/releases/latest",
         vec![],
         None,
     )
-    .await?;
+    .await
+    .ok()?;
 
-    let release: Release = resp.json()?;
+    Some(resp.json().ok()?)
+}
 
-    if release.tag_name != current_version {
-        Ok(Some(release.tag_name))
-    } else {
-        Ok(None)
+/// Downloads the latest release file that matches `bin_name` and saves it as
+/// `tmp_bin_name`. Will return the temp file as pathbuf.
+pub async fn download_update_to_temp_file(
+    bin_name: String,
+    release: Release,
+) -> Result<(String, PathBuf)> {
+    let current_bin_path = std::env::current_exe()?;
+    let current_bin_name = current_bin_path
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
+
+    let new_bin_path = current_bin_path
+        .parent()
+        .unwrap()
+        .join(&format!("tmp_{}", bin_name));
+
+    // On macos, we actually download an archive with the new binary inside. Let's extract
+    // that file and remove the archive.
+    #[cfg(target_os = "macos")]
+    {
+        let version = &release.tag_name;
+
+        let asset_name = format!("{}-{}-x86_64-apple-darwin.tar.gz", bin_name, version);
+
+        let asset = release
+            .assets
+            .iter()
+            .find(|a| a.name == asset_name)
+            .cloned()
+            .ok_or_else(|| {
+                ClientError::Custom(format!(
+                    "No new release binary available for {}",
+                    asset_name
+                ))
+            })?;
+
+        let archive_path = current_bin_path.parent().unwrap().join(&asset_name);
+
+        download_file(&asset.download_url, &archive_path).await?;
+
+        extract_binary_from_tar(&archive_path, &new_bin_path, "ajour")?;
+
+        std::fs::remove_file(&archive_path)?;
     }
+
+    // For windows & linux, we download the new binary directly
+    #[cfg(not(target_os = "macos"))]
+    {
+        let asset = release
+            .assets
+            .iter()
+            .find(|a| a.name == bin_name)
+            .cloned()
+            .ok_or_else(|| {
+                ClientError::Custom(format!("No new release binary available for {}", bin_name))
+            })?;
+
+        download_file(&asset.download_url, &new_bin_path).await?;
+    }
+
+    // Make executable
+    #[cfg(not(target_os = "windows"))]
+    {
+        use async_std::fs;
+        use std::os::unix::fs::PermissionsExt;
+
+        let mut permissions = fs::metadata(&new_bin_path).await?.permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&new_bin_path, permissions).await?;
+    }
+
+    Ok((current_bin_name, new_bin_path))
+}
+
+/// Extracts the Ajour binary from a `tar.gz` archive to temp_file path
+#[cfg(target_os = "macos")]
+pub fn extract_binary_from_tar(
+    archive_path: &PathBuf,
+    temp_file: &PathBuf,
+    bin_name: &str,
+) -> Result<()> {
+    use flate2::read::GzDecoder;
+    use std::fs::File;
+    use std::io::copy;
+    use tar::Archive;
+
+    let mut archive = Archive::new(GzDecoder::new(File::open(&archive_path)?));
+
+    let mut temp_file = File::create(temp_file)?;
+
+    for file in archive.entries()? {
+        let mut file = file?;
+
+        let path = file.path()?;
+
+        if let Some(name) = path.to_str() {
+            if name == bin_name {
+                copy(&mut file, &mut temp_file)?;
+
+                return Ok(());
+            }
+        }
+    }
+
+    Err(ClientError::Custom(String::from(
+        "Could not file bin name in archive",
+    )))
 }
 
 /// Logic to help pick the right World of Warcraft folder. We want the root folder.

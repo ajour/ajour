@@ -11,6 +11,8 @@ use ajour_core::error::ClientError;
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::Result;
 
+use std::env;
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main() {
@@ -38,6 +40,15 @@ pub fn main() {
     let opts = cli::validate_opts_or_exit(opts_result, is_cli, is_debug);
 
     setup_logger(is_cli, is_debug).expect("setup logging");
+
+    // Called when we launch from the temp (new release) binary during the self update
+    // process. We will rename the temp file (running process) to the original binary
+    if let Some(main_bin_name) = &opts.self_update_temp {
+        if let Err(e) = handle_self_update_temp(main_bin_name) {
+            log_error(&e);
+            std::process::exit(1);
+        }
+    }
 
     if let Some(data_dir) = &opts.data_directory {
         let mut config_dir = CONFIG_DIR.lock().unwrap();
@@ -110,5 +121,18 @@ fn setup_logger(is_cli: bool, is_debug: bool) -> Result<()> {
     };
 
     logger.apply()?;
+    Ok(())
+}
+
+fn handle_self_update_temp(main_bin_name: &str) -> Result<()> {
+    let temp_bin = env::current_exe()?;
+    let parent_dir = temp_bin.parent().unwrap();
+
+    let main_bin = parent_dir.join(main_bin_name);
+
+    std::fs::rename(&temp_bin, &main_bin)?;
+
+    log::debug!("Ajour updated successfully");
+
     Ok(())
 }
