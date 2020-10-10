@@ -19,16 +19,16 @@ Example of `example.yml`
 name: "Example"
 palette:
   base:
-    background: '#111111'
-    foreground: '#161616'
+    background: '#6d6875'
+    foreground: '#777180'
   normal:
-    primary: '#3f2b56'
-    secondary: '#4a3c1c'
-    surface: '#828282'
-    error: '#992B2B'
+    primary: '#664A50'
+    secondary: '#855859'
+    surface: '#C9A28D'
+    error: '#661A1F'
   bright:
-    primary: '#BA84FC'
-    secondary: '#ffd03c'
-    surface: '#E0E0E0'
-    error: '#C13047'
+    primary: '#b4838d'
+    secondary: '#e5989b'
+    surface: '#fecdb2'
+    error: '#e63a46'
 ```

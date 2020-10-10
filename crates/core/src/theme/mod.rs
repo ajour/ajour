@@ -61,7 +61,7 @@ impl Theme {
             palette: ColorPalette {
                 base: BaseColors {
                     background: hex_to_color("#111111").unwrap(),
-                    foreground: hex_to_color("#161616").unwrap(),
+                    foreground: hex_to_color("#1C1C1C").unwrap(),
                 },
                 normal: NormalColors {
                     primary: hex_to_color("#3f2b56").unwrap(),
@@ -88,7 +88,7 @@ impl Theme {
                     foreground: hex_to_color("#F5F5F5").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#d0caff").unwrap(),
+                    primary: hex_to_color("#DFDBFF").unwrap(),
                     secondary: hex_to_color("#F9D659").unwrap(),
                     surface: hex_to_color("#828282").unwrap(),
                     error: hex_to_color("#992B2B").unwrap(),
@@ -136,15 +136,15 @@ impl Theme {
                     foreground: hex_to_color("#eee8d5").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#1A615B").unwrap(),
-                    secondary: hex_to_color("#6E540C").unwrap(),
+                    primary: hex_to_color("#BCCCC3").unwrap(),
+                    secondary: hex_to_color("#ccbd9e").unwrap(),
                     surface: hex_to_color("#95a3a2").unwrap(),
                     error: hex_to_color("#b80f15").unwrap(),
                 },
                 bright: BrightColors {
                     primary: hex_to_color("#2aa096").unwrap(),
                     secondary: hex_to_color("#a37f12").unwrap(),
-                    surface: hex_to_color("#596e75").unwrap(),
+                    surface: hex_to_color("#4C5D63").unwrap(),
                     error: hex_to_color("#EE2F36").unwrap(),
                 },
             },
@@ -324,19 +324,19 @@ impl Theme {
             name: "Alliance".to_string(),
             palette: ColorPalette {
                 base: BaseColors {
-                    background: hex_to_color("#03284D").unwrap(),
-                    foreground: hex_to_color("#032C54").unwrap(),
+                    background: hex_to_color("#011930").unwrap(),
+                    foreground: hex_to_color("#022242").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#57460E").unwrap(),
-                    secondary: hex_to_color("#57460E").unwrap(),
+                    primary: hex_to_color("#3e3523").unwrap(),
+                    secondary: hex_to_color("#3e3523").unwrap(),
                     surface: hex_to_color("#7F8387").unwrap(),
                     error: hex_to_color("#5b3a5e").unwrap(),
                 },
                 bright: BrightColors {
                     primary: hex_to_color("#ac8a1b").unwrap(),
                     secondary: hex_to_color("#ac8a1b").unwrap(),
-                    surface: hex_to_color("#D1D7DE").unwrap(),
+                    surface: hex_to_color("#B4B9BF").unwrap(),
                     error: hex_to_color("#953e43").unwrap(),
                 },
             },
