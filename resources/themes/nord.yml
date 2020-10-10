@@ -1,9 +1,0 @@
-name: Nord
-palette:
-  primary: '#A3BE8C'
-  secondary: '#B48EAD'
-  surface: '#4c566a'
-  on_surface: '#d8dee9'
-  background: '#2E3440'
-  error: '#BD6069'
-

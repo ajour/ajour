@@ -1,9 +1,0 @@
-name: Solarlized Dark
-palette:
-  primary: '#c84b1b'
-  secondary: '#1f85d0'
-  surface: '#093642'
-  on_surface: '#7f8d8f'
-  background: '#012b36'
-  error: '#b33232'
-

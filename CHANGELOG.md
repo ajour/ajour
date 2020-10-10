@@ -9,6 +9,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Added
+- 10 new themes has been bundled together with the application.
+  - The way you define a theme has been refactored so we can define more nuances.
+  - This is a breaking changes for old themes, which needs to be refactored to the new format. By default if the theme does not conform to the new format, Ajour will simply not try to parse it.
 - Added a command line option to update all addons with an update without launching the GUI. Process will exit after completing.
   - Use `ajour update` from command line
 

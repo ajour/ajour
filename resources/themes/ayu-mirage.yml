@@ -1,9 +1,0 @@
-name: Ayu Mirage
-palette:
-  primary: '#ff9f44'
-  secondary: '#54d1ff'
-  surface: '#181e2b'
-  on_surface: '#cbccc2'
-  background: '#1e2431'
-  error: '#bc5c54'
-
