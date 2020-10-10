@@ -1,8 +1,9 @@
-use crate::{addon::Addon, Result};
+use crate::{addon::Addon, error::ClientError, Result};
 use async_std::{
     fs::{create_dir_all, File},
-    prelude::*,
+    io::copy,
 };
+use isahc::http::header::CONTENT_LENGTH;
 use isahc::prelude::*;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -69,34 +70,37 @@ pub async fn download_addon(
             package.version,
             &addon.primary_folder_id
         );
-        let mut resp =
-            request_async(shared_client, package.download_url.clone(), vec![], None).await?;
-        let body = resp.body_mut();
+        let resp = request_async(shared_client, package.download_url.clone(), vec![], None).await?;
+        let (parts, body) = resp.into_parts();
+
+        // If response length doesn't equal content length, full file wasn't downloaded
+        // so error out
+        {
+            let content_length = parts
+                .headers
+                .get(CONTENT_LENGTH)
+                .map(|v| v.to_str().unwrap_or_default())
+                .unwrap_or_default()
+                .parse::<u64>()
+                .unwrap_or_default();
+
+            let body_length = body.len().unwrap_or_default();
+
+            if body_length != content_length {
+                return Err(ClientError::Custom(
+                    "Download failed, body len doesn't match content len".to_string(),
+                ));
+            }
+        }
 
         if !to_directory.exists() {
             create_dir_all(to_directory).await?;
         }
 
         let zip_path = to_directory.join(&addon.primary_folder_id);
-        let mut buffer = [0; 8000]; // 8KB
-        let mut file = File::create(&zip_path).await?;
+        let file = File::create(&zip_path).await?;
 
-        loop {
-            match body.read(&mut buffer).await {
-                Ok(0) => {
-                    break;
-                }
-                Ok(x) => {
-                    file.write_all(&buffer[0..x])
-                        .await
-                        .expect("TODO: error handling");
-                }
-                Err(e) => {
-                    println!("error: {:?}", e);
-                    break;
-                }
-            }
-        }
+        copy(body, file).await?;
     }
 
     Ok(())
