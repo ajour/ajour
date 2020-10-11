@@ -63,6 +63,7 @@ pub async fn install_addon(
             std::io::copy(&mut file, &mut outfile)?;
         }
     }
+
     // Cleanup
     std::fs::remove_file(&zip_path)?;
 
