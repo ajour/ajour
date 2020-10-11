@@ -346,7 +346,7 @@ impl Addon {
     /// Returns the path to the toc file
     pub fn toc_path(&self) -> Option<PathBuf> {
         let path = self.path.clone();
-        if let Some(name) = path.clone().file_name() {
+        if let Some(name) = path.file_name() {
             let name = name.to_str().unwrap();
             return Some(path.join(format!("{}.toc", name)));
         }
