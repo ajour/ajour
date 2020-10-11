@@ -48,13 +48,14 @@ dependencies = [
 
 [[package]]
 name = "ajour"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "ajour-core",
  "async-std",
  "chrono",
  "embed-resource",
  "fern",
+ "futures",
  "iced",
  "iced_futures",
  "iced_native",
@@ -68,11 +69,12 @@ dependencies = [
  "structopt",
  "timeago",
  "widgets",
+ "winapi 0.3.9",
 ]
 
 [[package]]
 name = "ajour-core"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "async-std",
  "chrono",

@@ -68,7 +68,7 @@ pub fn settings_container<'a, 'b>(
     let directory_data_text_container = Container::new(directory_data_text)
         .height(Length::Units(25))
         .center_y()
-        .style(style::SecondaryTextContainer(color_palette));
+        .style(style::NormalForegroundContainer(color_palette));
 
     // Data row for the World of Warcraft directory selection.
     let path_data_row = Row::new()
@@ -126,7 +126,7 @@ pub fn settings_container<'a, 'b>(
         let current_scale_container = Container::new(current_scale_text)
             .height(Length::Units(25))
             .center_y()
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::BrightBackgroundContainer(color_palette));
 
         // Data row for the World of Warcraft directory selection.
         let scale_buttons_row = Row::new()
@@ -173,7 +173,7 @@ pub fn settings_container<'a, 'b>(
         let directory_data_text_container = Container::new(directory_data_text)
             .height(Length::Units(25))
             .center_y()
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         // Data row for the Backup directory selection.
         let backup_directory_row = Row::new()
@@ -225,7 +225,7 @@ pub fn settings_container<'a, 'b>(
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::SecondaryTextContainer(color_palette));
+                .style(style::NormalForegroundContainer(color_palette));
 
             let backup_button: Element<Interaction> = backup_button.into();
 
@@ -242,7 +242,7 @@ pub fn settings_container<'a, 'b>(
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::SecondaryTextContainer(color_palette));
+                .style(style::NormalForegroundContainer(color_palette));
 
             backup_now_row = backup_now_row.push(backup_status_text_container);
         }
@@ -280,11 +280,9 @@ pub fn settings_container<'a, 'b>(
             let mut left_button = Button::new(
                 &mut column.up_btn_state,
                 Text::new(" ▲ ").size(11).color(if !is_first {
-                    color_palette.primary
+                    color_palette.bright.primary
                 } else {
-                    let mut color = color_palette.primary;
-                    color.a = 0.20;
-                    color
+                    color_palette.normal.primary
                 }),
             )
             .style(style::DefaultButton(color_palette));
@@ -295,11 +293,9 @@ pub fn settings_container<'a, 'b>(
             let mut right_button = Button::new(
                 &mut column.down_btn_state,
                 Text::new(" ▼ ").size(11).color(if !is_last {
-                    color_palette.primary
+                    color_palette.bright.primary
                 } else {
-                    let mut color = color_palette.primary;
-                    color.a = 0.20;
-                    color
+                    color_palette.normal.primary
                 }),
             )
             .style(style::DefaultButton(color_palette));
@@ -379,12 +375,12 @@ pub fn settings_container<'a, 'b>(
     let left_container = Container::new(left_column)
         .width(Length::FillPortion(1))
         .height(Length::Shrink)
-        .style(style::AddonRowDefaultTextContainer(color_palette));
+        .style(style::BrightForegroundContainer(color_palette));
 
     let middle_container = Container::new(middle_column)
         .width(Length::Units(150))
         .height(Length::Shrink)
-        .style(style::AddonRowDefaultTextContainer(color_palette));
+        .style(style::BrightForegroundContainer(color_palette));
 
     let right_column = Column::new()
         .push(columns_title_row)
@@ -393,7 +389,7 @@ pub fn settings_container<'a, 'b>(
     let right_container = Container::new(right_column)
         .width(Length::Units(200))
         .height(Length::Units(255))
-        .style(style::AddonRowDefaultTextContainer(color_palette));
+        .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
     let row = Row::new()
@@ -406,7 +402,7 @@ pub fn settings_container<'a, 'b>(
     // Returns the final container.
     Container::new(row)
         .height(Length::Shrink)
-        .style(style::AddonRowDefaultTextContainer(color_palette))
+        .style(style::BrightForegroundContainer(color_palette))
         .padding(DEFAULT_PADDING + DEFAULT_PADDING)
 }
 
@@ -449,9 +445,9 @@ pub fn addon_data_cell<'a, 'b>(
         if release_package.as_deref().is_some() {}
 
         if is_addon_expanded {
-            title_button = title_button.style(style::SelectedTextButton(color_palette));
+            title_button = title_button.style(style::SelectedBrightTextButton(color_palette));
         } else {
-            title_button = title_button.style(style::TextButton(color_palette));
+            title_button = title_button.style(style::BrightTextButton(color_palette));
         }
 
         let title_button: Element<Interaction> = title_button.into();
@@ -474,7 +470,7 @@ pub fn addon_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::AddonRowDefaultTextContainer(color_palette));
+            .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
@@ -497,7 +493,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, installed_version_container));
     }
@@ -520,7 +516,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -543,7 +539,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, channel_container));
     }
@@ -566,7 +562,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, author_container));
     }
@@ -590,7 +586,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -615,25 +611,26 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .center_x()
-            .style(style::AddonRowSecondaryTextContainer(color_palette)),
+            .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Updatable => {
                 let id = addon.id.clone();
-                let update_button: Element<Interaction> = Button::new(
-                    &mut addon.update_btn_state,
-                    Text::new("Update")
-                        .horizontal_alignment(HorizontalAlignment::Center)
-                        .size(DEFAULT_FONT_SIZE),
-                )
-                .style(style::SecondaryButton(color_palette))
-                .on_press(Interaction::Update(id))
-                .into();
+                let update_wrapper = Container::new(Text::new("Update").size(DEFAULT_FONT_SIZE))
+                    .width(*width)
+                    .center_x()
+                    .align_x(Align::Center);
+                let update_button: Element<Interaction> =
+                    Button::new(&mut addon.update_btn_state, update_wrapper)
+                        .width(Length::FillPortion(1))
+                        .style(style::SecondaryButton(color_palette))
+                        .on_press(Interaction::Update(id))
+                        .into();
 
                 Container::new(update_button.map(Message::Interaction))
                     .height(default_height)
                     .width(*width)
                     .center_y()
                     .center_x()
-                    .style(style::AddonRowDefaultTextContainer(color_palette))
+                    .style(style::BrightForegroundContainer(color_palette))
             }
             AddonState::Downloading => {
                 Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
@@ -642,7 +639,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .center_y()
                     .center_x()
                     .padding(5)
-                    .style(style::AddonRowSecondaryTextContainer(color_palette))
+                    .style(style::NormalForegroundContainer(color_palette))
             }
             AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
@@ -650,21 +647,21 @@ pub fn addon_data_cell<'a, 'b>(
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+                .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+                .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+                .style(style::NormalForegroundContainer(color_palette)),
         };
 
         row_containers.push((idx, update_button_container));
@@ -698,10 +695,10 @@ pub fn addon_data_cell<'a, 'b>(
         let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
         let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
         let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
-        let author_title_container =
-            Container::new(author_title_text).style(style::DefaultTextContainer(color_palette));
+        let author_title_container = Container::new(author_title_text)
+            .style(style::BrightForegroundContainer(color_palette));
         let notes_title_container =
-            Container::new(notes_title_text).style(style::DefaultTextContainer(color_palette));
+            Container::new(notes_title_text).style(style::BrightForegroundContainer(color_palette));
 
         let release_date_text: String = if let Some(package) = release_package {
             let f = timeago::Formatter::new();
@@ -719,11 +716,11 @@ pub fn addon_data_cell<'a, 'b>(
         let release_date_text_container = Container::new(release_date_text)
             .center_y()
             .padding(5)
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
-        let release_channel_title_container =
-            Container::new(release_channel_title).style(style::DefaultTextContainer(color_palette));
+        let release_channel_title_container = Container::new(release_channel_title)
+            .style(style::BrightForegroundContainer(color_palette));
         let release_channel_list = PickList::new(
             &mut addon.pick_release_channel_state,
             &ReleaseChannel::ALL[..],
@@ -738,7 +735,7 @@ pub fn addon_data_cell<'a, 'b>(
             &mut addon.website_btn_state,
             Text::new("Website").size(DEFAULT_FONT_SIZE),
         )
-        .style(style::DefaultBoxedButton(color_palette));
+        .style(style::DefaultButton(color_palette));
 
         if let Some(link) = addon.website_url.clone() {
             website_button = website_button.on_press(Interaction::OpenLink(link));
@@ -750,7 +747,7 @@ pub fn addon_data_cell<'a, 'b>(
             &mut addon.force_btn_state,
             Text::new("Force update").size(DEFAULT_FONT_SIZE),
         )
-        .style(style::DefaultBoxedButton(color_palette));
+        .style(style::DefaultButton(color_palette));
 
         // If we have a release package on addon, enable force update.
         if release_package.is_some() {
@@ -769,7 +766,7 @@ pub fn addon_data_cell<'a, 'b>(
 
         let mut ignore_button = Button::new(&mut addon.ignore_btn_state, ignore_button_text)
             .on_press(Interaction::Ignore(addon.id.clone()))
-            .style(style::DefaultBoxedButton(color_palette));
+            .style(style::DefaultButton(color_palette));
 
         if is_ignored {
             ignore_button = ignore_button.on_press(Interaction::Unignore(addon.id.clone()));
@@ -784,7 +781,7 @@ pub fn addon_data_cell<'a, 'b>(
             Text::new("Delete").size(DEFAULT_FONT_SIZE),
         )
         .on_press(Interaction::Delete(addon.id.clone()))
-        .style(style::DeleteBoxedButton(color_palette))
+        .style(style::DefaultDeleteButton(color_palette))
         .into();
 
         let test_row = Row::new()
@@ -819,7 +816,7 @@ pub fn addon_data_cell<'a, 'b>(
         let details_container = Container::new(column)
             .width(Length::Fill)
             .padding(20)
-            .style(style::AddonRowDetailsContainer(color_palette));
+            .style(style::FadedNormalForegroundContainer(color_palette));
 
         let row = Row::new()
             .push(left_spacer)
@@ -897,7 +894,7 @@ pub fn addon_row_titles<'a>(
 
         let row_container = Container::new(row_header.map(Message::Interaction))
             .width(column.width)
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
 
         // Only shows row titles if we have any addons.
         if !addons.is_empty() {
@@ -936,13 +933,13 @@ pub fn menu_addons_container<'a>(
         update_all_button_state,
         Text::new("Update All").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(color_palette));
+    .style(style::DefaultButton(color_palette));
 
     let mut refresh_button = Button::new(
         refresh_button_state,
         Text::new("Refresh").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(color_palette));
+    .style(style::DefaultButton(color_palette));
 
     // Is any addon performing an action.
     let addons_performing_actions = addons
@@ -982,28 +979,25 @@ pub fn menu_addons_container<'a>(
         retail_btn_state,
         Text::new("Retail").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette))
+    .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Retail));
 
     let mut classic_button = Button::new(
         classic_btn_state,
         Text::new("Classic").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette))
+    .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Classic));
 
     if !ajour_performing_actions && !ajour_welcome {
         match config.wow.flavor {
             Flavor::Retail => {
-                retail_button = retail_button.style(style::SegmentedSelectedButton(color_palette));
-                classic_button =
-                    classic_button.style(style::SegmentedUnselectedButton(color_palette));
+                retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
             }
             Flavor::Classic => {
-                classic_button =
-                    classic_button.style(style::SegmentedSelectedButton(color_palette));
-                retail_button =
-                    retail_button.style(style::SegmentedUnselectedButton(color_palette));
+                classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
             }
         }
     }
@@ -1037,7 +1031,7 @@ pub fn menu_addons_container<'a>(
     let status_container = Container::new(status_text)
         .center_y()
         .padding(5)
-        .style(style::SecondaryTextContainer(color_palette));
+        .style(style::NormalBackgroundContainer(color_palette));
 
     // Displays an error, if any has occured.
     let error_text = if let AjourState::Error(e) = state {
@@ -1052,7 +1046,7 @@ pub fn menu_addons_container<'a>(
         .center_x()
         .padding(5)
         .width(Length::FillPortion(1))
-        .style(style::StatusErrorTextContainer(color_palette));
+        .style(style::NormalErrorBackgroundContainer(color_palette));
 
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
@@ -1092,26 +1086,24 @@ pub fn menu_container<'a>(
         addon_mode_button_state,
         Text::new("My Addons").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette));
+    .style(style::DisabledDefaultButton(color_palette));
 
     let mut catalog_mode_button = Button::new(
         catalog_mode_btn_state,
         Text::new("Catalog").size(DEFAULT_FONT_SIZE),
     )
-    .style(style::SegmentedDisabledButton(color_palette));
+    .style(style::DisabledDefaultButton(color_palette));
 
     match mode {
         AjourMode::MyAddons => {
             addons_mode_button =
-                addons_mode_button.style(style::SegmentedSelectedButton(color_palette));
-            catalog_mode_button =
-                catalog_mode_button.style(style::SegmentedUnselectedButton(color_palette));
+                addons_mode_button.style(style::SelectedDefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
         }
         AjourMode::Catalog => {
-            addons_mode_button =
-                addons_mode_button.style(style::SegmentedUnselectedButton(color_palette));
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
-                catalog_mode_button.style(style::SegmentedSelectedButton(color_palette));
+                catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
         }
     }
 
@@ -1122,10 +1114,9 @@ pub fn menu_container<'a>(
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(AjourMode::Catalog));
     } else {
-        addons_mode_button =
-            addons_mode_button.style(style::SegmentedDisabledButton(color_palette));
+        addons_mode_button = addons_mode_button.style(style::DisabledDefaultButton(color_palette));
         catalog_mode_button =
-            catalog_mode_button.style(style::SegmentedDisabledButton(color_palette));
+            catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
     }
 
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
@@ -1137,19 +1128,17 @@ pub fn menu_container<'a>(
         .spacing(1);
 
     let version_text = Text::new(if let Some(new_version) = needs_update {
-        format!("New Ajour version available {} -> {}", VERSION, new_version)
+        format!("New Ajour version available {} > {}", VERSION, new_version)
     } else {
         VERSION.to_owned()
     })
     .size(DEFAULT_FONT_SIZE)
     .horizontal_alignment(HorizontalAlignment::Right);
 
-    let mut version_container = Container::new(version_text).center_y().padding(5);
-    if needs_update.is_some() {
-        version_container = version_container.style(style::StatusErrorTextContainer(color_palette));
-    } else {
-        version_container = version_container.style(style::SecondaryTextContainer(color_palette));
-    }
+    let version_container = Container::new(version_text)
+        .center_y()
+        .padding(5)
+        .style(style::NormalForegroundContainer(color_palette));
 
     let settings_button: Element<Interaction> = Button::new(
         settings_button_state,
@@ -1157,7 +1146,7 @@ pub fn menu_container<'a>(
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
-    .style(style::DefaultBoxedButton(color_palette))
+    .style(style::DefaultButton(color_palette))
     .on_press(Interaction::Settings)
     .into();
 
@@ -1200,7 +1189,7 @@ pub fn menu_container<'a>(
     let settings_column = Column::new().push(settings_row);
 
     // Wraps it in a container.
-    Container::new(settings_column).style(style::SurfaceContainer(color_palette))
+    Container::new(settings_column).style(style::BrightForegroundContainer(color_palette))
 }
 
 pub fn status_container<'a>(
@@ -1215,7 +1204,7 @@ pub fn status_container<'a>(
         .horizontal_alignment(HorizontalAlignment::Center);
     let title_container = Container::new(title)
         .width(Length::Fill)
-        .style(style::DefaultTextContainer(color_palette));
+        .style(style::BrightBackgroundContainer(color_palette));
 
     let description = Text::new(description)
         .size(DEFAULT_FONT_SIZE)
@@ -1223,7 +1212,7 @@ pub fn status_container<'a>(
         .horizontal_alignment(HorizontalAlignment::Center);
     let description_container = Container::new(description)
         .width(Length::Fill)
-        .style(style::SecondaryTextContainer(color_palette));
+        .style(style::NormalBackgroundContainer(color_palette));
 
     let mut colum = Column::new()
         .push(title_container)
@@ -1239,7 +1228,7 @@ pub fn status_container<'a>(
         let onboarding_button: Element<Interaction> =
             Button::new(btn_state, onboarding_button_title_container)
                 .width(Length::Units(100))
-                .style(style::DefaultBoxedButton(color_palette))
+                .style(style::DefaultButton(color_palette))
                 .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
                 .into();
 
@@ -1305,7 +1294,7 @@ pub fn catalog_row_titles<'a>(
 
         let row_container = Container::new(row_header.map(Message::Interaction))
             .width(column.width)
-            .style(style::SecondaryTextContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
 
         // Only shows row titles if we have any catalog results.
         if !catalog.addons.is_empty() {
@@ -1375,7 +1364,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .align_x(Align::Center);
 
         let mut retail_install_button = Button::new(retail_install_state, retail_install_wrapper)
-            .style(style::DefaultBoxedButton(color_palette))
+            .style(style::DefaultButton(color_palette))
             .width(*width);
 
         if !retail_installed && !retail_downloading && retail_exists {
@@ -1393,7 +1382,7 @@ pub fn catalog_data_cell<'a, 'b>(
                 .height(default_height)
                 .width(*width)
                 .center_y()
-                .style(style::AddonRowDefaultTextContainer(color_palette));
+                .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, retail_install_container));
     }
@@ -1428,7 +1417,7 @@ pub fn catalog_data_cell<'a, 'b>(
 
         let mut classic_install_button =
             Button::new(classic_install_state, classic_install_wrapper)
-                .style(style::DefaultBoxedButton(color_palette))
+                .style(style::DefaultButton(color_palette))
                 .width(*width);
 
         if !classic_installed && !classic_downloading && classic_exists {
@@ -1447,7 +1436,7 @@ pub fn catalog_data_cell<'a, 'b>(
                 .width(*width)
                 .center_x()
                 .center_y()
-                .style(style::AddonRowDefaultTextContainer(color_palette));
+                .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, classic_install_container));
     }
@@ -1470,7 +1459,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowDefaultTextContainer(color_palette));
+            .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
@@ -1493,7 +1482,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, description_container));
     }
@@ -1515,8 +1504,9 @@ pub fn catalog_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
+            .center_x()
             .padding(5)
-            .style(style::AddonRowDefaultTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
     }
@@ -1544,7 +1534,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::AddonRowSecondaryTextContainer(color_palette));
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, num_downloads_container));
     }
