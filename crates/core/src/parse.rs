@@ -835,8 +835,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
 }
 
 pub async fn write_toc_value(toc_path: &PathBuf, key: &str, value: &str) -> Result<()> {
-    println!("Writing to TOC {:?}  {} {}", toc_path, key, value);
-    let new = format!("## {}: {}", key, value);
+    let new = format!("\n## {}: {}", key, value);
     async_std::fs::OpenOptions::new()
         .append(true)
         .open(toc_path)

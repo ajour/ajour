@@ -105,7 +105,7 @@ pub enum Message {
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
-    UnpackedAddon((Flavor, String, Result<()>)),
+    UnpackedAddon((Flavor, String, Result<Vec<PathBuf>>)),
     UpdateWowDirectory(Option<PathBuf>),
     UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),

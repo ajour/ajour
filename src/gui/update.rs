@@ -582,8 +582,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.id == id) {
                 match result {
-                    Ok(_) => {
+                    Ok(paths) => {
                         addon.state = AddonState::Fingerprint;
+
+                        // If zip contained exactly 1 addon, then lets update the path
+                        if paths.len() == 1 {
+                            addon.path = paths[0].clone();
+                        }
 
                         if let Some(package) = addon.relevant_release_package() {
                             addon.version = Some(package.version.clone());
@@ -645,7 +650,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.state = AddonState::Ajour(Some("Error".to_owned()));
                 }
 
-                // if its a tukio addon
+                // if its a tukio addon we would like to add the tukui id if missing
                 if addon.tukui_id.is_some() {
                     return Ok(Command::perform(
                         perform_tukui_toc_update(addon.clone()),
@@ -1244,7 +1249,7 @@ async fn perform_unpack_addon(
     addon: Addon,
     from_directory: PathBuf,
     to_directory: PathBuf,
-) -> (Flavor, String, Result<()>) {
+) -> (Flavor, String, Result<Vec<PathBuf>>) {
     (
         flavor,
         addon.id.clone(),
