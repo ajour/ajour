@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+## [0.4.1] - 2020-10-11
 ### Added
 - 10 new themes has been bundled together with the application.
   - The way you define a theme has been refactored so we can define more nuances.
