@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+## [0.4.1] - 2020-10-11
+### Added
+- 10 new themes has been bundled together with the application.
+  - The way you define a theme has been refactored so we can define more nuances.
+  - This is a breaking changes for old themes, which needs to be refactored to the new format. By default if the theme does not conform to the new format, Ajour will simply not try to parse it.
+- Added a command line option to update all addons with an update without launching the GUI. Process will exit after completing.
+  - Use `ajour update` from command line
+
+### Fixed
+- Fixed a case where we would choose alpha even though it was older than stable.
+- Fixed fingerprinting where some addons would fail during fingerprinting due to invalid UTF-8 characters and missing files. These addons now successfully fingerprint.
 
 ## [0.4.0] - 2020-10-06
 ### Added

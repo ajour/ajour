@@ -17,7 +17,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::SystemTime;
@@ -613,7 +613,13 @@ pub fn fingerprint_addon_dir(
             file_parsing_regex.get(&ext).ok_or_else(|| {
                 ClientError::FingerprintError(format!("ext not in file parsing regex: {:?}", ext))
             })?;
-        let text = std::fs::read_to_string(&path).map_err(ClientError::fingerprint)?;
+        let mut file = File::open(&path).map_err(ClientError::fingerprint)?;
+
+        let mut buf = vec![];
+        file.read_to_end(&mut buf)
+            .map_err(ClientError::fingerprint)?;
+
+        let text = String::from_utf8_lossy(&buf);
         let text = comment_strip_regex.replace_all(&text, "");
         for line in text.split(&['\n', '\r'][..]) {
             let mut last_offset = 0;
@@ -642,17 +648,13 @@ pub fn fingerprint_addon_dir(
                     .as_str();
                 // Path might be case insensitive and have windows separators. Find it
                 let path_match = path_match.replace("\\", "/");
-                let parent = path.parent().ok_or_else(|| {
-                    ClientError::FingerprintError(format!("No parent directory for {:?}", path))
-                })?;
-                let file_to_find = parent.join(Path::new(&path_match));
-                let real_path = find_file(&file_to_find).ok_or_else(|| {
-                    ClientError::FingerprintError(format!(
-                        "Unable to find file: {:?}",
-                        file_to_find
-                    ))
-                })?;
-                to_parse.push_back(real_path);
+                if let Some(parent) = path.parent() {
+                    let file_to_find = parent.join(Path::new(&path_match));
+
+                    if let Some(real_path) = find_file(&file_to_find) {
+                        to_parse.push_back(real_path);
+                    }
+                }
             }
         }
     }

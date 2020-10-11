@@ -1,5 +1,5 @@
 <div align="center">
-  
+
 <h1>Ajour</h1>
 
 ![Continuous integration](https://github.com/casperstorm/ajour/workflows/Continuous-integration/badge.svg)
@@ -16,6 +16,7 @@
 - [Features](#features)
 - [Install](#install)
 - [Themes](#themes)
+- [Command Line](#command-line)
 - [Contribute](#contribute)
 - [FAQ](#faq)
 - [Acknowledgement](#acknowledgement)
@@ -53,7 +54,7 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 - [Create your own custom themes](./THEMES.md)
 - Ability to backup your whole UI, including all settings from WTF
 
-## Install 
+## Install
 
 Prebuilt binaries for macOS and Windows can be downloaded from the [GitHub releases](https://github.com/casperstorm/ajour/releases) page.
 
@@ -61,28 +62,18 @@ For everyone else, a detailed instruction can be found [here](https://github.com
 
 ## Themes
 
-<p align="left">
-  <img width="200"
-       alt="Ajour with Ayu Dark theme"
-       src="./resources/themes/ayu-dark.png">
-    <img width="200"
-       alt="Ajour with Gruvbox Dark theme"
-       src="./resources/themes/gruvbox-dark.png">
-      <img width="200"
-       alt="Ajour with Nord theme"
-       src="./resources/themes/nord.png">
-    <img width="200"
-       alt="Ajour with Outrun theme"
-       src="./resources/themes/outrun.png">
-</p>
+Find instructions for building your own themes [here](./THEMES.md).
 
-Ajour supports Dark (default) and Light themes out of the box. Custom themes can also be added and selected inside the application.  
-Find instructions and a variety of custom themes [here](./THEMES.md).
+## Command Line
+
+Ajour accepts arguments and can even run certain operations on the command line without launching the GUI, such as updating all addons. This makes it possible to manage your addon collection through scripts and scheduling.
+
+You can pass `--help` to see a full list of supported flags, options and commands.
 
 ## Contribute
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-Ajour wouldn't be here without your help.  
+Ajour wouldn't be here without your help.
 I welcome contributions of any kind, because together we can make Ajour even better.
 
 + [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=) if you are missing a vital feature.
@@ -128,11 +119,11 @@ We wanted to create an application which natively compiles to both Windows, Linu
 
 ## Other addon managers
 
-If Ajour isn't your cup of tea, then [Ogri'la](https://github.com/ogri-la) has done a great job of creating a curated [list of other addon managers](https://ogri-la.github.io/wow-addon-managers/).
+If Ajour isn't your cup of tea, then [Ogri'la](https://github.com/ogri-la) has done a great job of [cataloguing addon managers](https://ogri-la.github.io/wow-addon-managers/).
 
 ## Acknowledgement
 
-- [tarkah](https://github.com/tarkah) for the many great contributions. 
+- [tarkah](https://github.com/tarkah) for the many great contributions.
 - [Rasmus Nielsen](https://rasmusnielsen.dk/) for the Ajour icon.
 - [Rune Seir](https://instagram.com/rseir/) for the Ajour banner.
 - [mlablah](https://github.com/mlablah) for the architectural discussions.

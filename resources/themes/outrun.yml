@@ -1,8 +1,0 @@
-name: Outrun
-palette:
-  primary: '#f7249e'
-  secondary: '#a371f8'
-  surface: '#080617'
-  on_surface: '#8f559c'
-  background: '#0d0921'
-  error: '#e61f42'
