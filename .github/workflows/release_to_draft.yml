@@ -40,10 +40,10 @@ jobs:
 
       - name: "MacOS wgpu?"
         if: ${{ matrix.os == 'macos' && matrix.gfx == 'wgpu' }} 
-        run: make binary dmg
+        run: make binary dmg MACOS=1
       - name: "MacOS OpenGL?"
         if: ${{ matrix.os == 'macos' && matrix.gfx == 'opengl' }} 
-        run: make binary dmg OPENGL=1
+        run: make binary dmg OPENGL=1 MACOS=1
 
       - name: "Windows wgpu?"
         if: ${{ matrix.os == 'windows' && matrix.gfx == 'wgpu' }}
