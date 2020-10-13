@@ -73,28 +73,12 @@ pub async fn fetch_remote_package(id: &str, flavor: &Flavor) -> Result<TukuiPack
     }
 }
 
-pub async fn latest_stable_addon_from_id(
-    tukui_id: u32,
-    mut addon: Addon,
-    mut addon_path: PathBuf,
-    flavor: Flavor,
-) -> Result<(u32, Flavor, Addon)> {
+pub async fn latest_package(tukui_id: u32, flavor: Flavor) -> Result<(u32, Flavor, TukuiPackage)> {
     let tukui_id_string = tukui_id.to_string();
 
     let package = fetch_remote_package(&tukui_id_string, &flavor).await?;
 
-    addon_path.push(&package.name);
-
-    addon.title = package.name.clone();
-    addon.id = package.name.clone();
-    addon.author = package.author.clone();
-    addon.notes = package.small_desc.clone();
-    addon.tukui_id = Some(tukui_id_string);
-    addon.path = addon_path;
-
-    addon.apply_tukui_package(&package);
-
-    Ok((tukui_id, flavor, addon))
+    Ok((tukui_id, flavor, package))
 }
 
 pub async fn fetch_changelog(id: &str, flavor: &Flavor) -> Result<(String, String)> {

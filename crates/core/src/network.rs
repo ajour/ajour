@@ -67,7 +67,7 @@ pub async fn download_addon(
         log::debug!(
             "downloading remote version {} for {}",
             package.version,
-            &addon.id
+            &addon.primary_folder_id
         );
         let mut resp =
             request_async(shared_client, package.download_url.clone(), vec![], None).await?;
@@ -77,7 +77,7 @@ pub async fn download_addon(
             create_dir_all(to_directory).await?;
         }
 
-        let zip_path = to_directory.join(&addon.id);
+        let zip_path = to_directory.join(&addon.primary_folder_id);
         let mut buffer = [0; 8000]; // 8KB
         let mut file = File::create(&zip_path).await?;
 

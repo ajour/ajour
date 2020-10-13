@@ -1,11 +1,14 @@
-use crate::{addon::Addon, Result};
+use crate::{
+    addon::{Addon, AddonFolder},
+    Result,
+};
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
 
 /// Deletes an Addon and all dependencies from disk.
-pub fn delete_addons(path: &PathBuf, dependencies: &[String]) -> Result<()> {
-    for dependency in dependencies {
-        let path = path.join(dependency);
+pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
+    for folder in addon_folders {
+        let path = &folder.path;
         if path.exists() {
             remove_dir_all(path)?;
         }
@@ -22,7 +25,7 @@ pub async fn install_addon(
     from_directory: &PathBuf,
     to_directory: &PathBuf,
 ) -> Result<()> {
-    let zip_path = from_directory.join(addon.id.clone());
+    let zip_path = from_directory.join(&addon.primary_folder_id);
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
 
