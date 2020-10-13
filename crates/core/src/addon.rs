@@ -401,14 +401,14 @@ impl Addon {
     }
 
     /// Returns the version of the addon
-    pub fn version(&self) -> Option<String> {
+    pub fn version(&self) -> Option<&str> {
         if self.repository_metadata.version.is_some() {
-            self.repository_metadata.version.clone()
+            self.repository_metadata.version.as_deref()
         } else {
             self.folders
                 .iter()
                 .find(|f| f.id == self.primary_folder_id)
-                .map(|f| f.version.clone())
+                .map(|f| f.version.as_deref())
                 .flatten()
         }
     }
@@ -419,40 +419,40 @@ impl Addon {
     }
 
     /// Returns the title of the addon.
-    pub fn title(&self) -> String {
-        let meta_title = self.repository_metadata.title.as_ref();
+    pub fn title(&self) -> &str {
+        let meta_title = self.repository_metadata.title.as_deref();
         let folder_title = self
             .primary_addon_folder()
-            .map(|f| &f.title)
-            .unwrap_or(&self.primary_folder_id);
+            .map(|f| f.title.as_str())
+            .unwrap_or_else(|| self.primary_folder_id.as_str());
 
-        meta_title.unwrap_or(folder_title).clone()
+        meta_title.unwrap_or(folder_title)
     }
 
     /// Returns the author of the addon.
-    pub fn author(&self) -> Option<String> {
-        let meta_author = self.repository_metadata.author.as_ref();
+    pub fn author(&self) -> Option<&str> {
+        let meta_author = self.repository_metadata.author.as_deref();
         let folder_author = self
             .primary_addon_folder()
-            .map(|f| f.author.as_ref())
+            .map(|f| f.author.as_deref())
             .flatten();
 
-        meta_author.map_or(folder_author, Option::Some).cloned()
+        meta_author.map_or(folder_author, Option::Some)
     }
 
     /// Returns the game version of the addon.
-    pub fn game_version(&self) -> Option<String> {
-        self.repository_metadata.game_version.clone()
+    pub fn game_version(&self) -> Option<&str> {
+        self.repository_metadata.game_version.as_deref()
     }
 
     /// Returns the notes of the addon.
-    pub fn notes(&self) -> Option<String> {
-        self.repository_metadata.notes.clone()
+    pub fn notes(&self) -> Option<&str> {
+        self.repository_metadata.notes.as_deref()
     }
 
     /// Returns the website url of the addon.
-    pub fn website_url(&self) -> Option<String> {
-        self.repository_metadata.website_url.clone()
+    pub fn website_url(&self) -> Option<&str> {
+        self.repository_metadata.website_url.as_deref()
     }
 
     /// Returns the curse id of the addon, if applicable.
@@ -468,31 +468,29 @@ impl Addon {
     }
 
     /// Returns the tukui id of the addon, if applicable.
-    pub fn tukui_id(&self) -> Option<String> {
+    pub fn tukui_id(&self) -> Option<&str> {
         let folder_tukui = self
             .primary_addon_folder()
-            .map(|f| f.repository_identifiers.tukui.as_ref())
+            .map(|f| f.repository_identifiers.tukui.as_deref())
             .flatten();
 
         self.repository_identifiers
             .tukui
-            .as_ref()
+            .as_deref()
             .map_or(folder_tukui, Option::Some)
-            .cloned()
     }
 
     /// Returns the wowi id of the addon, if applicable.
-    pub fn wowi_id(&self) -> Option<String> {
+    pub fn wowi_id(&self) -> Option<&str> {
         let folder_wowi = self
             .primary_addon_folder()
-            .map(|f| f.repository_identifiers.wowi.as_ref())
+            .map(|f| f.repository_identifiers.wowi.as_deref())
             .flatten();
 
         self.repository_identifiers
             .wowi
-            .as_ref()
+            .as_deref()
             .map_or(folder_wowi, Option::Some)
-            .cloned()
     }
 
     /// Set the curse id for the addon

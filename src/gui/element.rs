@@ -418,14 +418,17 @@ pub fn addon_data_cell<'a, 'b>(
 
     let mut row_containers = vec![];
 
-    let author = addon.author();
-    let game_version = addon.game_version();
-    let notes = addon.notes();
-    let website_url = addon.website_url();
+    let author = addon.author().map(str::to_string);
+    let game_version = addon.game_version().map(str::to_string);
+    let notes = addon.notes().map(str::to_string);
+    let website_url = addon.website_url().map(str::to_string);
 
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
-    let version = addon.version().unwrap_or_else(|| String::from("-"));
+    let version = addon
+        .version()
+        .map(str::to_string)
+        .unwrap_or_else(|| "-".to_string());
     let release_package = addon_cloned.relevant_release_package();
     let remote_version = if let Some(package) = release_package.as_deref() {
         package.version.clone()
@@ -446,7 +449,7 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let title = Text::new(&addon.title()).size(DEFAULT_FONT_SIZE);
+        let title = Text::new(addon.title()).size(DEFAULT_FONT_SIZE);
         let mut title_button = Button::new(&mut addon.details_btn_state, title).on_press(
             Interaction::Expand(ExpandType::Details(addon_cloned.clone())),
         );

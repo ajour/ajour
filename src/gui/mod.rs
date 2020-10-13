@@ -520,19 +520,19 @@ impl Application for Ajour {
                         } else {
                             other_flavor_addons.iter().any(|a| {
                                 a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(addon.addon.id.to_string())
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
                             })
                         };
                         let retail_downloading = if flavor == Flavor::Retail {
                             addons.iter().any(|a| {
                                 (a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(addon.addon.id.to_string()))
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string()))
                                     && a.state == AddonState::Downloading
                             })
                         } else {
                             other_flavor_addons.iter().any(|a| {
                                 (a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(addon.addon.id.to_string()))
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string()))
                                     && a.state == AddonState::Downloading
                             })
                         };
@@ -540,24 +540,24 @@ impl Application for Ajour {
                         let classic_installed = if flavor == Flavor::Classic {
                             addons.iter().any(|a| {
                                 a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(addon.addon.id.to_string())
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
                             })
                         } else {
                             other_flavor_addons.iter().any(|a| {
                                 a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(addon.addon.id.to_string())
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
                             })
                         };
                         let classic_downloading = if flavor == Flavor::Classic {
                             addons.iter().any(|a| {
                                 (a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(addon.addon.id.to_string()))
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string()))
                                     && a.state == AddonState::Downloading
                             })
                         } else {
                             other_flavor_addons.iter().any(|a| {
                                 (a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(addon.addon.id.to_string()))
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string()))
                                     && a.state == AddonState::Downloading
                             })
                         };
