@@ -165,12 +165,46 @@ pub async fn fetch_game_info() -> Result<GameInfo> {
     }
 }
 
-pub async fn latest_package(curse_id: u32, flavor: Flavor) -> Result<(u32, Flavor, Package)> {
+pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<(u32, Flavor, Addon)> {
     let packages: Vec<Package> = fetch_remote_packages_by_ids(&[curse_id]).await?;
 
     let package = packages.into_iter().next().ok_or_else(|| {
         ClientError::Custom(format!("No package found for curse id {}", curse_id))
     })?;
 
-    Ok((curse_id, flavor, package))
+    let stable_file = package
+        .latest_files
+        .iter()
+        .find(|f| {
+            f.release_type == 1
+                && f.game_version_flavor.as_ref() == Some(&format!("wow_{}", flavor))
+        })
+        .ok_or_else(|| {
+            ClientError::Custom(format!("No stable file found for curse id {}", curse_id))
+        })?;
+
+    let first_fingerprint = stable_file
+        .modules
+        .iter()
+        .map(|f| f.fingerprint)
+        .next()
+        .ok_or_else(|| {
+            ClientError::Custom(format!(
+                "No stable file fingerprint found for curse id {}",
+                curse_id
+            ))
+        })?;
+
+    let fingerprint_info = fetch_remote_packages_by_fingerprint(&[first_fingerprint]).await?;
+
+    let info = fingerprint_info.exact_matches.get(0).ok_or_else(|| {
+        ClientError::Custom(format!(
+            "No exact fingerprint match for curse id {}, fingerprint {}",
+            curse_id, first_fingerprint
+        ))
+    })?;
+
+    let addon = Addon::from_curse_fingerprint_info(curse_id, &info, flavor, &[]);
+
+    Ok((curse_id, flavor, addon))
 }

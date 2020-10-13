@@ -73,12 +73,14 @@ pub async fn fetch_remote_package(id: &str, flavor: &Flavor) -> Result<TukuiPack
     }
 }
 
-pub async fn latest_package(tukui_id: u32, flavor: Flavor) -> Result<(u32, Flavor, TukuiPackage)> {
+pub async fn latest_addon(tukui_id: u32, flavor: Flavor) -> Result<(u32, Flavor, Addon)> {
     let tukui_id_string = tukui_id.to_string();
 
     let package = fetch_remote_package(&tukui_id_string, &flavor).await?;
 
-    Ok((tukui_id, flavor, package))
+    let addon = Addon::from_tukui_package(tukui_id_string, &[], &package);
+
+    Ok((tukui_id, flavor, addon))
 }
 
 pub async fn fetch_changelog(id: &str, flavor: &Flavor) -> Result<(String, String)> {

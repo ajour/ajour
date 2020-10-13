@@ -418,8 +418,14 @@ pub fn addon_data_cell<'a, 'b>(
 
     let mut row_containers = vec![];
 
+    let author = addon.author();
+    let game_version = addon.game_version();
+    let notes = addon.notes();
+    let website_url = addon.website_url();
+
+    // Check if current addon is expanded.
     let addon_cloned = addon.clone();
-    let version = addon.version.clone().unwrap_or_else(|| String::from("-"));
+    let version = addon.version().clone().unwrap_or_else(|| String::from("-"));
     let release_package = addon_cloned.relevant_release_package();
     let remote_version = if let Some(package) = release_package.as_deref() {
         package.version.clone()
@@ -440,7 +446,7 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let title = Text::new(&addon.title).size(DEFAULT_FONT_SIZE);
+        let title = Text::new(&addon.title()).size(DEFAULT_FONT_SIZE);
         let mut title_button = Button::new(&mut addon.details_btn_state, title).on_press(
             Interaction::Expand(ExpandType::Details(addon_cloned.clone())),
         );
@@ -607,7 +613,7 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let author = Text::new(addon.author.as_deref().unwrap_or("-")).size(DEFAULT_FONT_SIZE);
+        let author = Text::new(author.as_deref().unwrap_or("-")).size(DEFAULT_FONT_SIZE);
         let author_container = Container::new(author)
             .height(default_height)
             .width(*width)
@@ -631,7 +637,7 @@ pub fn addon_data_cell<'a, 'b>(
         .next()
     {
         let game_version =
-            Text::new(addon.game_version.as_deref().unwrap_or("-")).size(DEFAULT_FONT_SIZE);
+            Text::new(game_version.as_deref().unwrap_or("-")).size(DEFAULT_FONT_SIZE);
         let game_version_container = Container::new(game_version)
             .height(default_height)
             .width(*width)
@@ -664,7 +670,7 @@ pub fn addon_data_cell<'a, 'b>(
             .center_x()
             .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Updatable => {
-                let id = addon.id.clone();
+                let id = addon.primary_folder_id.clone();
                 let update_wrapper = Container::new(Text::new("Update").size(DEFAULT_FONT_SIZE))
                     .width(*width)
                     .center_x()
@@ -791,11 +797,10 @@ pub fn addon_data_cell<'a, 'b>(
                     .push(row);
             }
             ExpandType::Details(_) => {
-                let notes = addon
-                    .notes
+                let notes = notes
                     .clone()
                     .unwrap_or_else(|| "No description for addon.".to_string());
-                let author = addon.author.clone().unwrap_or_else(|| "-".to_string());
+                let author = author.clone().unwrap_or_else(|| "-".to_string());
                 let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
                 let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
                 let bottom_space = Space::new(Length::Units(0), Length::Units(4));
@@ -846,7 +851,7 @@ pub fn addon_data_cell<'a, 'b>(
                 )
                 .style(style::DefaultButton(color_palette));
 
-                if let Some(link) = addon.website_url.clone() {
+                if let Some(link) = website_url.clone() {
                     website_button = website_button.on_press(Interaction::OpenLink(link));
                 }
 
@@ -860,8 +865,8 @@ pub fn addon_data_cell<'a, 'b>(
 
                 // If we have a release package on addon, enable force update.
                 if release_package.is_some() {
-                    force_download_button =
-                        force_download_button.on_press(Interaction::Update(addon.id.clone()));
+                    force_download_button = force_download_button
+                        .on_press(Interaction::Update(addon.primary_folder_id.clone()));
                 }
 
                 let force_download_button: Element<Interaction> = force_download_button.into();
@@ -875,13 +880,15 @@ pub fn addon_data_cell<'a, 'b>(
 
                 let mut ignore_button =
                     Button::new(&mut addon.ignore_btn_state, ignore_button_text)
-                        .on_press(Interaction::Ignore(addon.id.clone()))
+                        .on_press(Interaction::Ignore(addon.primary_folder_id.clone()))
                         .style(style::DefaultButton(color_palette));
 
                 if is_ignored {
-                    ignore_button = ignore_button.on_press(Interaction::Unignore(addon.id.clone()));
+                    ignore_button = ignore_button
+                        .on_press(Interaction::Unignore(addon.primary_folder_id.clone()));
                 } else {
-                    ignore_button = ignore_button.on_press(Interaction::Ignore(addon.id.clone()));
+                    ignore_button = ignore_button
+                        .on_press(Interaction::Ignore(addon.primary_folder_id.clone()));
                 }
 
                 let ignore_button: Element<Interaction> = ignore_button.into();
@@ -890,7 +897,7 @@ pub fn addon_data_cell<'a, 'b>(
                     &mut addon.delete_btn_state,
                     Text::new("Delete").size(DEFAULT_FONT_SIZE),
                 )
-                .on_press(Interaction::Delete(addon.id.clone()))
+                .on_press(Interaction::Delete(addon.primary_folder_id.clone()))
                 .style(style::DefaultDeleteButton(color_palette))
                 .into();
 

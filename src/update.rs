@@ -68,10 +68,10 @@ pub fn update_all_addons() -> Result<()> {
                 // Filter out any ignored addons
                 for mut addon in addons
                     .into_iter()
-                    .filter(|a| !ignored_ids.iter().any(|i| i == &a.id))
+                    .filter(|a| !ignored_ids.iter().any(|i| i == &a.primary_folder_id))
                 {
                     // Apply release channel preference
-                    if let Some(channel) = release_channels.get(&addon.id) {
+                    if let Some(channel) = release_channels.get(&addon.primary_folder_id) {
                         addon.release_channel = *channel;
                     }
 
@@ -105,7 +105,7 @@ pub fn update_all_addons() -> Result<()> {
         addons_to_update
             .iter()
             .for_each(|(_, _, flavor, addon, ..)| {
-                let current_version = addon.version.as_deref().unwrap_or_default();
+                let current_version = addon.version().unwrap_or_default();
                 let new_version = addon
                     .relevant_release_package()
                     .map(|p| p.version.clone())
@@ -113,7 +113,7 @@ pub fn update_all_addons() -> Result<()> {
 
                 log::info!(
                     "\t{} - {}, {} -> {}",
-                    &addon.id,
+                    &addon.primary_folder_id,
                     flavor,
                     current_version,
                     new_version
@@ -168,21 +168,13 @@ async fn update_addon(
     // Stores each folder name we need to fingerprint
     let mut folders_to_fingerprint = vec![];
 
-    // Store main addon
-    folders_to_fingerprint.push((
-        fingerprint_collection.clone(),
-        flavor,
-        &addon_directory,
-        addon.id.clone(),
-    ));
-
-    // Store all dependencies
-    folders_to_fingerprint.extend(addon.dependencies.iter().map(|id| {
+    // Store all folder names
+    folders_to_fingerprint.extend(addon.folders.iter().map(|f| {
         (
             fingerprint_collection.clone(),
             flavor,
             &addon_directory,
-            id.clone(),
+            f.id.clone(),
         )
     }));
 

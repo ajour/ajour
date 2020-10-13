@@ -84,7 +84,7 @@ pub struct RepositoryIdentifiers {
     pub curse: Option<u32>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Repository {
     WowI,
     Tukui,
@@ -177,8 +177,8 @@ pub struct Addon {
     pub(crate) repository_identifiers: RepositoryIdentifiers,
 
     /// The `Repository` that this addon is linked against.
-    pub(crate) active_repository: Option<Repository>,
-    pub(crate) repository_metadata: Option<RepositoryMetadata>,
+    pub active_repository: Option<Repository>,
+    pub(crate) repository_metadata: RepositoryMetadata,
 
     // States for GUI
     #[cfg(feature = "gui")]
@@ -290,7 +290,7 @@ impl Addon {
         let mut addon = Addon::empty(&primary_folder_id);
         addon.active_repository = Some(Repository::Tukui);
         addon.repository_identifiers.tukui = Some(tukui_id);
-        addon.repository_metadata = Some(metadata);
+        addon.repository_metadata = metadata;
 
         // Get folders that match primary folder id or any folder that has a dependency
         // of primary folder id
@@ -377,7 +377,7 @@ impl Addon {
         let mut addon = Addon::empty(&primary_folder_id);
         addon.active_repository = Some(Repository::Curse);
         addon.repository_identifiers.curse = Some(curse_id);
-        addon.repository_metadata = Some(metadata);
+        addon.repository_metadata = metadata;
 
         let folders: Vec<AddonFolder> = info
             .file
@@ -393,8 +393,8 @@ impl Addon {
 
     /// Returns the version of the addon
     pub fn version(&self) -> Option<String> {
-        if let Some(version) = self.repository_metadata.as_ref().map(|m| m.version.clone()) {
-            version
+        if self.repository_metadata.version.is_some() {
+            self.repository_metadata.version.clone()
         } else {
             self.folders
                 .iter()
@@ -404,13 +404,111 @@ impl Addon {
         }
     }
 
+    /// Sets the version of the addon
+    pub fn set_version(&mut self, version: String) {
+        self.repository_metadata.version = Some(version);
+    }
+
     /// Returns the title of the addon.
     pub fn title(&self) -> String {
         self.repository_metadata
+            .title
             .as_ref()
-            .map(|m| m.title.clone())
-            .flatten()
-            .unwrap_or(self.primary_folder_id.clone())
+            .unwrap_or(&self.primary_folder_id)
+            .clone()
+    }
+
+    /// Returns the author of the addon.
+    pub fn author(&self) -> Option<String> {
+        let meta_author = self.repository_metadata.author.as_ref();
+        let folder_author = self
+            .primary_addon_folder()
+            .map(|f| f.author.as_ref())
+            .flatten();
+
+        meta_author.map_or(folder_author, Option::Some).cloned()
+    }
+
+    /// Returns the game version of the addon.
+    pub fn game_version(&self) -> Option<String> {
+        self.repository_metadata.game_version.clone()
+    }
+
+    /// Returns the notes of the addon.
+    pub fn notes(&self) -> Option<String> {
+        self.repository_metadata.notes.clone()
+    }
+
+    /// Returns the website url of the addon.
+    pub fn website_url(&self) -> Option<String> {
+        self.repository_metadata.website_url.clone()
+    }
+
+    /// Returns the curse id of the addon, if applicable.
+    pub fn curse_id(&self) -> Option<u32> {
+        let folder_curse = self
+            .primary_addon_folder()
+            .map(|f| f.repository_identifiers.curse)
+            .flatten();
+
+        self.repository_identifiers
+            .curse
+            .map_or(folder_curse, Option::Some)
+    }
+
+    /// Returns the tukui id of the addon, if applicable.
+    pub fn tukui_id(&self) -> Option<String> {
+        let folder_tukui = self
+            .primary_addon_folder()
+            .map(|f| f.repository_identifiers.tukui.as_ref())
+            .flatten();
+
+        self.repository_identifiers
+            .tukui
+            .as_ref()
+            .map_or(folder_tukui, Option::Some)
+            .cloned()
+    }
+
+    /// Returns the wowi id of the addon, if applicable.
+    pub fn wowi_id(&self) -> Option<String> {
+        let folder_wowi = self
+            .primary_addon_folder()
+            .map(|f| f.repository_identifiers.wowi.as_ref())
+            .flatten();
+
+        self.repository_identifiers
+            .wowi
+            .as_ref()
+            .map_or(folder_wowi, Option::Some)
+            .cloned()
+    }
+
+    /// Set the curse id for the addon
+    pub fn set_curse_id(&mut self, curse_id: u32) {
+        self.repository_identifiers.curse = Some(curse_id);
+    }
+
+    /// Set the tukui id for the addon
+    pub fn set_tukui_id(&mut self, tukui_id: String) {
+        self.repository_identifiers.tukui = Some(tukui_id);
+    }
+
+    /// Set the wowi id for the addon
+    pub fn set_wowi_id(&mut self, wowi_id: String) {
+        self.repository_identifiers.wowi = Some(wowi_id);
+    }
+
+    pub fn remote_packages(&self) -> &HashMap<ReleaseChannel, RemotePackage> {
+        &self.repository_metadata.remote_packages
+    }
+
+    pub fn file_id(&self) -> Option<i64> {
+        self.repository_metadata.file_id
+    }
+
+    fn primary_addon_folder(&self) -> Option<&AddonFolder> {
+        self.folders.iter().find(|f| f.id == self.primary_folder_id)
     }
 
     /// Returns the repository id for the active repository
@@ -435,11 +533,11 @@ impl Addon {
 
     /// Function returns a `bool` indicating if the `remote_package` is a update.
     pub fn is_updatable(&self, remote_package: &RemotePackage) -> bool {
-        if let Some(metadata) = &self.repository_metadata {
-            return remote_package.file_id > metadata.file_id;
+        if self.repository_metadata.file_id.is_none() {
+            return self.is_updatable_by_version_comparison(remote_package);
         }
 
-        self.is_updatable_by_version_comparison(remote_package)
+        remote_package.file_id > self.repository_metadata.file_id
     }
 
     /// We strip both version for non digits, and then
@@ -460,7 +558,7 @@ impl Addon {
     /// Returns the relevant release_package for the addon.
     /// Logic is that if a release channel above the selected is newer, we return that instead.
     pub fn relevant_release_package(&self) -> Option<&RemotePackage> {
-        let remote_packages = &self.repository_metadata.as_ref()?.remote_packages;
+        let remote_packages = &self.repository_metadata.remote_packages;
 
         let stable_package = remote_packages.get(&ReleaseChannel::Stable);
         let beta_package = remote_packages.get(&ReleaseChannel::Beta);

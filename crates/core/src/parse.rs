@@ -225,7 +225,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let _ = fingerprint_collection.save();
 
     // Maps each `Fingerprint` to `AddonFolder`.
-    let addon_folders: Vec<_> = all_dirs
+    let mut addon_folders: Vec<_> = all_dirs
         .par_iter()
         .filter_map(|id| {
             // Generate .toc path.
@@ -245,6 +245,9 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             Some(addon_folder)
         })
         .collect();
+
+    // Ensure addon folders are sorted alphabetically
+    //addon_folders.sort_by_key(|f| f.id.clone());
 
     log::debug!(
         "{} - {} successfully parsed from '.toc'",
@@ -401,12 +404,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 .iter_mut()
                 .find(|a| a.repository_id() == Some(package.id.to_string()));
             if let Some(addon) = addon {
-                if let Some(meta) = addon.repository_metadata.as_mut() {
-                    meta.title = Some(package.name.clone());
-                    meta.website_url = Some(package.website_url.clone());
+                addon.repository_metadata.title = Some(package.name.clone());
+                addon.repository_metadata.website_url = Some(package.website_url.clone());
 
-                    updated += 1;
-                }
+                updated += 1;
             }
         }
 
