@@ -1,5 +1,5 @@
 use crate::{
-    addon::{Addon, ReleaseChannel, RemotePackage},
+    addon::Addon,
     config::Flavor,
     error::ClientError,
     network::{post_json_async, request_async},
@@ -8,8 +8,6 @@ use crate::{
 };
 use isahc::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::PathBuf;
 
 const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
 

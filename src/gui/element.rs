@@ -425,7 +425,7 @@ pub fn addon_data_cell<'a, 'b>(
 
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
-    let version = addon.version().clone().unwrap_or_else(|| String::from("-"));
+    let version = addon.version().unwrap_or_else(|| String::from("-"));
     let release_package = addon_cloned.relevant_release_package();
     let remote_version = if let Some(package) = release_package.as_deref() {
         package.version.clone()

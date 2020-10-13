@@ -9,7 +9,6 @@ use crate::{
 use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 use serde::Deserialize;
-use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize)]
 /// Struct for applying tukui details to an `Addon`.

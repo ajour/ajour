@@ -783,7 +783,8 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
     };
 
     Some(AddonFolder::new(
-        id,
+        id.clone(),
+        title.unwrap_or(id),
         path,
         author,
         notes,

@@ -97,6 +97,7 @@ pub enum Repository {
 pub struct AddonFolder {
     /// ID is always the folder name
     pub id: String,
+    pub title: String,
     pub path: PathBuf,
     pub author: Option<String>,
     pub notes: Option<String>,
@@ -106,9 +107,11 @@ pub struct AddonFolder {
     pub fingerprint: Option<u32>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl AddonFolder {
     pub fn new(
         id: String,
+        title: String,
         path: PathBuf,
         author: Option<String>,
         notes: Option<String>,
@@ -118,6 +121,7 @@ impl AddonFolder {
     ) -> Self {
         AddonFolder {
             id,
+            title,
             path,
             author,
             notes,
@@ -306,9 +310,9 @@ impl Addon {
 
     /// Creates an `Addon` from the Curse package
     pub fn from_curse_package(
-        package: &curse_api::Package,
-        flavor: Flavor,
-        addon_folders: &[AddonFolder],
+        _package: &curse_api::Package,
+        _flavor: Flavor,
+        _addon_folders: &[AddonFolder],
     ) -> Self {
         unimplemented!()
     }
@@ -416,11 +420,13 @@ impl Addon {
 
     /// Returns the title of the addon.
     pub fn title(&self) -> String {
-        self.repository_metadata
-            .title
-            .as_ref()
-            .unwrap_or(&self.primary_folder_id)
-            .clone()
+        let meta_title = self.repository_metadata.title.as_ref();
+        let folder_title = self
+            .primary_addon_folder()
+            .map(|f| &f.title)
+            .unwrap_or(&self.primary_folder_id);
+
+        meta_title.unwrap_or(folder_title).clone()
     }
 
     /// Returns the author of the addon.
