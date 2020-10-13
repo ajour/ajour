@@ -247,7 +247,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .collect();
 
     // Ensure addon folders are sorted alphabetically
-    //addon_folders.sort_by_key(|f| f.id.clone());
+    addon_folders.sort_by(|a, b| a.id.cmp(&b.id));
 
     log::debug!(
         "{} - {} successfully parsed from '.toc'",

@@ -364,26 +364,31 @@ impl Addon {
         metadata.remote_packages = remote_packages;
 
         // Shouldn't panic since we have an exact match on the fingerprint. We use the
-        // first folder (sorted alphabetically) as the primary id
-        let primary_folder_id = info
-            .file
-            .modules
-            .iter()
-            .filter_map(|m| addon_folders.iter().find(|a| a.id == m.foldername))
-            .map(|f| f.id.clone())
-            .next()
-            .unwrap();
+        // first folder (sorted alphabetically) that has a match on curse id as the primary id.
+        // If no folders have a curse id, we just use the first folder alphabetically.
+        let primary_folder_id = if let Some(f) = addon_folders.iter().find(|f| {
+            f.repository_identifiers.curse == Some(curse_id)
+                && info.file.modules.iter().any(|m| m.foldername == f.id)
+        }) {
+            f.id.clone()
+        } else {
+            addon_folders
+                .iter()
+                .find(|f| info.file.modules.iter().any(|m| m.foldername == f.id))
+                .as_ref()
+                .unwrap()
+                .id
+                .clone()
+        };
 
         let mut addon = Addon::empty(&primary_folder_id);
         addon.active_repository = Some(Repository::Curse);
         addon.repository_identifiers.curse = Some(curse_id);
         addon.repository_metadata = metadata;
 
-        let folders: Vec<AddonFolder> = info
-            .file
-            .modules
+        let folders: Vec<AddonFolder> = addon_folders
             .iter()
-            .filter_map(|m| addon_folders.iter().find(|a| a.id == m.foldername))
+            .filter(|f| info.file.modules.iter().any(|m| m.foldername == f.id))
             .cloned()
             .collect();
         addon.folders = folders;
