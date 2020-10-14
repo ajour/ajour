@@ -1,5 +1,5 @@
 use crate::{
-    addon::{Addon, AddonFolder, RepositoryIdentifiers},
+    addon::{Addon, AddonFolder, AddonState, RepositoryIdentifiers},
     config::Flavor,
     curse_api::{
         fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
@@ -139,6 +139,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         flavor,
         all_dirs.len()
     );
+
+    if all_dirs.is_empty() {
+        return Ok(vec![]);
+    }
 
     let ParsingPatterns {
         initial_inclusion_regex,
@@ -381,51 +385,136 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         fingerprint_addons.len()
     );
 
-    // Creates a `Vec` of curse_ids.
-    let curse_ids: Vec<_> = fingerprint_addons
+    // Creates a `Vec` of curse_ids from addons that succeeded fingerprinting
+    let mut curse_ids_from_match: Vec<_> = fingerprint_addons
         .iter()
         .filter_map(|addon| addon.repository_identifiers.curse)
         .collect();
+    curse_ids_from_match.dedup();
+
+    // Addon folders that failed fingerprinting, but we can still build an addon
+    // using the curse id from the `.toc`
+    let mut curse_ids_from_nonmatch: Vec<_> = addon_folders
+        .iter()
+        .filter(|f| {
+            f.repository_identifiers.tukui.is_none() && f.repository_identifiers.curse.is_some()
+        })
+        .map(|f| f.repository_identifiers.curse.unwrap())
+        .filter(|id| !curse_ids_from_match.contains(id))
+        .collect();
+    curse_ids_from_nonmatch.dedup();
+
+    // Addons that were partial matches that we can get the curse id from. This might return
+    // id's where `curse_ids_from_nonmatch` may not, if the `AddonFolder` `.toc` didn't
+    // contain a Curse ID, but we can get it from the partial match data
+    let mut curse_ids_from_partial: Vec<_> = fingerprint_package
+        .partial_matches
+        .iter()
+        .map(|a| a.id)
+        .collect();
+    curse_ids_from_partial.dedup();
+
+    // Combine all ids and query all at once
+    let mut combined_curse_ids = [
+        &curse_ids_from_match[..],
+        &curse_ids_from_nonmatch[..],
+        &curse_ids_from_partial[..],
+    ]
+    .concat();
+    combined_curse_ids.dedup();
 
     log::debug!(
         "{} - {} addons with curse id",
         flavor,
-        fingerprint_addons.len()
+        combined_curse_ids.len()
     );
 
+    // We will store any addons that weren't an exact fingerprint match to curse
+    // but we could still figure out from a curse id
+    let mut curse_id_only_addons = vec![];
+
     // Fetches the curse packages based on the ids.
-    let curse_id_packages_result = fetch_remote_packages_by_ids(&curse_ids).await;
+    let curse_id_packages_result = fetch_remote_packages_by_ids(&combined_curse_ids).await;
     if let Ok(curse_id_packages) = curse_id_packages_result {
         let mut updated = 0;
+        let mut created = 0;
 
-        // Loops the packages, and updates our Addons with information.
+        // Loops the packages, and updates or creates Addons with the information.
         for package in curse_id_packages {
-            let addon = fingerprint_addons
+            // Update fingerprint addons that have a curse id
+            if let Some(addon) = fingerprint_addons
                 .iter_mut()
-                .find(|a| a.repository_id() == Some(package.id.to_string()));
-            if let Some(addon) = addon {
+                .find(|a| a.repository_id() == Some(package.id.to_string()))
+            {
                 addon.repository_metadata.title = Some(package.name.clone());
                 addon.repository_metadata.website_url = Some(package.website_url.clone());
 
                 updated += 1;
             }
+
+            // Create an addon from the curse id packages that had no / partial fingerprint match
+            if curse_ids_from_nonmatch.contains(&package.id)
+                || curse_ids_from_partial.contains(&package.id)
+            {
+                let addon = Addon::from_curse_package(&package, flavor, &addon_folders);
+                curse_id_only_addons.push(addon);
+
+                created += 1;
+            }
         }
 
         log::debug!(
-            "{} - {} addons applied with curse id package metadata",
+            "{} - {} addons updated with curse id package metadata",
             flavor,
             updated
+        );
+
+        log::debug!(
+            "{} - {} addons created from curse id package metadata",
+            flavor,
+            created
         );
     }
 
     // Concats the different repo addons, and returns.
-    let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
+    let mut concatenated = [
+        &fingerprint_addons[..],
+        &curse_id_only_addons[..],
+        &tukui_addons[..],
+    ]
+    .concat();
 
     log::debug!(
         "{} - {} addons successfully parsed",
         flavor,
         concatenated.len()
     );
+
+    let mapped_folder_ids = concatenated
+        .iter()
+        .map(|a| a.folders.iter().map(|f| f.id.clone()).collect::<Vec<_>>())
+        .flatten()
+        .collect::<Vec<_>>();
+
+    let unmapped_folders = addon_folders
+        .iter()
+        .filter(|f| !mapped_folder_ids.contains(&f.id))
+        .cloned();
+
+    let unknown_addons = unmapped_folders
+        .into_iter()
+        .map(|f| {
+            let mut addon = Addon::empty(&f.id);
+            addon.folders = vec![f];
+            addon.state = AddonState::Unknown;
+
+            addon
+        })
+        .collect::<Vec<_>>();
+
+    log::debug!("{} - {} unknown addons", flavor, unknown_addons.len());
+
+    concatenated.extend(unknown_addons);
 
     Ok(concatenated)
 }

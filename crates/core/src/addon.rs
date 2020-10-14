@@ -31,7 +31,7 @@ impl Ord for RemotePackage {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
 pub enum ReleaseChannel {
     Stable,
     Beta,
@@ -69,10 +69,12 @@ impl std::fmt::Display for ReleaseChannel {
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
     Ignored,
+    Unknown,
     Ajour(Option<String>),
     Downloading,
     Fingerprint,
     Unpacking,
+    Corrupted,
     Updatable,
 }
 
@@ -308,13 +310,110 @@ impl Addon {
         addon
     }
 
-    /// Creates an `Addon` from the Curse package
+    /// Creates an `Addon` from the Curse package. This is a fallback for when we don't
+    /// have an exact fingerprint match, but we have a curse id for the addon. Since we
+    /// can't guarantee which local version the addon is, we will set this addon status
+    /// as Corrupted and the local version as "Unknown".
     pub fn from_curse_package(
-        _package: &curse_api::Package,
-        _flavor: Flavor,
-        _addon_folders: &[AddonFolder],
+        package: &curse_api::Package,
+        flavor: Flavor,
+        addon_folders: &[AddonFolder],
     ) -> Self {
-        unimplemented!()
+        let mut remote_packages = HashMap::new();
+
+        let mut stable_exists = false;
+        let mut beta_exists = false;
+        let mut alpha_exists = false;
+
+        let flavor = format!("wow_{}", flavor.to_string());
+        for file in package.latest_files.iter() {
+            let game_version_flavor = file.game_version_flavor.as_ref();
+            if !file.is_alternate && game_version_flavor == Some(&flavor) {
+                let version = file.display_name.clone();
+                let download_url = file.download_url.clone();
+                let date_time = DateTime::parse_from_rfc3339(&file.file_date)
+                    .map(|d| d.with_timezone(&Utc))
+                    .ok();
+                let package = RemotePackage {
+                    version,
+                    download_url,
+                    date_time,
+                    file_id: Some(file.id),
+                };
+
+                match file.release_type {
+                    1 /* stable */ => {
+                        stable_exists = true;
+                        remote_packages.insert(ReleaseChannel::Stable, package);
+                    }
+                    2 /* beta */ => {
+                        beta_exists = true;
+                        remote_packages.insert(ReleaseChannel::Beta, package);
+                    }
+                    3 /* alpha */ => {
+                        alpha_exists = true;
+                        remote_packages.insert(ReleaseChannel::Alpha, package);
+                    }
+                    _ => ()
+                };
+            }
+        }
+
+        let mut metadata = RepositoryMetadata::empty();
+        metadata.remote_packages = remote_packages;
+
+        let release_type = if stable_exists {
+            1
+        } else if beta_exists {
+            2
+        } else if alpha_exists {
+            3
+        } else {
+            unreachable!("No file in curse package for {}", package.id);
+        };
+
+        let file = package
+            .latest_files
+            .iter()
+            .find(|file| {
+                !file.is_alternate
+                    && file.game_version_flavor.as_ref() == Some(&flavor)
+                    && file.release_type == release_type
+            })
+            .unwrap_or_else(|| unreachable!("No file in curse package for {}", package.id));
+
+        // Shouldn't panic since we got this curse id from an `AddonFolder`. We use the
+        // first folder (sorted alphabetically) that has a match on curse id as the primary id.
+        // If no folders have a curse id, we just use the first folder alphabetically.
+        let primary_folder_id = if let Some(f) = addon_folders.iter().find(|f| {
+            f.repository_identifiers.curse == Some(package.id)
+                && file.modules.iter().any(|m| m.foldername == f.id)
+        }) {
+            f.id.clone()
+        } else {
+            addon_folders
+                .iter()
+                .find(|f| file.modules.iter().any(|m| m.foldername == f.id))
+                .as_ref()
+                .unwrap()
+                .id
+                .clone()
+        };
+
+        let mut addon = Addon::empty(&primary_folder_id);
+        addon.active_repository = Some(Repository::Curse);
+        addon.repository_identifiers.curse = Some(package.id);
+        addon.repository_metadata = metadata;
+
+        let folders: Vec<AddonFolder> = addon_folders
+            .iter()
+            .filter(|f| file.modules.iter().any(|m| m.foldername == f.id))
+            .cloned()
+            .collect();
+        addon.folders = folders;
+        addon.state = AddonState::Corrupted;
+
+        addon
     }
 
     /// Creates an `Addon` from the Curse fingerprint info

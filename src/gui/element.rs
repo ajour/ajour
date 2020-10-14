@@ -672,9 +672,15 @@ pub fn addon_data_cell<'a, 'b>(
             .center_y()
             .center_x()
             .style(style::NormalForegroundContainer(color_palette)),
-            AddonState::Updatable => {
+            AddonState::Updatable | AddonState::Corrupted => {
                 let id = addon.primary_folder_id.clone();
-                let update_wrapper = Container::new(Text::new("Update").size(DEFAULT_FONT_SIZE))
+                let text = if addon.state == AddonState::Updatable {
+                    "Update"
+                } else {
+                    "Repair"
+                };
+
+                let update_wrapper = Container::new(Text::new(text).size(DEFAULT_FONT_SIZE))
                     .width(*width)
                     .center_x()
                     .align_x(Align::Center);
@@ -716,6 +722,13 @@ pub fn addon_data_cell<'a, 'b>(
                 .padding(5)
                 .style(style::NormalForegroundContainer(color_palette)),
             AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .center_x()
+                .padding(5)
+                .style(style::NormalForegroundContainer(color_palette)),
+            AddonState::Unknown => Container::new(Text::new("Unknown").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
