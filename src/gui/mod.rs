@@ -31,6 +31,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use widgets::header;
 use tr::tr;
+use locale_config::Locale;
 
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
@@ -230,6 +231,9 @@ impl Application for Ajour {
         // Clone config to be used.
         // FIXME: This could be done prettier.
         let cloned_config = self.config.clone();
+
+        let loc = Locale::new(&self.language_state.current_language_name);
+        locale_config::Locale::set_current(loc.unwrap());
 
         // Get color palette of chosen theme.
         let color_palette = self
@@ -1245,7 +1249,7 @@ impl Default for LanguageState{
 
         LanguageState {
             languages,
-            current_language_name: "EN".to_string(),
+            current_language_name: "FR".to_string(),
             pick_list_state: Default::default(),
         }
     }

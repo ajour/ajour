@@ -40,6 +40,7 @@ pub fn settings_container<'a, 'b>(
     column_config: &'b [(ColumnKey, Length, bool)],
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
+    log::debug!("thread locale : {}",locale_config::Locale::current());
     let directory_info_text = Text::new(tr!("World of Warcraft directory")).size(14);
 
     // Directory button for World of Warcraft directory selection.

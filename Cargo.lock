@@ -61,6 +61,8 @@ dependencies = [
  "iced_native",
  "image",
  "isahc",
+ "lazy_static",
+ "locale_config 0.2.3",
  "log",
  "log-panics",
  "native-dialog",

@@ -23,9 +23,10 @@ use {
     std::collections::{HashMap, HashSet},
     std::path::{Path, PathBuf},
     widgets::header::ResizeEvent,
+    locale_config::Locale,
 };
 
-pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
+pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {    
     match message {
         Message::Parse(Ok(config)) => {
             log::debug!("Message::Parse");

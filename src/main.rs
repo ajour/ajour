@@ -11,13 +11,23 @@ use ajour_core::Result;
 
 use rust_embed::RustEmbed;
 
-use i18n_embed::{gettext::gettext_language_loader, DesktopLanguageRequester};
+use i18n_embed::{gettext::GettextLanguageLoader,gettext::gettext_language_loader, DesktopLanguageRequester, LanguageRequester,
+    DefaultLocalizer, Localizer, unic_langid::LanguageIdentifier};
+use std::rc::Rc;
+use lazy_static::lazy_static;
 
 #[derive(RustEmbed)]
 #[folder = "i18n/mo"] // path to the compiled localization resources
 struct Translations;
 
+const TRANSLATIONS: Translations = Translations {};
+
+lazy_static! {
+    static ref LANGUAGE_LOADER: GettextLanguageLoader = gettext_language_loader!();
+}
+
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 
 pub fn main() {
     let opts = cli::get_opts();
@@ -35,15 +45,17 @@ pub fn main() {
 
     log::debug!("Ajour {} has started.", VERSION);
 
-    let translations = Translations {};
-    let language_loader = gettext_language_loader!();
+    let localizer = DefaultLocalizer::new(&*LANGUAGE_LOADER, &TRANSLATIONS);
 
-    // Use the language requester for the desktop platform (linux, windows, mac).
-    // There is also a requester available for the web-sys WASM platform called
-    // WebLanguageRequester, or you can implement your own.
-    let requested_languages = DesktopLanguageRequester::requested_languages();
+    let localizer_rc: Rc<dyn Localizer> = Rc::new(localizer);
 
-    let _result = i18n_embed::select(&language_loader, &translations, &requested_languages);
+    let mut language_requester = DesktopLanguageRequester::new();
+    language_requester.add_listener(Rc::downgrade(&localizer_rc));
+
+    // Manually check the currently requested system language,
+    // and update the listeners. When the system language changes,
+    // this will automatically be triggered.
+    language_requester.poll().unwrap(); 
 
     // Start the GUI
     gui::run(opts);
