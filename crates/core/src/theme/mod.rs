@@ -103,97 +103,73 @@ impl Theme {
         }
     }
 
-    pub fn solarized_dark() -> Theme {
+    pub fn alliance() -> Theme {
         Theme {
-            name: "Solarized Dark".to_string(),
+            name: "Alliance".to_string(),
             palette: ColorPalette {
                 base: BaseColors {
-                    background: hex_to_color("#012b36").unwrap(),
-                    foreground: hex_to_color("#093642").unwrap(),
+                    background: hex_to_color("#011930").unwrap(),
+                    foreground: hex_to_color("#022242").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#1A615B").unwrap(),
-                    secondary: hex_to_color("#523F09").unwrap(),
-                    surface: hex_to_color("#63797e").unwrap(),
-                    error: hex_to_color("#b80f15").unwrap(),
+                    primary: hex_to_color("#3e3523").unwrap(),
+                    secondary: hex_to_color("#3e3523").unwrap(),
+                    surface: hex_to_color("#7F8387").unwrap(),
+                    error: hex_to_color("#5b3a5e").unwrap(),
                 },
                 bright: BrightColors {
-                    primary: hex_to_color("#2aa096").unwrap(),
-                    secondary: hex_to_color("#a37f12").unwrap(),
-                    surface: hex_to_color("#93a1a1").unwrap(),
-                    error: hex_to_color("#EE2F36").unwrap(),
+                    primary: hex_to_color("#ac8a1b").unwrap(),
+                    secondary: hex_to_color("#ac8a1b").unwrap(),
+                    surface: hex_to_color("#B4B9BF").unwrap(),
+                    error: hex_to_color("#953e43").unwrap(),
                 },
             },
         }
     }
 
-    pub fn solarized_light() -> Theme {
+    pub fn horde() -> Theme {
         Theme {
-            name: "Solarized Light".to_string(),
+            name: "Horde".to_string(),
             palette: ColorPalette {
                 base: BaseColors {
-                    background: hex_to_color("#fdf6e3").unwrap(),
-                    foreground: hex_to_color("#eee8d5").unwrap(),
+                    background: hex_to_color("#161313").unwrap(),
+                    foreground: hex_to_color("#211C1C").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#BCCCC3").unwrap(),
-                    secondary: hex_to_color("#ccbd9e").unwrap(),
-                    surface: hex_to_color("#95a3a2").unwrap(),
-                    error: hex_to_color("#b80f15").unwrap(),
+                    primary: hex_to_color("#331E1F").unwrap(),
+                    secondary: hex_to_color("#542A18").unwrap(),
+                    surface: hex_to_color("#5E5B5A").unwrap(),
+                    error: hex_to_color("#44282a").unwrap(),
                 },
                 bright: BrightColors {
-                    primary: hex_to_color("#2aa096").unwrap(),
-                    secondary: hex_to_color("#a37f12").unwrap(),
-                    surface: hex_to_color("#4C5D63").unwrap(),
-                    error: hex_to_color("#EE2F36").unwrap(),
+                    primary: hex_to_color("#953e43").unwrap(),
+                    secondary: hex_to_color("#e27342").unwrap(),
+                    surface: hex_to_color("#9B9897").unwrap(),
+                    error: hex_to_color("#953e43").unwrap(),
                 },
             },
         }
     }
 
-    pub fn outrun() -> Theme {
+    pub fn ayu() -> Theme {
         Theme {
-            name: "Outrun".to_string(),
+            name: "Ayu".to_string(),
             palette: ColorPalette {
                 base: BaseColors {
-                    background: hex_to_color("#0d0821").unwrap(),
-                    foreground: hex_to_color("#110A2B").unwrap(),
+                    background: hex_to_color("#1f2430").unwrap(),
+                    foreground: hex_to_color("#232834").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#330442").unwrap(),
-                    secondary: hex_to_color("#6e3e2e").unwrap(),
-                    surface: hex_to_color("#484e81").unwrap(),
-                    error: hex_to_color("#671a30").unwrap(),
+                    primary: hex_to_color("#987a47").unwrap(),
+                    secondary: hex_to_color("#315e6b").unwrap(),
+                    surface: hex_to_color("#60697a").unwrap(),
+                    error: hex_to_color("#712a34").unwrap(),
                 },
                 bright: BrightColors {
-                    primary: hex_to_color("#ff00ff").unwrap(),
-                    secondary: hex_to_color("#ff963a").unwrap(),
-                    surface: hex_to_color("#757dc8").unwrap(),
-                    error: hex_to_color("#db2c3e").unwrap(),
-                },
-            },
-        }
-    }
-
-    pub fn sort() -> Theme {
-        Theme {
-            name: "Sort".to_string(),
-            palette: ColorPalette {
-                base: BaseColors {
-                    background: hex_to_color("#1c1c1c").unwrap(),
-                    foreground: hex_to_color("#262626").unwrap(),
-                },
-                normal: NormalColors {
-                    primary: hex_to_color("#2d3d2f").unwrap(),
-                    secondary: hex_to_color("#3f4f56").unwrap(),
-                    surface: hex_to_color("#8a8a8a").unwrap(),
-                    error: hex_to_color("#713e40").unwrap(),
-                },
-                bright: BrightColors {
-                    primary: hex_to_color("#81ca8c").unwrap(),
-                    secondary: hex_to_color("#81abbd").unwrap(),
-                    surface: hex_to_color("#bcbcbc").unwrap(),
-                    error: hex_to_color("#FF474E").unwrap(),
+                    primary: hex_to_color("#ffcc66").unwrap(),
+                    secondary: hex_to_color("#5ccfe6").unwrap(),
+                    surface: hex_to_color("#cbccc6").unwrap(),
+                    error: hex_to_color("#ff3333").unwrap(),
                 },
             },
         }
@@ -223,25 +199,25 @@ impl Theme {
         }
     }
 
-    pub fn ayu() -> Theme {
+    pub fn forest_night() -> Theme {
         Theme {
-            name: "Ayu".to_string(),
+            name: "Forest Night".to_string(),
             palette: ColorPalette {
                 base: BaseColors {
-                    background: hex_to_color("#1f2430").unwrap(),
-                    foreground: hex_to_color("#232834").unwrap(),
+                    background: hex_to_color("#323d43").unwrap(),
+                    foreground: hex_to_color("#3c474d").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#987a47").unwrap(),
-                    secondary: hex_to_color("#315e6b").unwrap(),
-                    surface: hex_to_color("#60697a").unwrap(),
-                    error: hex_to_color("#712a34").unwrap(),
+                    primary: hex_to_color("#505a60").unwrap(),
+                    secondary: hex_to_color("#465258").unwrap(),
+                    surface: hex_to_color("#999f93").unwrap(),
+                    error: hex_to_color("#614b51").unwrap(),
                 },
                 bright: BrightColors {
-                    primary: hex_to_color("#ffcc66").unwrap(),
-                    secondary: hex_to_color("#5ccfe6").unwrap(),
-                    surface: hex_to_color("#cbccc6").unwrap(),
-                    error: hex_to_color("#ff3333").unwrap(),
+                    primary: hex_to_color("#a7c080").unwrap(),
+                    secondary: hex_to_color("#83b6af").unwrap(),
+                    surface: hex_to_color("#d8caac").unwrap(),
+                    error: hex_to_color("#e68183").unwrap(),
                 },
             },
         }
@@ -295,49 +271,97 @@ impl Theme {
         }
     }
 
-    pub fn horde() -> Theme {
+    pub fn outrun() -> Theme {
         Theme {
-            name: "Horde".to_string(),
+            name: "Outrun".to_string(),
             palette: ColorPalette {
                 base: BaseColors {
-                    background: hex_to_color("#161313").unwrap(),
-                    foreground: hex_to_color("#211C1C").unwrap(),
+                    background: hex_to_color("#0d0821").unwrap(),
+                    foreground: hex_to_color("#110A2B").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#331E1F").unwrap(),
-                    secondary: hex_to_color("#542A18").unwrap(),
-                    surface: hex_to_color("#5E5B5A").unwrap(),
-                    error: hex_to_color("#44282a").unwrap(),
+                    primary: hex_to_color("#330442").unwrap(),
+                    secondary: hex_to_color("#6e3e2e").unwrap(),
+                    surface: hex_to_color("#484e81").unwrap(),
+                    error: hex_to_color("#671a30").unwrap(),
                 },
                 bright: BrightColors {
-                    primary: hex_to_color("#953e43").unwrap(),
-                    secondary: hex_to_color("#e27342").unwrap(),
-                    surface: hex_to_color("#9B9897").unwrap(),
-                    error: hex_to_color("#953e43").unwrap(),
+                    primary: hex_to_color("#ff00ff").unwrap(),
+                    secondary: hex_to_color("#ff963a").unwrap(),
+                    surface: hex_to_color("#757dc8").unwrap(),
+                    error: hex_to_color("#db2c3e").unwrap(),
                 },
             },
         }
     }
 
-    pub fn alliance() -> Theme {
+    pub fn solarized_dark() -> Theme {
         Theme {
-            name: "Alliance".to_string(),
+            name: "Solarized Dark".to_string(),
             palette: ColorPalette {
                 base: BaseColors {
-                    background: hex_to_color("#011930").unwrap(),
-                    foreground: hex_to_color("#022242").unwrap(),
+                    background: hex_to_color("#012b36").unwrap(),
+                    foreground: hex_to_color("#093642").unwrap(),
                 },
                 normal: NormalColors {
-                    primary: hex_to_color("#3e3523").unwrap(),
-                    secondary: hex_to_color("#3e3523").unwrap(),
-                    surface: hex_to_color("#7F8387").unwrap(),
-                    error: hex_to_color("#5b3a5e").unwrap(),
+                    primary: hex_to_color("#1A615B").unwrap(),
+                    secondary: hex_to_color("#523F09").unwrap(),
+                    surface: hex_to_color("#63797e").unwrap(),
+                    error: hex_to_color("#b80f15").unwrap(),
                 },
                 bright: BrightColors {
-                    primary: hex_to_color("#ac8a1b").unwrap(),
-                    secondary: hex_to_color("#ac8a1b").unwrap(),
-                    surface: hex_to_color("#B4B9BF").unwrap(),
-                    error: hex_to_color("#953e43").unwrap(),
+                    primary: hex_to_color("#2aa096").unwrap(),
+                    secondary: hex_to_color("#a37f12").unwrap(),
+                    surface: hex_to_color("#93a1a1").unwrap(),
+                    error: hex_to_color("#EE2F36").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn solarized_light() -> Theme {
+        Theme {
+            name: "Solarized Light".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#fdf6e3").unwrap(),
+                    foreground: hex_to_color("#eee8d5").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#BCCCC3").unwrap(),
+                    secondary: hex_to_color("#ccbd9e").unwrap(),
+                    surface: hex_to_color("#95a3a2").unwrap(),
+                    error: hex_to_color("#b80f15").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#2aa096").unwrap(),
+                    secondary: hex_to_color("#a37f12").unwrap(),
+                    surface: hex_to_color("#4C5D63").unwrap(),
+                    error: hex_to_color("#EE2F36").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn sort() -> Theme {
+        Theme {
+            name: "Sort".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#1c1c1c").unwrap(),
+                    foreground: hex_to_color("#262626").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#2d3d2f").unwrap(),
+                    secondary: hex_to_color("#3f4f56").unwrap(),
+                    surface: hex_to_color("#8a8a8a").unwrap(),
+                    error: hex_to_color("#713e40").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#81ca8c").unwrap(),
+                    secondary: hex_to_color("#81abbd").unwrap(),
+                    surface: hex_to_color("#bcbcbc").unwrap(),
+                    error: hex_to_color("#FF474E").unwrap(),
                 },
             },
         }
@@ -396,8 +420,8 @@ mod de {
     pub fn deserialize_color_hex_string<'de, D>(
         deserializer: D,
     ) -> Result<iced_native::Color, D::Error>
-    where
-        D: de::Deserializer<'de>,
+        where
+            D: de::Deserializer<'de>,
     {
         struct ColorVisitor;
 
@@ -410,8 +434,8 @@ mod de {
 
             #[allow(clippy::unnecessary_unwrap)]
             fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
-            where
-                E: Error,
+                where
+                    E: Error,
             {
                 if let Some(color) = hex_to_color(s) {
                     return Ok(Color(color));
