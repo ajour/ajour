@@ -1154,6 +1154,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ));
             }
         }
+        Message::Interaction(Interaction::RequestChangelog(id)) => {
+            // We should get the changelog now.
+            println!("about to fetch changelog");
+
+            //TODO optimize this logic.
+            let flavor = ajour.config.wow.flavor;
+            let addons = ajour.addons.entry(flavor).or_default();
+            if let Some(addon) = addons.iter().find(|a| a.id == id) {
+                if let Some(package) = addon.relevant_release_package() {
+                    if let (Some(id), Some(file_id)) = (addon.curse_id, package.file_id) {
+                        return Ok(Command::perform(
+                            perform_fetch_changelog(id, file_id),
+                            Message::FetchedChangelog,
+                        ));
+                    }
+                }
+            }
+        }
+        Message::FetchedChangelog(result) => {
+            println!("changelog fetched: {:?}", result);
+        }
         Message::Error(error)
         | Message::Parse(Err(error))
         | Message::NeedsUpdate(Err(error))
@@ -1198,6 +1219,10 @@ async fn perform_read_addon_directory(
         flavor,
         read_addon_directory(fingerprint_collection, root_dir, flavor).await,
     )
+}
+
+async fn perform_fetch_changelog(id: u32, file_id: i64) -> Result<String> {
+    curse_api::fetch_changelog(id, file_id).await
 }
 
 /// Downloads the newest version of the addon.

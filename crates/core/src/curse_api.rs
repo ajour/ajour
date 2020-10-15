@@ -129,6 +129,19 @@ pub async fn fetch_remote_packages_by_ids(curse_ids: &[u32]) -> Result<Vec<Packa
     }
 }
 
+pub async fn fetch_changelog(id: u32, file_id: i64) -> Result<String> {
+    let url = format!("{}/addon/{}/file/{}/changelog", API_ENDPOINT, id, file_id);
+    let client = HttpClient::builder().build().unwrap();
+    let mut resp = request_async(&client, url, vec![], None).await?;
+
+    if resp.status().is_success() {
+        let changelog: String = resp.text()?;
+        return Ok(changelog);
+    }
+
+    Ok("No changelog found.".to_owned())
+}
+
 pub async fn fetch_game_info() -> Result<GameInfo> {
     let url = format!("{}/game/1", API_ENDPOINT);
     let client = HttpClient::builder().build().unwrap();

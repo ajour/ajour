@@ -3,8 +3,8 @@
 use {
     super::{
         style, AjourMode, AjourState, BackupState, CatalogColumnKey, CatalogColumnState,
-        CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType, Interaction, Message,
-        ReleaseChannel, ScaleState, SortDirection, ThemeState,
+        CatalogRow, Changelog, ColumnKey, ColumnSettings, ColumnState, DirectoryType, Interaction,
+        Message, ReleaseChannel, ScaleState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -409,6 +409,7 @@ pub fn settings_container<'a, 'b>(
 pub fn addon_data_cell<'a, 'b>(
     color_palette: ColorPalette,
     addon: &'a mut Addon,
+    changelog: &Option<Changelog>,
     is_addon_expanded: bool,
     column_config: &'b [(ColumnKey, Length, bool)],
 ) -> Container<'a, Message> {
@@ -425,6 +426,13 @@ pub fn addon_data_cell<'a, 'b>(
     } else {
         String::from("-")
     };
+    let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
+    let mut remote_version_button = Button::new(&mut addon.remote_btn_state, remote_version)
+        .style(style::BrightTextButton(color_palette));
+    remote_version_button =
+        remote_version_button.on_press(Interaction::RequestChangelog(addon.id.clone()));
+
+    let remote_version_button: Element<Interaction> = remote_version_button.into();
 
     if let Some((idx, width)) = column_config
         .iter()
@@ -510,13 +518,12 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
-        let remote_version_container = Container::new(remote_version)
-            .height(default_height)
-            .width(*width)
-            .center_y()
-            .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+        let remote_version_container =
+            Container::new(remote_version_button.map(Message::Interaction))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -682,154 +689,158 @@ pub fn addon_data_cell<'a, 'b>(
 
     let mut addon_column = Column::new().push(row);
 
+    let should_should_changelog = changelog.is_some();
     if is_addon_expanded {
-        let notes = addon
-            .notes
-            .clone()
-            .unwrap_or_else(|| "No description for addon.".to_string());
-        let author = addon.author.clone().unwrap_or_else(|| "-".to_string());
-        let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-        let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
-        let bottom_space = Space::new(Length::Units(0), Length::Units(4));
-        let notes_title_text = Text::new("Summary").size(DEFAULT_FONT_SIZE);
-        let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
-        let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
-        let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
-        let author_title_container = Container::new(author_title_text)
-            .style(style::BrightForegroundContainer(color_palette));
-        let notes_title_container =
-            Container::new(notes_title_text).style(style::BrightForegroundContainer(color_palette));
+        if should_should_changelog {
+        } else {
+            let notes = addon
+                .notes
+                .clone()
+                .unwrap_or_else(|| "No description for addon.".to_string());
+            let author = addon.author.clone().unwrap_or_else(|| "-".to_string());
+            let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+            let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
+            let bottom_space = Space::new(Length::Units(0), Length::Units(4));
+            let notes_title_text = Text::new("Summary").size(DEFAULT_FONT_SIZE);
+            let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
+            let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
+            let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
+            let author_title_container = Container::new(author_title_text)
+                .style(style::BrightForegroundContainer(color_palette));
+            let notes_title_container = Container::new(notes_title_text)
+                .style(style::BrightForegroundContainer(color_palette));
 
-        let release_date_text: String = if let Some(package) = release_package {
-            let f = timeago::Formatter::new();
-            let now = Local::now();
+            let release_date_text: String = if let Some(package) = release_package {
+                let f = timeago::Formatter::new();
+                let now = Local::now();
 
-            if let Some(time) = package.date_time.as_ref() {
-                format!("is {}", f.convert_chrono(*time, now))
+                if let Some(time) = package.date_time.as_ref() {
+                    format!("is {}", f.convert_chrono(*time, now))
+                } else {
+                    "".to_string()
+                }
             } else {
-                "".to_string()
-            }
-        } else {
-            "has no avaiable release".to_string()
-        };
-        let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
-        let release_date_text_container = Container::new(release_date_text)
-            .center_y()
-            .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+                "has no avaiable release".to_string()
+            };
+            let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
+            let release_date_text_container = Container::new(release_date_text)
+                .center_y()
+                .padding(5)
+                .style(style::NormalForegroundContainer(color_palette));
 
-        let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
-        let release_channel_title_container = Container::new(release_channel_title)
-            .style(style::BrightForegroundContainer(color_palette));
-        let release_channel_list = PickList::new(
-            &mut addon.pick_release_channel_state,
-            &ReleaseChannel::ALL[..],
-            Some(addon.release_channel),
-            Message::ReleaseChannelSelected,
-        )
-        .text_size(14)
-        .width(Length::Units(100))
-        .style(style::PickList(color_palette));
+            let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
+            let release_channel_title_container = Container::new(release_channel_title)
+                .style(style::BrightForegroundContainer(color_palette));
+            let release_channel_list = PickList::new(
+                &mut addon.pick_release_channel_state,
+                &ReleaseChannel::ALL[..],
+                Some(addon.release_channel),
+                Message::ReleaseChannelSelected,
+            )
+            .text_size(14)
+            .width(Length::Units(100))
+            .style(style::PickList(color_palette));
 
-        let mut website_button = Button::new(
-            &mut addon.website_btn_state,
-            Text::new("Website").size(DEFAULT_FONT_SIZE),
-        )
-        .style(style::DefaultButton(color_palette));
-
-        if let Some(link) = addon.website_url.clone() {
-            website_button = website_button.on_press(Interaction::OpenLink(link));
-        }
-
-        let website_button: Element<Interaction> = website_button.into();
-
-        let mut force_download_button = Button::new(
-            &mut addon.force_btn_state,
-            Text::new("Force update").size(DEFAULT_FONT_SIZE),
-        )
-        .style(style::DefaultButton(color_palette));
-
-        // If we have a release package on addon, enable force update.
-        if release_package.is_some() {
-            force_download_button =
-                force_download_button.on_press(Interaction::Update(addon.id.clone()));
-        }
-
-        let force_download_button: Element<Interaction> = force_download_button.into();
-
-        let is_ignored = addon.state == AddonState::Ignored;
-        let ignore_button_text = if is_ignored {
-            Text::new("Unignore").size(DEFAULT_FONT_SIZE)
-        } else {
-            Text::new("Ignore").size(DEFAULT_FONT_SIZE)
-        };
-
-        let mut ignore_button = Button::new(&mut addon.ignore_btn_state, ignore_button_text)
-            .on_press(Interaction::Ignore(addon.id.clone()))
+            let mut website_button = Button::new(
+                &mut addon.website_btn_state,
+                Text::new("Website").size(DEFAULT_FONT_SIZE),
+            )
             .style(style::DefaultButton(color_palette));
 
-        if is_ignored {
-            ignore_button = ignore_button.on_press(Interaction::Unignore(addon.id.clone()));
-        } else {
-            ignore_button = ignore_button.on_press(Interaction::Ignore(addon.id.clone()));
+            if let Some(link) = addon.website_url.clone() {
+                website_button = website_button.on_press(Interaction::OpenLink(link));
+            }
+
+            let website_button: Element<Interaction> = website_button.into();
+
+            let mut force_download_button = Button::new(
+                &mut addon.force_btn_state,
+                Text::new("Force update").size(DEFAULT_FONT_SIZE),
+            )
+            .style(style::DefaultButton(color_palette));
+
+            // If we have a release package on addon, enable force update.
+            if release_package.is_some() {
+                force_download_button =
+                    force_download_button.on_press(Interaction::Update(addon.id.clone()));
+            }
+
+            let force_download_button: Element<Interaction> = force_download_button.into();
+
+            let is_ignored = addon.state == AddonState::Ignored;
+            let ignore_button_text = if is_ignored {
+                Text::new("Unignore").size(DEFAULT_FONT_SIZE)
+            } else {
+                Text::new("Ignore").size(DEFAULT_FONT_SIZE)
+            };
+
+            let mut ignore_button = Button::new(&mut addon.ignore_btn_state, ignore_button_text)
+                .on_press(Interaction::Ignore(addon.id.clone()))
+                .style(style::DefaultButton(color_palette));
+
+            if is_ignored {
+                ignore_button = ignore_button.on_press(Interaction::Unignore(addon.id.clone()));
+            } else {
+                ignore_button = ignore_button.on_press(Interaction::Ignore(addon.id.clone()));
+            }
+
+            let ignore_button: Element<Interaction> = ignore_button.into();
+
+            let delete_button: Element<Interaction> = Button::new(
+                &mut addon.delete_btn_state,
+                Text::new("Delete").size(DEFAULT_FONT_SIZE),
+            )
+            .on_press(Interaction::Delete(addon.id.clone()))
+            .style(style::DefaultDeleteButton(color_palette))
+            .into();
+
+            let test_row = Row::new()
+                .push(release_channel_list)
+                .push(release_date_text_container);
+
+            let button_row = Row::new()
+                .push(Space::new(Length::Fill, Length::Units(0)))
+                .push(website_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(force_download_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(ignore_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(delete_button.map(Message::Interaction))
+                .width(Length::Fill);
+            let column = Column::new()
+                .push(author_title_container)
+                .push(Space::new(Length::Units(0), Length::Units(3)))
+                .push(author_text)
+                .push(Space::new(Length::Units(0), Length::Units(15)))
+                .push(notes_title_container)
+                .push(Space::new(Length::Units(0), Length::Units(3)))
+                .push(notes_text)
+                .push(Space::new(Length::Units(0), Length::Units(15)))
+                .push(release_channel_title_container)
+                .push(Space::new(Length::Units(0), Length::Units(3)))
+                .push(test_row)
+                .push(space)
+                .push(button_row)
+                .push(bottom_space);
+            let details_container = Container::new(column)
+                .width(Length::Fill)
+                .padding(20)
+                .style(style::FadedNormalForegroundContainer(color_palette));
+
+            let row = Row::new()
+                .push(left_spacer)
+                .push(details_container)
+                .push(Space::new(
+                    Length::Units(DEFAULT_PADDING + 5),
+                    Length::Units(0),
+                ))
+                .spacing(1);
+
+            addon_column = addon_column
+                .push(Space::new(Length::FillPortion(1), Length::Units(1)))
+                .push(row);
         }
-
-        let ignore_button: Element<Interaction> = ignore_button.into();
-
-        let delete_button: Element<Interaction> = Button::new(
-            &mut addon.delete_btn_state,
-            Text::new("Delete").size(DEFAULT_FONT_SIZE),
-        )
-        .on_press(Interaction::Delete(addon.id.clone()))
-        .style(style::DefaultDeleteButton(color_palette))
-        .into();
-
-        let test_row = Row::new()
-            .push(release_channel_list)
-            .push(release_date_text_container);
-
-        let button_row = Row::new()
-            .push(Space::new(Length::Fill, Length::Units(0)))
-            .push(website_button.map(Message::Interaction))
-            .push(Space::new(Length::Units(5), Length::Units(0)))
-            .push(force_download_button.map(Message::Interaction))
-            .push(Space::new(Length::Units(5), Length::Units(0)))
-            .push(ignore_button.map(Message::Interaction))
-            .push(Space::new(Length::Units(5), Length::Units(0)))
-            .push(delete_button.map(Message::Interaction))
-            .width(Length::Fill);
-        let column = Column::new()
-            .push(author_title_container)
-            .push(Space::new(Length::Units(0), Length::Units(3)))
-            .push(author_text)
-            .push(Space::new(Length::Units(0), Length::Units(15)))
-            .push(notes_title_container)
-            .push(Space::new(Length::Units(0), Length::Units(3)))
-            .push(notes_text)
-            .push(Space::new(Length::Units(0), Length::Units(15)))
-            .push(release_channel_title_container)
-            .push(Space::new(Length::Units(0), Length::Units(3)))
-            .push(test_row)
-            .push(space)
-            .push(button_row)
-            .push(bottom_space);
-        let details_container = Container::new(column)
-            .width(Length::Fill)
-            .padding(20)
-            .style(style::FadedNormalForegroundContainer(color_palette));
-
-        let row = Row::new()
-            .push(left_spacer)
-            .push(details_container)
-            .push(Space::new(
-                Length::Units(DEFAULT_PADDING + 5),
-                Length::Units(0),
-            ))
-            .spacing(1);
-
-        addon_column = addon_column
-            .push(Space::new(Length::FillPortion(1), Length::Units(1)))
-            .push(row);
     }
 
     Container::new(addon_column)

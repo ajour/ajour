@@ -84,6 +84,7 @@ pub enum Interaction {
     MoveColumnLeft(ColumnKey),
     MoveColumnRight(ColumnKey),
     ModeSelected(AjourMode),
+    RequestChangelog(String),
     CatalogQuery(String),
     CatalogInstall(catalog::Source, Flavor, u32),
     CatalogCategorySelected(CatalogCategory),
@@ -113,6 +114,7 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
     CatalogInstallAddonFetched(Result<(u32, Flavor, Addon)>),
+    FetchedChangelog(Result<String>),
 }
 
 pub struct Ajour {
@@ -144,6 +146,7 @@ pub struct Ajour {
     catalog: Option<Catalog>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
+    changelog: Option<Changelog>,
 }
 
 impl Default for Ajour {
@@ -183,6 +186,7 @@ impl Default for Ajour {
             catalog: None,
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
+            changelog: None,
         }
     }
 }
@@ -346,6 +350,7 @@ impl Application for Ajour {
                     let addon_data_cell = element::addon_data_cell(
                         color_palette,
                         addon,
+                        &self.changelog,
                         is_addon_expanded,
                         &column_config,
                     );
@@ -659,6 +664,11 @@ pub fn run(opts: Opts) {
 
     // Runs the GUI.
     Ajour::run(settings);
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Changelog {
+    text: String,
 }
 
 #[derive(Debug, Clone, Copy)]
