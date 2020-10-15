@@ -113,7 +113,8 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
     CatalogInstallAddonFetched(Result<(u32, Flavor, Addon)>),
-    FetchedChangelog((Addon, AddonVersionKey, Result<String>)),
+    FetchedCurseChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
+    FetchedTukuiChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
 }
 
 pub struct Ajour {
@@ -669,10 +670,16 @@ pub fn run(opts: Opts) {
 }
 
 #[derive(Debug, Clone)]
+pub struct ChangelogPayload {
+    changelog: String,
+    url: String,
+}
+
+#[derive(Debug, Clone)]
 pub enum Changelog {
     Request(Addon, AddonVersionKey),
     Loading(Addon, AddonVersionKey),
-    Some(Addon, String, AddonVersionKey),
+    Some(Addon, ChangelogPayload, AddonVersionKey), // Addon, Changelog, URL, AddonVersionKey
 }
 
 #[derive(Debug, Clone)]

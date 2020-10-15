@@ -499,23 +499,18 @@ pub fn addon_data_cell<'a, 'b>(
 
         // Lets check if addon is expanded, in changelog mode and local is shown.
         if is_addon_expanded {
-            match expand_type {
-                ExpandType::Changelog(changelog) => match changelog {
-                    Changelog::Some(_, _, k) => {
-                        if k == &AddonVersionKey::Local {
-                            local_version_button = local_version_button
-                                .style(style::SelectedBrightTextButton(color_palette));
-                        }
-                    }
-                    Changelog::Loading(_, k) => {
-                        if k == &AddonVersionKey::Local {
-                            local_version_button = local_version_button
-                                .style(style::SelectedBrightTextButton(color_palette));
-                        }
-                    }
-                    _ => (),
-                },
-                _ => (),
+            if let ExpandType::Changelog(Changelog::Some(_, _, k)) = expand_type {
+                if k == &AddonVersionKey::Local {
+                    local_version_button =
+                        local_version_button.style(style::SelectedBrightTextButton(color_palette));
+                }
+            }
+
+            if let ExpandType::Changelog(Changelog::Loading(_, k)) = expand_type {
+                if k == &AddonVersionKey::Local {
+                    local_version_button =
+                        local_version_button.style(style::SelectedBrightTextButton(color_palette));
+                }
             }
         }
 
@@ -551,23 +546,18 @@ pub fn addon_data_cell<'a, 'b>(
 
         // Lets check if addon is expanded, in changelog mode and remote is shown.
         if is_addon_expanded {
-            match expand_type {
-                ExpandType::Changelog(changelog) => match changelog {
-                    Changelog::Some(_, _, k) => {
-                        if k == &AddonVersionKey::Remote {
-                            remote_version_button = remote_version_button
-                                .style(style::SelectedBrightTextButton(color_palette));
-                        }
-                    }
-                    Changelog::Loading(_, k) => {
-                        if k == &AddonVersionKey::Remote {
-                            remote_version_button = remote_version_button
-                                .style(style::SelectedBrightTextButton(color_palette));
-                        }
-                    }
-                    _ => (),
-                },
-                _ => (),
+            if let ExpandType::Changelog(Changelog::Some(_, _, k)) = expand_type {
+                if k == &AddonVersionKey::Remote {
+                    remote_version_button =
+                        remote_version_button.style(style::SelectedBrightTextButton(color_palette));
+                }
+            }
+
+            if let ExpandType::Changelog(Changelog::Loading(_, k)) = expand_type {
+                if k == &AddonVersionKey::Remote {
+                    remote_version_button =
+                        remote_version_button.style(style::SelectedBrightTextButton(color_palette));
+                }
             }
         }
 
@@ -747,7 +737,7 @@ pub fn addon_data_cell<'a, 'b>(
         match expand_type {
             ExpandType::Changelog(changelog) => {
                 let changelog_text = match changelog {
-                    Changelog::Some(_, text, _) => text,
+                    Changelog::Some(_, payload, _) => &payload.changelog,
                     _ => "Loading...",
                 };
 
@@ -755,13 +745,18 @@ pub fn addon_data_cell<'a, 'b>(
                 let changelog_title_container = Container::new(changelog_title_text)
                     .style(style::BrightForegroundContainer(color_palette));
 
-                let full_changelog_button: Element<Interaction> = Button::new(
+                let mut full_changelog_button = Button::new(
                     &mut addon.full_changelog_btn_state,
                     Text::new("Full Changelog").size(DEFAULT_FONT_SIZE),
                 )
-                .style(style::DefaultButton(color_palette))
-                // .on_press(Interaction::Expand(Changelog::None))
-                .into();
+                .style(style::DefaultButton(color_palette));
+
+                if let ExpandType::Changelog(Changelog::Some(_, p, _)) = expand_type {
+                    full_changelog_button =
+                        full_changelog_button.on_press(Interaction::OpenLink(p.url.clone()));
+                }
+
+                let full_changelog_button: Element<Interaction> = full_changelog_button.into();
 
                 let mut button_row =
                     Row::new().push(Space::new(Length::FillPortion(1), Length::Units(0)));

@@ -1,8 +1,8 @@
 use {
     super::{
         AddonVersionKey, Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey,
-        CatalogFlavor, CatalogRow, CatalogSource, Changelog, ColumnKey, DirectoryType, ExpandType,
-        Interaction, Message, SortDirection,
+        CatalogFlavor, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
+        DirectoryType, ExpandType, Interaction, Message, SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonState},
@@ -386,38 +386,51 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         // Check if the current expanded_type is showing changelog, and is the same
                         // addon. If this is the case, we close the details.
-                        if let (Some(expanded_addon), Some(expanded_key)) =
-                            match &ajour.expanded_type {
-                                ExpandType::Changelog(changelog) => match changelog {
-                                    Changelog::Some(a, _, k) => (Some(a), Some(k)),
-                                    _ => (None, None),
-                                },
-                                _ => (None, None),
-                            }
+
+                        if let ExpandType::Changelog(Changelog::Some(a, _, k)) =
+                            &ajour.expanded_type
                         {
-                            if addon.id == expanded_addon.id && key == expanded_key {
+                            if addon.id == a.id && key == k {
                                 ajour.expanded_type = ExpandType::None;
                                 return Ok(Command::none());
                             }
                         }
 
-                        let file_id = match key {
-                            AddonVersionKey::Local => addon.file_id,
-                            AddonVersionKey::Remote => {
-                                if let Some(package) = addon.relevant_release_package() {
-                                    package.file_id
-                                } else {
-                                    None
+                        // If we have a curse addon.
+                        if addon.curse_id.is_some() {
+                            let file_id = match key {
+                                AddonVersionKey::Local => addon.file_id,
+                                AddonVersionKey::Remote => {
+                                    if let Some(package) = addon.relevant_release_package() {
+                                        package.file_id
+                                    } else {
+                                        None
+                                    }
                                 }
-                            }
-                        };
+                            };
 
-                        if let (Some(id), Some(file_id)) = (addon.curse_id, file_id) {
+                            if let (Some(id), Some(file_id)) = (addon.curse_id, file_id) {
+                                ajour.expanded_type =
+                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                                return Ok(Command::perform(
+                                    perform_fetch_curse_changelog(addon.clone(), *key, id, file_id),
+                                    Message::FetchedCurseChangelog,
+                                ));
+                            }
+                        }
+
+                        // If we have a Tukui addon.
+                        if let Some(tukui_id) = &addon.tukui_id {
                             ajour.expanded_type =
                                 ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
                             return Ok(Command::perform(
-                                perform_fetch_changelog(addon.clone(), *key, id, file_id),
-                                Message::FetchedChangelog,
+                                perform_fetch_tukui_changelog(
+                                    addon.clone(),
+                                    tukui_id.clone(),
+                                    ajour.config.wow.flavor,
+                                    *key,
+                                ),
+                                Message::FetchedTukuiChangelog,
                             ));
                         }
                     }
@@ -1204,31 +1217,37 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ));
             }
         }
-        Message::FetchedChangelog((addon, key, result)) => {
-            log::debug!("Message::FetchedChangelog(error: {})", &result.is_err());
-
+        Message::FetchedTukuiChangelog((addon, key, result)) => {
+            log::debug!(
+                "Message::FetchedTukuiChangelog(error: {})",
+                &result.is_err()
+            );
             match result {
-                Ok(changelog) => {
-                    let to_newline = regex::Regex::new(r"<br ?/?>|#.\s").unwrap();
-                    let to_space =
-                        regex::Regex::new(r"&nbsp;|&quot;|&lt;|&gt;|&amp;|gt;|lt;|&#x27;|<.+?>")
-                            .unwrap();
-
-                    let c = to_newline.replace_all(&changelog, "\n").to_string();
-                    let c = to_space.replace_all(&c, "").to_string();
-
-                    fn truncate(s: &str, max_chars: usize) -> &str {
-                        match s.char_indices().nth(max_chars) {
-                            None => s,
-                            Some((idx, _)) => &s[..idx],
-                        }
-                    }
-
-                    let changelog = Changelog::Some(addon, truncate(&c, 2500).to_string(), key);
+                Ok((changelog, url)) => {
+                    let payload = ChangelogPayload { changelog, url };
+                    let changelog = Changelog::Some(addon, payload, key);
                     ajour.expanded_type = ExpandType::Changelog(changelog);
                 }
                 Err(error) => {
-                    log::error!("Message::FetchedChangelog(error: {})", &error);
+                    log::error!("Message::FetchedTukuiChangelog(error: {})", &error);
+                    ajour.expanded_type = ExpandType::None;
+                }
+            }
+        }
+        Message::FetchedCurseChangelog((addon, key, result)) => {
+            log::debug!(
+                "Message::FetchedCurseChangelog(error: {})",
+                &result.is_err()
+            );
+
+            match result {
+                Ok((changelog, url)) => {
+                    let payload = ChangelogPayload { changelog, url };
+                    let changelog = Changelog::Some(addon, payload, key);
+                    ajour.expanded_type = ExpandType::Changelog(changelog);
+                }
+                Err(error) => {
+                    log::error!("Message::FetchedCurseChangelog(error: {})", &error);
                     ajour.expanded_type = ExpandType::None;
                 }
             }
@@ -1279,12 +1298,25 @@ async fn perform_read_addon_directory(
     )
 }
 
-async fn perform_fetch_changelog(
+async fn perform_fetch_tukui_changelog(
+    addon: Addon,
+    tukui_id: String,
+    flavor: Flavor,
+    key: AddonVersionKey,
+) -> (Addon, AddonVersionKey, Result<(String, String)>) {
+    (
+        addon,
+        key,
+        tukui_api::fetch_changelog(&tukui_id, &flavor).await,
+    )
+}
+
+async fn perform_fetch_curse_changelog(
     addon: Addon,
     key: AddonVersionKey,
     id: u32,
     file_id: i64,
-) -> (Addon, AddonVersionKey, Result<String>) {
+) -> (Addon, AddonVersionKey, Result<(String, String)>) {
     (addon, key, curse_api::fetch_changelog(id, file_id).await)
 }
 
