@@ -62,6 +62,7 @@ impl std::fmt::Display for AjourMode {
 }
 
 #[derive(Debug, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum Interaction {
     Delete(String),
     Expand(ExpandType),
@@ -93,6 +94,7 @@ pub enum Interaction {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum Message {
     DownloadedAddon((Flavor, String, Result<()>)),
     Error(ClientError),
@@ -679,7 +681,7 @@ pub struct ChangelogPayload {
 pub enum Changelog {
     Request(Addon, AddonVersionKey),
     Loading(Addon, AddonVersionKey),
-    Some(Addon, ChangelogPayload, AddonVersionKey), // Addon, Changelog, URL, AddonVersionKey
+    Some(Addon, ChangelogPayload, AddonVersionKey),
 }
 
 #[derive(Debug, Clone)]
