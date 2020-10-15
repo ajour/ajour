@@ -123,10 +123,12 @@ pub async fn fetch_changelog(id: &str, flavor: &Flavor) -> Result<(String, Strin
                 return Ok(("No changelog found".to_string(), url));
             }
 
-            return Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url));
+            Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url))
         }
-        Flavor::Classic => {
-            return Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url));
-        }
+        Flavor::Classic => Ok((
+            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
+                .to_string(),
+            url,
+        )),
     }
 }
