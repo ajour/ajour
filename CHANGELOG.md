@@ -9,7 +9,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Added
-- It is now possible to press on local or remote version to view a changelog.
+- When pressing on either `local` or `remote` version in MyAddons you will see the changelog
+- When pressing on the addon title inside the catalog Ajour will open the addon website
+
 ## [0.4.1] - 2020-10-11
 ### Added
 - 10 new themes has been bundled together with the application.

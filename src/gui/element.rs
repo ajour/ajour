@@ -1442,6 +1442,7 @@ pub fn catalog_data_cell<'a, 'b>(
     let mut row_containers = vec![];
 
     let addon_data = &addon.addon;
+    let website_state = &mut addon.website_state;
     let retail_install_state = &mut addon.retail_install_state;
     let classic_install_state = &mut addon.classic_install_state;
 
@@ -1567,11 +1568,15 @@ pub fn catalog_data_cell<'a, 'b>(
         .next()
     {
         let title = Text::new(&addon_data.name).size(DEFAULT_FONT_SIZE);
-        let title_container = Container::new(title)
+        let title_button: Element<Interaction> = Button::new(website_state, title)
+            .style(style::BrightTextButton(color_palette))
+            .on_press(Interaction::OpenLink(addon_data.website_url.clone()))
+            .into();
+
+        let title_container = Container::new(title_button.map(Message::Interaction))
             .height(default_height)
             .width(*width)
             .center_y()
-            .padding(5)
             .style(style::BrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));

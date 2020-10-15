@@ -1115,6 +1115,7 @@ impl Default for CatalogSearchState {
 }
 
 pub struct CatalogRow {
+    website_state: button::State,
     retail_install_state: button::State,
     classic_install_state: button::State,
     addon: CatalogAddon,
@@ -1123,6 +1124,7 @@ pub struct CatalogRow {
 impl From<CatalogAddon> for CatalogRow {
     fn from(addon: CatalogAddon) -> Self {
         Self {
+            website_state: Default::default(),
             retail_install_state: Default::default(),
             classic_install_state: Default::default(),
             addon,
