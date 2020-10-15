@@ -57,6 +57,7 @@ pub struct Catalog {
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogAddon {
     pub id: u32,
+    pub website_url: String,
     pub name: String,
     pub categories: Vec<String>,
     pub summary: String,
