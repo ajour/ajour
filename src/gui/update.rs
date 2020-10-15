@@ -1,7 +1,8 @@
 use {
     super::{
-        Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey, CatalogFlavor, CatalogRow,
-        CatalogSource, ColumnKey, DirectoryType, Interaction, Message, SortDirection,
+        AddonVersionKey, Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey,
+        CatalogFlavor, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
+        DirectoryType, ExpandType, Interaction, Message, SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonState},
@@ -216,7 +217,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
-            ajour.expanded_addon = None;
+            ajour.expanded_type = ExpandType::None;
 
             // Cleans the addons.
             ajour.addons = HashMap::new();
@@ -232,7 +233,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.is_showing_settings = !ajour.is_showing_settings;
 
             // Remove the expanded addon.
-            ajour.expanded_addon = None;
+            ajour.expanded_type = ExpandType::None;
         }
         Message::Interaction(Interaction::Ignore(id)) => {
             log::debug!("Interaction::Ignore({})", &id);
@@ -240,7 +241,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
-            ajour.expanded_addon = None;
+            ajour.expanded_type = ExpandType::None;
 
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
@@ -331,7 +332,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
-            ajour.expanded_addon = None;
+            ajour.expanded_type = ExpandType::None;
             // Update the game flavor
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
@@ -359,26 +360,91 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
 
-        Message::Interaction(Interaction::Expand(id)) => {
-            log::debug!("Interaction::Expand({})", &id);
-
+        Message::Interaction(Interaction::Expand(expand_type)) => {
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
-            // Expand a addon. If it's already expanded, we collapse it again.
-            let flavor = ajour.config.wow.flavor;
-            let addons = ajour.addons.entry(flavor).or_default();
-            if let Some(addon) = addons.iter().find(|a| a.id == id) {
-                if let Some(is_addon_expanded) =
-                    ajour.expanded_addon.as_ref().map(|a| a.id == addon.id)
-                {
-                    if is_addon_expanded {
-                        ajour.expanded_addon = None;
-                        return Ok(Command::none());
+            // An addon can be exanded in two ways.
+            match &expand_type {
+                ExpandType::Details(a) => {
+                    log::debug!("Interaction::Expand(Details({:?}))", &a.id);
+                    let should_close = match &ajour.expanded_type {
+                        ExpandType::Details(ea) => a.id == ea.id,
+                        _ => false,
+                    };
+
+                    if should_close {
+                        ajour.expanded_type = ExpandType::None;
+                    } else {
+                        ajour.expanded_type = expand_type.clone();
                     }
                 }
+                ExpandType::Changelog(changelog) => match changelog {
+                    // We request changelog.
+                    Changelog::Request(addon, key) => {
+                        log::debug!("Interaction::Expand(Changelog::Request({:?}))", &addon.id);
 
-                ajour.expanded_addon = Some(addon.clone());
+                        // Check if the current expanded_type is showing changelog, and is the same
+                        // addon. If this is the case, we close the details.
+
+                        if let ExpandType::Changelog(Changelog::Some(a, _, k)) =
+                            &ajour.expanded_type
+                        {
+                            if addon.id == a.id && key == k {
+                                ajour.expanded_type = ExpandType::None;
+                                return Ok(Command::none());
+                            }
+                        }
+
+                        // If we have a curse addon.
+                        if addon.curse_id.is_some() {
+                            let file_id = match key {
+                                AddonVersionKey::Local => addon.file_id,
+                                AddonVersionKey::Remote => {
+                                    if let Some(package) = addon.relevant_release_package() {
+                                        package.file_id
+                                    } else {
+                                        None
+                                    }
+                                }
+                            };
+
+                            if let (Some(id), Some(file_id)) = (addon.curse_id, file_id) {
+                                ajour.expanded_type =
+                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                                return Ok(Command::perform(
+                                    perform_fetch_curse_changelog(addon.clone(), *key, id, file_id),
+                                    Message::FetchedCurseChangelog,
+                                ));
+                            }
+                        }
+
+                        // If we have a Tukui addon.
+                        if let Some(tukui_id) = &addon.tukui_id {
+                            ajour.expanded_type =
+                                ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                            return Ok(Command::perform(
+                                perform_fetch_tukui_changelog(
+                                    addon.clone(),
+                                    tukui_id.clone(),
+                                    ajour.config.wow.flavor,
+                                    *key,
+                                ),
+                                Message::FetchedTukuiChangelog,
+                            ));
+                        }
+                    }
+                    Changelog::Loading(a, _) => {
+                        log::debug!("Interaction::Expand(Changelog::Loading({:?}))", &a.id);
+                        ajour.expanded_type = ExpandType::Changelog(changelog.clone());
+                    }
+                    Changelog::Some(a, _, _) => {
+                        log::debug!("Interaction::Expand(Changelog::Some({:?}))", &a.id);
+                    }
+                },
+                ExpandType::None => {
+                    log::debug!("Interaction::Expand(ExpandType::None)");
+                }
             }
         }
         Message::Interaction(Interaction::Delete(id)) => {
@@ -387,7 +453,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
-            ajour.expanded_addon = None;
+            ajour.expanded_type = ExpandType::None;
 
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
@@ -415,7 +481,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
-            ajour.expanded_addon = None;
+            ajour.expanded_type = ExpandType::None;
 
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
@@ -444,7 +510,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
-            ajour.expanded_addon = None;
+            ajour.expanded_type = ExpandType::None;
 
             // Update all updatable addons, expect ignored.
             let flavor = ajour.config.wow.flavor;
@@ -655,7 +721,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
-            ajour.expanded_addon = None;
+            ajour.expanded_type = ExpandType::None;
 
             // First time clicking a column should sort it in Ascending order, otherwise
             // flip the sort direction.
@@ -731,7 +797,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
 
-            if let Some(expanded_addon) = &ajour.expanded_addon {
+            if let ExpandType::Details(expanded_addon) = &ajour.expanded_type {
                 let flavor = ajour.config.wow.flavor;
                 let addons = ajour.addons.entry(flavor).or_default();
                 if let Some(addon) = addons.iter_mut().find(|a| a.id == expanded_addon.id) {
@@ -758,7 +824,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // Persist the newly updated config.
                     let _ = &ajour.config.save();
                 }
-            };
+            }
         }
         Message::ThemeSelected(theme_name) => {
             log::debug!("Message::ThemeSelected({:?})", &theme_name);
@@ -1095,7 +1161,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
-
             // Catalog result size
             ajour.catalog_search_state.result_size = size;
 
@@ -1106,7 +1171,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
-
             // Catalog flavor
             ajour.catalog_search_state.flavor = flavor;
 
@@ -1117,7 +1181,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
-
             // Catalog source
             ajour.catalog_search_state.source = source;
 
@@ -1152,6 +1215,41 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ),
                     Message::DownloadedAddon,
                 ));
+            }
+        }
+        Message::FetchedTukuiChangelog((addon, key, result)) => {
+            log::debug!(
+                "Message::FetchedTukuiChangelog(error: {})",
+                &result.is_err()
+            );
+            match result {
+                Ok((changelog, url)) => {
+                    let payload = ChangelogPayload { changelog, url };
+                    let changelog = Changelog::Some(addon, payload, key);
+                    ajour.expanded_type = ExpandType::Changelog(changelog);
+                }
+                Err(error) => {
+                    log::error!("Message::FetchedTukuiChangelog(error: {})", &error);
+                    ajour.expanded_type = ExpandType::None;
+                }
+            }
+        }
+        Message::FetchedCurseChangelog((addon, key, result)) => {
+            log::debug!(
+                "Message::FetchedCurseChangelog(error: {})",
+                &result.is_err()
+            );
+
+            match result {
+                Ok((changelog, url)) => {
+                    let payload = ChangelogPayload { changelog, url };
+                    let changelog = Changelog::Some(addon, payload, key);
+                    ajour.expanded_type = ExpandType::Changelog(changelog);
+                }
+                Err(error) => {
+                    log::error!("Message::FetchedCurseChangelog(error: {})", &error);
+                    ajour.expanded_type = ExpandType::None;
+                }
             }
         }
         Message::Error(error)
@@ -1198,6 +1296,28 @@ async fn perform_read_addon_directory(
         flavor,
         read_addon_directory(fingerprint_collection, root_dir, flavor).await,
     )
+}
+
+async fn perform_fetch_tukui_changelog(
+    addon: Addon,
+    tukui_id: String,
+    flavor: Flavor,
+    key: AddonVersionKey,
+) -> (Addon, AddonVersionKey, Result<(String, String)>) {
+    (
+        addon,
+        key,
+        tukui_api::fetch_changelog(&tukui_id, &flavor).await,
+    )
+}
+
+async fn perform_fetch_curse_changelog(
+    addon: Addon,
+    key: AddonVersionKey,
+    id: u32,
+    file_id: i64,
+) -> (Addon, AddonVersionKey, Result<(String, String)>) {
+    (addon, key, curse_api::fetch_changelog(id, file_id).await)
 }
 
 /// Downloads the newest version of the addon.

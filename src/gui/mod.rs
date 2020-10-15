@@ -5,7 +5,7 @@ mod update;
 use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
-    addon::{Addon, AddonState, ReleaseChannel},
+    addon::{Addon, AddonState, AddonVersionKey, ReleaseChannel},
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
@@ -62,9 +62,10 @@ impl std::fmt::Display for AjourMode {
 }
 
 #[derive(Debug, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum Interaction {
     Delete(String),
-    Expand(String),
+    Expand(ExpandType),
     Ignore(String),
     OpenDirectory(DirectoryType),
     OpenLink(String),
@@ -93,6 +94,7 @@ pub enum Interaction {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum Message {
     DownloadedAddon((Flavor, String, Result<()>)),
     Error(ClientError),
@@ -113,6 +115,8 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
     CatalogInstallAddonFetched(Result<(u32, Flavor, Addon)>),
+    FetchedCurseChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
+    FetchedTukuiChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
 }
 
 pub struct Ajour {
@@ -120,7 +124,7 @@ pub struct Ajour {
     addons_scrollable_state: scrollable::State,
     config: Config,
     directory_btn_state: button::State,
-    expanded_addon: Option<Addon>,
+    expanded_type: ExpandType,
     is_showing_settings: bool,
     needs_update: Option<String>,
     new_release_button_state: button::State,
@@ -153,7 +157,7 @@ impl Default for Ajour {
             addons_scrollable_state: Default::default(),
             config: Config::default(),
             directory_btn_state: Default::default(),
-            expanded_addon: None,
+            expanded_type: ExpandType::None,
             is_showing_settings: false,
             needs_update: None,
             new_release_button_state: Default::default(),
@@ -336,9 +340,14 @@ impl Application for Ajour {
                 // Loops though the addons.
                 for addon in addons {
                     // Checks if the current addon is expanded.
-                    let is_addon_expanded = match &self.expanded_addon {
-                        Some(expanded_addon) => addon.id == expanded_addon.id,
-                        None => false,
+                    let is_addon_expanded = match &self.expanded_type {
+                        ExpandType::Details(a) => a.id == addon.id,
+                        ExpandType::Changelog(c) => match c {
+                            Changelog::Request(a, _) => a.id == addon.id,
+                            Changelog::Loading(a, _) => a.id == addon.id,
+                            Changelog::Some(a, _, _) => a.id == addon.id,
+                        },
+                        ExpandType::None => false,
                     };
 
                     // A container cell which has all data about the current addon.
@@ -347,6 +356,7 @@ impl Application for Ajour {
                         color_palette,
                         addon,
                         is_addon_expanded,
+                        &self.expanded_type,
                         &column_config,
                     );
 
@@ -659,6 +669,26 @@ pub fn run(opts: Opts) {
 
     // Runs the GUI.
     Ajour::run(settings);
+}
+
+#[derive(Debug, Clone)]
+pub struct ChangelogPayload {
+    changelog: String,
+    url: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum Changelog {
+    Request(Addon, AddonVersionKey),
+    Loading(Addon, AddonVersionKey),
+    Some(Addon, ChangelogPayload, AddonVersionKey),
+}
+
+#[derive(Debug, Clone)]
+pub enum ExpandType {
+    Details(Addon),
+    Changelog(Changelog),
+    None,
 }
 
 #[derive(Debug, Clone, Copy)]

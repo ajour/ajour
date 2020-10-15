@@ -9,7 +9,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Added
-- It is now possible to open the addon website for more information by pressing the title in the catalog
+- When pressing on either `local` or `remote` version in MyAddons you will see the changelog
+- When pressing on the addon title inside the catalog Ajour will open the addon website
 
 ## [0.4.1] - 2020-10-11
 ### Added

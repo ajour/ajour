@@ -3,6 +3,7 @@ use crate::{
     config::Flavor,
     error::ClientError,
     network::{post_json_async, request_async},
+    utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate},
     Result,
 };
 use isahc::prelude::*;
@@ -127,6 +128,26 @@ pub async fn fetch_remote_packages_by_ids(curse_ids: &[u32]) -> Result<Vec<Packa
             resp.text()?
         )))
     }
+}
+
+pub async fn fetch_changelog(id: u32, file_id: i64) -> Result<(String, String)> {
+    let url = format!("{}/addon/{}/file/{}/changelog", API_ENDPOINT, id, file_id);
+    let client = HttpClient::builder().build().unwrap();
+    let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
+
+    if resp.status().is_success() {
+        let changelog: String = resp.text()?;
+
+        let c = regex_html_tags_to_newline()
+            .replace_all(&changelog, "\n")
+            .to_string();
+        let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
+        let c = truncate(&c, 2500).to_string();
+
+        return Ok((c, url));
+    }
+
+    Ok(("No changelog found.".to_owned(), url))
 }
 
 pub async fn fetch_game_info() -> Result<GameInfo> {

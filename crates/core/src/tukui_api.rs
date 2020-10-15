@@ -1,4 +1,11 @@
-use crate::{addon::Addon, config::Flavor, error::ClientError, network::request_async, Result};
+use crate::{
+    addon::Addon,
+    config::Flavor,
+    error::ClientError,
+    network::request_async,
+    utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate},
+    Result,
+};
 use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 use serde::Deserialize;
@@ -26,6 +33,20 @@ fn api_endpoint(id: &str, flavor: &Flavor) -> String {
             _ => format!("https://www.tukui.org/api.php?addon={}", id),
         },
         Flavor::Classic => format!("https://www.tukui.org/api.php?classic-addon={}", id),
+    }
+}
+
+fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
+    match flavor {
+        Flavor::Retail => match id {
+            "-1" => "https://www.tukui.org/ui/tukui/changelog".to_owned(),
+            "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
+            _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
+        },
+        Flavor::Classic => format!(
+            "https://www.tukui.org/classic-addons.php?id={}&changelog",
+            id
+        ),
     }
 }
 
@@ -74,4 +95,40 @@ pub async fn latest_stable_addon_from_id(
     addon.apply_tukui_package(&package);
 
     Ok((tukui_id, flavor, addon))
+}
+
+pub async fn fetch_changelog(id: &str, flavor: &Flavor) -> Result<(String, String)> {
+    let url = changelog_endpoint(id, &flavor);
+
+    match flavor {
+        Flavor::Retail => {
+            // Only TukUI and ElvUI main addons has changelog which can be fetched.
+            // The others is embeded into a page.
+            if id == "-1" || id == "-2" {
+                let client = HttpClient::builder().build().unwrap();
+                let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
+
+                if resp.status().is_success() {
+                    let changelog: String = resp.text()?;
+
+                    let c = regex_html_tags_to_newline()
+                        .replace_all(&changelog, "\n")
+                        .to_string();
+                    let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
+                    let c = truncate(&c, 2500).to_string();
+
+                    return Ok((c, url));
+                }
+
+                return Ok(("No changelog found".to_string(), url));
+            }
+
+            Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url))
+        }
+        Flavor::Classic => Ok((
+            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
+                .to_string(),
+            url,
+        )),
+    }
 }
