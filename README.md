@@ -4,7 +4,7 @@
 
 ![Continuous integration](https://github.com/casperstorm/ajour/workflows/Continuous-integration/badge.svg)
 ![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
-[![Discord Server](https://img.shields.io/discord/757155234500968459?color=blue&label=Discord%20Chat&logo=discord&logoColor=white&style=flat-square)](https://discord.gg/4838t9R)
+[![Discord Server](https://img.shields.io/discord/757155234500968459?label=Discord%20Chat&labelColor=3C424A&logo=discord&logoColor=ffffff&color=7389D8)](https://discord.gg/4838t9R)
 
 ![](./resources/screenshots/ajour-banner.jpg)
 
