@@ -420,8 +420,8 @@ mod de {
     pub fn deserialize_color_hex_string<'de, D>(
         deserializer: D,
     ) -> Result<iced_native::Color, D::Error>
-        where
-            D: de::Deserializer<'de>,
+    where
+        D: de::Deserializer<'de>,
     {
         struct ColorVisitor;
 
@@ -434,8 +434,8 @@ mod de {
 
             #[allow(clippy::unnecessary_unwrap)]
             fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
-                where
-                    E: Error,
+            where
+                E: Error,
             {
                 if let Some(color) = hex_to_color(s) {
                     return Ok(Color(color));
