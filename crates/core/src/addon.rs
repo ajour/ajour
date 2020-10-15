@@ -291,7 +291,7 @@ impl Addon {
             .iter()
             .find(|f| f.repository_identifiers.tukui == Some(tukui_id.clone()))
             .map(|f| f.id.clone())
-            .unwrap();
+            .unwrap_or_else(|| tukui_id.clone());
 
         let mut addon = Addon::empty(&primary_folder_id);
         addon.active_repository = Some(Repository::Tukui);
@@ -469,7 +469,12 @@ impl Addon {
         // Shouldn't panic since we have an exact match on the fingerprint. We use the
         // first folder (sorted alphabetically) that has a match on curse id as the primary id.
         // If no folders have a curse id, we just use the first folder alphabetically.
-        let primary_folder_id = if let Some(f) = addon_folders.iter().find(|f| {
+        let primary_folder_id = if addon_folders.is_empty() {
+            // This is assigned when we install an addon via the catalog and we don't
+            // yet know the AddonFolders for it. This will get updated after the unpack
+            // finished and we can assign the AddonFolders for the addon.
+            info.id.to_string()
+        } else if let Some(f) = addon_folders.iter().find(|f| {
             f.repository_identifiers.curse == Some(curse_id)
                 && info.file.modules.iter().any(|m| m.foldername == f.id)
         }) {
@@ -546,7 +551,13 @@ impl Addon {
 
     /// Returns the notes of the addon.
     pub fn notes(&self) -> Option<&str> {
-        self.repository_metadata.notes.as_deref()
+        let meta_notes = self.repository_metadata.notes.as_deref();
+        let folder_notes = self
+            .primary_addon_folder()
+            .map(|f| f.notes.as_deref())
+            .flatten();
+
+        meta_notes.map_or(folder_notes, Option::Some)
     }
 
     /// Returns the website url of the addon.
@@ -605,6 +616,11 @@ impl Addon {
     /// Set the wowi id for the addon
     pub fn set_wowi_id(&mut self, wowi_id: String) {
         self.repository_identifiers.wowi = Some(wowi_id);
+    }
+
+    /// Set title for the addon
+    pub fn set_title(&mut self, title: String) {
+        self.repository_metadata.title = Some(title);
     }
 
     pub fn remote_packages(&self) -> &HashMap<ReleaseChannel, RemotePackage> {

@@ -195,14 +195,20 @@ pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<(u32, Flavor,
 
     let fingerprint_info = fetch_remote_packages_by_fingerprint(&[first_fingerprint]).await?;
 
-    let info = fingerprint_info.exact_matches.get(0).ok_or_else(|| {
-        ClientError::Custom(format!(
-            "No exact fingerprint match for curse id {}, fingerprint {}",
-            curse_id, first_fingerprint
-        ))
-    })?;
+    let info = if let Some(info) = fingerprint_info.exact_matches.get(0) {
+        info
+    } else {
+        fingerprint_info.partial_matches.get(0).ok_or_else(|| {
+            ClientError::Custom(format!(
+                "No fingerprint match for curse id {}, fingerprint {}",
+                curse_id, first_fingerprint
+            ))
+        })?
+    };
 
-    let addon = Addon::from_curse_fingerprint_info(curse_id, &info, flavor, &[]);
+    let mut addon = Addon::from_curse_fingerprint_info(curse_id, info, flavor, &[]);
+
+    addon.set_title(package.name.clone());
 
     Ok((curse_id, flavor, addon))
 }

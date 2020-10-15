@@ -5,7 +5,7 @@ mod update;
 use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
-    addon::{Addon, AddonState, AddonVersionKey, ReleaseChannel},
+    addon::{Addon, AddonState, AddonFolder,AddonVersionKey, ReleaseChannel},
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
@@ -96,7 +96,7 @@ pub enum Interaction {
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum Message {
-    DownloadedAddon((Flavor, String, Result<()>)),
+    DownloadedAddon((DownloadReason, Flavor, String, Result<()>)),
     Error(ClientError),
     Interaction(Interaction),
     NeedsUpdate(Result<Option<String>>),
@@ -107,7 +107,7 @@ pub enum Message {
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
-    UnpackedAddon((Flavor, String, Result<()>)),
+    UnpackedAddon((DownloadReason, Flavor, String, Result<Vec<AddonFolder>>)),
     UpdateWowDirectory(Option<PathBuf>),
     UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),
@@ -1309,4 +1309,10 @@ pub struct BackupState {
     last_backup: Option<NaiveDateTime>,
     directory_btn_state: button::State,
     backup_now_btn_state: button::State,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DownloadReason {
+    Update,
+    Install,
 }

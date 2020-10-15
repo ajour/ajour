@@ -2,10 +2,10 @@ use {
     super::{
         AddonVersionKey, Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey,
         CatalogFlavor, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
-        DirectoryType, ExpandType, Interaction, Message, SortDirection,
+        DirectoryType, DownloadReason, ExpandType, Interaction, Message, SortDirection,
     },
     ajour_core::{
-        addon::{Addon, AddonState, Repository},
+        addon::{Addon, AddonFolder, AddonState, Repository},
         backup::{backup_folders, latest_backup, BackupFolder},
         catalog,
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
@@ -498,6 +498,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.state = AddonState::Downloading;
                     return Ok(Command::perform(
                         perform_download_addon(
+                            DownloadReason::Update,
                             ajour.shared_client.clone(),
                             flavor,
                             addon.clone(),
@@ -535,6 +536,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         let addon = addon.clone();
                         commands.push(Command::perform(
                             perform_download_addon(
+                                DownloadReason::Update,
                                 ajour.shared_client.clone(),
                                 flavor,
                                 addon,
@@ -617,7 +619,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 );
             }
         }
-        Message::DownloadedAddon((flavor, id, Ok(()))) => {
+        Message::DownloadedAddon((reason, flavor, id, Ok(()))) => {
             log::debug!("Message::DownloadedAddon(({}, {}))", flavor, &id,);
 
             // When an addon has been successfully downloaded we begin to unpack it.
@@ -636,13 +638,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.state = AddonState::Unpacking;
                     let addon = addon.clone();
                     return Ok(Command::perform(
-                        perform_unpack_addon(flavor, addon, from_directory, to_directory),
+                        perform_unpack_addon(reason, flavor, addon, from_directory, to_directory),
                         Message::UnpackedAddon,
                     ));
                 }
             }
         }
-        Message::UnpackedAddon((flavor, id, result)) => {
+        Message::UnpackedAddon((reason, flavor, id, result)) => {
             log::debug!(
                 "Message::UnpackedAddon(({}, error: {}))",
                 &id,
@@ -652,7 +654,45 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 match result {
-                    Ok(_) => {
+                    Ok(mut folders) => {
+                        // If we are installing the addon through the catalog, we need to update
+                        // the AddonFolders and Primary Folder Id of the addon since
+                        // they have not yet been set
+                        if reason == DownloadReason::Install {
+                            folders.sort_by(|a, b| a.id.cmp(&b.id));
+
+                            // Assign the primary folder id based on the first folder alphabetically with
+                            // a matching repository identifier otherwise just the first
+                            // folder alphabetically
+                            let primary_folder_id = if let Some(folder) = folders.iter().find(|f| {
+                                if let Some(repo) = addon.active_repository {
+                                    match repo {
+                                        Repository::Curse => {
+                                            addon.repository_id()
+                                                == f.repository_identifiers
+                                                    .curse
+                                                    .as_ref()
+                                                    .map(u32::to_string)
+                                        }
+                                        Repository::Tukui => {
+                                            addon.repository_id() == f.repository_identifiers.tukui
+                                        }
+                                        Repository::WowI => {
+                                            addon.repository_id() == f.repository_identifiers.wowi
+                                        }
+                                    }
+                                } else {
+                                    false
+                                }
+                            }) {
+                                folder.id.clone()
+                            } else {
+                                folders.get(0).map(|f| f.id.clone()).unwrap()
+                            };
+                            addon.primary_folder_id = primary_folder_id;
+                            addon.folders = folders;
+                        }
+
                         addon.state = AddonState::Fingerprint;
 
                         let mut version = None;
@@ -1207,6 +1247,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 return Ok(Command::perform(
                     perform_download_addon(
+                        DownloadReason::Install,
                         ajour.shared_client.clone(),
                         flavor,
                         addon,
@@ -1256,7 +1297,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         | Message::NeedsUpdate(Err(error))
         | Message::CatalogDownloaded(Err(error))
         | Message::CatalogInstallAddonFetched(Err(error))
-        | Message::DownloadedAddon((_, _, Err(error))) => {
+        | Message::DownloadedAddon((_, _, _, Err(error))) => {
             log::error!("{}", error);
 
             ajour.state = AjourState::Error(error);
@@ -1322,12 +1363,14 @@ async fn perform_fetch_curse_changelog(
 /// Downloads the newest version of the addon.
 /// This is for now only downloading from warcraftinterface.
 async fn perform_download_addon(
+    reason: DownloadReason,
     shared_client: Arc<HttpClient>,
     flavor: Flavor,
     addon: Addon,
     to_directory: PathBuf,
-) -> (Flavor, String, Result<()>) {
+) -> (DownloadReason, Flavor, String, Result<()>) {
     (
+        reason,
         flavor,
         addon.primary_folder_id.clone(),
         download_addon(&shared_client, &addon, &to_directory).await,
@@ -1350,12 +1393,14 @@ async fn perform_hash_addon(
 
 /// Unzips `Addon` at given `from_directory` and moves it `to_directory`.
 async fn perform_unpack_addon(
+    reason: DownloadReason,
     flavor: Flavor,
     addon: Addon,
     from_directory: PathBuf,
     to_directory: PathBuf,
-) -> (Flavor, String, Result<()>) {
+) -> (DownloadReason, Flavor, String, Result<Vec<AddonFolder>>) {
     (
+        reason,
         flavor,
         addon.primary_folder_id.clone(),
         install_addon(&addon, &from_directory, &to_directory).await,
