@@ -11,6 +11,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Added
 - When pressing on either `local` or `remote` version in MyAddons you will see the changelog
 - When pressing on the addon title inside the catalog Ajour will open the addon website
+- Add fallback measures for displaying addons when fingerprinting fails or we can't link an addon to a remote registry
+  - Curse addons that have been locally modified should now display properly in Ajour. A `Repair` button will be present which will install the latest version of the addon so Ajour can accurately track the addon without local modifications.
+  - Addons that can't match to any registry will now show up in Ajour as status `Unknown`. Addons that have multiple folders will not be grouped and instead we will show one entry for every folder.
 
 ## [0.4.1] - 2020-10-11
 ### Added
