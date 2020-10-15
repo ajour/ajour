@@ -5,7 +5,7 @@ mod update;
 use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
-    addon::{Addon, AddonState, ReleaseChannel},
+    addon::{Addon, AddonState, AddonVersionKey, ReleaseChannel},
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
@@ -64,7 +64,7 @@ impl std::fmt::Display for AjourMode {
 #[derive(Debug, Clone)]
 pub enum Interaction {
     Delete(String),
-    Expand(String),
+    Expand(ExpandType),
     Ignore(String),
     OpenDirectory(DirectoryType),
     OpenLink(String),
@@ -84,7 +84,6 @@ pub enum Interaction {
     MoveColumnLeft(ColumnKey),
     MoveColumnRight(ColumnKey),
     ModeSelected(AjourMode),
-    RequestChangelog(String),
     CatalogQuery(String),
     CatalogInstall(catalog::Source, Flavor, u32),
     CatalogCategorySelected(CatalogCategory),
@@ -114,7 +113,7 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
     CatalogInstallAddonFetched(Result<(u32, Flavor, Addon)>),
-    FetchedChangelog(Result<String>),
+    FetchedChangelog((Addon, AddonVersionKey, Result<String>)),
 }
 
 pub struct Ajour {
@@ -122,7 +121,7 @@ pub struct Ajour {
     addons_scrollable_state: scrollable::State,
     config: Config,
     directory_btn_state: button::State,
-    expanded_addon: Option<Addon>,
+    expanded_type: ExpandType,
     is_showing_settings: bool,
     needs_update: Option<String>,
     new_release_button_state: button::State,
@@ -146,7 +145,6 @@ pub struct Ajour {
     catalog: Option<Catalog>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
-    changelog: Option<Changelog>,
 }
 
 impl Default for Ajour {
@@ -156,7 +154,7 @@ impl Default for Ajour {
             addons_scrollable_state: Default::default(),
             config: Config::default(),
             directory_btn_state: Default::default(),
-            expanded_addon: None,
+            expanded_type: ExpandType::None,
             is_showing_settings: false,
             needs_update: None,
             new_release_button_state: Default::default(),
@@ -186,7 +184,6 @@ impl Default for Ajour {
             catalog: None,
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
-            changelog: None,
         }
     }
 }
@@ -340,9 +337,14 @@ impl Application for Ajour {
                 // Loops though the addons.
                 for addon in addons {
                     // Checks if the current addon is expanded.
-                    let is_addon_expanded = match &self.expanded_addon {
-                        Some(expanded_addon) => addon.id == expanded_addon.id,
-                        None => false,
+                    let is_addon_expanded = match &self.expanded_type {
+                        ExpandType::Details(a) => a.id == addon.id,
+                        ExpandType::Changelog(c) => match c {
+                            Changelog::Request(a, _) => a.id == addon.id,
+                            Changelog::Loading(a, _) => a.id == addon.id,
+                            Changelog::Some(a, _, _) => a.id == addon.id,
+                        },
+                        ExpandType::None => false,
                     };
 
                     // A container cell which has all data about the current addon.
@@ -350,8 +352,8 @@ impl Application for Ajour {
                     let addon_data_cell = element::addon_data_cell(
                         color_palette,
                         addon,
-                        &self.changelog,
                         is_addon_expanded,
+                        &self.expanded_type,
                         &column_config,
                     );
 
@@ -666,9 +668,18 @@ pub fn run(opts: Opts) {
     Ajour::run(settings);
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Changelog {
-    text: String,
+#[derive(Debug, Clone)]
+pub enum Changelog {
+    Request(Addon, AddonVersionKey),
+    Loading(Addon, AddonVersionKey),
+    Some(Addon, String, AddonVersionKey),
+}
+
+#[derive(Debug, Clone)]
+pub enum ExpandType {
+    Details(Addon),
+    Changelog(Changelog),
+    None,
 }
 
 #[derive(Debug, Clone, Copy)]

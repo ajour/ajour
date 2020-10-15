@@ -66,6 +66,7 @@ dependencies = [
  "native-dialog",
  "num-format",
  "opener",
+ "regex",
  "structopt",
  "timeago",
  "widgets",
