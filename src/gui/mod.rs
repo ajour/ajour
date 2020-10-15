@@ -5,7 +5,7 @@ mod update;
 use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
-    addon::{Addon, AddonState, AddonFolder,AddonVersionKey, ReleaseChannel},
+    addon::{Addon, AddonFolder, AddonState, AddonVersionKey, ReleaseChannel},
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},

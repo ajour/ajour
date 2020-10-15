@@ -813,10 +813,8 @@ pub fn addon_data_cell<'a, 'b>(
                     .push(row);
             }
             ExpandType::Details(_) => {
-                let notes = notes
-                    .clone()
-                    .unwrap_or_else(|| "No description for addon.".to_string());
-                let author = author.clone().unwrap_or_else(|| "-".to_string());
+                let notes = notes.unwrap_or_else(|| "No description for addon.".to_string());
+                let author = author.unwrap_or_else(|| "-".to_string());
                 let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
                 let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
                 let bottom_space = Space::new(Length::Units(0), Length::Units(4));
@@ -867,7 +865,7 @@ pub fn addon_data_cell<'a, 'b>(
                 )
                 .style(style::DefaultButton(color_palette));
 
-                if let Some(link) = website_url.clone() {
+                if let Some(link) = website_url {
                     website_button = website_button.on_press(Interaction::OpenLink(link));
                 }
 
