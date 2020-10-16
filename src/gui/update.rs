@@ -646,7 +646,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::UnpackedAddon((reason, flavor, id, result)) => {
+        Message::UnpackedAddon((_reason, flavor, id, result)) => {
             log::debug!(
                 "Message::UnpackedAddon(({}, error: {}))",
                 &id,
@@ -657,10 +657,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 match result {
                     Ok(mut folders) => {
-                        // If we are installing the addon through the catalog, we need to update
-                        // the AddonFolders and Primary Folder Id of the addon since
-                        // they have not yet been set
-                        if reason == DownloadReason::Install {
+                        // Update the folders of the addon since they could have changed from the update,
+                        // or if its an addon installed through the catalog, we haven't assigned it folders yet
+                        {
                             folders.sort_by(|a, b| a.id.cmp(&b.id));
 
                             // Assign the primary folder id based on the first folder alphabetically with
