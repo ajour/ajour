@@ -47,12 +47,15 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
   - [tukui.org](https://www.tukui.org/)
   - [curse](https://www.curseforge.com/wow/addons)
 - Support for release channels, so it's possible to select either `alpha`, `beta` or `stable` for each addon
+- View changelogs for each addon 
 - Bulk addon update without any limitations
 - Remove addons and their dependencies
 - Ignore addons you don't want to update
 - Supports both Retail and Classic version of World of Warcraft
-- [Create your own custom themes](./THEMES.md)
+- 10+ handcrafted themes to choose between
+  - [Ability to add your own custom themes](./THEMES.md)
 - Ability to backup your whole UI, including all settings from WTF
+- Ability to run as a [command line application](#command-line) for advanced users
 
 ## Install
 
