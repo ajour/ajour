@@ -834,7 +834,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     if reason == DownloadReason::Install {
                         if let Some((_, _, status)) =
                             ajour.catalog_install_statuses.iter_mut().find(|(f, i, _)| {
-                                flavor == *f && addon.repository_id().unwrap() == i.to_string()
+                                flavor == *f && addon.repository_id() == Some(i.to_string())
                             })
                         {
                             *status = CatalogInstallStatus::Completed;
@@ -847,7 +847,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     if reason == DownloadReason::Install {
                         if let Some((_, _, status)) =
                             ajour.catalog_install_statuses.iter_mut().find(|(f, i, _)| {
-                                flavor == *f && addon.repository_id().unwrap() == i.to_string()
+                                flavor == *f && addon.repository_id() == Some(i.to_string())
                             })
                         {
                             *status = CatalogInstallStatus::Retry;
