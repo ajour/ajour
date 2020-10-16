@@ -30,19 +30,16 @@ pub async fn install_addon(
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
 
+    // Remove old addon folders
+    for folder in addon.folders.iter() {
+        let _ = std::fs::remove_dir_all(&folder.path);
+    }
+
     let mut toc_files = vec![];
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
         let path = to_directory.join(file.sanitized_name());
-
-        // If top-level destination folder for addon, delete that folder to remove
-        // the previous version so we guarantee a clean copy
-        if let Some(parent) = path.parent() {
-            if parent == to_directory {
-                let _ = std::fs::remove_dir_all(&path);
-            }
-        }
 
         if let Some(ext) = path.extension() {
             if let Ok(remainder) = path.strip_prefix(to_directory) {
