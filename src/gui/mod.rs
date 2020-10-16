@@ -1218,7 +1218,10 @@ impl CatalogFlavor {
         vec![
             CatalogFlavor::All,
             CatalogFlavor::Choice(Flavor::Retail),
+            CatalogFlavor::Choice(Flavor::RetailPTR),
+            CatalogFlavor::Choice(Flavor::RetailBeta),
             CatalogFlavor::Choice(Flavor::Classic),
+            CatalogFlavor::Choice(Flavor::ClassicPTR),
         ]
     }
 }
