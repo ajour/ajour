@@ -1,11 +1,15 @@
-use crate::{addon::Addon, Result};
+use crate::{
+    addon::{Addon, AddonFolder},
+    parse::parse_toc_path,
+    Result,
+};
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
 
 /// Deletes an Addon and all dependencies from disk.
-pub fn delete_addons(path: &PathBuf, dependencies: &[String]) -> Result<()> {
-    for dependency in dependencies {
-        let path = path.join(dependency);
+pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
+    for folder in addon_folders {
+        let path = &folder.path;
         if path.exists() {
             remove_dir_all(path)?;
         }
@@ -21,10 +25,12 @@ pub async fn install_addon(
     addon: &Addon,
     from_directory: &PathBuf,
     to_directory: &PathBuf,
-) -> Result<()> {
-    let zip_path = from_directory.join(addon.id.clone());
+) -> Result<Vec<AddonFolder>> {
+    let zip_path = from_directory.join(&addon.primary_folder_id);
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
+
+    let mut toc_files = vec![];
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
@@ -35,6 +41,14 @@ pub async fn install_addon(
         if let Some(parent) = path.parent() {
             if parent == to_directory {
                 let _ = std::fs::remove_dir_all(&path);
+            }
+        }
+
+        if let Some(ext) = path.extension() {
+            if let Ok(remainder) = path.strip_prefix(to_directory) {
+                if ext == "toc" && remainder.components().count() == 2 {
+                    toc_files.push(path.clone());
+                }
             }
         }
 
@@ -54,5 +68,7 @@ pub async fn install_addon(
     // Cleanup
     std::fs::remove_file(&zip_path)?;
 
-    Ok(())
+    let addon_folders = toc_files.iter().filter_map(parse_toc_path).collect();
+
+    Ok(addon_folders)
 }

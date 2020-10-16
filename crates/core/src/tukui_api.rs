@@ -9,7 +9,6 @@ use crate::{
 use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 use serde::Deserialize;
-use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize)]
 /// Struct for applying tukui details to an `Addon`.
@@ -73,26 +72,12 @@ pub async fn fetch_remote_package(id: &str, flavor: &Flavor) -> Result<TukuiPack
     }
 }
 
-pub async fn latest_stable_addon_from_id(
-    tukui_id: u32,
-    mut addon: Addon,
-    mut addon_path: PathBuf,
-    flavor: Flavor,
-) -> Result<(u32, Flavor, Addon)> {
+pub async fn latest_addon(tukui_id: u32, flavor: Flavor) -> Result<(u32, Flavor, Addon)> {
     let tukui_id_string = tukui_id.to_string();
 
     let package = fetch_remote_package(&tukui_id_string, &flavor).await?;
 
-    addon_path.push(&package.name);
-
-    addon.title = package.name.clone();
-    addon.id = package.name.clone();
-    addon.author = package.author.clone();
-    addon.notes = package.small_desc.clone();
-    addon.tukui_id = Some(tukui_id_string);
-    addon.path = addon_path;
-
-    addon.apply_tukui_package(&package);
+    let addon = Addon::from_tukui_package(tukui_id_string, &[], &package);
 
     Ok((tukui_id, flavor, addon))
 }

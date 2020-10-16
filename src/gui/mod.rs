@@ -5,7 +5,7 @@ mod update;
 use crate::cli::Opts;
 use crate::VERSION;
 use ajour_core::{
-    addon::{Addon, AddonState, AddonVersionKey, ReleaseChannel},
+    addon::{Addon, AddonFolder, AddonState, AddonVersionKey, ReleaseChannel},
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{load_config, ColumnConfigV2, Config, Flavor},
@@ -96,7 +96,7 @@ pub enum Interaction {
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum Message {
-    DownloadedAddon((Flavor, String, Result<()>)),
+    DownloadedAddon((DownloadReason, Flavor, String, Result<()>)),
     Error(ClientError),
     Interaction(Interaction),
     NeedsUpdate(Result<Option<String>>),
@@ -107,7 +107,7 @@ pub enum Message {
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
-    UnpackedAddon((Flavor, String, Result<()>)),
+    UnpackedAddon((DownloadReason, Flavor, String, Result<Vec<AddonFolder>>)),
     UpdateWowDirectory(Option<PathBuf>),
     UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),
@@ -341,11 +341,17 @@ impl Application for Ajour {
                 for addon in addons {
                     // Checks if the current addon is expanded.
                     let is_addon_expanded = match &self.expanded_type {
-                        ExpandType::Details(a) => a.id == addon.id,
+                        ExpandType::Details(a) => a.primary_folder_id == addon.primary_folder_id,
                         ExpandType::Changelog(c) => match c {
-                            Changelog::Request(a, _) => a.id == addon.id,
-                            Changelog::Loading(a, _) => a.id == addon.id,
-                            Changelog::Some(a, _, _) => a.id == addon.id,
+                            Changelog::Request(a, _) => {
+                                a.primary_folder_id == addon.primary_folder_id
+                            }
+                            Changelog::Loading(a, _) => {
+                                a.primary_folder_id == addon.primary_folder_id
+                            }
+                            Changelog::Some(a, _, _) => {
+                                a.primary_folder_id == addon.primary_folder_id
+                            }
                         },
                         ExpandType::None => false,
                     };
@@ -508,51 +514,50 @@ impl Application for Ajour {
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
                         let retail_installed = if flavor == Flavor::Retail {
-                            addons.iter().any(|a| {
-                                a.curse_id == Some(addon.addon.id)
-                                    || a.tukui_id == Some(addon.addon.id.to_string())
-                            })
+                            addons
+                                .iter()
+                                .any(|a| a.repository_id() == Some(addon.addon.id.to_string()))
                         } else {
                             other_flavor_addons.iter().any(|a| {
-                                a.curse_id == Some(addon.addon.id)
-                                    || a.tukui_id == Some(addon.addon.id.to_string())
+                                a.curse_id() == Some(addon.addon.id)
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
                             })
                         };
                         let retail_downloading = if flavor == Flavor::Retail {
                             addons.iter().any(|a| {
-                                (a.curse_id == Some(addon.addon.id)
-                                    || a.tukui_id == Some(addon.addon.id.to_string()))
+                                (a.curse_id() == Some(addon.addon.id)
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string()))
                                     && a.state == AddonState::Downloading
                             })
                         } else {
                             other_flavor_addons.iter().any(|a| {
-                                (a.curse_id == Some(addon.addon.id)
-                                    || a.tukui_id == Some(addon.addon.id.to_string()))
+                                (a.curse_id() == Some(addon.addon.id)
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string()))
                                     && a.state == AddonState::Downloading
                             })
                         };
 
                         let classic_installed = if flavor == Flavor::Classic {
                             addons.iter().any(|a| {
-                                a.curse_id == Some(addon.addon.id)
-                                    || a.tukui_id == Some(addon.addon.id.to_string())
+                                a.curse_id() == Some(addon.addon.id)
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
                             })
                         } else {
                             other_flavor_addons.iter().any(|a| {
-                                a.curse_id == Some(addon.addon.id)
-                                    || a.tukui_id == Some(addon.addon.id.to_string())
+                                a.curse_id() == Some(addon.addon.id)
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
                             })
                         };
                         let classic_downloading = if flavor == Flavor::Classic {
                             addons.iter().any(|a| {
-                                (a.curse_id == Some(addon.addon.id)
-                                    || a.tukui_id == Some(addon.addon.id.to_string()))
+                                (a.curse_id() == Some(addon.addon.id)
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string()))
                                     && a.state == AddonState::Downloading
                             })
                         } else {
                             other_flavor_addons.iter().any(|a| {
-                                (a.curse_id == Some(addon.addon.id)
-                                    || a.tukui_id == Some(addon.addon.id.to_string()))
+                                (a.curse_id() == Some(addon.addon.id)
+                                    || a.tukui_id() == Some(&addon.addon.id.to_string()))
                                     && a.state == AddonState::Downloading
                             })
                         };
@@ -1304,4 +1309,10 @@ pub struct BackupState {
     last_backup: Option<NaiveDateTime>,
     directory_btn_state: button::State,
     backup_now_btn_state: button::State,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DownloadReason {
+    Update,
+    Install,
 }
