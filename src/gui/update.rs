@@ -491,7 +491,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addons = ajour.addons.entry(flavor).or_default();
             let to_directory = ajour
                 .config
-                .get_temporary_addon_directory(flavor)
+                .get_download_directory_for_flavor(flavor)
                 .expect("Expected a valid path");
             for addon in addons.iter_mut() {
                 if addon.primary_folder_id == id {
@@ -531,7 +531,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let mut commands = vec![];
             for addon in addons.iter_mut() {
                 if addon.state == AddonState::Updatable {
-                    if let Some(to_directory) = ajour.config.get_temporary_addon_directory(flavor) {
+                    if let Some(to_directory) =
+                        ajour.config.get_download_directory_for_flavor(flavor)
+                    {
                         addon.state = AddonState::Downloading;
                         let addon = addon.clone();
                         commands.push(Command::perform(
@@ -626,7 +628,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // If it for some reason fails to download, we handle the error.
             let from_directory = ajour
                 .config
-                .get_temporary_addon_directory(flavor)
+                .get_download_directory_for_flavor(flavor)
                 .expect("Expected a valid path");
             let to_directory = ajour
                 .config
@@ -1242,7 +1244,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 let to_directory = ajour
                     .config
-                    .get_temporary_addon_directory(flavor)
+                    .get_download_directory_for_flavor(flavor)
                     .expect("Expected a valid path");
 
                 return Ok(Command::perform(

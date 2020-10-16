@@ -78,7 +78,7 @@ pub fn update_all_addons() -> Result<()> {
                     if let Some(package) = addon.relevant_release_package() {
                         // Directory to temporarily save downloaded addon
                         let temp_directory = config
-                            .get_temporary_addon_directory(*flavor)
+                            .get_download_directory_for_flavor(*flavor)
                             .expect("Expected a valid path");
 
                         // Only add addons that have an update available
