@@ -1055,7 +1055,10 @@ pub fn menu_addons_container<'a>(
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
     retail_btn_state: &'a mut button::State,
+    retail_ptr_btn_state: &'a mut button::State,
+    retail_beta_btn_state: &'a mut button::State,
     classic_btn_state: &'a mut button::State,
+    classic_ptr_btn_state: &'a mut button::State,
     state: &AjourState,
     addons: &[Addon],
     config: &'a mut Config,
@@ -1116,6 +1119,20 @@ pub fn menu_addons_container<'a>(
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Retail));
 
+    let mut retail_ptr_button = Button::new(
+        retail_ptr_btn_state,
+        Text::new("PTR").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::RetailPTR));
+
+    let mut retail_beta_button = Button::new(
+        retail_beta_btn_state,
+        Text::new("Beta").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::RetailBeta));
+
     let mut classic_button = Button::new(
         classic_btn_state,
         Text::new("Classic").size(DEFAULT_FONT_SIZE),
@@ -1123,25 +1140,69 @@ pub fn menu_addons_container<'a>(
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Classic));
 
+    let mut classic_ptr_button = Button::new(
+        classic_ptr_btn_state,
+        Text::new("PTR").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::ClassicPTR));
+
     if !ajour_performing_actions && !ajour_welcome {
         match config.wow.flavor {
             Flavor::Retail => {
                 retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
+                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
                 classic_button = classic_button.style(style::DefaultButton(color_palette));
+                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+            }
+            Flavor::RetailPTR => {
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
+                retail_ptr_button =
+                    retail_ptr_button.style(style::SelectedDefaultButton(color_palette));
+                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
+                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+            }
+            Flavor::RetailBeta => {
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
+                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+                retail_beta_button =
+                    retail_beta_button.style(style::SelectedDefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
+                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
             }
             Flavor::Classic => {
-                classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
                 retail_button = retail_button.style(style::DefaultButton(color_palette));
+                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+                classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
+                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+            }
+            Flavor::ClassicPTR => {
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
+                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
+                classic_ptr_button =
+                    classic_ptr_button.style(style::SelectedDefaultButton(color_palette));
             }
         }
     }
 
     let retail_button: Element<Interaction> = retail_button.into();
+    let retail_ptr_button: Element<Interaction> = retail_ptr_button.into();
+    let retail_beta_button: Element<Interaction> = retail_beta_button.into();
     let classic_button: Element<Interaction> = classic_button.into();
+    let classic_ptr_button: Element<Interaction> = classic_ptr_button.into();
 
     let segmented_flavor_control_container = Row::new()
         .push(retail_button.map(Message::Interaction))
+        .push(retail_ptr_button.map(Message::Interaction))
+        .push(retail_beta_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(classic_button.map(Message::Interaction))
+        .push(classic_ptr_button.map(Message::Interaction))
         .spacing(1);
 
     // Displays text depending on the state of the app.
@@ -1189,9 +1250,10 @@ pub fn menu_addons_container<'a>(
         .push(Space::new(Length::Units(7), Length::Units(0)))
         .push(update_all_button.map(Message::Interaction))
         .push(Space::new(Length::Units(7), Length::Units(0)))
-        .push(segmented_flavor_control_container)
         .push(status_container)
-        .push(error_container);
+        .push(error_container)
+        .push(segmented_flavor_control_container)
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
 
     // Add space above settings_row.
     let settings_column = Column::new()

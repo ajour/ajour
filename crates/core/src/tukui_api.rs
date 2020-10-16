@@ -26,23 +26,25 @@ pub struct TukuiPackage {
 /// Return the tukui API endpoint.
 fn api_endpoint(id: &str, flavor: &Flavor) -> String {
     match flavor {
-        Flavor::Retail => match id {
+        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
             "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
             "-2" => "https://www.tukui.org/api.php?ui=elvui".to_owned(),
             _ => format!("https://www.tukui.org/api.php?addon={}", id),
         },
-        Flavor::Classic => format!("https://www.tukui.org/api.php?classic-addon={}", id),
+        Flavor::Classic | Flavor::ClassicPTR => {
+            format!("https://www.tukui.org/api.php?classic-addon={}", id)
+        }
     }
 }
 
 fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
     match flavor {
-        Flavor::Retail => match id {
+        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
             "-1" => "https://www.tukui.org/ui/tukui/changelog".to_owned(),
             "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
             _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
         },
-        Flavor::Classic => format!(
+        Flavor::Classic | Flavor::ClassicPTR => format!(
             "https://www.tukui.org/classic-addons.php?id={}&changelog",
             id
         ),
@@ -86,7 +88,7 @@ pub async fn fetch_changelog(id: &str, flavor: &Flavor) -> Result<(String, Strin
     let url = changelog_endpoint(id, &flavor);
 
     match flavor {
-        Flavor::Retail => {
+        Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPTR => {
             // Only TukUI and ElvUI main addons has changelog which can be fetched.
             // The others is embeded into a page.
             if id == "-1" || id == "-2" {
@@ -110,7 +112,7 @@ pub async fn fetch_changelog(id: &str, flavor: &Flavor) -> Result<(String, Strin
 
             Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url))
         }
-        Flavor::Classic => Ok((
+        Flavor::Classic | Flavor::ClassicPTR => Ok((
             "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
                 .to_string(),
             url,
