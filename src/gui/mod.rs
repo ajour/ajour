@@ -103,7 +103,7 @@ pub enum Message {
     None(()),
     Parse(Result<Config>),
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
-    UpdateFingerprint((Flavor, String, Result<()>)),
+    UpdateFingerprint((DownloadReason, Flavor, String, Result<()>)),
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
@@ -1122,7 +1122,9 @@ impl Default for CatalogSearchState {
 pub struct CatalogRow {
     website_state: button::State,
     retail_install_state: button::State,
+    retail_install_status: CatalogInstallStatus,
     classic_install_state: button::State,
+    classic_install_status: CatalogInstallStatus,
     addon: CatalogAddon,
 }
 
@@ -1131,10 +1133,23 @@ impl From<CatalogAddon> for CatalogRow {
         Self {
             website_state: Default::default(),
             retail_install_state: Default::default(),
+            retail_install_status: CatalogInstallStatus::None,
             classic_install_state: Default::default(),
+            classic_install_status: CatalogInstallStatus::None,
             addon,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum CatalogInstallStatus {
+    None,
+    Downloading,
+    Unpacking,
+    Fingerprint,
+    Completed,
+    Retry,
+    Unavilable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
