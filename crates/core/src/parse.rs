@@ -292,10 +292,6 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         tukui_addons.len()
     );
 
-    // Links dependencies. This is needed for tukui addons since they don't
-    // tell which dependencies a addon has, so we use the information from toc.
-    //link_dependencies_bidirectional(&mut tukui_addons, &unfiltred_addons);
-
     // Filter out addons with fingerprints.
     let mut fingerprint_hashes: Vec<_> = addon_folders
         .iter()
@@ -772,40 +768,6 @@ where
     }
     Some(current)
 }
-
-/// Helper function to run through all addons and
-/// link all dependencies bidirectional.
-///
-/// Example: We download a Addon which upon unzipping has
-/// three folders (addons): `Foo`, `Bar`, `Baz`.
-/// `Foo` is the parent and `Bar` and `Baz` are two helper addons.
-/// `Bar` and `Baz` are both dependent on `Foo`.
-/// This we know because of their .toc file.
-/// However we don't know anything about `Bar` and `Baz` when
-/// only looking at `Foo`.
-///
-/// After reading TOC files:
-/// `Foo` - dependencies: []
-/// `Bar` - dependencies: [`Foo`]
-/// `Baz` - dependencies: [`Foo`]
-///
-/// After bidirectional dependencies link:
-/// `Foo` - dependencies: [`Bar`, `Baz`]
-/// `Bar` - dependencies: [`Foo`]
-/// `Baz` - dependencies: [`Foo`]
-// fn link_dependencies_bidirectional(sliced_addons: &mut [Addon], all_addons: &[Addon]) {
-//     for addon in sliced_addons {
-//         for unsorted_addon in all_addons {
-//             for dependency in &unsorted_addon.dependencies {
-//                 if dependency == &addon.id {
-//                     addon.dependencies.push(unsorted_addon.id.clone());
-//                 }
-//             }
-//         }
-
-//         addon.dependencies.dedup();
-//     }
-// }
 
 /// Helper function to parse a given TOC file
 /// (`DirEntry`) into a `Addon` struct.
