@@ -630,39 +630,34 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 result.is_err()
             );
 
-            match result {
-                Ok(_) => {
-                    // When an addon has been successfully downloaded we begin to unpack it.
-                    // If it for some reason fails to download, we handle the error.
-                    let from_directory = ajour
-                        .config
-                        .get_download_directory_for_flavor(flavor)
-                        .expect("Expected a valid path");
-                    let to_directory = ajour
-                        .config
-                        .get_addon_directory_for_flavor(&flavor)
-                        .expect("Expected a valid path");
+            // When an addon has been successfully downloaded we begin to unpack it.
+            // If it for some reason fails to download, we handle the error.
+            let from_directory = ajour
+                .config
+                .get_download_directory_for_flavor(flavor)
+                .expect("Expected a valid path");
+            let to_directory = ajour
+                .config
+                .get_addon_directory_for_flavor(&flavor)
+                .expect("Expected a valid path");
 
-                    if reason == DownloadReason::Install {
-                        if let Some(row) = ajour
-                            .catalog_search_state
-                            .catalog_rows
-                            .iter_mut()
-                            .find(|r| r.addon.id == id.parse::<u32>().unwrap())
-                        {
-                            match flavor {
-                                Flavor::Retail => {
-                                    row.retail_install_status = CatalogInstallStatus::Unpacking
-                                }
-                                Flavor::Classic => {
-                                    row.classic_install_status = CatalogInstallStatus::Unpacking
-                                }
+            let mut remove_catalog_addon = None;
+
+            let addons = ajour.addons.entry(flavor).or_default();
+            if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
+                match result {
+                    Ok(_) => {
+                        // Update catalog status for addon
+                        if reason == DownloadReason::Install {
+                            if let Some((_, _, status)) =
+                                ajour.catalog_install_statuses.iter_mut().find(|(f, i, _)| {
+                                    flavor == *f && addon.repository_id() == Some(i.to_string())
+                                })
+                            {
+                                *status = CatalogInstallStatus::Unpacking;
                             }
                         }
-                    }
 
-                    let addons = ajour.addons.entry(flavor).or_default();
-                    if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                         if addon.state == AddonState::Downloading {
                             addon.state = AddonState::Unpacking;
                             let addon = addon.clone();
@@ -678,29 +673,30 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             ));
                         }
                     }
-                }
-                Err(error) => {
-                    log::error!("{}", error);
-                    ajour.state = AjourState::Error(error);
+                    Err(error) => {
+                        log::error!("{}", error);
 
-                    if reason == DownloadReason::Install {
-                        if let Some(row) = ajour
-                            .catalog_search_state
-                            .catalog_rows
-                            .iter_mut()
-                            .find(|r| r.addon.id == id.parse::<u32>().unwrap())
-                        {
-                            match flavor {
-                                Flavor::Retail => {
-                                    row.retail_install_status = CatalogInstallStatus::Retry
-                                }
-                                Flavor::Classic => {
-                                    row.classic_install_status = CatalogInstallStatus::Retry
-                                }
+                        ajour.state = AjourState::Error(error);
+
+                        // Update catalog status for addon
+                        if reason == DownloadReason::Install {
+                            if let Some((_, _, status)) =
+                                ajour.catalog_install_statuses.iter_mut().find(|(f, i, _)| {
+                                    flavor == *f && addon.repository_id() == Some(i.to_string())
+                                })
+                            {
+                                *status = CatalogInstallStatus::Retry;
+
+                                remove_catalog_addon = Some(addon.primary_folder_id.clone());
                             }
                         }
                     }
                 }
+            }
+
+            // Remove catalog installed addon from addons since it failed
+            if let Some(id) = remove_catalog_addon {
+                addons.retain(|a| a.primary_folder_id != id)
             }
         }
         Message::UnpackedAddon((reason, flavor, id, result)) => {
@@ -709,6 +705,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 &id,
                 result.is_err()
             );
+
+            let mut remove_catalog_addon = None;
 
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
@@ -751,23 +749,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             addon.folders = folders;
                         }
 
+                        // Update catalog status for addon
                         if reason == DownloadReason::Install {
-                            if let Some(row) = ajour
-                                .catalog_search_state
-                                .catalog_rows
-                                .iter_mut()
-                                .find(|r| r.addon.id == id.parse::<u32>().unwrap())
+                            if let Some((_, _, status)) =
+                                ajour.catalog_install_statuses.iter_mut().find(|(f, i, _)| {
+                                    flavor == *f && addon.repository_id() == Some(i.to_string())
+                                })
                             {
-                                match flavor {
-                                    Flavor::Retail => {
-                                        row.retail_install_status =
-                                            CatalogInstallStatus::Fingerprint
-                                    }
-                                    Flavor::Classic => {
-                                        row.classic_install_status =
-                                            CatalogInstallStatus::Fingerprint
-                                    }
-                                }
+                                *status = CatalogInstallStatus::Fingerprint;
                             }
                         }
 
@@ -805,25 +794,25 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.state = AjourState::Error(err);
                         addon.state = AddonState::Ajour(Some("Error".to_owned()));
 
+                        // Update catalog status for addon
                         if reason == DownloadReason::Install {
-                            if let Some(row) = ajour
-                                .catalog_search_state
-                                .catalog_rows
-                                .iter_mut()
-                                .find(|r| r.addon.id == id.parse::<u32>().unwrap())
+                            if let Some((_, _, status)) =
+                                ajour.catalog_install_statuses.iter_mut().find(|(f, i, _)| {
+                                    flavor == *f && addon.repository_id() == Some(i.to_string())
+                                })
                             {
-                                match flavor {
-                                    Flavor::Retail => {
-                                        row.retail_install_status = CatalogInstallStatus::Retry
-                                    }
-                                    Flavor::Classic => {
-                                        row.classic_install_status = CatalogInstallStatus::Retry
-                                    }
-                                }
+                                *status = CatalogInstallStatus::Retry;
+
+                                remove_catalog_addon = Some(addon.primary_folder_id.clone());
                             }
                         }
                     }
                 }
+            }
+
+            // Remove catalog installed addon from addons since it failed
+            if let Some(id) = remove_catalog_addon {
+                addons.retain(|a| a.primary_folder_id != id)
             }
         }
         Message::UpdateFingerprint((reason, flavor, id, result)) => {
@@ -834,31 +823,44 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 result.is_err()
             );
 
-            if reason == DownloadReason::Install {
-                if let Some(row) = ajour
-                    .catalog_search_state
-                    .catalog_rows
-                    .iter_mut()
-                    .find(|r| r.addon.id == id.parse::<u32>().unwrap())
-                {
-                    match flavor {
-                        Flavor::Retail => {
-                            row.retail_install_status = CatalogInstallStatus::Completed
-                        }
-                        Flavor::Classic => {
-                            row.classic_install_status = CatalogInstallStatus::Completed
-                        }
-                    }
-                }
-            }
+            let mut remove_catalog_addon = None;
 
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 if result.is_ok() {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+
+                    // Update catalog status for addon
+                    if reason == DownloadReason::Install {
+                        if let Some((_, _, status)) =
+                            ajour.catalog_install_statuses.iter_mut().find(|(f, i, _)| {
+                                flavor == *f && addon.repository_id().unwrap() == i.to_string()
+                            })
+                        {
+                            *status = CatalogInstallStatus::Completed;
+                        }
+                    }
                 } else {
                     addon.state = AddonState::Ajour(Some("Error".to_owned()));
+
+                    // Update catalog status for addon
+                    if reason == DownloadReason::Install {
+                        if let Some((_, _, status)) =
+                            ajour.catalog_install_statuses.iter_mut().find(|(f, i, _)| {
+                                flavor == *f && addon.repository_id().unwrap() == i.to_string()
+                            })
+                        {
+                            *status = CatalogInstallStatus::Retry;
+
+                            remove_catalog_addon = Some(addon.primary_folder_id.clone());
+                        }
+                    }
                 }
+            }
+
+            // Remove catalog installed addon from addons since it failed
+            if let Some(id) = remove_catalog_addon {
+                addons.retain(|a| a.primary_folder_id != id)
             }
         }
         Message::NeedsUpdate(Ok(newer_version)) => {
@@ -1270,19 +1272,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
-            if let Some(row) = ajour
-                .catalog_search_state
-                .catalog_rows
-                .iter_mut()
-                .find(|r| r.addon.id == id)
-            {
-                match flavor {
-                    Flavor::Retail => row.retail_install_status = CatalogInstallStatus::Downloading,
-                    Flavor::Classic => {
-                        row.classic_install_status = CatalogInstallStatus::Downloading
-                    }
-                }
-            }
+            // Remove any existing status for this addon since we are going
+            // to try and download it again
+            ajour
+                .catalog_install_statuses
+                .retain(|(f, i, _)| if id == *i { flavor != *f } else { true });
+
+            // Add new status for this addon as Downloading
+            ajour
+                .catalog_install_statuses
+                .push((flavor, id, CatalogInstallStatus::Downloading));
 
             return Ok(Command::perform(
                 perform_fetch_latest_addon(source, id, flavor),
@@ -1362,20 +1361,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             Err(error) => {
                 log::error!("{}", error);
 
-                if let Some(row) = ajour
-                    .catalog_search_state
-                    .catalog_rows
+                if let Some((_, _, status)) = ajour
+                    .catalog_install_statuses
                     .iter_mut()
-                    .find(|r| r.addon.id == id)
+                    .find(|(f, i, _)| flavor == *f && id == *i)
                 {
-                    match flavor {
-                        Flavor::Retail => {
-                            row.retail_install_status = CatalogInstallStatus::Unavilable
-                        }
-                        Flavor::Classic => {
-                            row.classic_install_status = CatalogInstallStatus::Unavilable
-                        }
-                    }
+                    *status = CatalogInstallStatus::Unavilable;
                 }
             }
         },
