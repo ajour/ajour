@@ -15,6 +15,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
   - Curse addons that have been locally modified should now display properly in Ajour. A `Repair` button will be present which will install the latest version of the addon so Ajour can accurately track the addon without local modifications.
   - Addons that can't match to any registry will now show up in Ajour as status `Unknown`. Addons that have multiple folders will not be grouped and instead we will show one entry for every folder.
 
+### Fixed
+- Fixed bug where orphaned folders could exist after updating an addon if the newer version of an addon didnt't include those folders anymore. 
+
 ### Packaging
 - Added Forest Night theme
 
