@@ -17,6 +17,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ### Fixed
 - Fixed bug where orphaned folders could exist after updating an addon if the newer version of an addon didnt't include those folders anymore. 
+- Fixed catalog install buttons getting stuck when install fails or addon is unavailable to download. Button will now show "Retry" if failed and disabled as "Unavailable" if the addon is unavailable.
 
 ### Packaging
 - Added Forest Night theme
