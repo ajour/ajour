@@ -3,9 +3,9 @@
 use {
     super::{
         style, AddonVersionKey, AjourMode, AjourState, BackupState, CatalogColumnKey,
-        CatalogColumnState, CatalogRow, Changelog, ColumnKey, ColumnSettings, ColumnState,
-        DirectoryType, ExpandType, Interaction, Message, ReleaseChannel, ScaleState, SortDirection,
-        ThemeState,
+        CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog, ColumnKey, ColumnSettings,
+        ColumnState, DirectoryType, ExpandType, Interaction, Message, ReleaseChannel, ScaleState,
+        SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -1453,10 +1453,9 @@ pub fn catalog_data_cell<'a, 'b>(
     color_palette: ColorPalette,
     addon: &'a mut CatalogRow,
     column_config: &'b [(CatalogColumnKey, Length)],
-    retail_downloading: bool,
     retail_installed: bool,
-    classic_downloading: bool,
     classic_installed: bool,
+    statuses: Vec<(Flavor, CatalogInstallStatus)>,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
 
@@ -1482,14 +1481,29 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
+        let status = statuses
+            .iter()
+            .find(|(f, _)| *f == Flavor::Retail)
+            .map(|(_, status)| *status);
+
         let retail_install = Text::new(if !retail_exists {
             "N/A"
-        } else if retail_downloading {
-            "Downloading"
-        } else if retail_installed {
-            "Installed"
         } else {
-            "Retail"
+            match status {
+                Some(CatalogInstallStatus::Downloading) => "Downloading",
+                Some(CatalogInstallStatus::Unpacking) => "Unpacking",
+                Some(CatalogInstallStatus::Fingerprint) => "Hashing",
+                Some(CatalogInstallStatus::Completed) => "Installed",
+                Some(CatalogInstallStatus::Retry) => "Retry",
+                Some(CatalogInstallStatus::Unavilable) => "Unavailable",
+                None => {
+                    if retail_installed {
+                        "Installed"
+                    } else {
+                        "Retail"
+                    }
+                }
+            }
         })
         .size(DEFAULT_FONT_SIZE);
 
@@ -1502,7 +1516,10 @@ pub fn catalog_data_cell<'a, 'b>(
             .style(style::DefaultButton(color_palette))
             .width(*width);
 
-        if !retail_installed && !retail_downloading && retail_exists {
+        if retail_exists
+            && (status == Some(CatalogInstallStatus::Retry)
+                || (status == None && !retail_installed))
+        {
             retail_install_button = retail_install_button.on_press(Interaction::CatalogInstall(
                 addon_data.source,
                 Flavor::Retail,
@@ -1534,14 +1551,29 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
+        let status = statuses
+            .iter()
+            .find(|(f, _)| *f == Flavor::Classic)
+            .map(|(_, status)| *status);
+
         let classic_install = Text::new(if !classic_exists {
             "N/A"
-        } else if classic_downloading {
-            "Downloading"
-        } else if classic_installed {
-            "Installed"
         } else {
-            "Classic"
+            match status {
+                Some(CatalogInstallStatus::Downloading) => "Downloading",
+                Some(CatalogInstallStatus::Unpacking) => "Unpacking",
+                Some(CatalogInstallStatus::Fingerprint) => "Hashing",
+                Some(CatalogInstallStatus::Completed) => "Installed",
+                Some(CatalogInstallStatus::Retry) => "Retry",
+                Some(CatalogInstallStatus::Unavilable) => "Unavailable",
+                None => {
+                    if classic_installed {
+                        "Installed"
+                    } else {
+                        "Classic"
+                    }
+                }
+            }
         })
         .size(DEFAULT_FONT_SIZE);
 
@@ -1555,7 +1587,10 @@ pub fn catalog_data_cell<'a, 'b>(
                 .style(style::DefaultButton(color_palette))
                 .width(*width);
 
-        if !classic_installed && !classic_downloading && classic_exists {
+        if classic_exists
+            && (status == Some(CatalogInstallStatus::Retry)
+                || (status == None && !classic_installed))
+        {
             classic_install_button = classic_install_button.on_press(Interaction::CatalogInstall(
                 addon_data.source,
                 Flavor::Classic,

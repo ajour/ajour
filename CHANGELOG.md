@@ -19,6 +19,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Fixed bug where orphaned folders could exist after updating an addon if the newer version of an addon didnt't include those folders anymore. 
 - Ensure symlinks are removed in the addons folder prior to extracting an addon, so we don't write into the symlink and instead remove the link / create a new folder.
   - This is a request from a developer who symlinks their source code into the addons folder and Ajour could accidently overwrite it
+- Fixed catalog install buttons getting stuck when install fails or addon is unavailable to download. Button will now show "Retry" if failed and disabled as "Unavailable" if the addon is unavailable.
+- Added a check on content length of downloaded addons when updating or installing and properly set an error message when this occurs so we know the update / install failed so use can retry.
 
 ### Packaging
 - Added Forest Night theme
