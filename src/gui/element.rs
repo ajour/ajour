@@ -1516,10 +1516,10 @@ pub fn catalog_row_titles<'a>(
 
 pub fn catalog_data_cell<'a, 'b>(
     color_palette: ColorPalette,
+    config: &Config,
     addon: &'a mut CatalogRow,
     column_config: &'b [(CatalogColumnKey, Length)],
-    retail_installed: bool,
-    classic_installed: bool,
+    installed_for_flavor: bool,
     statuses: Vec<(Flavor, CatalogInstallStatus)>,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
@@ -1528,11 +1528,11 @@ pub fn catalog_data_cell<'a, 'b>(
 
     let addon_data = &addon.addon;
     let website_state = &mut addon.website_state;
-    let retail_install_state = &mut addon.retail_install_state;
-    let classic_install_state = &mut addon.classic_install_state;
+    let install_button_state = &mut addon.install_button_state;
 
-    let retail_exists = addon_data.flavors.contains(&Flavor::Retail);
-    let classic_exists = addon_data.flavors.contains(&Flavor::Classic);
+    let flavor_exists_for_addon = addon_data
+        .flavors
+        .contains(&config.wow.flavor.base_flavor());
 
     if let Some((idx, width)) = column_config
         .iter()
@@ -1548,10 +1548,10 @@ pub fn catalog_data_cell<'a, 'b>(
     {
         let status = statuses
             .iter()
-            .find(|(f, _)| *f == Flavor::Retail)
+            .find(|(f, _)| *f == config.wow.flavor)
             .map(|(_, status)| *status);
 
-        let retail_install = Text::new(if !retail_exists {
+        let install_text = Text::new(if !flavor_exists_for_addon {
             "N/A"
         } else {
             match status {
@@ -1562,118 +1562,45 @@ pub fn catalog_data_cell<'a, 'b>(
                 Some(CatalogInstallStatus::Retry) => "Retry",
                 Some(CatalogInstallStatus::Unavilable) => "Unavailable",
                 None => {
-                    if retail_installed {
+                    if installed_for_flavor {
                         "Installed"
                     } else {
-                        "Retail"
+                        "Install"
                     }
                 }
             }
         })
         .size(DEFAULT_FONT_SIZE);
 
-        let retail_install_wrapper = Container::new(retail_install)
+        let install_wrapper = Container::new(install_text)
             .width(*width)
             .center_x()
             .align_x(Align::Center);
 
-        let mut retail_install_button = Button::new(retail_install_state, retail_install_wrapper)
+        let mut install_button = Button::new(install_button_state, install_wrapper)
             .style(style::DefaultButton(color_palette))
             .width(*width);
 
-        if retail_exists
+        if flavor_exists_for_addon
             && (status == Some(CatalogInstallStatus::Retry)
-                || (status == None && !retail_installed))
+                || (status == None && !installed_for_flavor))
         {
-            retail_install_button = retail_install_button.on_press(Interaction::CatalogInstall(
+            install_button = install_button.on_press(Interaction::CatalogInstall(
                 addon_data.source,
-                Flavor::Retail,
+                config.wow.flavor,
                 addon_data.id,
             ));
         }
 
-        let retail_install_button: Element<Interaction> = retail_install_button.into();
+        let install_button: Element<Interaction> = install_button.into();
 
-        let retail_install_container =
-            Container::new(retail_install_button.map(Message::Interaction))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .style(style::BrightForegroundContainer(color_palette));
-
-        row_containers.push((idx, retail_install_container));
-    }
-
-    if let Some((idx, width)) = column_config
-        .iter()
-        .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::InstallClassic {
-                Some((idx, width))
-            } else {
-                None
-            }
-        })
-        .next()
-    {
-        let status = statuses
-            .iter()
-            .find(|(f, _)| *f == Flavor::Classic)
-            .map(|(_, status)| *status);
-
-        let classic_install = Text::new(if !classic_exists {
-            "N/A"
-        } else {
-            match status {
-                Some(CatalogInstallStatus::Downloading) => "Downloading",
-                Some(CatalogInstallStatus::Unpacking) => "Unpacking",
-                Some(CatalogInstallStatus::Fingerprint) => "Hashing",
-                Some(CatalogInstallStatus::Completed) => "Installed",
-                Some(CatalogInstallStatus::Retry) => "Retry",
-                Some(CatalogInstallStatus::Unavilable) => "Unavailable",
-                None => {
-                    if classic_installed {
-                        "Installed"
-                    } else {
-                        "Classic"
-                    }
-                }
-            }
-        })
-        .size(DEFAULT_FONT_SIZE);
-
-        let classic_install_wrapper = Container::new(classic_install)
+        let install_container = Container::new(install_button.map(Message::Interaction))
+            .height(default_height)
             .width(*width)
-            .center_x()
-            .align_x(Align::Center);
+            .center_y()
+            .style(style::BrightForegroundContainer(color_palette));
 
-        let mut classic_install_button =
-            Button::new(classic_install_state, classic_install_wrapper)
-                .style(style::DefaultButton(color_palette))
-                .width(*width);
-
-        if classic_exists
-            && (status == Some(CatalogInstallStatus::Retry)
-                || (status == None && !classic_installed))
-        {
-            classic_install_button = classic_install_button.on_press(Interaction::CatalogInstall(
-                addon_data.source,
-                Flavor::Classic,
-                addon_data.id,
-            ));
-        }
-
-        let classic_install_button: Element<Interaction> = classic_install_button.into();
-
-        let classic_install_container =
-            Container::new(classic_install_button.map(Message::Interaction))
-                .height(default_height)
-                .width(*width)
-                .center_x()
-                .center_y()
-                .style(style::BrightForegroundContainer(color_palette));
-
-        row_containers.push((idx, classic_install_container));
+        row_containers.push((idx, install_container));
     }
 
     if let Some((idx, width)) = column_config

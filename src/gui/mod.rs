@@ -525,28 +525,12 @@ impl Application for Ajour {
 
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
-                        let retail_installed = if flavor == Flavor::Retail {
-                            addons
-                                .iter()
-                                .any(|a| a.repository_id() == Some(addon.addon.id.to_string()))
-                        } else {
-                            other_flavor_addons.iter().any(|a| {
-                                a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
-                            })
-                        };
-
-                        let classic_installed = if flavor == Flavor::Classic {
+                        let installed_for_flavor = addons.iter().any(|a| {
                             addons.iter().any(|a| {
                                 a.curse_id() == Some(addon.addon.id)
                                     || a.tukui_id() == Some(&addon.addon.id.to_string())
                             })
-                        } else {
-                            other_flavor_addons.iter().any(|a| {
-                                a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
-                            })
-                        };
+                        });
 
                         let statuses = self
                             .catalog_install_statuses
@@ -557,10 +541,10 @@ impl Application for Ajour {
 
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,
+                            &self.config,
                             addon,
                             &catalog_column_config,
-                            retail_installed,
-                            classic_installed,
+                            installed_for_flavor,
                             statuses,
                         );
 
@@ -1113,8 +1097,7 @@ impl Default for CatalogSearchState {
 
 pub struct CatalogRow {
     website_state: button::State,
-    retail_install_state: button::State,
-    classic_install_state: button::State,
+    install_button_state: button::State,
     addon: CatalogAddon,
 }
 
@@ -1122,8 +1105,7 @@ impl From<CatalogAddon> for CatalogRow {
     fn from(addon: CatalogAddon) -> Self {
         Self {
             website_state: Default::default(),
-            retail_install_state: Default::default(),
-            classic_install_state: Default::default(),
+            install_button_state: Default::default(),
             addon,
         }
     }
