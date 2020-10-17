@@ -49,6 +49,14 @@ pub async fn install_addon(
             }
         }
 
+        // Remove remaining addon folders that match new addon folders that we
+        // want to extract.
+        if let Ok(remainder) = path.strip_prefix(to_directory) {
+            if remainder.components().count() == 1 && path.is_dir() {
+                let _ = std::fs::remove_dir_all(&path);
+            }
+        }
+
         if file.is_dir() {
             std::fs::create_dir_all(&path)?;
         } else {
