@@ -17,6 +17,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ### Fixed
 - Fixed bug where orphaned folders could exist after updating an addon if the newer version of an addon didnt't include those folders anymore. 
+- Ensure symlinks are removed in the addons folder prior to extracting an addon, so we don't write into the symlink and instead remove the link / create a new folder.
+  - This is a request from a developer who symlinks their source code into the addons folder and Ajour could accidently overwrite it
 
 ### Packaging
 - Added Forest Night theme
