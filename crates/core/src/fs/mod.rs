@@ -42,7 +42,7 @@ lazy_static! {
         // %APPDATA%\ajour
         #[cfg(windows)]
         {
-            let config_dir = dirs::config_dir()
+            let config_dir = dirs_next::config_dir()
                 .map(|path| path.join("ajour"))
                 .expect("user home directory not found.");
 
