@@ -3,6 +3,7 @@ use crate::{
     parse::parse_toc_path,
     Result,
 };
+use std::collections::HashSet;
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
 
@@ -30,9 +31,26 @@ pub async fn install_addon(
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
 
-    // Remove old addon folders
+    // Remove old top level addon folders
     for folder in addon.folders.iter() {
         let _ = std::fs::remove_dir_all(&folder.path);
+    }
+
+    // Get all new top level folders
+    let new_top_level_folders = archive
+        .file_names()
+        .filter_map(|name| name.split('/').next())
+        .collect::<HashSet<_>>();
+
+    // Remove all new top level addon folders. This seems redundant because of
+    // the remove old expression above, but that one doesn't work on new addons
+    // installed from the Catalog.
+    for folder in new_top_level_folders {
+        let path = to_directory.join(&folder);
+
+        if path.exists() {
+            let _ = std::fs::remove_dir_all(path);
+        }
     }
 
     let mut toc_files = vec![];
@@ -46,14 +64,6 @@ pub async fn install_addon(
                 if ext == "toc" && remainder.components().count() == 2 {
                     toc_files.push(path.clone());
                 }
-            }
-        }
-
-        // Remove remaining addon folders that match new addon folders that we
-        // want to extract.
-        if let Ok(remainder) = path.strip_prefix(to_directory) {
-            if remainder.components().count() == 1 && path.is_dir() {
-                let _ = std::fs::remove_dir_all(&path);
             }
         }
 
