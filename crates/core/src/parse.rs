@@ -498,7 +498,6 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .cloned();
 
     let unknown_addons = unmapped_folders
-        .into_iter()
         .map(|f| {
             let mut addon = Addon::empty(&f.id);
             addon.folders = vec![f];
