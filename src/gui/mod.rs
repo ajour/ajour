@@ -89,7 +89,6 @@ pub enum Interaction {
     CatalogInstall(catalog::Source, Flavor, u32),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
-    CatalogFlavorSelected(CatalogFlavor),
     CatalogSourceSelected(CatalogSource),
 }
 
@@ -251,11 +250,6 @@ impl Application for Ajour {
             .palette;
 
         let flavor = self.config.wow.flavor;
-        let other_flavor = if flavor == Flavor::Retail {
-            Flavor::Classic
-        } else {
-            Flavor::Retail
-        };
 
         // Check if we have any addons.
         let has_addons = {
@@ -398,7 +392,6 @@ impl Application for Ajour {
                 if let Some(catalog) = &self.catalog {
                     let default = vec![];
                     let addons = self.addons.get(&flavor).unwrap_or(&default);
-                    let other_flavor_addons = self.addons.get(&other_flavor).unwrap_or(&default);
 
                     let query = self
                         .catalog_search_state
@@ -414,28 +407,10 @@ impl Application for Ajour {
                     )
                     .size(DEFAULT_FONT_SIZE)
                     .padding(10)
-                    .width(Length::FillPortion(1))
+                    .width(Length::FillPortion(3))
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
-
-                    let flavor_picklist = PickList::new(
-                        &mut self.catalog_search_state.flavors_state,
-                        &self.catalog_search_state.flavors,
-                        Some(self.catalog_search_state.flavor),
-                        Interaction::CatalogFlavorSelected,
-                    )
-                    .text_size(14)
-                    .width(Length::Fill)
-                    .style(style::SecondaryPickList(color_palette));
-
-                    let flavor_picklist: Element<Interaction> = flavor_picklist.into();
-                    let flavor_picklist_container =
-                        Container::new(flavor_picklist.map(Message::Interaction))
-                            .center_y()
-                            .style(style::NormalForegroundContainer(color_palette))
-                            .height(Length::Fill)
-                            .width(Length::FillPortion(1));
 
                     let source_picklist = PickList::new(
                         &mut self.catalog_search_state.sources_state,
@@ -494,7 +469,6 @@ impl Application for Ajour {
                     let catalog_query_row = Row::new()
                         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                         .push(catalog_query.map(Message::Interaction))
-                        .push(flavor_picklist_container)
                         .push(source_picklist_container)
                         .push(category_picklist_container)
                         .push(result_size_picklist_container)
@@ -526,10 +500,8 @@ impl Application for Ajour {
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
                         let installed_for_flavor = addons.iter().any(|a| {
-                            addons.iter().any(|a| {
-                                a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
-                            })
+                            a.curse_id() == Some(addon.addon.id)
+                                || a.tukui_id() == Some(&addon.addon.id.to_string())
                         });
 
                         let statuses = self
@@ -937,7 +909,7 @@ impl CatalogColumnKey {
             Description => "Description",
             Source => "Source",
             NumDownloads => "# Downloads",
-            CatalogColumnKey::Install => "",
+            CatalogColumnKey::Install => "Status",
         };
 
         title.to_string()
@@ -1055,9 +1027,6 @@ pub struct CatalogSearchState {
     pub category: CatalogCategory,
     pub categories: Vec<CatalogCategory>,
     pub categories_state: pick_list::State<CatalogCategory>,
-    pub flavor: CatalogFlavor,
-    pub flavors: Vec<CatalogFlavor>,
-    pub flavors_state: pick_list::State<CatalogFlavor>,
     pub source: CatalogSource,
     pub sources: Vec<CatalogSource>,
     pub sources_state: pick_list::State<CatalogSource>,
@@ -1076,9 +1045,6 @@ impl Default for CatalogSearchState {
             category: Default::default(),
             categories: Default::default(),
             categories_state: Default::default(),
-            flavor: CatalogFlavor::All,
-            flavors: CatalogFlavor::all(),
-            flavors_state: Default::default(),
             source: CatalogSource::All,
             sources: CatalogSource::all(),
             sources_state: Default::default(),
@@ -1170,41 +1136,6 @@ impl CatalogResultSize {
 impl std::fmt::Display for CatalogResultSize {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Results: {}", self.as_usize())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum CatalogFlavor {
-    All,
-    Choice(Flavor),
-}
-
-impl CatalogFlavor {
-    pub fn all() -> Vec<CatalogFlavor> {
-        vec![
-            CatalogFlavor::All,
-            CatalogFlavor::Choice(Flavor::Retail),
-            CatalogFlavor::Choice(Flavor::RetailPTR),
-            CatalogFlavor::Choice(Flavor::RetailBeta),
-            CatalogFlavor::Choice(Flavor::Classic),
-            CatalogFlavor::Choice(Flavor::ClassicPTR),
-        ]
-    }
-}
-
-impl std::fmt::Display for CatalogFlavor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            CatalogFlavor::All => "Both Flavors",
-            CatalogFlavor::Choice(flavor) => match flavor {
-                Flavor::Retail => "Retail",
-                Flavor::RetailPTR => "Retail PTR",
-                Flavor::RetailBeta => "Retail Beta",
-                Flavor::Classic => "Classic",
-                Flavor::ClassicPTR => "Classic PTR",
-            },
-        };
-        write!(f, "{}", s)
     }
 }
 
