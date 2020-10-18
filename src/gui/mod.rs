@@ -925,8 +925,7 @@ pub enum CatalogColumnKey {
     Description,
     Source,
     NumDownloads,
-    InstallRetail,
-    InstallClassic,
+    Install,
 }
 
 impl CatalogColumnKey {
@@ -938,8 +937,7 @@ impl CatalogColumnKey {
             Description => "Description",
             Source => "Source",
             NumDownloads => "# Downloads",
-            CatalogColumnKey::InstallRetail => "",
-            CatalogColumnKey::InstallClassic => "",
+            CatalogColumnKey::Install => "",
         };
 
         title.to_string()
@@ -953,8 +951,7 @@ impl CatalogColumnKey {
             Description => "description",
             Source => "source",
             NumDownloads => "num_downloads",
-            CatalogColumnKey::InstallRetail => "install_retail",
-            CatalogColumnKey::InstallClassic => "install_classic",
+            CatalogColumnKey::Install => "install",
         };
 
         s.to_string()
@@ -968,8 +965,7 @@ impl From<&str> for CatalogColumnKey {
             "description" => CatalogColumnKey::Description,
             "source" => CatalogColumnKey::Source,
             "num_downloads" => CatalogColumnKey::NumDownloads,
-            "install_retail" => CatalogColumnKey::InstallRetail,
-            "install_classic" => CatalogColumnKey::InstallClassic,
+            "install" => CatalogColumnKey::Install,
             _ => panic!(format!("Unknown CatalogColumnKey for {}", s)),
         }
     }
@@ -1016,12 +1012,7 @@ impl Default for CatalogHeaderState {
                     width: Length::Units(105),
                 },
                 CatalogColumnState {
-                    key: CatalogColumnKey::InstallRetail,
-                    btn_state: Default::default(),
-                    width: Length::Units(85),
-                },
-                CatalogColumnState {
-                    key: CatalogColumnKey::InstallClassic,
+                    key: CatalogColumnKey::Install,
                     btn_state: Default::default(),
                     width: Length::Units(85),
                 },

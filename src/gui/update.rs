@@ -1641,10 +1641,8 @@ fn sort_catalog_addons(
                     .reverse()
             });
         }
-        (CatalogColumnKey::InstallRetail, SortDirection::Asc) => {}
-        (CatalogColumnKey::InstallRetail, SortDirection::Desc) => {}
-        (CatalogColumnKey::InstallClassic, SortDirection::Asc) => {}
-        (CatalogColumnKey::InstallClassic, SortDirection::Desc) => {}
+        (CatalogColumnKey::Install, SortDirection::Asc) => {}
+        (CatalogColumnKey::Install, SortDirection::Desc) => {}
     }
 }
 

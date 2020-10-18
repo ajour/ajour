@@ -1473,17 +1473,13 @@ pub fn catalog_row_titles<'a>(
         )
         .width(Length::Fill);
 
-        if column_key != CatalogColumnKey::InstallRetail
-            || column_key != CatalogColumnKey::InstallClassic
-        {
+        if column_key != CatalogColumnKey::Install {
             row_header = row_header.on_press(Interaction::SortCatalogColumn(column_key));
         }
 
         if previous_column_key == Some(column_key) {
             row_header = row_header.style(style::SelectedColumnHeaderButton(color_palette));
-        } else if column_key == CatalogColumnKey::InstallRetail
-            || column_key == CatalogColumnKey::InstallClassic
-        {
+        } else if column_key == CatalogColumnKey::Install {
             row_header = row_header.style(style::UnclickableColumnHeaderButton(color_palette));
         } else {
             row_header = row_header.style(style::ColumnHeaderButton(color_palette));
@@ -1538,7 +1534,7 @@ pub fn catalog_data_cell<'a, 'b>(
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::InstallRetail {
+            if *key == CatalogColumnKey::Install {
                 Some((idx, width))
             } else {
                 None
