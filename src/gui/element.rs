@@ -1154,6 +1154,7 @@ pub fn menu_container<'a>(
     mode: &AjourMode,
     state: &AjourState,
     config: &Config,
+    valid_flavors: &Vec<Flavor>,
     settings_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
@@ -1166,7 +1167,7 @@ pub fn menu_container<'a>(
     new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
-    let mut settings_row = Row::new().height(Length::Units(40));
+    let mut settings_row = Row::new().height(Length::Units(50));
 
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,
@@ -1299,14 +1300,34 @@ pub fn menu_container<'a>(
     let classic_button: Element<Interaction> = classic_button.into();
     let classic_ptr_button: Element<Interaction> = classic_ptr_button.into();
 
-    let segmented_flavor_control_container = Row::new()
-        .push(retail_button.map(Message::Interaction))
-        .push(retail_ptr_button.map(Message::Interaction))
-        .push(retail_beta_button.map(Message::Interaction))
-        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-        .push(classic_button.map(Message::Interaction))
-        .push(classic_ptr_button.map(Message::Interaction))
-        .spacing(1);
+    let mut segmented_flavor_control_container = Row::new();
+
+    if valid_flavors.iter().any(|f| *f == Flavor::Retail) {
+        segmented_flavor_control_container =
+            segmented_flavor_control_container.push(retail_button.map(Message::Interaction))
+    }
+
+    if valid_flavors.iter().any(|f| *f == Flavor::RetailPTR) {
+        segmented_flavor_control_container =
+            segmented_flavor_control_container.push(retail_ptr_button.map(Message::Interaction))
+    }
+
+    if valid_flavors.iter().any(|f| *f == Flavor::RetailBeta) {
+        segmented_flavor_control_container =
+            segmented_flavor_control_container.push(retail_beta_button.map(Message::Interaction))
+    }
+
+    if valid_flavors.iter().any(|f| *f == Flavor::Classic) {
+        segmented_flavor_control_container =
+            segmented_flavor_control_container.push(classic_button.map(Message::Interaction))
+    }
+
+    if valid_flavors.iter().any(|f| *f == Flavor::ClassicPTR) {
+        segmented_flavor_control_container =
+            segmented_flavor_control_container.push(classic_ptr_button.map(Message::Interaction))
+    }
+
+    segmented_flavor_control_container = segmented_flavor_control_container.spacing(1);
 
     // Displays an error, if any has occured.
     let error_text = if let AjourState::Error(e) = state {
@@ -1350,7 +1371,7 @@ pub fn menu_container<'a>(
     settings_row = settings_row
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(segmented_mode_control_container)
-        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(Space::new(Length::Units(20), Length::Units(0)))
         .push(segmented_flavor_control_container)
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(error_container)

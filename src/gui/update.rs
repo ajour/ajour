@@ -193,6 +193,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon_directory.display()
                     );
 
+                    // Builds a Vec of valid flavors.
+                    if addon_directory.exists() {
+                        ajour.valid_flavors.push(*flavor);
+                        ajour.valid_flavors.dedup();
+                    }
+
                     commands.push(Command::perform(
                         perform_read_addon_directory(
                             ajour.fingerprint_collection.clone(),
