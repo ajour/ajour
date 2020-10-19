@@ -1668,7 +1668,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     true
                 }
             })
-            .filter(|a| a.flavors.iter().any(|f| f == flavor))
+            .filter(|a| a.flavors.iter().any(|f| *f == flavor.base_flavor()))
             .filter(|a| match source {
                 CatalogSource::All => true,
                 CatalogSource::Choice(source) => a.source == *source,
