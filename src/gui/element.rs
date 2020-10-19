@@ -503,22 +503,22 @@ pub fn addon_data_cell<'a, 'b>(
         let mut local_version_button = Button::new(&mut addon.local_btn_state, installed_version)
             .style(style::BrightTextButton(color_palette));
 
-        if addon_cloned.active_repository == Some(Repository::Curse) {
-            if addon_cloned.file_id().is_some() {
-                local_version_button =
-                    local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                        Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
-                    )));
-            }
+        if addon_cloned.active_repository == Some(Repository::Curse)
+            && addon_cloned.file_id().is_some()
+        {
+            local_version_button =
+                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
+                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
+                )));
         }
 
-        if addon_cloned.active_repository == Some(Repository::Tukui) {
-            if addon_cloned.repository_id().is_some() {
-                local_version_button =
-                    local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                        Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
-                    )));
-            }
+        if addon_cloned.active_repository == Some(Repository::Tukui)
+            && addon_cloned.repository_id().is_some()
+        {
+            local_version_button =
+                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
+                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
+                )));
         }
 
         // Lets check if addon is expanded, in changelog mode and local is shown.
@@ -576,13 +576,13 @@ pub fn addon_data_cell<'a, 'b>(
             }
         }
 
-        if addon_cloned.active_repository == Some(Repository::Tukui) {
-            if addon_cloned.repository_id().is_some() {
-                remote_version_button =
-                    remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                        Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
-                    )));
-            }
+        if addon_cloned.active_repository == Some(Repository::Tukui)
+            && addon_cloned.repository_id().is_some()
+        {
+            remote_version_button =
+                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
+                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
+                )));
         }
 
         // Lets check if addon is expanded, in changelog mode and remote is shown.

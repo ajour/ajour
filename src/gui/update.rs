@@ -224,7 +224,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // Set nye flavor.
                     ajour.config.wow.flavor = *flavor;
                     // Persist the newly updated config.
-                    &ajour.config.save()?;
+                    ajour.config.save()?;
                 }
             }
 
