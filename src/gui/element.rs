@@ -1302,32 +1302,34 @@ pub fn menu_container<'a>(
 
     let mut segmented_flavor_control_container = Row::new();
 
-    if valid_flavors.iter().any(|f| *f == Flavor::Retail) {
-        segmented_flavor_control_container =
-            segmented_flavor_control_container.push(retail_button.map(Message::Interaction))
-    }
+    if valid_flavors.len() > 1 {
+        if valid_flavors.iter().any(|f| *f == Flavor::Retail) {
+            segmented_flavor_control_container =
+                segmented_flavor_control_container.push(retail_button.map(Message::Interaction))
+        }
 
-    if valid_flavors.iter().any(|f| *f == Flavor::RetailPTR) {
-        segmented_flavor_control_container =
-            segmented_flavor_control_container.push(retail_ptr_button.map(Message::Interaction))
-    }
+        if valid_flavors.iter().any(|f| *f == Flavor::RetailPTR) {
+            segmented_flavor_control_container =
+                segmented_flavor_control_container.push(retail_ptr_button.map(Message::Interaction))
+        }
 
-    if valid_flavors.iter().any(|f| *f == Flavor::RetailBeta) {
-        segmented_flavor_control_container =
-            segmented_flavor_control_container.push(retail_beta_button.map(Message::Interaction))
-    }
+        if valid_flavors.iter().any(|f| *f == Flavor::RetailBeta) {
+            segmented_flavor_control_container = segmented_flavor_control_container
+                .push(retail_beta_button.map(Message::Interaction))
+        }
 
-    if valid_flavors.iter().any(|f| *f == Flavor::Classic) {
-        segmented_flavor_control_container =
-            segmented_flavor_control_container.push(classic_button.map(Message::Interaction))
-    }
+        if valid_flavors.iter().any(|f| *f == Flavor::Classic) {
+            segmented_flavor_control_container =
+                segmented_flavor_control_container.push(classic_button.map(Message::Interaction))
+        }
 
-    if valid_flavors.iter().any(|f| *f == Flavor::ClassicPTR) {
-        segmented_flavor_control_container =
-            segmented_flavor_control_container.push(classic_ptr_button.map(Message::Interaction))
-    }
+        if valid_flavors.iter().any(|f| *f == Flavor::ClassicPTR) {
+            segmented_flavor_control_container = segmented_flavor_control_container
+                .push(classic_ptr_button.map(Message::Interaction))
+        }
 
-    segmented_flavor_control_container = segmented_flavor_control_container.spacing(1);
+        segmented_flavor_control_container = segmented_flavor_control_container.spacing(1);
+    }
 
     // Displays an error, if any has occured.
     let error_text = if let AjourState::Error(e) = state {
