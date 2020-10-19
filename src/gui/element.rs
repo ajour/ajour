@@ -1248,35 +1248,35 @@ pub fn menu_container<'a>(
 
     let mut retail_button = Button::new(
         retail_btn_state,
-        Text::new("Retail").size(DEFAULT_FONT_SIZE),
+        Text::new(Flavor::Retail.to_string()).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Retail));
 
     let mut retail_ptr_button = Button::new(
         retail_ptr_btn_state,
-        Text::new("PTR").size(DEFAULT_FONT_SIZE),
+        Text::new(Flavor::RetailPTR.to_string()).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::RetailPTR));
 
     let mut retail_beta_button = Button::new(
         retail_beta_btn_state,
-        Text::new("Beta").size(DEFAULT_FONT_SIZE),
+        Text::new(Flavor::RetailBeta.to_string()).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::RetailBeta));
 
     let mut classic_button = Button::new(
         classic_btn_state,
-        Text::new("Classic").size(DEFAULT_FONT_SIZE),
+        Text::new(Flavor::Classic.to_string()).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::Classic));
 
     let mut classic_ptr_button = Button::new(
         classic_ptr_btn_state,
-        Text::new("PTR").size(DEFAULT_FONT_SIZE),
+        Text::new(Flavor::ClassicPTR.to_string()).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::ClassicPTR));

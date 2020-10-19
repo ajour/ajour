@@ -334,7 +334,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
             log::debug!("Interaction::FlavorSelected({})", flavor);
-
             // Close settings if shown.
             ajour.is_showing_settings = false;
             // Close details if shown.
@@ -343,6 +342,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
             let _ = &ajour.config.save();
+            // Update catalog
+            query_and_sort_catalog(ajour);
         }
         Message::Interaction(Interaction::ModeSelected(mode)) => {
             log::debug!("Interaction::ModeSelected({:?})", mode);

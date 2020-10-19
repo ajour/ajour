@@ -81,11 +81,11 @@ impl std::fmt::Display for Flavor {
             f,
             "{}",
             match self {
-                Flavor::Retail => "retail",
-                Flavor::RetailPTR => "retail ptr",
-                Flavor::RetailBeta => "retail beta",
-                Flavor::Classic => "classic",
-                Flavor::ClassicPTR => "classic ptr",
+                Flavor::Retail => "Retail",
+                Flavor::RetailPTR => "Retail PTR",
+                Flavor::RetailBeta => "Retail Beta",
+                Flavor::Classic => "Classic",
+                Flavor::ClassicPTR => "Classic PTR",
             }
         )
     }
