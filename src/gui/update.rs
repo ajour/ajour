@@ -215,6 +215,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     break;
                 }
             }
+
+            let flavor = ajour.config.wow.flavor;
+            // If we dont have current flavor in valid flavors we select a new.
+            if !ajour.valid_flavors.iter().any(|f| *f == flavor) {
+                // Find new flavor.
+                if let Some(flavor) = ajour.valid_flavors.first() {
+                    // Set nye flavor.
+                    ajour.config.wow.flavor = *flavor;
+                    // Persist the newly updated config.
+                    &ajour.config.save()?;
+                }
+            }
+
             return Ok(Command::batch(commands));
         }
         Message::Interaction(Interaction::Refresh) => {
@@ -227,7 +240,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Cleans the addons.
             ajour.addons = HashMap::new();
-
             // Prepare state for loading.
             ajour.state = AjourState::Loading;
 
