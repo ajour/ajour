@@ -1653,8 +1653,6 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
 
-        //TODO FIX FLAVOR
-
         let mut catalog_rows: Vec<_> = catalog
             .addons
             .iter()
