@@ -662,6 +662,7 @@ pub enum ColumnKey {
     Channel,
     Author,
     GameVersion,
+    DateReleased,
 }
 
 impl ColumnKey {
@@ -676,6 +677,7 @@ impl ColumnKey {
             Channel => "Channel",
             Author => "Author",
             GameVersion => "Game Version",
+            DateReleased => "Released",
         };
 
         title.to_string()
@@ -692,6 +694,7 @@ impl ColumnKey {
             Channel => "channel",
             Author => "author",
             GameVersion => "game_version",
+            DateReleased => "date_released",
         };
 
         s.to_string()
@@ -708,6 +711,7 @@ impl From<&str> for ColumnKey {
             "channel" => ColumnKey::Channel,
             "author" => ColumnKey::Author,
             "game_version" => ColumnKey::GameVersion,
+            "date_released" => ColumnKey::DateReleased,
             _ => panic!(format!("Unknown ColumnKey for {}", s)),
         }
     }
@@ -800,6 +804,13 @@ impl Default for HeaderState {
                     hidden: true,
                     order: 6,
                 },
+                ColumnState {
+                    key: ColumnKey::DateReleased,
+                    btn_state: Default::default(),
+                    width: Length::Units(110),
+                    hidden: true,
+                    order: 7,
+                },
             ],
         }
     }
@@ -879,6 +890,12 @@ impl Default for ColumnSettings {
                 ColumnSettingState {
                     key: ColumnKey::GameVersion,
                     order: 6,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::DateReleased,
+                    order: 7,
                     up_btn_state: Default::default(),
                     down_btn_state: Default::default(),
                 },
