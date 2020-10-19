@@ -174,8 +174,7 @@ pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<Addon> {
         .latest_files
         .iter()
         .find(|f| {
-            f.release_type == 1
-                && f.game_version_flavor.as_ref() == Some(&format!("wow_{}", flavor))
+            f.release_type == 1 && f.game_version_flavor.as_ref() == Some(&flavor.curse_format())
         })
         .ok_or_else(|| {
             ClientError::Custom(format!("No stable file found for curse id {}", curse_id))

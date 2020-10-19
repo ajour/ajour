@@ -9,6 +9,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Added
+- Support for Beta and PTR
 - When pressing on either `local` or `remote` version in MyAddons you will see the changelog
 - When pressing on the addon title inside the catalog Ajour will open the addon website
 - Add fallback measures for displaying addons when fingerprinting fails or we can't link an addon to a remote registry
@@ -21,6 +22,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
   - This is a request from a developer who symlinks their source code into the addons folder and Ajour could accidently overwrite it
 - Fixed catalog install buttons getting stuck when install fails or addon is unavailable to download. Button will now show "Retry" if failed and disabled as "Unavailable" if the addon is unavailable.
 - Added a check on content length of downloaded addons when updating or installing and properly set an error message when this occurs so we know the update / install failed so use can retry.
+
+### Changed
+- Now only shows the flavors which is detected in your World of Warcraft folder
 
 ### Packaging
 - Added Forest Night theme

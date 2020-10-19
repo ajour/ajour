@@ -1054,8 +1054,6 @@ pub fn menu_addons_container<'a>(
     color_palette: ColorPalette,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
-    retail_btn_state: &'a mut button::State,
-    classic_btn_state: &'a mut button::State,
     state: &AjourState,
     addons: &[Addon],
     config: &'a mut Config,
@@ -1081,7 +1079,6 @@ pub fn menu_addons_container<'a>(
         .any(|a| matches!(a.state, AddonState::Downloading | AddonState::Unpacking));
 
     let ajour_performing_actions = matches!(state, AjourState::Loading);
-    let ajour_welcome = matches!(state, AjourState::Welcome);
 
     // Is any addon updtable.
     let any_addon_updatable = addons
@@ -1109,41 +1106,6 @@ pub fn menu_addons_container<'a>(
     let update_all_button: Element<Interaction> = update_all_button.into();
     let refresh_button: Element<Interaction> = refresh_button.into();
 
-    let mut retail_button = Button::new(
-        retail_btn_state,
-        Text::new("Retail").size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette))
-    .on_press(Interaction::FlavorSelected(Flavor::Retail));
-
-    let mut classic_button = Button::new(
-        classic_btn_state,
-        Text::new("Classic").size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette))
-    .on_press(Interaction::FlavorSelected(Flavor::Classic));
-
-    if !ajour_performing_actions && !ajour_welcome {
-        match config.wow.flavor {
-            Flavor::Retail => {
-                retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::Classic => {
-                classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-            }
-        }
-    }
-
-    let retail_button: Element<Interaction> = retail_button.into();
-    let classic_button: Element<Interaction> = classic_button.into();
-
-    let segmented_flavor_control_container = Row::new()
-        .push(retail_button.map(Message::Interaction))
-        .push(classic_button.map(Message::Interaction))
-        .spacing(1);
-
     // Displays text depending on the state of the app.
     let flavor = config.wow.flavor;
     let ignored_addons = config.addons.ignored.get(&flavor);
@@ -1167,21 +1129,6 @@ pub fn menu_addons_container<'a>(
         .padding(5)
         .style(style::NormalBackgroundContainer(color_palette));
 
-    // Displays an error, if any has occured.
-    let error_text = if let AjourState::Error(e) = state {
-        Text::new(e.to_string()).size(DEFAULT_FONT_SIZE)
-    } else {
-        // Display nothing.
-        Text::new("")
-    };
-
-    let error_container = Container::new(error_text)
-        .center_y()
-        .center_x()
-        .padding(5)
-        .width(Length::FillPortion(1))
-        .style(style::NormalErrorBackgroundContainer(color_palette));
-
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
@@ -1189,9 +1136,8 @@ pub fn menu_addons_container<'a>(
         .push(Space::new(Length::Units(7), Length::Units(0)))
         .push(update_all_button.map(Message::Interaction))
         .push(Space::new(Length::Units(7), Length::Units(0)))
-        .push(segmented_flavor_control_container)
         .push(status_container)
-        .push(error_container);
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
 
     // Add space above settings_row.
     let settings_column = Column::new()
@@ -1207,14 +1153,21 @@ pub fn menu_container<'a>(
     color_palette: ColorPalette,
     mode: &AjourMode,
     state: &AjourState,
+    config: &Config,
+    valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
+    retail_btn_state: &'a mut button::State,
+    retail_ptr_btn_state: &'a mut button::State,
+    retail_beta_btn_state: &'a mut button::State,
+    classic_btn_state: &'a mut button::State,
+    classic_ptr_btn_state: &'a mut button::State,
     needs_update: Option<&'a str>,
     new_release_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // A row contain general settings.
-    let mut settings_row = Row::new().height(Length::Units(40));
+    let mut settings_row = Row::new().height(Length::Units(50));
 
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,
@@ -1261,6 +1214,138 @@ pub fn menu_container<'a>(
         .push(catalog_mode_button.map(Message::Interaction))
         .spacing(1);
 
+    let mut retail_button = Button::new(
+        retail_btn_state,
+        Text::new("Retail").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::Retail));
+
+    let mut retail_ptr_button = Button::new(
+        retail_ptr_btn_state,
+        Text::new("PTR").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::RetailPTR));
+
+    let mut retail_beta_button = Button::new(
+        retail_beta_btn_state,
+        Text::new("Beta").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::RetailBeta));
+
+    let mut classic_button = Button::new(
+        classic_btn_state,
+        Text::new("Classic").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::Classic));
+
+    let mut classic_ptr_button = Button::new(
+        classic_ptr_btn_state,
+        Text::new("PTR").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette))
+    .on_press(Interaction::FlavorSelected(Flavor::ClassicPTR));
+
+    let disable_flavor_buttons = matches!(state, AjourState::Welcome | AjourState::Loading);
+
+    if !disable_flavor_buttons {
+        match config.wow.flavor {
+            Flavor::Retail => {
+                retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
+                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
+                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+            }
+            Flavor::RetailPTR => {
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
+                retail_ptr_button =
+                    retail_ptr_button.style(style::SelectedDefaultButton(color_palette));
+                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
+                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+            }
+            Flavor::RetailBeta => {
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
+                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+                retail_beta_button =
+                    retail_beta_button.style(style::SelectedDefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
+                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+            }
+            Flavor::Classic => {
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
+                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+                classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
+                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+            }
+            Flavor::ClassicPTR => {
+                retail_button = retail_button.style(style::DefaultButton(color_palette));
+                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+                classic_button = classic_button.style(style::DefaultButton(color_palette));
+                classic_ptr_button =
+                    classic_ptr_button.style(style::SelectedDefaultButton(color_palette));
+            }
+        }
+    }
+
+    let retail_button: Element<Interaction> = retail_button.into();
+    let retail_ptr_button: Element<Interaction> = retail_ptr_button.into();
+    let retail_beta_button: Element<Interaction> = retail_beta_button.into();
+    let classic_button: Element<Interaction> = classic_button.into();
+    let classic_ptr_button: Element<Interaction> = classic_ptr_button.into();
+
+    let mut segmented_flavor_control_container = Row::new();
+
+    if valid_flavors.len() > 1 {
+        if valid_flavors.iter().any(|f| *f == Flavor::Retail) {
+            segmented_flavor_control_container =
+                segmented_flavor_control_container.push(retail_button.map(Message::Interaction))
+        }
+
+        if valid_flavors.iter().any(|f| *f == Flavor::RetailPTR) {
+            segmented_flavor_control_container =
+                segmented_flavor_control_container.push(retail_ptr_button.map(Message::Interaction))
+        }
+
+        if valid_flavors.iter().any(|f| *f == Flavor::RetailBeta) {
+            segmented_flavor_control_container = segmented_flavor_control_container
+                .push(retail_beta_button.map(Message::Interaction))
+        }
+
+        if valid_flavors.iter().any(|f| *f == Flavor::Classic) {
+            segmented_flavor_control_container =
+                segmented_flavor_control_container.push(classic_button.map(Message::Interaction))
+        }
+
+        if valid_flavors.iter().any(|f| *f == Flavor::ClassicPTR) {
+            segmented_flavor_control_container = segmented_flavor_control_container
+                .push(classic_ptr_button.map(Message::Interaction))
+        }
+
+        segmented_flavor_control_container = segmented_flavor_control_container.spacing(1);
+    }
+
+    // Displays an error, if any has occured.
+    let error_text = if let AjourState::Error(e) = state {
+        Text::new(e.to_string()).size(DEFAULT_FONT_SIZE)
+    } else {
+        // Display nothing.
+        Text::new("")
+    };
+
+    let error_container = Container::new(error_text)
+        .center_y()
+        .center_x()
+        .padding(5)
+        .width(Length::Fill)
+        .style(style::NormalErrorForegroundContainer(color_palette));
+
     let version_text = Text::new(if let Some(new_version) = needs_update {
         format!("New Ajour version available {} > {}", VERSION, new_version)
     } else {
@@ -1288,7 +1373,10 @@ pub fn menu_container<'a>(
     settings_row = settings_row
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(segmented_mode_control_container)
-        .push(Space::new(Length::Fill, Length::Units(0)))
+        .push(Space::new(Length::Units(20), Length::Units(0)))
+        .push(segmented_flavor_control_container)
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(error_container)
         .push(version_container);
 
     // Add download button to latest github release page if Ajour update is available.
@@ -1408,17 +1496,13 @@ pub fn catalog_row_titles<'a>(
         )
         .width(Length::Fill);
 
-        if column_key != CatalogColumnKey::InstallRetail
-            || column_key != CatalogColumnKey::InstallClassic
-        {
+        if column_key != CatalogColumnKey::Install {
             row_header = row_header.on_press(Interaction::SortCatalogColumn(column_key));
         }
 
         if previous_column_key == Some(column_key) {
             row_header = row_header.style(style::SelectedColumnHeaderButton(color_palette));
-        } else if column_key == CatalogColumnKey::InstallRetail
-            || column_key == CatalogColumnKey::InstallClassic
-        {
+        } else if column_key == CatalogColumnKey::Install {
             row_header = row_header.style(style::UnclickableColumnHeaderButton(color_palette));
         } else {
             row_header = row_header.style(style::ColumnHeaderButton(color_palette));
@@ -1451,10 +1535,10 @@ pub fn catalog_row_titles<'a>(
 
 pub fn catalog_data_cell<'a, 'b>(
     color_palette: ColorPalette,
+    config: &Config,
     addon: &'a mut CatalogRow,
     column_config: &'b [(CatalogColumnKey, Length)],
-    retail_installed: bool,
-    classic_installed: bool,
+    installed_for_flavor: bool,
     statuses: Vec<(Flavor, CatalogInstallStatus)>,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
@@ -1463,17 +1547,17 @@ pub fn catalog_data_cell<'a, 'b>(
 
     let addon_data = &addon.addon;
     let website_state = &mut addon.website_state;
-    let retail_install_state = &mut addon.retail_install_state;
-    let classic_install_state = &mut addon.classic_install_state;
+    let install_button_state = &mut addon.install_button_state;
 
-    let retail_exists = addon_data.flavors.contains(&Flavor::Retail);
-    let classic_exists = addon_data.flavors.contains(&Flavor::Classic);
+    let flavor_exists_for_addon = addon_data
+        .flavors
+        .contains(&config.wow.flavor.base_flavor());
 
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::InstallRetail {
+            if *key == CatalogColumnKey::Install {
                 Some((idx, width))
             } else {
                 None
@@ -1483,10 +1567,10 @@ pub fn catalog_data_cell<'a, 'b>(
     {
         let status = statuses
             .iter()
-            .find(|(f, _)| *f == Flavor::Retail)
+            .find(|(f, _)| *f == config.wow.flavor)
             .map(|(_, status)| *status);
 
-        let retail_install = Text::new(if !retail_exists {
+        let install_text = Text::new(if !flavor_exists_for_addon {
             "N/A"
         } else {
             match status {
@@ -1497,118 +1581,45 @@ pub fn catalog_data_cell<'a, 'b>(
                 Some(CatalogInstallStatus::Retry) => "Retry",
                 Some(CatalogInstallStatus::Unavilable) => "Unavailable",
                 None => {
-                    if retail_installed {
+                    if installed_for_flavor {
                         "Installed"
                     } else {
-                        "Retail"
+                        "Install"
                     }
                 }
             }
         })
         .size(DEFAULT_FONT_SIZE);
 
-        let retail_install_wrapper = Container::new(retail_install)
+        let install_wrapper = Container::new(install_text)
             .width(*width)
             .center_x()
             .align_x(Align::Center);
 
-        let mut retail_install_button = Button::new(retail_install_state, retail_install_wrapper)
+        let mut install_button = Button::new(install_button_state, install_wrapper)
             .style(style::DefaultButton(color_palette))
             .width(*width);
 
-        if retail_exists
+        if flavor_exists_for_addon
             && (status == Some(CatalogInstallStatus::Retry)
-                || (status == None && !retail_installed))
+                || (status == None && !installed_for_flavor))
         {
-            retail_install_button = retail_install_button.on_press(Interaction::CatalogInstall(
+            install_button = install_button.on_press(Interaction::CatalogInstall(
                 addon_data.source,
-                Flavor::Retail,
+                config.wow.flavor,
                 addon_data.id,
             ));
         }
 
-        let retail_install_button: Element<Interaction> = retail_install_button.into();
+        let install_button: Element<Interaction> = install_button.into();
 
-        let retail_install_container =
-            Container::new(retail_install_button.map(Message::Interaction))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .style(style::BrightForegroundContainer(color_palette));
-
-        row_containers.push((idx, retail_install_container));
-    }
-
-    if let Some((idx, width)) = column_config
-        .iter()
-        .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::InstallClassic {
-                Some((idx, width))
-            } else {
-                None
-            }
-        })
-        .next()
-    {
-        let status = statuses
-            .iter()
-            .find(|(f, _)| *f == Flavor::Classic)
-            .map(|(_, status)| *status);
-
-        let classic_install = Text::new(if !classic_exists {
-            "N/A"
-        } else {
-            match status {
-                Some(CatalogInstallStatus::Downloading) => "Downloading",
-                Some(CatalogInstallStatus::Unpacking) => "Unpacking",
-                Some(CatalogInstallStatus::Fingerprint) => "Hashing",
-                Some(CatalogInstallStatus::Completed) => "Installed",
-                Some(CatalogInstallStatus::Retry) => "Retry",
-                Some(CatalogInstallStatus::Unavilable) => "Unavailable",
-                None => {
-                    if classic_installed {
-                        "Installed"
-                    } else {
-                        "Classic"
-                    }
-                }
-            }
-        })
-        .size(DEFAULT_FONT_SIZE);
-
-        let classic_install_wrapper = Container::new(classic_install)
+        let install_container = Container::new(install_button.map(Message::Interaction))
+            .height(default_height)
             .width(*width)
-            .center_x()
-            .align_x(Align::Center);
+            .center_y()
+            .style(style::BrightForegroundContainer(color_palette));
 
-        let mut classic_install_button =
-            Button::new(classic_install_state, classic_install_wrapper)
-                .style(style::DefaultButton(color_palette))
-                .width(*width);
-
-        if classic_exists
-            && (status == Some(CatalogInstallStatus::Retry)
-                || (status == None && !classic_installed))
-        {
-            classic_install_button = classic_install_button.on_press(Interaction::CatalogInstall(
-                addon_data.source,
-                Flavor::Classic,
-                addon_data.id,
-            ));
-        }
-
-        let classic_install_button: Element<Interaction> = classic_install_button.into();
-
-        let classic_install_container =
-            Container::new(classic_install_button.map(Message::Interaction))
-                .height(default_height)
-                .width(*width)
-                .center_x()
-                .center_y()
-                .style(style::BrightForegroundContainer(color_palette));
-
-        row_containers.push((idx, classic_install_container));
+        row_containers.push((idx, install_container));
     }
 
     if let Some((idx, width)) = column_config

@@ -1,9 +1,8 @@
 use {
     super::{
         AddonVersionKey, Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey,
-        CatalogFlavor, CatalogInstallStatus, CatalogRow, CatalogSource, Changelog,
-        ChangelogPayload, ColumnKey, DirectoryType, DownloadReason, ExpandType, Interaction,
-        Message, SortDirection,
+        CatalogInstallStatus, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
+        DirectoryType, DownloadReason, ExpandType, Interaction, Message, SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
@@ -193,6 +192,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         "preparing to parse addons in {:?}",
                         addon_directory.display()
                     );
+
+                    // Builds a Vec of valid flavors.
+                    if addon_directory.exists() {
+                        ajour.valid_flavors.push(*flavor);
+                        ajour.valid_flavors.dedup();
+                    }
 
                     commands.push(Command::perform(
                         perform_read_addon_directory(
@@ -1302,16 +1307,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::Interaction(Interaction::CatalogFlavorSelected(flavor)) => {
-            log::debug!("Interaction::CatalogResultSizeSelected({:?})", flavor);
-
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-            // Catalog flavor
-            ajour.catalog_search_state.flavor = flavor;
-
-            query_and_sort_catalog(ajour);
-        }
         Message::Interaction(Interaction::CatalogSourceSelected(source)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
 
@@ -1641,10 +1636,8 @@ fn sort_catalog_addons(
                     .reverse()
             });
         }
-        (CatalogColumnKey::InstallRetail, SortDirection::Asc) => {}
-        (CatalogColumnKey::InstallRetail, SortDirection::Desc) => {}
-        (CatalogColumnKey::InstallClassic, SortDirection::Asc) => {}
-        (CatalogColumnKey::InstallClassic, SortDirection::Desc) => {}
+        (CatalogColumnKey::Install, SortDirection::Asc) => {}
+        (CatalogColumnKey::Install, SortDirection::Desc) => {}
     }
 }
 
@@ -1655,10 +1648,12 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .query
             .as_ref()
             .map(|s| s.to_lowercase());
-        let flavor = &ajour.catalog_search_state.flavor;
+        let flavor = &ajour.config.wow.flavor;
         let source = &ajour.catalog_search_state.source;
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
+
+        //TODO FIX FLAVOR
 
         let mut catalog_rows: Vec<_> = catalog
             .addons
@@ -1673,10 +1668,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     true
                 }
             })
-            .filter(|a| match flavor {
-                CatalogFlavor::All => true,
-                CatalogFlavor::Choice(flavor) => a.flavors.iter().any(|f| f == flavor),
-            })
+            .filter(|a| a.flavors.iter().any(|f| f == flavor))
             .filter(|a| match source {
                 CatalogSource::All => true,
                 CatalogSource::Choice(source) => a.source == *source,

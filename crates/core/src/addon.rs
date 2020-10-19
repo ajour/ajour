@@ -325,10 +325,9 @@ impl Addon {
         let mut beta_exists = false;
         let mut alpha_exists = false;
 
-        let flavor = format!("wow_{}", flavor.to_string());
         for file in package.latest_files.iter() {
             let game_version_flavor = file.game_version_flavor.as_ref();
-            if !file.is_alternate && game_version_flavor == Some(&flavor) {
+            if !file.is_alternate && game_version_flavor == Some(&flavor.curse_format()) {
                 let version = file.display_name.clone();
                 let download_url = file.download_url.clone();
                 let date_time = DateTime::parse_from_rfc3339(&file.file_date)
@@ -377,7 +376,7 @@ impl Addon {
             .iter()
             .find(|file| {
                 !file.is_alternate
-                    && file.game_version_flavor.as_ref() == Some(&flavor)
+                    && file.game_version_flavor.as_ref() == Some(&flavor.curse_format())
                     && file.release_type == release_type
             })
             .unwrap_or_else(|| unreachable!("No file in curse package for {}", package.id));
@@ -425,10 +424,9 @@ impl Addon {
     ) -> Self {
         let mut remote_packages = HashMap::new();
 
-        let flavor = format!("wow_{}", flavor.to_string());
         for file in info.latest_files.iter() {
             let game_version_flavor = file.game_version_flavor.as_ref();
-            if !file.is_alternate && game_version_flavor == Some(&flavor) {
+            if !file.is_alternate && game_version_flavor == Some(&flavor.curse_format()) {
                 let version = file.display_name.clone();
                 let download_url = file.download_url.clone();
                 let date_time = DateTime::parse_from_rfc3339(&file.file_date)

@@ -89,7 +89,6 @@ pub enum Interaction {
     CatalogInstall(catalog::Source, Flavor, u32),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
-    CatalogFlavorSelected(CatalogFlavor),
     CatalogSourceSelected(CatalogSource),
 }
 
@@ -123,6 +122,7 @@ pub struct Ajour {
     addons: HashMap<Flavor, Vec<Addon>>,
     addons_scrollable_state: scrollable::State,
     config: Config,
+    valid_flavors: Vec<Flavor>,
     directory_btn_state: button::State,
     expanded_type: ExpandType,
     is_showing_settings: bool,
@@ -138,7 +138,10 @@ pub struct Ajour {
     theme_state: ThemeState,
     fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
     retail_btn_state: button::State,
+    retail_ptr_btn_state: button::State,
+    retail_beta_btn_state: button::State,
     classic_btn_state: button::State,
+    classic_ptr_btn_state: button::State,
     addon_mode_btn_state: button::State,
     catalog_mode_btn_state: button::State,
     scale_state: ScaleState,
@@ -157,6 +160,7 @@ impl Default for Ajour {
             addons: HashMap::new(),
             addons_scrollable_state: Default::default(),
             config: Config::default(),
+            valid_flavors: Vec::new(),
             directory_btn_state: Default::default(),
             expanded_type: ExpandType::None,
             is_showing_settings: false,
@@ -178,7 +182,10 @@ impl Default for Ajour {
             theme_state: Default::default(),
             fingerprint_collection: Arc::new(Mutex::new(None)),
             retail_btn_state: Default::default(),
+            retail_ptr_btn_state: Default::default(),
+            retail_beta_btn_state: Default::default(),
             classic_btn_state: Default::default(),
+            classic_ptr_btn_state: Default::default(),
             addon_mode_btn_state: Default::default(),
             catalog_mode_btn_state: Default::default(),
             scale_state: Default::default(),
@@ -245,11 +252,6 @@ impl Application for Ajour {
             .palette;
 
         let flavor = self.config.wow.flavor;
-        let other_flavor = if flavor == Flavor::Retail {
-            Flavor::Classic
-        } else {
-            Flavor::Retail
-        };
 
         // Check if we have any addons.
         let has_addons = {
@@ -264,9 +266,16 @@ impl Application for Ajour {
             color_palette,
             &self.mode,
             &self.state,
+            &self.config,
+            &self.valid_flavors,
             &mut self.settings_btn_state,
             &mut self.addon_mode_btn_state,
             &mut self.catalog_mode_btn_state,
+            &mut self.retail_btn_state,
+            &mut self.retail_ptr_btn_state,
+            &mut self.retail_beta_btn_state,
+            &mut self.classic_btn_state,
+            &mut self.classic_ptr_btn_state,
             self.needs_update.as_deref(),
             &mut self.new_release_button_state,
         );
@@ -314,8 +323,6 @@ impl Application for Ajour {
                     color_palette,
                     &mut self.update_all_btn_state,
                     &mut self.refresh_btn_state,
-                    &mut self.retail_btn_state,
-                    &mut self.classic_btn_state,
                     &self.state,
                     addons,
                     &mut self.config,
@@ -388,7 +395,6 @@ impl Application for Ajour {
                 if let Some(catalog) = &self.catalog {
                     let default = vec![];
                     let addons = self.addons.get(&flavor).unwrap_or(&default);
-                    let other_flavor_addons = self.addons.get(&other_flavor).unwrap_or(&default);
 
                     let query = self
                         .catalog_search_state
@@ -404,28 +410,10 @@ impl Application for Ajour {
                     )
                     .size(DEFAULT_FONT_SIZE)
                     .padding(10)
-                    .width(Length::FillPortion(1))
+                    .width(Length::FillPortion(3))
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
-
-                    let flavor_picklist = PickList::new(
-                        &mut self.catalog_search_state.flavors_state,
-                        &self.catalog_search_state.flavors,
-                        Some(self.catalog_search_state.flavor),
-                        Interaction::CatalogFlavorSelected,
-                    )
-                    .text_size(14)
-                    .width(Length::Fill)
-                    .style(style::SecondaryPickList(color_palette));
-
-                    let flavor_picklist: Element<Interaction> = flavor_picklist.into();
-                    let flavor_picklist_container =
-                        Container::new(flavor_picklist.map(Message::Interaction))
-                            .center_y()
-                            .style(style::NormalForegroundContainer(color_palette))
-                            .height(Length::Fill)
-                            .width(Length::FillPortion(1));
 
                     let source_picklist = PickList::new(
                         &mut self.catalog_search_state.sources_state,
@@ -484,7 +472,6 @@ impl Application for Ajour {
                     let catalog_query_row = Row::new()
                         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                         .push(catalog_query.map(Message::Interaction))
-                        .push(flavor_picklist_container)
                         .push(source_picklist_container)
                         .push(category_picklist_container)
                         .push(result_size_picklist_container)
@@ -515,28 +502,10 @@ impl Application for Ajour {
 
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
-                        let retail_installed = if flavor == Flavor::Retail {
-                            addons
-                                .iter()
-                                .any(|a| a.repository_id() == Some(addon.addon.id.to_string()))
-                        } else {
-                            other_flavor_addons.iter().any(|a| {
-                                a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
-                            })
-                        };
-
-                        let classic_installed = if flavor == Flavor::Classic {
-                            addons.iter().any(|a| {
-                                a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
-                            })
-                        } else {
-                            other_flavor_addons.iter().any(|a| {
-                                a.curse_id() == Some(addon.addon.id)
-                                    || a.tukui_id() == Some(&addon.addon.id.to_string())
-                            })
-                        };
+                        let installed_for_flavor = addons.iter().any(|a| {
+                            a.curse_id() == Some(addon.addon.id)
+                                || a.tukui_id() == Some(&addon.addon.id.to_string())
+                        });
 
                         let statuses = self
                             .catalog_install_statuses
@@ -547,10 +516,10 @@ impl Application for Ajour {
 
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,
+                            &self.config,
                             addon,
                             &catalog_column_config,
-                            retail_installed,
-                            classic_installed,
+                            installed_for_flavor,
                             statuses,
                         );
 
@@ -931,8 +900,7 @@ pub enum CatalogColumnKey {
     Description,
     Source,
     NumDownloads,
-    InstallRetail,
-    InstallClassic,
+    Install,
 }
 
 impl CatalogColumnKey {
@@ -944,8 +912,7 @@ impl CatalogColumnKey {
             Description => "Description",
             Source => "Source",
             NumDownloads => "# Downloads",
-            CatalogColumnKey::InstallRetail => "",
-            CatalogColumnKey::InstallClassic => "",
+            CatalogColumnKey::Install => "Status",
         };
 
         title.to_string()
@@ -959,8 +926,7 @@ impl CatalogColumnKey {
             Description => "description",
             Source => "source",
             NumDownloads => "num_downloads",
-            CatalogColumnKey::InstallRetail => "install_retail",
-            CatalogColumnKey::InstallClassic => "install_classic",
+            CatalogColumnKey::Install => "install",
         };
 
         s.to_string()
@@ -974,8 +940,7 @@ impl From<&str> for CatalogColumnKey {
             "description" => CatalogColumnKey::Description,
             "source" => CatalogColumnKey::Source,
             "num_downloads" => CatalogColumnKey::NumDownloads,
-            "install_retail" => CatalogColumnKey::InstallRetail,
-            "install_classic" => CatalogColumnKey::InstallClassic,
+            "install" => CatalogColumnKey::Install,
             _ => panic!(format!("Unknown CatalogColumnKey for {}", s)),
         }
     }
@@ -1022,12 +987,7 @@ impl Default for CatalogHeaderState {
                     width: Length::Units(105),
                 },
                 CatalogColumnState {
-                    key: CatalogColumnKey::InstallRetail,
-                    btn_state: Default::default(),
-                    width: Length::Units(85),
-                },
-                CatalogColumnState {
-                    key: CatalogColumnKey::InstallClassic,
+                    key: CatalogColumnKey::Install,
                     btn_state: Default::default(),
                     width: Length::Units(85),
                 },
@@ -1070,9 +1030,6 @@ pub struct CatalogSearchState {
     pub category: CatalogCategory,
     pub categories: Vec<CatalogCategory>,
     pub categories_state: pick_list::State<CatalogCategory>,
-    pub flavor: CatalogFlavor,
-    pub flavors: Vec<CatalogFlavor>,
-    pub flavors_state: pick_list::State<CatalogFlavor>,
     pub source: CatalogSource,
     pub sources: Vec<CatalogSource>,
     pub sources_state: pick_list::State<CatalogSource>,
@@ -1091,9 +1048,6 @@ impl Default for CatalogSearchState {
             category: Default::default(),
             categories: Default::default(),
             categories_state: Default::default(),
-            flavor: CatalogFlavor::All,
-            flavors: CatalogFlavor::all(),
-            flavors_state: Default::default(),
             source: CatalogSource::All,
             sources: CatalogSource::all(),
             sources_state: Default::default(),
@@ -1103,8 +1057,7 @@ impl Default for CatalogSearchState {
 
 pub struct CatalogRow {
     website_state: button::State,
-    retail_install_state: button::State,
-    classic_install_state: button::State,
+    install_button_state: button::State,
     addon: CatalogAddon,
 }
 
@@ -1112,8 +1065,7 @@ impl From<CatalogAddon> for CatalogRow {
     fn from(addon: CatalogAddon) -> Self {
         Self {
             website_state: Default::default(),
-            retail_install_state: Default::default(),
-            classic_install_state: Default::default(),
+            install_button_state: Default::default(),
             addon,
         }
     }
@@ -1187,35 +1139,6 @@ impl CatalogResultSize {
 impl std::fmt::Display for CatalogResultSize {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Results: {}", self.as_usize())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum CatalogFlavor {
-    All,
-    Choice(Flavor),
-}
-
-impl CatalogFlavor {
-    pub fn all() -> Vec<CatalogFlavor> {
-        vec![
-            CatalogFlavor::All,
-            CatalogFlavor::Choice(Flavor::Retail),
-            CatalogFlavor::Choice(Flavor::Classic),
-        ]
-    }
-}
-
-impl std::fmt::Display for CatalogFlavor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            CatalogFlavor::All => "Both Flavors",
-            CatalogFlavor::Choice(flavor) => match flavor {
-                Flavor::Retail => "Retail",
-                Flavor::Classic => "Classic",
-            },
-        };
-        write!(f, "{}", s)
     }
 }
 
