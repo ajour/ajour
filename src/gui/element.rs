@@ -1154,7 +1154,7 @@ pub fn menu_container<'a>(
     mode: &AjourMode,
     state: &AjourState,
     config: &Config,
-    valid_flavors: &Vec<Flavor>,
+    valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
