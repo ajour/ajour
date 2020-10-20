@@ -1767,6 +1767,36 @@ pub fn catalog_data_cell<'a, 'b>(
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::DateReleased {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let release_date_text: String = if let Some(date_released) = addon_data.date_released {
+            let f = timeago::Formatter::new();
+            let now = Local::now();
+            f.convert_chrono(date_released, now).to_string()
+        } else {
+            "-".to_string()
+        };
+        let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
+        let game_version_container = Container::new(release_date_text)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::NormalForegroundContainer(color_palette));
+
+        row_containers.push((idx, game_version_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
             if *key == CatalogColumnKey::NumDownloads {
                 Some((idx, width))
             } else {

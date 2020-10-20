@@ -1666,6 +1666,12 @@ fn sort_catalog_addons(
         }
         (CatalogColumnKey::Install, SortDirection::Asc) => {}
         (CatalogColumnKey::Install, SortDirection::Desc) => {}
+        (CatalogColumnKey::DateReleased, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released));
+        }
+        (CatalogColumnKey::DateReleased, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released).reverse());
+        }
     }
 }
 
