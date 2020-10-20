@@ -15,8 +15,8 @@ pub enum AddonVersionKey {
 pub struct RemotePackage {
     pub version: String,
     pub download_url: String,
-    pub date_time: Option<DateTime<Utc>>,
     pub file_id: Option<i64>,
+    pub date_time: Option<DateTime<Utc>>,
 }
 
 impl PartialOrd for RemotePackage {
@@ -258,9 +258,12 @@ impl Addon {
             let version = package.version.clone();
             let download_url = package.url.clone();
 
-            let date_time = NaiveDateTime::parse_from_str(&package.lastupdate, "%Y-%m-%d")
+            let date_time = NaiveDateTime::parse_from_str(&package.lastupdate, "%Y-%m-%d %H:%M:%S")
                 .map_or(
-                    NaiveDateTime::parse_from_str(&package.lastupdate, "%Y-%m-%d %H:%M:%S"),
+                    NaiveDateTime::parse_from_str(
+                        &format!("{} 00:00:00", &package.lastupdate),
+                        "%Y-%m-%d %T",
+                    ),
                     Result::Ok,
                 )
                 .map(|d| Utc.from_utc_datetime(&d))

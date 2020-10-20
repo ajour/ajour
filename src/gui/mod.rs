@@ -662,6 +662,7 @@ pub enum ColumnKey {
     Channel,
     Author,
     GameVersion,
+    DateReleased,
 }
 
 impl ColumnKey {
@@ -676,6 +677,7 @@ impl ColumnKey {
             Channel => "Channel",
             Author => "Author",
             GameVersion => "Game Version",
+            DateReleased => "Latest Release",
         };
 
         title.to_string()
@@ -692,6 +694,7 @@ impl ColumnKey {
             Channel => "channel",
             Author => "author",
             GameVersion => "game_version",
+            DateReleased => "date_released",
         };
 
         s.to_string()
@@ -708,6 +711,7 @@ impl From<&str> for ColumnKey {
             "channel" => ColumnKey::Channel,
             "author" => ColumnKey::Author,
             "game_version" => ColumnKey::GameVersion,
+            "date_released" => ColumnKey::DateReleased,
             _ => panic!(format!("Unknown ColumnKey for {}", s)),
         }
     }
@@ -800,6 +804,13 @@ impl Default for HeaderState {
                     hidden: true,
                     order: 6,
                 },
+                ColumnState {
+                    key: ColumnKey::DateReleased,
+                    btn_state: Default::default(),
+                    width: Length::Units(110),
+                    hidden: true,
+                    order: 7,
+                },
             ],
         }
     }
@@ -882,6 +893,12 @@ impl Default for ColumnSettings {
                     up_btn_state: Default::default(),
                     down_btn_state: Default::default(),
                 },
+                ColumnSettingState {
+                    key: ColumnKey::DateReleased,
+                    order: 7,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
             ],
         }
     }
@@ -900,6 +917,7 @@ pub enum CatalogColumnKey {
     Description,
     Source,
     NumDownloads,
+    DateReleased,
     Install,
 }
 
@@ -912,6 +930,7 @@ impl CatalogColumnKey {
             Description => "Description",
             Source => "Source",
             NumDownloads => "# Downloads",
+            DateReleased => "Latest Release",
             CatalogColumnKey::Install => "Status",
         };
 
@@ -926,6 +945,7 @@ impl CatalogColumnKey {
             Description => "description",
             Source => "source",
             NumDownloads => "num_downloads",
+            DateReleased => "date_released",
             CatalogColumnKey::Install => "install",
         };
 
@@ -941,6 +961,7 @@ impl From<&str> for CatalogColumnKey {
             "source" => CatalogColumnKey::Source,
             "num_downloads" => CatalogColumnKey::NumDownloads,
             "install" => CatalogColumnKey::Install,
+            "date_released" => CatalogColumnKey::DateReleased,
             _ => panic!(format!("Unknown CatalogColumnKey for {}", s)),
         }
     }
@@ -983,6 +1004,11 @@ impl Default for CatalogHeaderState {
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::NumDownloads,
+                    btn_state: Default::default(),
+                    width: Length::Units(105),
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::DateReleased,
                     btn_state: Default::default(),
                     width: Length::Units(105),
                 },

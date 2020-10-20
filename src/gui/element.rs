@@ -389,7 +389,7 @@ pub fn settings_container<'a, 'b>(
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
         .width(Length::Units(200))
-        .height(Length::Units(255))
+        .height(Length::Units(265))
         .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
@@ -674,6 +674,41 @@ pub fn addon_data_cell<'a, 'b>(
         let game_version =
             Text::new(game_version.as_deref().unwrap_or("-")).size(DEFAULT_FONT_SIZE);
         let game_version_container = Container::new(game_version)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::NormalForegroundContainer(color_palette));
+
+        row_containers.push((idx, game_version_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::DateReleased && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let release_date_text: String = if let Some(package) = release_package {
+            let f = timeago::Formatter::new();
+            let now = Local::now();
+
+            if let Some(time) = package.date_time.as_ref() {
+                f.convert_chrono(*time, now)
+            } else {
+                "".to_string()
+            }
+        } else {
+            "-".to_string()
+        };
+        let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
+        let game_version_container = Container::new(release_date_text)
             .height(default_height)
             .width(*width)
             .center_y()
@@ -1726,6 +1761,36 @@ pub fn catalog_data_cell<'a, 'b>(
             .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::DateReleased {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let release_date_text: String = if let Some(date_released) = addon_data.date_released {
+            let f = timeago::Formatter::new();
+            let now = Local::now();
+            f.convert_chrono(date_released, now)
+        } else {
+            "-".to_string()
+        };
+        let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
+        let game_version_container = Container::new(release_date_text)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::NormalForegroundContainer(color_palette));
+
+        row_containers.push((idx, game_version_container));
     }
 
     if let Some((idx, width)) = column_config

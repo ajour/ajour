@@ -1607,6 +1607,21 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
         (ColumnKey::GameVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.game_version().cmp(&b.game_version()).reverse())
         }
+        (ColumnKey::DateReleased, SortDirection::Asc) => {
+            addons.sort_by(|a, b| {
+                a.relevant_release_package()
+                    .map(|p| p.date_time)
+                    .cmp(&b.relevant_release_package().map(|p| p.date_time))
+            });
+        }
+        (ColumnKey::DateReleased, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.relevant_release_package()
+                    .map(|p| p.date_time)
+                    .cmp(&b.relevant_release_package().map(|p| p.date_time))
+                    .reverse()
+            });
+        }
     }
 }
 
@@ -1651,6 +1666,12 @@ fn sort_catalog_addons(
         }
         (CatalogColumnKey::Install, SortDirection::Asc) => {}
         (CatalogColumnKey::Install, SortDirection::Desc) => {}
+        (CatalogColumnKey::DateReleased, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released));
+        }
+        (CatalogColumnKey::DateReleased, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released).reverse());
+        }
     }
 }
 
