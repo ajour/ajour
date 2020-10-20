@@ -700,7 +700,7 @@ pub fn addon_data_cell<'a, 'b>(
             let now = Local::now();
 
             if let Some(time) = package.date_time.as_ref() {
-                f.convert_chrono(*time, now).to_string()
+                f.convert_chrono(*time, now)
             } else {
                 "".to_string()
             }
@@ -1778,7 +1778,7 @@ pub fn catalog_data_cell<'a, 'b>(
         let release_date_text: String = if let Some(date_released) = addon_data.date_released {
             let f = timeago::Formatter::new();
             let now = Local::now();
-            f.convert_chrono(date_released, now).to_string()
+            f.convert_chrono(date_released, now)
         } else {
             "-".to_string()
         };
