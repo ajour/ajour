@@ -700,7 +700,7 @@ pub fn addon_data_cell<'a, 'b>(
             let now = Local::now();
 
             if let Some(time) = package.date_time.as_ref() {
-                format!("{}", f.convert_chrono(*time, now))
+                f.convert_chrono(*time, now).to_string()
             } else {
                 "".to_string()
             }
