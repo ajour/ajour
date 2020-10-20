@@ -9,6 +9,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Added
+- Added Latest Release column to both My Addons and Catalog
 - Support for Beta and PTR
 - When pressing on either `local` or `remote` version in MyAddons you will see the changelog
 - When pressing on the addon title inside the catalog Ajour will open the addon website
