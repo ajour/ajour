@@ -9,20 +9,21 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Added
-- Added Latest Release column to both My Addons and Catalog
-- Support for Beta and PTR
-- When pressing on either `local` or `remote` version in MyAddons you will see the changelog
-- When pressing on the addon title inside the catalog Ajour will open the addon website
-- Add fallback measures for displaying addons when fingerprinting fails or we can't link an addon to a remote registry
+- Added Latest Release column to both My Addons and Catalog.
+- Support for Beta and PTR.
+- When pressing on either `local` or `remote` version in MyAddons you will see the changelog.
+- When pressing on the addon title inside the catalog Ajour will open the addon website.
+- Add fallback measures for displaying addons when fingerprinting fails or we can't link an addon to a remote registry.
   - Curse addons that have been locally modified should now display properly in Ajour. A `Repair` button will be present which will install the latest version of the addon so Ajour can accurately track the addon without local modifications.
   - Addons that can't match to any registry will now show up in Ajour as status `Unknown`. Addons that have multiple folders will not be grouped and instead we will show one entry for every folder.
 
 ### Fixed
-- Fixed bug where orphaned folders could exist after updating an addon if the newer version of an addon didnt't include those folders anymore. 
+- Fixed bug where orphaned folders could exist after updating an addon if the newer version of an addon didnt't include those folders anymore.
 - Ensure symlinks are removed in the addons folder prior to extracting an addon, so we don't write into the symlink and instead remove the link / create a new folder.
-  - This is a request from a developer who symlinks their source code into the addons folder and Ajour could accidently overwrite it
+  - This is a request from a developer who symlinks their source code into the addons folder and Ajour could accidently overwrite it.
 - Fixed catalog install buttons getting stuck when install fails or addon is unavailable to download. Button will now show "Retry" if failed and disabled as "Unavailable" if the addon is unavailable.
 - Added a check on content length of downloaded addons when updating or installing and properly set an error message when this occurs so we know the update / install failed so use can retry.
+- Fixed a bug in the logic for selecting a relevant release channel.
 
 ### Changed
 - Now only shows the flavors which is detected in your World of Warcraft folder
