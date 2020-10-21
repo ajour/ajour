@@ -375,6 +375,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .map(|info| Addon::from_curse_fingerprint_info(info.id, &info, flavor, &addon_folders))
         .collect();
 
+    for fa in &fingerprint_addons {
+        addon_folders.retain(|af| af.id != fa.primary_folder_id);
+    }
+
     log::debug!(
         "{} - {} addons from fingerprint metadata",
         flavor,
