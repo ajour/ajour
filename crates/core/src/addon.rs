@@ -321,7 +321,7 @@ impl Addon {
         package: &curse_api::Package,
         flavor: Flavor,
         addon_folders: &[AddonFolder],
-    ) -> Self {
+    ) -> Option<Self> {
         let mut remote_packages = HashMap::new();
 
         let mut stable_exists = false;
@@ -371,7 +371,7 @@ impl Addon {
         } else if alpha_exists {
             3
         } else {
-            unreachable!("No file in curse package for {}", package.id);
+            return None;
         };
 
         let file = package
@@ -415,7 +415,7 @@ impl Addon {
         addon.folders = folders;
         addon.state = AddonState::Corrupted;
 
-        addon
+        Some(addon)
     }
 
     /// Creates an `Addon` from the Curse fingerprint info

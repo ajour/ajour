@@ -375,10 +375,6 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         .map(|info| Addon::from_curse_fingerprint_info(info.id, &info, flavor, &addon_folders))
         .collect();
 
-    for fa in &fingerprint_addons {
-        addon_folders.retain(|af| af.id != fa.primary_folder_id);
-    }
-
     log::debug!(
         "{} - {} addons from fingerprint metadata",
         flavor,
@@ -396,6 +392,11 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     // using the curse id from the `.toc`
     let mut curse_ids_from_nonmatch: Vec<_> = addon_folders
         .iter()
+        .filter(|f| {
+            fingerprint_addons
+                .iter()
+                .any(|fa| fa.primary_folder_id != f.id)
+        })
         .filter(|f| {
             f.repository_identifiers.tukui.is_none() && f.repository_identifiers.curse.is_some()
         })
@@ -457,9 +458,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 || curse_ids_from_partial.contains(&package.id)
             {
                 let addon = Addon::from_curse_package(&package, flavor, &addon_folders);
-                curse_id_only_addons.push(addon);
-
-                created += 1;
+                if let Some(addon) = addon {
+                    curse_id_only_addons.push(addon);
+                    created += 1;
+                }
             }
         }
 
