@@ -1,8 +1,14 @@
-use crate::{addon::Addon, config::Flavor, error::ClientError, network::request_async, Result};
+use crate::{
+    addon::Addon,
+    config::Flavor,
+    error::ClientError,
+    network::request_async,
+    utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate},
+    Result,
+};
 use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 use serde::Deserialize;
-use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize)]
 /// Struct for applying tukui details to an `Addon`.
@@ -20,12 +26,28 @@ pub struct TukuiPackage {
 /// Return the tukui API endpoint.
 fn api_endpoint(id: &str, flavor: &Flavor) -> String {
     match flavor {
-        Flavor::Retail => match id {
+        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
             "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
             "-2" => "https://www.tukui.org/api.php?ui=elvui".to_owned(),
             _ => format!("https://www.tukui.org/api.php?addon={}", id),
         },
-        Flavor::Classic => format!("https://www.tukui.org/api.php?classic-addon={}", id),
+        Flavor::Classic | Flavor::ClassicPTR => {
+            format!("https://www.tukui.org/api.php?classic-addon={}", id)
+        }
+    }
+}
+
+fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
+    match flavor {
+        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
+            "-1" => "https://www.tukui.org/ui/tukui/changelog".to_owned(),
+            "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
+            _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
+        },
+        Flavor::Classic | Flavor::ClassicPTR => format!(
+            "https://www.tukui.org/classic-addons.php?id={}&changelog",
+            id
+        ),
     }
 }
 
@@ -52,26 +74,48 @@ pub async fn fetch_remote_package(id: &str, flavor: &Flavor) -> Result<TukuiPack
     }
 }
 
-pub async fn latest_stable_addon_from_id(
-    tukui_id: u32,
-    mut addon: Addon,
-    mut addon_path: PathBuf,
-    flavor: Flavor,
-) -> Result<(u32, Flavor, Addon)> {
+pub async fn latest_addon(tukui_id: u32, flavor: Flavor) -> Result<Addon> {
     let tukui_id_string = tukui_id.to_string();
 
     let package = fetch_remote_package(&tukui_id_string, &flavor).await?;
 
-    addon_path.push(&package.name);
+    let addon = Addon::from_tukui_package(tukui_id_string, &[], &package);
 
-    addon.title = package.name.clone();
-    addon.id = package.name.clone();
-    addon.author = package.author.clone();
-    addon.notes = package.small_desc.clone();
-    addon.tukui_id = Some(tukui_id_string);
-    addon.path = addon_path;
+    Ok(addon)
+}
 
-    addon.apply_tukui_package(&package);
+pub async fn fetch_changelog(id: &str, flavor: &Flavor) -> Result<(String, String)> {
+    let url = changelog_endpoint(id, &flavor);
 
-    Ok((tukui_id, flavor, addon))
+    match flavor {
+        Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPTR => {
+            // Only TukUI and ElvUI main addons has changelog which can be fetched.
+            // The others is embeded into a page.
+            if id == "-1" || id == "-2" {
+                let client = HttpClient::builder().build().unwrap();
+                let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
+
+                if resp.status().is_success() {
+                    let changelog: String = resp.text()?;
+
+                    let c = regex_html_tags_to_newline()
+                        .replace_all(&changelog, "\n")
+                        .to_string();
+                    let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
+                    let c = truncate(&c, 2500).to_string();
+
+                    return Ok((c, url));
+                }
+
+                return Ok(("No changelog found".to_string(), url));
+            }
+
+            Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url))
+        }
+        Flavor::Classic | Flavor::ClassicPTR => Ok((
+            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
+                .to_string(),
+            url,
+        )),
+    }
 }

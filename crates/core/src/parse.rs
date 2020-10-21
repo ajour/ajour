@@ -1,5 +1,5 @@
 use crate::{
-    addon::Addon,
+    addon::{Addon, AddonFolder, AddonState, RepositoryIdentifiers},
     config::Flavor,
     curse_api::{
         fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
@@ -140,6 +140,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         all_dirs.len()
     );
 
+    if all_dirs.is_empty() {
+        return Ok(vec![]);
+    }
+
     let ParsingPatterns {
         initial_inclusion_regex,
         extra_inclusion_regex,
@@ -224,40 +228,45 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     fingerprints.extend(new_fingerprints.clone());
     let _ = fingerprint_collection.save();
 
-    // Maps each `Fingerprint` to `Addon`.
-    let unfiltred_addons: Vec<_> = new_fingerprints
+    // Maps each `Fingerprint` to `AddonFolder`.
+    let mut addon_folders: Vec<_> = all_dirs
         .par_iter()
-        .filter_map(|fingerprint| {
+        .filter_map(|id| {
             // Generate .toc path.
-            let toc_path = root_dir
-                .join(&fingerprint.title)
-                .join(format!("{}.toc", fingerprint.title));
+            let toc_path = root_dir.join(&id).join(format!("{}.toc", id));
             if !toc_path.exists() {
                 return None;
             }
 
             // We add fingerprint to the addon.
-            let mut addon = parse_toc_path(&toc_path)?;
-            addon.fingerprint = fingerprint.hash;
+            let mut addon_folder = parse_toc_path(&toc_path)?;
+            addon_folder.fingerprint = new_fingerprints
+                .iter()
+                .find(|f| &f.title == id)
+                .map(|f| f.hash)
+                .flatten();
 
-            Some(addon)
+            Some(addon_folder)
         })
         .collect();
+
+    // Ensure addon folders are sorted alphabetically
+    addon_folders.sort_by(|a, b| a.id.cmp(&b.id));
 
     log::debug!(
         "{} - {} successfully parsed from '.toc'",
         flavor,
-        unfiltred_addons.len()
+        addon_folders.len()
     );
 
     // Drop Mutex guard, collection is no longer needed
     drop(collection_guard);
 
     // Filters the Tukui ids.
-    let tukui_ids: Vec<_> = unfiltred_addons
+    let tukui_ids: Vec<_> = addon_folders
         .iter()
-        .filter_map(|addon| {
-            if let Some(tukui_id) = addon.tukui_id.clone() {
+        .filter_map(|folder| {
+            if let Some(tukui_id) = folder.repository_identifiers.tukui.clone() {
                 Some(tukui_id)
             } else {
                 None
@@ -270,39 +279,27 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut tukui_addons = vec![];
     // Loops each tukui_id and fetch a remote package from their api.
     for id in tukui_ids {
-        let package = fetch_remote_package(&id, &flavor).await;
-        // Find the corresponding addon.
-        if let Some(mut addon) = unfiltred_addons
-            .iter()
-            .find(|a| a.tukui_id == Some(id.clone()))
-            .cloned()
-        {
-            // apply package to addon.
-            if let Ok(package) = package {
-                addon.apply_tukui_package(&package);
-                tukui_addons.push(addon);
-            }
+        if let Ok(package) = fetch_remote_package(&id, &flavor).await {
+            let addon = Addon::from_tukui_package(id.clone(), &addon_folders, &package);
+
+            tukui_addons.push(addon);
         }
     }
 
     log::debug!(
-        "{} - {} addons applied with tukui id package metadata",
+        "{} - {} addons from tukui package metadata",
         flavor,
         tukui_addons.len()
     );
 
-    // Links dependencies. This is needed for tukui addons since they don't
-    // tell which dependencies a addon has, so we use the information from toc.
-    link_dependencies_bidirectional(&mut tukui_addons, &unfiltred_addons);
-
     // Filter out addons with fingerprints.
-    let mut fingerprint_hashes: Vec<_> = unfiltred_addons
+    let mut fingerprint_hashes: Vec<_> = addon_folders
         .iter()
-        .filter_map(|addon| {
+        .filter_map(|folder| {
             // Removes any addon which has tukui_id.
-            if addon.tukui_id.is_some() {
+            if folder.repository_identifiers.tukui.is_some() {
                 None
-            } else if let Some(hash) = addon.fingerprint {
+            } else if let Some(hash) = folder.fingerprint {
                 Some(hash)
             } else {
                 None
@@ -343,10 +340,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
             let mut modules_log = String::new();
             for module in addon.file.modules.iter() {
-                let local_fingerprint = unfiltred_addons
+                let local_fingerprint = addon_folders
                     .iter()
-                    .find(|a| a.id == module.foldername)
-                    .map(|a| a.fingerprint.unwrap_or_default())
+                    .find(|f| f.id == module.foldername)
+                    .map(|f| f.fingerprint.unwrap_or_default())
                     .unwrap_or_default();
 
                 modules_log.push_str(&format!(
@@ -375,95 +372,144 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut fingerprint_addons: Vec<_> = fingerprint_package
         .exact_matches
         .iter()
-        .filter_map(|info| {
-            // We try to find the addon matching the curse_id.
-            let addon_by_id = unfiltred_addons
-                .iter()
-                .find(|a| a.curse_id == Some(info.id))
-                .cloned();
-
-            // Apply package.
-            if let Some(mut addon) = addon_by_id {
-                addon.apply_fingerprint_module(info, flavor);
-                return Some(addon);
-            }
-
-            // Second is we try to find the matching addon by looking at the hash.
-            let addon_by_fingerprint = unfiltred_addons
-                .iter()
-                .find(|a| {
-                    info.file
-                        .modules
-                        .iter()
-                        .any(|m| Some(m.fingerprint) == a.fingerprint)
-                })
-                .cloned();
-
-            // Apply package.
-            if let Some(mut addon) = addon_by_fingerprint {
-                addon.apply_fingerprint_module(info, flavor);
-                return Some(addon);
-            }
-
-            None
-        })
+        .map(|info| Addon::from_curse_fingerprint_info(info.id, &info, flavor, &addon_folders))
         .collect();
 
     log::debug!(
-        "{} - {} addons applied with fingerprint metadata",
+        "{} - {} addons from fingerprint metadata",
         flavor,
         fingerprint_addons.len()
     );
 
-    // Creates a `Vec` of curse_ids.
-    let curse_ids: Vec<_> = fingerprint_addons
+    // Creates a `Vec` of curse_ids from addons that succeeded fingerprinting
+    let mut curse_ids_from_match: Vec<_> = fingerprint_addons
         .iter()
-        .filter_map(|addon| {
-            if let Some(curse_id) = addon.curse_id {
-                Some(curse_id)
-            } else {
-                None
-            }
-        })
+        .filter_map(|addon| addon.repository_identifiers.curse)
         .collect();
+    curse_ids_from_match.dedup();
+
+    // Addon folders that failed fingerprinting, but we can still build an addon
+    // using the curse id from the `.toc`
+    let mut curse_ids_from_nonmatch: Vec<_> = addon_folders
+        .iter()
+        .filter(|f| {
+            f.repository_identifiers.tukui.is_none() && f.repository_identifiers.curse.is_some()
+        })
+        .map(|f| f.repository_identifiers.curse.unwrap())
+        .filter(|id| !curse_ids_from_match.contains(id))
+        .collect();
+    curse_ids_from_nonmatch.dedup();
+
+    // Addons that were partial matches that we can get the curse id from. This might return
+    // id's where `curse_ids_from_nonmatch` may not, if the `AddonFolder` `.toc` didn't
+    // contain a Curse ID, but we can get it from the partial match data
+    let mut curse_ids_from_partial: Vec<_> = fingerprint_package
+        .partial_matches
+        .iter()
+        .map(|a| a.id)
+        .collect();
+    curse_ids_from_partial.dedup();
+
+    // Combine all ids and query all at once
+    let mut combined_curse_ids = [
+        &curse_ids_from_match[..],
+        &curse_ids_from_nonmatch[..],
+        &curse_ids_from_partial[..],
+    ]
+    .concat();
+    combined_curse_ids.dedup();
 
     log::debug!(
         "{} - {} addons with curse id",
         flavor,
-        fingerprint_addons.len()
+        combined_curse_ids.len()
     );
 
+    // We will store any addons that weren't an exact fingerprint match to curse
+    // but we could still figure out from a curse id
+    let mut curse_id_only_addons = vec![];
+
     // Fetches the curse packages based on the ids.
-    let curse_id_packages_result = fetch_remote_packages_by_ids(&curse_ids).await;
+    let curse_id_packages_result = fetch_remote_packages_by_ids(&combined_curse_ids).await;
     if let Ok(curse_id_packages) = curse_id_packages_result {
         let mut updated = 0;
+        let mut created = 0;
 
-        // Loops the packages, and updates our Addons with information.
+        // Loops the packages, and updates or creates Addons with the information.
         for package in curse_id_packages {
-            let addon = fingerprint_addons
+            // Update fingerprint addons that have a curse id
+            if let Some(addon) = fingerprint_addons
                 .iter_mut()
-                .find(|a| a.curse_id == Some(package.id));
-            if let Some(addon) = addon {
-                addon.apply_curse_package(&package);
+                .find(|a| a.repository_id() == Some(package.id.to_string()))
+            {
+                addon.repository_metadata.title = Some(package.name.clone());
+                addon.repository_metadata.website_url = Some(package.website_url.clone());
+
                 updated += 1;
+            }
+
+            // Create an addon from the curse id packages that had no / partial fingerprint match
+            if curse_ids_from_nonmatch.contains(&package.id)
+                || curse_ids_from_partial.contains(&package.id)
+            {
+                let addon = Addon::from_curse_package(&package, flavor, &addon_folders);
+                curse_id_only_addons.push(addon);
+
+                created += 1;
             }
         }
 
         log::debug!(
-            "{} - {} addons applied with curse id package metadata",
+            "{} - {} addons updated with curse id package metadata",
             flavor,
             updated
+        );
+
+        log::debug!(
+            "{} - {} addons created from curse id package metadata",
+            flavor,
+            created
         );
     }
 
     // Concats the different repo addons, and returns.
-    let concatenated = [&fingerprint_addons[..], &tukui_addons[..]].concat();
+    let mut concatenated = [
+        &fingerprint_addons[..],
+        &curse_id_only_addons[..],
+        &tukui_addons[..],
+    ]
+    .concat();
 
     log::debug!(
         "{} - {} addons successfully parsed",
         flavor,
         concatenated.len()
     );
+
+    let mapped_folder_ids = concatenated
+        .iter()
+        .map(|a| a.folders.iter().map(|f| f.id.clone()).collect::<Vec<_>>())
+        .flatten()
+        .collect::<Vec<_>>();
+
+    let unmapped_folders = addon_folders
+        .iter()
+        .filter(|f| !mapped_folder_ids.contains(&f.id))
+        .cloned();
+
+    let unknown_addons = unmapped_folders
+        .map(|f| {
+            let mut addon = Addon::empty(&f.id);
+            addon.folders = vec![f];
+            addon.state = AddonState::Unknown;
+
+            addon
+        })
+        .collect::<Vec<_>>();
+
+    log::debug!("{} - {} unknown addons", flavor, unknown_addons.len());
+
+    concatenated.extend(unknown_addons);
 
     Ok(concatenated)
 }
@@ -722,46 +768,12 @@ where
     Some(current)
 }
 
-/// Helper function to run through all addons and
-/// link all dependencies bidirectional.
-///
-/// Example: We download a Addon which upon unzipping has
-/// three folders (addons): `Foo`, `Bar`, `Baz`.
-/// `Foo` is the parent and `Bar` and `Baz` are two helper addons.
-/// `Bar` and `Baz` are both dependent on `Foo`.
-/// This we know because of their .toc file.
-/// However we don't know anything about `Bar` and `Baz` when
-/// only looking at `Foo`.
-///
-/// After reading TOC files:
-/// `Foo` - dependencies: []
-/// `Bar` - dependencies: [`Foo`]
-/// `Baz` - dependencies: [`Foo`]
-///
-/// After bidirectional dependencies link:
-/// `Foo` - dependencies: [`Bar`, `Baz`]
-/// `Bar` - dependencies: [`Foo`]
-/// `Baz` - dependencies: [`Foo`]
-fn link_dependencies_bidirectional(sliced_addons: &mut [Addon], all_addons: &[Addon]) {
-    for addon in sliced_addons {
-        for unsorted_addon in all_addons {
-            for dependency in &unsorted_addon.dependencies {
-                if dependency == &addon.id {
-                    addon.dependencies.push(unsorted_addon.id.clone());
-                }
-            }
-        }
-
-        addon.dependencies.dedup();
-    }
-}
-
 /// Helper function to parse a given TOC file
 /// (`DirEntry`) into a `Addon` struct.
 ///
 /// TOC format summary:
 /// https://wowwiki.fandom.com/wiki/TOC_format
-pub fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
+pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
     //direntry
     let file = if let Ok(file) = File::open(toc_path) {
         file
@@ -814,24 +826,21 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<Addon> {
         }
     }
 
-    // If we don't find title, we will fallback to id (foldername).
-    let title = if let Some(title) = title {
-        title
-    } else {
-        id.clone()
+    let repository_identifiers = RepositoryIdentifiers {
+        wowi: wowi_id,
+        tukui: tukui_id,
+        curse: curse_id,
     };
 
-    Some(Addon::new(
-        id,
-        title,
+    Some(AddonFolder::new(
+        id.clone(),
+        title.unwrap_or(id),
+        path,
         author,
         notes,
         version,
-        path,
+        repository_identifiers,
         dependencies,
-        wowi_id,
-        tukui_id,
-        curse_id,
     ))
 }
 

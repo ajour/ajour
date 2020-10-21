@@ -15,4 +15,5 @@
 .env
 
 # Editor config
+.idea/
 .vscode/

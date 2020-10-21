@@ -8,6 +8,22 @@ use std::env;
 use std::fs::File;
 
 fn main() {
+    fern::Dispatch::new()
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "{} [{}][{}] {}",
+                chrono::Local::now().format("%H:%M:%S%.3f"),
+                record.target(),
+                record.level(),
+                message
+            ))
+        })
+        .level(log::LevelFilter::Off)
+        .level_for("ajour_core", log::LevelFilter::Trace)
+        .chain(std::io::stdout())
+        .apply()
+        .unwrap();
+
     let mut args = env::args();
     args.next();
 

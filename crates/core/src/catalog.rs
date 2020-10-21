@@ -2,6 +2,7 @@ use crate::config::Flavor;
 use crate::error::ClientError;
 use crate::network::request_async;
 use crate::Result;
+use chrono::prelude::*;
 
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
@@ -58,12 +59,43 @@ pub struct Catalog {
 pub struct CatalogAddon {
     pub id: u32,
     pub website_url: String,
+    #[serde(with = "date_parser")]
+    pub date_released: Option<DateTime<Utc>>,
     pub name: String,
     pub categories: Vec<String>,
     pub summary: String,
     pub number_of_downloads: u64,
     pub source: Source,
     pub flavors: Vec<Flavor>,
+}
+
+mod date_parser {
+    use chrono::prelude::*;
+    use serde::{self, Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // TODO: Theres room for improvements here.
+        let s = String::deserialize(deserializer)?;
+
+        // Curse format
+        let date = DateTime::parse_from_rfc3339(&s)
+            .map(|d| d.with_timezone(&Utc))
+            .ok();
+
+        // Tukui format
+        if date.is_none() {
+            let date = NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %T")
+                .map(|d| Utc.from_utc_datetime(&d))
+                .ok();
+
+            return Ok(date);
+        }
+
+        Ok(date)
+    }
 }
 
 #[cfg(test)]

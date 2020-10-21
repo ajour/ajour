@@ -1,14 +1,13 @@
 use crate::{
-    addon::{Addon, ReleaseChannel, RemotePackage},
+    addon::Addon,
     config::Flavor,
     error::ClientError,
     network::{post_json_async, request_async},
+    utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate},
     Result,
 };
 use isahc::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::PathBuf;
 
 const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
 
@@ -129,6 +128,26 @@ pub async fn fetch_remote_packages_by_ids(curse_ids: &[u32]) -> Result<Vec<Packa
     }
 }
 
+pub async fn fetch_changelog(id: u32, file_id: i64) -> Result<(String, String)> {
+    let url = format!("{}/addon/{}/file/{}/changelog", API_ENDPOINT, id, file_id);
+    let client = HttpClient::builder().build().unwrap();
+    let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
+
+    if resp.status().is_success() {
+        let changelog: String = resp.text()?;
+
+        let c = regex_html_tags_to_newline()
+            .replace_all(&changelog, "\n")
+            .to_string();
+        let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
+        let c = truncate(&c, 2500).to_string();
+
+        return Ok((c, url));
+    }
+
+    Ok(("No changelog found.".to_owned(), url))
+}
+
 pub async fn fetch_game_info() -> Result<GameInfo> {
     let url = format!("{}/game/1", API_ENDPOINT);
     let client = HttpClient::builder().build().unwrap();
@@ -144,12 +163,7 @@ pub async fn fetch_game_info() -> Result<GameInfo> {
     }
 }
 
-pub async fn latest_stable_addon_from_id(
-    curse_id: u32,
-    mut addon: Addon,
-    mut addon_path: PathBuf,
-    flavor: Flavor,
-) -> Result<(u32, Flavor, Addon)> {
+pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<Addon> {
     let packages: Vec<Package> = fetch_remote_packages_by_ids(&[curse_id]).await?;
 
     let package = packages.into_iter().next().ok_or_else(|| {
@@ -160,54 +174,40 @@ pub async fn latest_stable_addon_from_id(
         .latest_files
         .iter()
         .find(|f| {
-            f.release_type == 1
-                && f.game_version_flavor.as_ref() == Some(&format!("wow_{}", flavor))
+            f.release_type == 1 && f.game_version_flavor.as_ref() == Some(&flavor.curse_format())
         })
         .ok_or_else(|| {
             ClientError::Custom(format!("No stable file found for curse id {}", curse_id))
         })?;
 
-    // Use first module
-    let id = stable_file
-        .modules
-        .get(0)
-        .cloned()
-        .ok_or_else(|| ClientError::Custom(format!("No modules found for curse id {}", curse_id)))?
-        .foldername;
-    let title = package.name.clone();
-
-    addon_path.push(&id);
-
-    // Use rest of the modules
-    let dependencies = stable_file
+    let first_fingerprint = stable_file
         .modules
         .iter()
-        .enumerate()
-        .filter(|(idx, _)| *idx > 0)
-        .map(|(_, m)| m.foldername.clone())
-        .collect();
+        .map(|f| f.fingerprint)
+        .next()
+        .ok_or_else(|| {
+            ClientError::Custom(format!(
+                "No stable file fingerprint found for curse id {}",
+                curse_id
+            ))
+        })?;
 
-    let version = Some(stable_file.display_name.clone());
+    let fingerprint_info = fetch_remote_packages_by_fingerprint(&[first_fingerprint]).await?;
 
-    addon.id = id;
-    addon.title = title;
-    addon.version = version;
-    addon.path = addon_path;
-    addon.curse_id = Some(curse_id);
-    addon.dependencies = dependencies;
-
-    let mut remote_packages = HashMap::new();
-    let package = RemotePackage {
-        version: stable_file.display_name.clone(),
-        download_url: stable_file.download_url.clone(),
-        date_time: None,
-        file_id: None,
+    let info = if let Some(info) = fingerprint_info.exact_matches.get(0) {
+        info
+    } else {
+        fingerprint_info.partial_matches.get(0).ok_or_else(|| {
+            ClientError::Custom(format!(
+                "No fingerprint match for curse id {}, fingerprint {}",
+                curse_id, first_fingerprint
+            ))
+        })?
     };
 
-    remote_packages.insert(ReleaseChannel::Stable, package);
+    let mut addon = Addon::from_curse_fingerprint_info(curse_id, info, flavor, &[]);
 
-    addon.remote_packages = remote_packages;
-    addon.release_channel = ReleaseChannel::Stable;
+    addon.set_title(package.name.clone());
 
-    Ok((curse_id, flavor, addon))
+    Ok(addon)
 }

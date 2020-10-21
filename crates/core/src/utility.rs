@@ -16,6 +16,21 @@ pub fn strip_non_digits(string: &str) -> Option<String> {
     Some(stripped)
 }
 
+pub fn truncate(s: &str, max_chars: usize) -> &str {
+    match s.char_indices().nth(max_chars) {
+        None => s,
+        Some((idx, _)) => &s[..idx],
+    }
+}
+
+pub fn regex_html_tags_to_newline() -> Regex {
+    regex::Regex::new(r"<br ?/?>|#.\s").unwrap()
+}
+
+pub fn regex_html_tags_to_space() -> Regex {
+    regex::Regex::new(r"&nbsp;|&quot;|&lt;|&gt;|&amp;|gt;|lt;|&#x27;|<.+?>").unwrap()
+}
+
 #[derive(Deserialize)]
 struct Release {
     tag_name: String,

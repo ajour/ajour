@@ -38,12 +38,8 @@ impl Config {
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
         match &self.wow.directory {
             Some(dir) => {
-                // We prepend and append `_` to the formatted_client_flavor so it
-                // either becomes _retail_, or _classic_.
-                let formatted_client_flavor = format!("_{}_", flavor);
-
                 // The path to the directory containing the addons
-                let mut addon_dir = dir.join(&formatted_client_flavor).join("Interface/AddOns");
+                let mut addon_dir = dir.join(&flavor.folder_name()).join("Interface/AddOns");
 
                 // If path doesn't exist, it could have been modified by the user.
                 // Check for a case-insensitive version and use that instead.
@@ -57,7 +53,7 @@ impl Config {
                     // unless we add an actual pattern symbol, hence the `?`.
                     let pattern = format!(
                         "{}/?nterface/?ddons",
-                        dir.join(&formatted_client_flavor).display()
+                        dir.join(&flavor.folder_name()).display()
                     );
 
                     for entry in glob::glob_with(&pattern, options).unwrap() {
@@ -75,9 +71,8 @@ impl Config {
 
     /// Returns a `Option<PathBuf>` to the directory which will hold the
     /// temporary zip archives.
-    /// For now it will use the parent of the Addons folder.
     /// This will return `None` if no `wow_directory` is set in the config.
-    pub fn get_temporary_addon_directory(&self, flavor: Flavor) -> Option<PathBuf> {
+    pub fn get_download_directory_for_flavor(&self, flavor: Flavor) -> Option<PathBuf> {
         match self.get_addon_directory_for_flavor(&flavor) {
             Some(dir) => {
                 // The path to the directory which hold the temporary zip archives
@@ -93,12 +88,8 @@ impl Config {
     pub fn get_wtf_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
         match &self.wow.directory {
             Some(dir) => {
-                // We prepend and append `_` to the formatted_client_flavor so it
-                // either becomes _retail_, or _classic_.
-                let formatted_client_flavor = format!("_{}_", flavor);
-
                 // The path to the WTF directory
-                let mut addon_dir = dir.join(&formatted_client_flavor).join("WTF");
+                let mut addon_dir = dir.join(&flavor.folder_name()).join("WTF");
 
                 // If path doesn't exist, it could have been modified by the user.
                 // Check for a case-insensitive version and use that instead.
@@ -110,7 +101,7 @@ impl Config {
 
                     // For some reason the case insensitive pattern doesn't work
                     // unless we add an actual pattern symbol, hence the `?`.
-                    let pattern = format!("{}/?tf", dir.join(&formatted_client_flavor).display());
+                    let pattern = format!("{}/?tf", dir.join(&flavor.folder_name()).display());
 
                     for entry in glob::glob_with(&pattern, options).unwrap() {
                         if let Ok(path) = entry {
