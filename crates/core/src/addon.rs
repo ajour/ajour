@@ -689,47 +689,49 @@ impl Addon {
         let beta_package = remote_packages.get(&ReleaseChannel::Beta);
         let alpha_package = remote_packages.get(&ReleaseChannel::Alpha);
 
-        let stable_newer_than_beta =
-            if let (Some(stable_package), Some(beta_package)) = (stable_package, beta_package) {
-                // If stable is newer than beta, we return that instead.
-                stable_package.file_id > beta_package.file_id
+        fn should_choose_other(
+            base: &Option<&RemotePackage>,
+            other: &Option<&RemotePackage>,
+        ) -> bool {
+            if base.is_none() {
+                return true;
+            }
+
+            if other.is_none() {
+                return false;
+            }
+
+            if let (Some(base), Some(other)) = (base, other) {
+                other.file_id > base.file_id
             } else {
                 false
-            };
-        let stable_newer_than_alpha =
-            if let (Some(stable_package), Some(alpha_package)) = (stable_package, alpha_package) {
-                // If stable is newer than alpha, we return that instead.
-                stable_package.file_id > alpha_package.file_id
-            } else {
-                false
-            };
-        let beta_newer_than_alpha =
-            if let (Some(beta_package), Some(alpha_package)) = (beta_package, alpha_package) {
-                // If beta is newer than alpha, we return that instead.
-                beta_package.file_id > alpha_package.file_id
-            } else {
-                false
-            };
+            }
+        }
 
         match &self.release_channel {
             ReleaseChannel::Stable => stable_package,
             ReleaseChannel::Beta => {
-                if stable_newer_than_beta {
+                let choose_stable = should_choose_other(&beta_package, &stable_package);
+                if choose_stable {
                     return stable_package;
                 }
 
                 beta_package
             }
             ReleaseChannel::Alpha => {
-                if beta_newer_than_alpha {
-                    if stable_newer_than_beta {
+                let choose_stable = should_choose_other(&alpha_package, &stable_package);
+                let choose_beta = should_choose_other(&alpha_package, &beta_package);
+
+                if choose_beta {
+                    let choose_stable = should_choose_other(&beta_package, &stable_package);
+                    if choose_stable {
                         return stable_package;
                     }
 
                     return beta_package;
                 }
 
-                if stable_newer_than_alpha {
+                if choose_stable {
                     return stable_package;
                 }
 
