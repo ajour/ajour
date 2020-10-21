@@ -8,14 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+## [0.4.2] - 2020-10-21
 ### Added
+- Add fallback measures for displaying addons when fingerprinting fails or we can't link an addon to a remote registry.
+  - Curse addons that have been locally modified should now display properly in Ajour. A `Repair` button will be present which will install the latest version of the addon so Ajour can accurately track the addon without local modifications.
+  - Addons that can't match to any registry will now show up in Ajour as status `Unknown`. Addons that have multiple folders will not be grouped and instead we will show one entry for every folder.
+  - **NOTE**: The current ongoing issues with the CurseForge fingerprint API means some addons will randomly get one of these new statuses, but should be ignored until that issue has been resolved.
 - Added Latest Release column to both My Addons and Catalog.
 - Support for Beta and PTR.
 - When pressing on either `local` or `remote` version in MyAddons you will see the changelog.
 - When pressing on the addon title inside the catalog Ajour will open the addon website.
-- Add fallback measures for displaying addons when fingerprinting fails or we can't link an addon to a remote registry.
-  - Curse addons that have been locally modified should now display properly in Ajour. A `Repair` button will be present which will install the latest version of the addon so Ajour can accurately track the addon without local modifications.
-  - Addons that can't match to any registry will now show up in Ajour as status `Unknown`. Addons that have multiple folders will not be grouped and instead we will show one entry for every folder.
 
 ### Fixed
 - Fixed bug where orphaned folders could exist after updating an addon if the newer version of an addon didnt't include those folders anymore.
