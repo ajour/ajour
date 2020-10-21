@@ -759,6 +759,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             }) {
                                 folder.id.clone()
                             } else {
+                                //TODO: Can this crash? What do we do in that case.
                                 folders.get(0).map(|f| f.id.clone()).unwrap()
                             };
                             addon.primary_folder_id = primary_folder_id;
