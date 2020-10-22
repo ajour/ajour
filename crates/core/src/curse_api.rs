@@ -178,7 +178,7 @@ pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<Addon> {
     })?;
 
     let mut addon = Addon::from_curse_package(&package, flavor, &[]).unwrap();
-    addon.set_title(package.name.clone());
+    addon.set_title(package.name);
 
     Ok(addon)
 }
