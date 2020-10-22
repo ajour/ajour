@@ -1,5 +1,5 @@
 use crate::{
-    addon::{Addon, AddonFolder, RepositoryIdentifiers},
+    addon::{Addon, AddonFolder, AddonState, RepositoryIdentifiers},
     config::Flavor,
     curse_api::{
         fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
@@ -479,7 +479,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     }
 
     // Concats the different repo addons, and returns.
-    let concatenated = [
+    let mut concatenated = [
         &tukui_addons[..],
         &fingerprint_addons[..],
         &curse_id_only_addons[..],
@@ -491,6 +491,29 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         flavor,
         concatenated.len()
     );
+
+    let mapped_folder_ids = concatenated
+        .iter()
+        .map(|a| a.folders.iter().map(|f| f.id.clone()).collect::<Vec<_>>())
+        .flatten()
+        .collect::<Vec<_>>();
+
+    let unmapped_folders = addon_folders
+        .iter()
+        .filter(|f| !mapped_folder_ids.contains(&f.id))
+        .cloned();
+
+    let unknown_addons = unmapped_folders
+        .map(|f| {
+            let mut addon = Addon::empty(&f.id);
+            addon.folders = vec![f];
+            addon.state = AddonState::Unknown;
+
+            addon
+        })
+        .collect::<Vec<_>>();
+
+    concatenated.extend(unknown_addons);
 
     Ok(concatenated)
 }
