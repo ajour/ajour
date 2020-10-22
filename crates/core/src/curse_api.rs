@@ -33,7 +33,6 @@ pub struct File {
     pub game_version_flavor: Option<String>,
     pub modules: Vec<Module>,
     pub is_alternate: bool,
-    pub game_version_date_released: String,
     pub game_version: Vec<String>,
 }
 
@@ -83,13 +82,8 @@ pub struct CategorySection {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FingerprintInfo {
-    pub is_cache_built: bool,
     pub exact_matches: Vec<AddonFingerprintInfo>,
-    pub exact_fingerprints: Vec<u32>,
     pub partial_matches: Vec<AddonFingerprintInfo>,
-    pub partial_match_fingerprints: ::serde_json::Value,
-    pub installed_fingerprints: Vec<u32>,
-    pub unmatched_fingerprints: Vec<u32>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
