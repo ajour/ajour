@@ -393,14 +393,13 @@ impl Addon {
                 && file.modules.iter().any(|m| m.foldername == f.id)
         }) {
             f.id.clone()
+        } else if let Some(f) = addon_folders
+            .iter()
+            .find(|f| file.modules.iter().any(|m| m.foldername == f.id))
+        {
+            f.id.clone()
         } else {
-            addon_folders
-                .iter()
-                .find(|f| file.modules.iter().any(|m| m.foldername == f.id))
-                .as_ref()
-                .unwrap()
-                .id
-                .clone()
+            file.file_name.clone()
         };
 
         let mut addon = Addon::empty(&primary_folder_id);
