@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+## [0.4.3] - 2020-10-22
+
+### Fixed
+- Fixed the CurseForge API issue.
+- Minor improvements to the matching addons which was caused by yesterdays update (SORRY!).
+
 ## [0.4.2] - 2020-10-21
 ### Added
 - Add fallback measures for displaying addons when fingerprinting fails or we can't link an addon to a remote registry.

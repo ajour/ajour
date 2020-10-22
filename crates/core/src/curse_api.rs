@@ -10,6 +10,7 @@ use isahc::prelude::*;
 use serde::{Deserialize, Serialize};
 
 const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
+const FINGERPRINT_API_ENDPOINT: &str = "https://hub.dev.wowup.io/curseforge/addons/fingerprint";
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -33,7 +34,6 @@ pub struct File {
     pub game_version_flavor: Option<String>,
     pub modules: Vec<Module>,
     pub is_alternate: bool,
-    pub game_version_date_released: String,
     pub game_version: Vec<String>,
 }
 
@@ -83,13 +83,8 @@ pub struct CategorySection {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FingerprintInfo {
-    pub is_cache_built: bool,
     pub exact_matches: Vec<AddonFingerprintInfo>,
-    pub exact_fingerprints: Vec<u32>,
     pub partial_matches: Vec<AddonFingerprintInfo>,
-    pub partial_match_fingerprints: ::serde_json::Value,
-    pub installed_fingerprints: Vec<u32>,
-    pub unmatched_fingerprints: Vec<u32>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -100,9 +95,21 @@ pub struct AddonFingerprintInfo {
     pub latest_files: Vec<File>,
 }
 
+#[derive(Serialize)]
+struct FingerprintData {
+    fingerprints: Vec<u32>,
+}
+
 pub async fn fetch_remote_packages_by_fingerprint(fingerprints: &[u32]) -> Result<FingerprintInfo> {
-    let url = format!("{}/fingerprint", API_ENDPOINT);
-    let mut resp = post_json_async(url, fingerprints, vec![], None).await?;
+    let mut resp = post_json_async(
+        FINGERPRINT_API_ENDPOINT,
+        FingerprintData {
+            fingerprints: fingerprints.to_owned(),
+        },
+        vec![],
+        None,
+    )
+    .await?;
     if resp.status().is_success() {
         let fingerprint_info = resp.json()?;
         Ok(fingerprint_info)

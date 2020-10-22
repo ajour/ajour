@@ -74,6 +74,9 @@ pub enum AddonState {
     Downloading,
     Fingerprint,
     Unpacking,
+    // TODO: I have currently removed the state where curse-id only addons become corrupt.
+    // It can happen that the fingerprint is unknown to the API but everything else is good.
+    // This is properly not the best solution going forward, but for now it solves the purpose.
     Corrupted,
     Updatable,
 }
@@ -314,14 +317,12 @@ impl Addon {
     }
 
     /// Creates an `Addon` from the Curse package. This is a fallback for when we don't
-    /// have an exact fingerprint match, but we have a curse id for the addon. Since we
-    /// can't guarantee which local version the addon is, we will set this addon status
-    /// as Corrupted and the local version as "Unknown".
+    /// have an exact fingerprint match, but we have a curse id for the addon.
     pub fn from_curse_package(
         package: &curse_api::Package,
         flavor: Flavor,
         addon_folders: &[AddonFolder],
-    ) -> Self {
+    ) -> Option<Self> {
         let mut remote_packages = HashMap::new();
 
         let mut stable_exists = false;
@@ -371,7 +372,7 @@ impl Addon {
         } else if alpha_exists {
             3
         } else {
-            unreachable!("No file in curse package for {}", package.id);
+            return None;
         };
 
         let file = package
@@ -413,9 +414,8 @@ impl Addon {
             .cloned()
             .collect();
         addon.folders = folders;
-        addon.state = AddonState::Corrupted;
 
-        addon
+        Some(addon)
     }
 
     /// Creates an `Addon` from the Curse fingerprint info

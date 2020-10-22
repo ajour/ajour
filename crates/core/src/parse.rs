@@ -393,6 +393,11 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut curse_ids_from_nonmatch: Vec<_> = addon_folders
         .iter()
         .filter(|f| {
+            fingerprint_addons
+                .iter()
+                .any(|fa| fa.primary_folder_id != f.id)
+        })
+        .filter(|f| {
             f.repository_identifiers.tukui.is_none() && f.repository_identifiers.curse.is_some()
         })
         .map(|f| f.repository_identifiers.curse.unwrap())
@@ -453,9 +458,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                 || curse_ids_from_partial.contains(&package.id)
             {
                 let addon = Addon::from_curse_package(&package, flavor, &addon_folders);
-                curse_id_only_addons.push(addon);
-
-                created += 1;
+                if let Some(addon) = addon {
+                    curse_id_only_addons.push(addon);
+                    created += 1;
+                }
             }
         }
 
@@ -474,9 +480,9 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Concats the different repo addons, and returns.
     let mut concatenated = [
+        &tukui_addons[..],
         &fingerprint_addons[..],
         &curse_id_only_addons[..],
-        &tukui_addons[..],
     ]
     .concat();
 
@@ -510,6 +516,21 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     log::debug!("{} - {} unknown addons", flavor, unknown_addons.len());
 
     concatenated.extend(unknown_addons);
+
+    // We do a extra clean up here to ensure that we dont display any addons which is a module.
+    // Idea is that we loop the addon.folders and mark all "dependencies".
+    // We then retain them from the concatenated Vec. If there is any.
+    let mut marked = vec![];
+    for addon in &concatenated {
+        for folder in &addon.folders {
+            if folder.id != addon.primary_folder_id {
+                marked.push(folder.id.clone());
+            }
+        }
+    }
+
+    // Remove dependency addons.
+    concatenated.retain(|addon| !marked.iter().any(|id| &addon.primary_folder_id == id));
 
     Ok(concatenated)
 }
