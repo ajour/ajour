@@ -1,5 +1,5 @@
 use crate::{
-    addon::{Addon, AddonFolder, Repository},
+    addon::{Addon, AddonFolder},
     parse::parse_toc_path,
     Result,
 };
@@ -30,15 +30,6 @@ pub async fn install_addon(
     let zip_path = from_directory.join(&addon.primary_folder_id);
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
-
-    // Remove old top level addon folders
-    // Currently we only do this if its a curse addon because we are guaranteed which folders each
-    // addon has as a dependency.
-    if addon.active_repository == Some(Repository::Curse) {
-        for folder in addon.folders.iter() {
-            let _ = std::fs::remove_dir_all(&folder.path);
-        }
-    }
 
     // Get all new top level folders
     let new_top_level_folders = archive
