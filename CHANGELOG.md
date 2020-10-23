@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Fixed
+- Fixed issue where Tukui addons would delete dependency standalone addons during update.
+- Now correctly shows all sub-addons if they are a seperate addons.
+  - An example is Altoholic-Retail (Teelo's Fork). All it's dependencies are actually standalone addons. They are now correctly shown.
+
 ## [0.4.3] - 2020-10-22
 
 ### Fixed

@@ -112,6 +112,26 @@ pub struct AddonFolder {
     pub fingerprint: Option<u32>,
 }
 
+impl PartialEq for AddonFolder {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for AddonFolder {}
+
+impl PartialOrd for AddonFolder {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.id.cmp(&other.id))
+    }
+}
+
+impl Ord for AddonFolder {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 impl AddonFolder {
     pub fn new(
@@ -324,6 +344,7 @@ impl Addon {
         addon_folders: &[AddonFolder],
     ) -> Option<Self> {
         let mut remote_packages = HashMap::new();
+        let mut folders: Vec<AddonFolder> = vec![];
 
         let mut stable_exists = false;
         let mut beta_exists = false;
@@ -344,6 +365,13 @@ impl Addon {
                     file_id: Some(file.id),
                 };
 
+                let file_folders: Vec<AddonFolder> = addon_folders
+                    .iter()
+                    .filter(|f| file.modules.iter().any(|m| m.foldername == f.id))
+                    .cloned()
+                    .collect();
+                folders.extend(file_folders);
+
                 match file.release_type {
                     1 /* stable */ => {
                         stable_exists = true;
@@ -361,6 +389,10 @@ impl Addon {
                 };
             }
         }
+
+        // Ensure we only have uniques.
+        folders.sort();
+        folders.dedup_by(|a, b| a.id == b.id);
 
         let mut metadata = RepositoryMetadata::empty();
         metadata.remote_packages = remote_packages;
@@ -393,26 +425,19 @@ impl Addon {
                 && file.modules.iter().any(|m| m.foldername == f.id)
         }) {
             f.id.clone()
+        } else if let Some(f) = addon_folders
+            .iter()
+            .find(|f| file.modules.iter().any(|m| m.foldername == f.id))
+        {
+            f.id.clone()
         } else {
-            addon_folders
-                .iter()
-                .find(|f| file.modules.iter().any(|m| m.foldername == f.id))
-                .as_ref()
-                .unwrap()
-                .id
-                .clone()
+            file.file_name.clone()
         };
 
         let mut addon = Addon::empty(&primary_folder_id);
         addon.active_repository = Some(Repository::Curse);
         addon.repository_identifiers.curse = Some(package.id);
         addon.repository_metadata = metadata;
-
-        let folders: Vec<AddonFolder> = addon_folders
-            .iter()
-            .filter(|f| file.modules.iter().any(|m| m.foldername == f.id))
-            .cloned()
-            .collect();
         addon.folders = folders;
 
         Some(addon)
@@ -426,6 +451,7 @@ impl Addon {
         addon_folders: &[AddonFolder],
     ) -> Self {
         let mut remote_packages = HashMap::new();
+        let mut folders: Vec<AddonFolder> = vec![];
 
         for file in info.latest_files.iter() {
             let game_version_flavor = file.game_version_flavor.as_ref();
@@ -442,6 +468,13 @@ impl Addon {
                     file_id: Some(file.id),
                 };
 
+                let file_folders: Vec<AddonFolder> = addon_folders
+                    .iter()
+                    .filter(|f| file.modules.iter().any(|m| m.foldername == f.id))
+                    .cloned()
+                    .collect();
+                folders.extend(file_folders);
+
                 match file.release_type {
                     1 /* stable */ => {
                         remote_packages.insert(ReleaseChannel::Stable, package);
@@ -456,6 +489,10 @@ impl Addon {
                 };
             }
         }
+
+        // Ensure we only have uniques.
+        folders.sort();
+        folders.dedup_by(|a, b| a.id == b.id);
 
         let version = Some(info.file.display_name.clone());
         let file_id = Some(info.file.id);
@@ -480,26 +517,19 @@ impl Addon {
                 && info.file.modules.iter().any(|m| m.foldername == f.id)
         }) {
             f.id.clone()
+        } else if let Some(f) = addon_folders
+            .iter()
+            .find(|f| info.file.modules.iter().any(|m| m.foldername == f.id))
+        {
+            f.id.clone()
         } else {
-            addon_folders
-                .iter()
-                .find(|f| info.file.modules.iter().any(|m| m.foldername == f.id))
-                .as_ref()
-                .unwrap()
-                .id
-                .clone()
+            info.file.file_name.clone()
         };
 
         let mut addon = Addon::empty(&primary_folder_id);
         addon.active_repository = Some(Repository::Curse);
         addon.repository_identifiers.curse = Some(curse_id);
         addon.repository_metadata = metadata;
-
-        let folders: Vec<AddonFolder> = addon_folders
-            .iter()
-            .filter(|f| info.file.modules.iter().any(|m| m.foldername == f.id))
-            .cloned()
-            .collect();
         addon.folders = folders;
 
         addon

@@ -513,24 +513,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         })
         .collect::<Vec<_>>();
 
-    log::debug!("{} - {} unknown addons", flavor, unknown_addons.len());
-
     concatenated.extend(unknown_addons);
-
-    // We do a extra clean up here to ensure that we dont display any addons which is a module.
-    // Idea is that we loop the addon.folders and mark all "dependencies".
-    // We then retain them from the concatenated Vec. If there is any.
-    let mut marked = vec![];
-    for addon in &concatenated {
-        for folder in &addon.folders {
-            if folder.id != addon.primary_folder_id {
-                marked.push(folder.id.clone());
-            }
-        }
-    }
-
-    // Remove dependency addons.
-    concatenated.retain(|addon| !marked.iter().any(|id| &addon.primary_folder_id == id));
 
     Ok(concatenated)
 }

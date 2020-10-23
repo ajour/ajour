@@ -177,44 +177,8 @@ pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<Addon> {
         ClientError::Custom(format!("No package found for curse id {}", curse_id))
     })?;
 
-    let stable_file = package
-        .latest_files
-        .iter()
-        .find(|f| {
-            f.release_type == 1 && f.game_version_flavor.as_ref() == Some(&flavor.curse_format())
-        })
-        .ok_or_else(|| {
-            ClientError::Custom(format!("No stable file found for curse id {}", curse_id))
-        })?;
-
-    let first_fingerprint = stable_file
-        .modules
-        .iter()
-        .map(|f| f.fingerprint)
-        .next()
-        .ok_or_else(|| {
-            ClientError::Custom(format!(
-                "No stable file fingerprint found for curse id {}",
-                curse_id
-            ))
-        })?;
-
-    let fingerprint_info = fetch_remote_packages_by_fingerprint(&[first_fingerprint]).await?;
-
-    let info = if let Some(info) = fingerprint_info.exact_matches.get(0) {
-        info
-    } else {
-        fingerprint_info.partial_matches.get(0).ok_or_else(|| {
-            ClientError::Custom(format!(
-                "No fingerprint match for curse id {}, fingerprint {}",
-                curse_id, first_fingerprint
-            ))
-        })?
-    };
-
-    let mut addon = Addon::from_curse_fingerprint_info(curse_id, info, flavor, &[]);
-
-    addon.set_title(package.name.clone());
+    let mut addon = Addon::from_curse_package(&package, flavor, &[]).unwrap();
+    addon.set_title(package.name);
 
     Ok(addon)
 }
