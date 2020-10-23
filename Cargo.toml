@@ -1,7 +1,7 @@
 [package]
 name = "ajour"
 description = "A World of Warcraft addon manager"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Casper Rogild Storm"]
 license = "MIT"
 homepage = "https://github.com/casperstorm/ajour"
