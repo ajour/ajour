@@ -52,7 +52,7 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 - Bulk addon update without any limitations
 - Remove addons and their dependencies
 - Ignore addons you don't want to update
-- Supports both Retail and Classic version of World of Warcraft
+- Supports both Retail, Classic, PTR and Beta versions of World of Warcraft
 - 10+ handcrafted themes to choose between
   - [Ability to add your own custom themes](./THEMES.md)
 - Ability to backup your whole UI, including all settings from WTF
