@@ -37,9 +37,7 @@ pub async fn install_addon(
         .filter_map(|name| name.split('/').next())
         .collect::<HashSet<_>>();
 
-    // Remove all new top level addon folders. This seems redundant because of
-    // the remove old expression above, but that one doesn't work on new addons
-    // installed from the Catalog.
+    // Remove all new top level addon folders.
     for folder in new_top_level_folders {
         let path = to_directory.join(&folder);
 
