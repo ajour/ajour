@@ -16,7 +16,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ## [0.4.3] - 2020-10-22
 
 ### Fixed
-- Fixed the CurseForge API issue.
+- Fixed the CurseForge API issue by using another api that caches the responses (kindly provided by wowup.io).
 - Minor improvements to the matching addons which was caused by yesterdays update (SORRY!).
 
 ## [0.4.2] - 2020-10-21
