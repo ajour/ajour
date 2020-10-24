@@ -139,6 +139,9 @@ fn handle_self_update_temp(main_bin_name: &str) -> Result<()> {
 
     let main_bin = parent_dir.join(main_bin_name);
 
+    #[cfg(target_os = "windows")]
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
     std::fs::rename(&temp_bin, &main_bin)?;
 
     log::debug!("Ajour updated successfully");
