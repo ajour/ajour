@@ -9,8 +9,8 @@ wgpu = ["iced_wgpu"]
 opengl = ["iced_glow"]
 
 [dependencies]
-iced_native = { git="https://github.com/hecrj/iced", rev="fb015a85d22a7c4632bd251127a89259bfd0c346" }
-iced_graphics = { git="https://github.com/hecrj/iced", rev="fb015a85d22a7c4632bd251127a89259bfd0c346" }
+iced_native = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02" }
+iced_graphics = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02" }
 
-iced_wgpu = { git="https://github.com/hecrj/iced", rev="fb015a85d22a7c4632bd251127a89259bfd0c346", optional = true }
-iced_glow = { git="https://github.com/hecrj/iced", rev="fb015a85d22a7c4632bd251127a89259bfd0c346", optional = true }
+iced_wgpu = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02", optional = true }
+iced_glow = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02", optional = true }

@@ -624,7 +624,7 @@ pub fn run(opts: Opts) {
     settings.window.icon = Some(icon.unwrap());
 
     // Runs the GUI.
-    Ajour::run(settings);
+    Ajour::run(settings).expect("running Ajour gui");
 }
 
 #[derive(Debug, Clone)]

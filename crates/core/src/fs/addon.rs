@@ -50,6 +50,7 @@ pub async fn install_addon(
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i)?;
+        #[allow(deprecated)]
         let path = to_directory.join(file.sanitized_name());
 
         if let Some(ext) = path.extension() {
