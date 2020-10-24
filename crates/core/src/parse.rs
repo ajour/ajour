@@ -393,9 +393,11 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut curse_ids_from_nonmatch: Vec<_> = addon_folders
         .iter()
         .filter(|f| {
-            fingerprint_addons
-                .iter()
-                .any(|fa| fa.primary_folder_id != f.id)
+            !fingerprint_addons.iter().any(|fa| {
+                fa.folders
+                    .iter()
+                    .any(|faf| faf.fingerprint == f.fingerprint)
+            })
         })
         .filter(|f| {
             f.repository_identifiers.tukui.is_none() && f.repository_identifiers.curse.is_some()
