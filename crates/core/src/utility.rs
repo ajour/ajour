@@ -71,7 +71,14 @@ pub async fn download_update_to_temp_file(
     bin_name: String,
     release: Release,
 ) -> Result<(String, PathBuf)> {
+    #[cfg(not(target_os = "linux"))]
     let current_bin_path = std::env::current_exe()?;
+
+    #[cfg(target_os = "linux")]
+    let current_bin_path = PathBuf::from(std::env::var("APPIMAGE").map_err(|e| {
+        ClientError::Custom(format!("error getting APPIMAGE env variable: {:?}", e))
+    })?);
+
     let current_bin_name = current_bin_path
         .file_name()
         .unwrap()

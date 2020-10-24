@@ -12,6 +12,8 @@ use ajour_core::fs::CONFIG_DIR;
 use ajour_core::Result;
 
 use std::env;
+#[cfg(target_os = "linux")]
+use std::path::PathBuf;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -125,7 +127,14 @@ fn setup_logger(is_cli: bool, is_debug: bool) -> Result<()> {
 }
 
 fn handle_self_update_temp(main_bin_name: &str) -> Result<()> {
+    #[cfg(not(target_os = "linux"))]
     let temp_bin = env::current_exe()?;
+
+    #[cfg(target_os = "linux")]
+    let temp_bin = PathBuf::from(std::env::var("APPIMAGE").map_err(|e| {
+        ClientError::Custom(format!("error getting APPIMAGE env variable: {:?}", e))
+    })?);
+
     let parent_dir = temp_bin.parent().unwrap();
 
     let main_bin = parent_dir.join(main_bin_name);
