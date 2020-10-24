@@ -477,25 +477,34 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         );
     }
 
-    // Filters the WowI ids.
-    let wowi_ids: Vec<_> = addon_folders
-        .iter()
-        .filter_map(|folder| {
-            if let Some(wowi_id) = folder.repository_identifiers.wowi.clone() {
-                Some(wowi_id)
-            } else {
-                None
-            }
-        })
-        .collect();
+    let mut wowi_ids = vec![];
+    // Filter wowi addons. We only support Retail since the API is limited to that.
+    if flavor.base_flavor() == Flavor::Retail {
+        wowi_ids = addon_folders
+            .iter()
+            .filter_map(|folder| {
+                if let (Some(wowi_id), None, None) = (
+                    folder.repository_identifiers.wowi.clone(),
+                    folder.repository_identifiers.curse.clone(),
+                    folder.repository_identifiers.tukui.clone(),
+                ) {
+                    Some(wowi_id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+    }
 
     log::debug!("{} - {} addons with wowi id", flavor, wowi_ids.len());
 
     let mut wowi_addons = vec![];
-    if let Ok(packages) = wowi_api::fetch_remote_packages(wowi_ids).await {
-        for package in packages {
-            let addon = Addon::from_wowi_package(package.id, &addon_folders, &package);
-            wowi_addons.push(addon);
+    if !wowi_ids.is_empty() {
+        if let Ok(packages) = wowi_api::fetch_remote_packages(wowi_ids).await {
+            for package in packages {
+                let addon = Addon::from_wowi_package(package.id, &addon_folders, &package);
+                wowi_addons.push(addon);
+            }
         }
     }
 
