@@ -8,8 +8,7 @@ use crate::{
     error::ClientError,
     fs::PersistentData,
     murmur2::calculate_hash,
-    tukui_api::fetch_remote_package,
-    Result,
+    tukui_api, wowi_api, Result,
 };
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
@@ -279,7 +278,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut tukui_addons = vec![];
     // Loops each tukui_id and fetch a remote package from their api.
     for id in tukui_ids {
-        if let Ok(package) = fetch_remote_package(&id, &flavor).await {
+        if let Ok(package) = tukui_api::fetch_remote_package(&id, &flavor).await {
             let addon = Addon::from_tukui_package(id.clone(), &addon_folders, &package);
 
             tukui_addons.push(addon);
@@ -478,8 +477,37 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         );
     }
 
+    // Filters the WowI ids.
+    let wowi_ids: Vec<_> = addon_folders
+        .iter()
+        .filter_map(|folder| {
+            if let Some(wowi_id) = folder.repository_identifiers.wowi.clone() {
+                Some(wowi_id)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    log::debug!("{} - {} addons with wowi id", flavor, wowi_ids.len());
+
+    let mut wowi_addons = vec![];
+    if let Ok(packages) = wowi_api::fetch_remote_packages(wowi_ids).await {
+        for package in packages {
+            let addon = Addon::from_wowi_package(package.id, &addon_folders, &package);
+            wowi_addons.push(addon);
+        }
+    }
+
+    log::debug!(
+        "{} - {} addons from wowi package metadata",
+        flavor,
+        wowi_addons.len()
+    );
+
     // Concats the different repo addons, and returns.
     let mut concatenated = [
+        &wowi_addons,
         &tukui_addons[..],
         &fingerprint_addons[..],
         &curse_id_only_addons[..],

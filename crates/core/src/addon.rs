@@ -1,4 +1,4 @@
-use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits};
+use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits, wowi_api};
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -268,6 +268,61 @@ impl Addon {
             #[cfg(feature = "gui")]
             pick_release_channel_state: Default::default(),
         }
+    }
+
+    /// Creates an `Addon` from the WowI package
+    pub fn from_wowi_package(
+        wowi_id: i64,
+        addon_folders: &[AddonFolder],
+        package: &wowi_api::WowIPackage,
+    ) -> Self {
+        let wowi_id = wowi_id.to_string();
+        let mut remote_packages = HashMap::new();
+        {
+            let version = package.version.clone();
+            let download_url = package.download_uri.clone();
+            let date_time = Utc.timestamp(package.last_update / 1000, 0);
+
+            let package = RemotePackage {
+                version,
+                download_url,
+                date_time: Some(date_time),
+                file_id: None,
+            };
+
+            // Since WowI does not support release channels, our default is 'stable'.
+            remote_packages.insert(ReleaseChannel::Stable, package);
+        }
+
+        // let website_url = Some(package.web_url.clone());
+
+        let mut metadata = RepositoryMetadata::empty();
+        // metadata.website_url = website_url;
+        metadata.remote_packages = remote_packages;
+
+        // Shouldn't panic since we only get `Package` for WowI id's in our
+        // parsed `AddonFolder`s
+        let primary_folder_id = addon_folders
+            .iter()
+            .find(|f| f.repository_identifiers.wowi == Some(wowi_id.clone()))
+            .map(|f| f.id.clone())
+            .unwrap_or_else(|| wowi_id.clone());
+
+        let mut addon = Addon::empty(&primary_folder_id);
+        addon.active_repository = Some(Repository::WowI);
+        addon.repository_identifiers.tukui = Some(wowi_id);
+        addon.repository_metadata = metadata;
+
+        // Get folders that match primary folder id or any folder that has a dependency
+        // of primary folder id
+        let folders = addon_folders
+            .iter()
+            .filter(|f| f.id == primary_folder_id || f.dependencies.contains(&primary_folder_id))
+            .cloned()
+            .collect();
+        addon.folders = folders;
+
+        addon
     }
 
     /// Creates an `Addon` from the Tukui package
