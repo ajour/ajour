@@ -485,7 +485,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             .filter_map(|folder| {
                 if let (Some(wowi_id), None, None) = (
                     folder.repository_identifiers.wowi.clone(),
-                    folder.repository_identifiers.curse.clone(),
+                    folder.repository_identifiers.curse,
                     folder.repository_identifiers.tukui.clone(),
                 ) {
                     Some(wowi_id)
