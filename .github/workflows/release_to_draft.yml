@@ -25,21 +25,29 @@ jobs:
 
           - target: linux-wgpu
             os: ubuntu-16.04
-            make: make binary appimage
+            make: make appimage
             binary_path: ajour.AppImage
           - target: linux-opengl
             os: ubuntu-16.04
-            make: make binary appimage OPENGL=1
+            make: make appimage OPENGL=1
             binary_path: ajour-opengl.AppImage
 
           - target: macos-wgpu
             os: macos-latest
-            make: make binary dmg MACOS=1
+            make: make dmg MACOS=1
             binary_path: target/release/osx/ajour.dmg
           - target: macos-opengl
             os: macos-latest
-            make: make binary dmg OPENGL=1 MACOS=1
+            make: make dmg OPENGL=1 MACOS=1
             binary_path: target/release/osx/ajour-opengl.dmg
+          - target: macos-wgpu-tar
+            os: macos-latest
+            make: make tar MACOS=1
+            binary_path: target/release/ajour.tar.gz
+          - target: macos-opengl-tar
+            os: macos-latest
+            make: make tar OPENGL=1 MACOS=1
+            binary_path: target/release/ajour.tar.gz
 
     runs-on: ${{ matrix.target.os }}
 
@@ -118,6 +126,14 @@ jobs:
             artifact_name: ajour-opengl.dmg
             asset_name: ajour-opengl.dmg
             asset_type: application/octet-stream
+          - artifact: macos-wgpu-tar
+            artifact_name: ajour.tar.gz
+            asset_name: ajour.tar.gz
+            asset_type: application/gzip
+          - artifact: macos-opengl-tar
+            artifact_name: ajour.tar.gz
+            asset_name: ajour-opengl.tar.gz
+            asset_type: application/gzip
 
     runs-on: ubuntu-latest
     env:
