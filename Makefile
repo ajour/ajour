@@ -15,6 +15,8 @@ APPIMAGE_DIR = $(RELEASE_DIR)/AppDir
 APPIMAGE_DESKTOP_FILE = $(RESOURCES_DIR)/linux/ajour.desktop
 APPIMAGE_LOGO_FILE = $(RESOURCES_DIR)/logo/256x256/ajour.png
 
+TAR_NAME = ajour.tar.gz
+
 DMG_NAME ?=
 DMG_DIR = $(RELEASE_DIR)/osx
 
@@ -43,6 +45,9 @@ vpath $(DMG_NAME) $(APP_DIR)
 binary: $(TARGET) ## Build release binary with cargo
 $(TARGET):
 	$(ENV) cargo build --release $(FEATURE_FLAG)
+
+tar: $(TARGET) ## Create tar.gz of the binary
+	cd $(RELEASE_DIR) && tar -czf $(TAR_NAME) $(TARGET)
 
 app: $(APP_NAME) ## Clone Ajour.app template and mount binary
 $(APP_NAME): $(TARGET)
@@ -74,7 +79,7 @@ $(APPIMAGE_NAME): $(TARGET)
 		--output appimage
 	@rm -rf $(APPIMAGE_DIR)
 
-.PHONY: app binary dmg appimage
+.PHONY: app binary dmg appimage tar
 
 clean: ## Remove all artifacts
 	-rm -rf $(APP_DIR)
