@@ -330,10 +330,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let path = wow_path_resolution(chosen_path);
             log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
 
-            // Clear addons.
-            ajour.addons = HashMap::new();
-
             if path.is_some() {
+                // Clear addons.
+                ajour.addons = HashMap::new();
                 // Update the path for World of Warcraft.
                 ajour.config.wow.directory = path;
                 // Persist the newly updated config.
