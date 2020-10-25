@@ -490,7 +490,11 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                     .any(|faf| faf.fingerprint == f.fingerprint)
             })
         })
-        .filter(|f| f.repository_identifiers.wowi.is_some())
+        .filter(|f| {
+            f.repository_identifiers.tukui.is_none()
+                && f.repository_identifiers.curse.is_none()
+                && f.repository_identifiers.wowi.is_some()
+        })
         .map(|f| f.repository_identifiers.wowi.clone().unwrap())
         .collect();
     wowi_ids_from_nonmatch.dedup();
