@@ -5,6 +5,7 @@
 ![Continuous integration](https://github.com/casperstorm/ajour/workflows/Continuous-integration/badge.svg)
 ![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
 [![Discord Server](https://img.shields.io/discord/757155234500968459?label=Discord%20Chat&labelColor=3C424A&logo=discord&logoColor=ffffff&color=7389D8)](https://discord.gg/4838t9R)
+[![Ajour on Patreon](https://img.shields.io/static/v1?label=Patreon&message=Ajour&color=4d898b)](https://www.patreon.com/getajour) 
 
 ![](./resources/screenshots/ajour-banner.jpg)
 
@@ -51,7 +52,7 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 - Bulk addon update without any limitations
 - Remove addons and their dependencies
 - Ignore addons you don't want to update
-- Supports both Retail and Classic version of World of Warcraft
+- Supports both Retail, Classic, PTR and Beta versions of World of Warcraft
 - 10+ handcrafted themes to choose between
   - [Ability to add your own custom themes](./THEMES.md)
 - Ability to backup your whole UI, including all settings from WTF

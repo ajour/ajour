@@ -9,13 +9,39 @@ on:
 
 jobs:
   
-  release:
-    name: "Release"
+  build:
+    name: "Build"
     strategy:
       matrix:
-        os: [windows, ubuntu, macos] 
-        gfx: [wgpu, opengl]
-    runs-on: ${{ matrix.os }}-latest
+        target:
+          - target: windows-wgpu
+            os: windows-latest
+            make: make binary
+            binary_path: target/release/ajour.exe
+          - target: windows-opengl
+            os: windows-latest
+            make: make binary OPENGL=1
+            binary_path: target/release/ajour.exe
+
+          - target: linux-wgpu
+            os: ubuntu-16.04
+            make: make binary appimage
+            binary_path: ajour.AppImage
+          - target: linux-opengl
+            os: ubuntu-16.04
+            make: make binary appimage OPENGL=1
+            binary_path: ajour-opengl.AppImage
+
+          - target: macos-wgpu
+            os: macos-latest
+            make: make binary dmg MACOS=1
+            binary_path: target/release/osx/ajour.dmg
+          - target: macos-opengl
+            os: macos-latest
+            make: make binary dmg OPENGL=1 MACOS=1
+            binary_path: target/release/osx/ajour-opengl.dmg
+
+    runs-on: ${{ matrix.target.os }}
 
     steps:
       - uses: actions/checkout@v2
@@ -25,67 +51,26 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: "Linux wgpu?"
-        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'wgpu' }} 
+      - name: "Do we need linuxdeploy?"
+        if: ${{ matrix.target.os == 'ubuntu-16.04' }} 
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
-          make binary appimage
-      - name: "Linux OpenGL?"
-        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'opengl' }} 
-        run: |
-          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          chmod +x linuxdeploy-x86_64.AppImage
-          make binary appimage OPENGL=1
 
-      - name: "MacOS wgpu?"
-        if: ${{ matrix.os == 'macos' && matrix.gfx == 'wgpu' }} 
-        run: make binary dmg MACOS=1
-      - name: "MacOS OpenGL?"
-        if: ${{ matrix.os == 'macos' && matrix.gfx == 'opengl' }} 
-        run: make binary dmg OPENGL=1 MACOS=1
+      - name: "Build"
+        run: ${{ matrix.target.make }}
 
-      - name: "Windows wgpu?"
-        if: ${{ matrix.os == 'windows' && matrix.gfx == 'wgpu' }}
-        run: make binary
-      - name: "Windows OpenGL?"
-        if: ${{ matrix.os == 'windows' && matrix.gfx == 'opengl' }} 
-        run: make binary OPENGL=1
-
-      - name: Upload AppImage wgpu
-        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'wgpu' }} 
+      - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
-          path: ajour.AppImage
-      - name: Upload AppImage OpenGL
-        if: ${{ matrix.os == 'ubuntu' && matrix.gfx == 'opengl' }} 
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
-          path: ajour-opengl.AppImage
-      - name: Upload dmg wgpu
-        if: ${{ matrix.os == 'macos' && matrix.gfx == 'wgpu' }} 
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
-          path: target/release/osx/ajour.dmg
-      - name: Upload dmg OpenGL
-        if: ${{ matrix.os == 'macos' && matrix.gfx == 'opengl' }} 
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
-          path: target/release/osx/ajour-opengl.dmg
-      - name: Upload exe
-        if: ${{ matrix.os == 'windows' }} 
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.os }}-${{ matrix.gfx }}-artifact
-          path: target/release/ajour.exe
+          name: ${{ matrix.target.target }}
+          path: ${{ matrix.target.binary_path }}
 
   create-release:
-    needs: release
+    needs: build
     name: "Create Release"
+    outputs:
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -100,53 +85,55 @@ jobs:
           draft: true
           prerelease: false
 
-      - name: Download all artifacts
+  add-assets:
+    needs: create-release
+    name: "Add Assets"
+
+    strategy:
+      matrix:
+        target:
+          - artifact: windows-wgpu
+            artifact_name: ajour.exe
+            asset_name: ajour.exe
+            asset_type: application/x-dosexec
+          - artifact: windows-opengl
+            artifact_name: ajour.exe
+            asset_name: ajour-opengl.exe
+            asset_type: application/x-dosexec
+
+          - artifact: linux-wgpu
+            artifact_name: ajour.AppImage
+            asset_name: ajour.AppImage
+            asset_type: application/x-executable
+          - artifact: linux-opengl
+            artifact_name: ajour-opengl.AppImage
+            asset_name: ajour-opengl.AppImage
+            asset_type: application/x-executable
+
+          - artifact: macos-wgpu
+            artifact_name: ajour.dmg
+            asset_name: ajour.dmg
+            asset_type: application/octet-stream
+          - artifact: macos-opengl
+            artifact_name: ajour-opengl.dmg
+            asset_name: ajour-opengl.dmg
+            asset_type: application/octet-stream
+
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Download artifact
         uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.target.artifact }}
+          path: ${{ matrix.target.artifact }}
 
-      - name: Upload Linux wgpu asset
+      - name: Upload asset
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./ubuntu-wgpu-artifact/ajour.AppImage
-          asset_name: ajour.AppImage
-          asset_content_type: application/x-executable
-
-      - name: Upload Linux OpenGL asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./ubuntu-opengl-artifact/ajour-opengl.AppImage
-          asset_name: ajour-opengl.AppImage
-          asset_content_type: application/x-executable
-
-      - name: Upload Windows wgpu asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./windows-wgpu-artifact/ajour.exe
-          asset_name: ajour.exe
-          asset_content_type: application/x-dosexec
-
-      - name: Upload Windows OpenGL asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./windows-opengl-artifact/ajour.exe
-          asset_name: ajour-opengl.exe
-          asset_content_type: application/x-dosexec
-
-      - name: Upload MacOS wgpu asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./macos-wgpu-artifact/ajour.dmg
-          asset_name: ajour.dmg
-          asset_content_type: application/octet-stream
-
-      - name: Upload MacOS OpenGL asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./macos-opengl-artifact/ajour-opengl.dmg
-          asset_name: ajour-opengl.dmg
-          asset_content_type: application/octet-stream
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./${{ matrix.target.artifact }}/${{ matrix.target.artifact_name }}
+          asset_name: ${{ matrix.target.asset_name }}
+          asset_content_type: ${{ matrix.target.asset_type }}

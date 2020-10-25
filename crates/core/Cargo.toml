@@ -42,7 +42,7 @@ fern = "0.6"
 walkdir = "2.3"
 retry = "1.1"
 
-iced_native = { git = "https://github.com/hecrj/iced.git", rev = "fb015a85d22a7c4632bd251127a89259bfd0c346", optional = true }
+iced_native = { git = "https://github.com/hecrj/iced.git", rev = "d3b04bf892ce63d3129686968039c258945c5b02", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 flate2 = "1.0"

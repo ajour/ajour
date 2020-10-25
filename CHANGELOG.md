@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+
+### Packaging
+- The linux `AppImage` release assets are now built on Ubuntu 16.04 (Xenial) to improve support.
+
+### Fixed
+- Fixed an issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.
+
+## [0.4.4] - 2020-10-23
+
 ### Fixed
 - Fixed issue where Tukui addons would delete dependency standalone addons during update.
 - Now correctly shows all sub-addons if they are a seperate addons.
