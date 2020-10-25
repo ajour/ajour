@@ -10,7 +10,7 @@ use isahc::prelude::*;
 use serde::{Deserialize, Serialize};
 
 const API_ENDPOINT: &str = "https://addons-ecs.forgesvc.net/api/v2";
-const FINGERPRINT_API_ENDPOINT: &str = "https://hub.dev.wowup.io/curseforge/addons/fingerprint";
+const FINGERPRINT_API_ENDPOINT: &str = "https://hub.wowup.io/curseforge/addons/fingerprint";
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

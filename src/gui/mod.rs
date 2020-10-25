@@ -236,10 +236,6 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Message> {
-        // Clone config to be used.
-        // FIXME: This could be done prettier.
-        let cloned_config = self.config.clone();
-
         // Get color palette of chosen theme.
         let color_palette = self
             .theme_state
@@ -292,7 +288,7 @@ impl Application for Ajour {
             let settings_container = element::settings_container(
                 color_palette,
                 &mut self.directory_btn_state,
-                &cloned_config,
+                &self.config,
                 &mut self.theme_state,
                 &mut self.scale_state,
                 &mut self.backup_state,
@@ -325,7 +321,7 @@ impl Application for Ajour {
                     &mut self.refresh_btn_state,
                     &self.state,
                     addons,
-                    &mut self.config,
+                    &self.config,
                 );
                 content = content.push(menu_addons_container);
 
@@ -624,7 +620,7 @@ pub fn run(opts: Opts) {
     settings.window.icon = Some(icon.unwrap());
 
     // Runs the GUI.
-    Ajour::run(settings);
+    Ajour::run(settings).expect("running Ajour gui");
 }
 
 #[derive(Debug, Clone)]

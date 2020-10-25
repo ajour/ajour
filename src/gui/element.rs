@@ -1123,7 +1123,7 @@ pub fn menu_addons_container<'a>(
     refresh_button_state: &'a mut button::State,
     state: &AjourState,
     addons: &[Addon],
-    config: &'a mut Config,
+    config: &Config,
 ) -> Container<'a, Message> {
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(35));
