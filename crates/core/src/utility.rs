@@ -4,10 +4,14 @@ use crate::Result;
 
 use isahc::prelude::*;
 use regex::Regex;
+use retry::delay::Fibonacci;
+use retry::{retry, Error as RetryError, OperationResult};
 use serde::Deserialize;
 
 use std::ffi::OsStr;
-use std::path::PathBuf;
+use std::fs;
+use std::io;
+use std::path::{Path, PathBuf};
 
 /// Takes a `&str` and strips any non-digit.
 /// This is used to unify and compare addon versions:
@@ -210,6 +214,36 @@ pub fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
     }
 
     None
+}
+
+/// Rename a file or directory to a new name, retrying if the operation fails because of permissions
+///
+/// Will retry for ~30 seconds with longer and longer delays between each, to allow for virus scan
+/// and other automated operations to complete.
+pub fn rename<F, T>(from: F, to: T) -> io::Result<()>
+where
+    F: AsRef<Path>,
+    T: AsRef<Path>,
+{
+    // 21 Fibonacci steps starting at 1 ms is ~28 seconds total
+    // See https://github.com/rust-lang/rustup/pull/1873 where this was used by Rustup to work around
+    // virus scanning file locks
+    let from = from.as_ref();
+    let to = to.as_ref();
+
+    retry(Fibonacci::from_millis(1).take(21), || {
+        match fs::rename(from, to) {
+            Ok(_) => OperationResult::Ok(()),
+            Err(e) => match e.kind() {
+                io::ErrorKind::PermissionDenied => OperationResult::Retry(e),
+                _ => OperationResult::Err(e),
+            },
+        }
+    })
+    .map_err(|e| match e {
+        RetryError::Operation { error, .. } => error,
+        RetryError::Internal(message) => io::Error::new(io::ErrorKind::Other, message),
+    })
 }
 
 #[cfg(test)]
