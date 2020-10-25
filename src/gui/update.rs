@@ -15,7 +15,7 @@ use {
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
         tukui_api,
         utility::wow_path_resolution,
-        Result,
+        wowi_api, Result,
     },
     async_std::sync::{Arc, Mutex},
     iced::{Command, Length},
@@ -438,7 +438,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                     ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
                                 return Ok(Command::perform(
                                     perform_fetch_curse_changelog(addon.clone(), *key, id, file_id),
-                                    Message::FetchedCurseChangelog,
+                                    Message::FetchedChangelog,
                                 ));
                             }
                         }
@@ -455,7 +455,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                         ajour.config.wow.flavor,
                                         *key,
                                     ),
-                                    Message::FetchedTukuiChangelog,
+                                    Message::FetchedChangelog,
+                                ));
+                            }
+                        }
+
+                        // If we have a Wowi addon.
+                        if addon.active_repository == Some(Repository::WowI) {
+                            if let Some(id) = addon.repository_id() {
+                                ajour.expanded_type =
+                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                                return Ok(Command::perform(
+                                    perform_fetch_wowi_changelog(addon.clone(), id, *key),
+                                    Message::FetchedChangelog,
                                 ));
                             }
                         }
@@ -1372,11 +1384,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 );
             }
         },
-        Message::FetchedTukuiChangelog((addon, key, result)) => {
-            log::debug!(
-                "Message::FetchedTukuiChangelog(error: {})",
-                &result.is_err()
-            );
+        Message::FetchedChangelog((addon, key, result)) => {
+            log::debug!("Message::FetchedChangelog(error: {})", &result.is_err());
             match result {
                 Ok((changelog, url)) => {
                     let payload = ChangelogPayload { changelog, url };
@@ -1384,25 +1393,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.expanded_type = ExpandType::Changelog(changelog);
                 }
                 Err(error) => {
-                    log::error!("Message::FetchedTukuiChangelog(error: {})", &error);
-                    ajour.expanded_type = ExpandType::None;
-                }
-            }
-        }
-        Message::FetchedCurseChangelog((addon, key, result)) => {
-            log::debug!(
-                "Message::FetchedCurseChangelog(error: {})",
-                &result.is_err()
-            );
-
-            match result {
-                Ok((changelog, url)) => {
-                    let payload = ChangelogPayload { changelog, url };
-                    let changelog = Changelog::Some(addon, payload, key);
-                    ajour.expanded_type = ExpandType::Changelog(changelog);
-                }
-                Err(error) => {
-                    log::error!("Message::FetchedCurseChangelog(error: {})", &error);
+                    log::error!("Message::FetchedChangelog(error: {})", &error);
                     ajour.expanded_type = ExpandType::None;
                 }
             }
@@ -1471,6 +1462,22 @@ async fn perform_fetch_curse_changelog(
     file_id: i64,
 ) -> (Addon, AddonVersionKey, Result<(String, String)>) {
     (addon, key, curse_api::fetch_changelog(id, file_id).await)
+}
+
+async fn perform_fetch_wowi_changelog(
+    addon: Addon,
+    id: String,
+    key: AddonVersionKey,
+) -> (Addon, AddonVersionKey, Result<(String, String)>) {
+    (
+        addon,
+        key,
+        Ok((
+            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
+                .to_owned(),
+            wowi_api::changelog_url(id),
+        )),
+    )
 }
 
 /// Downloads the newest version of the addon.

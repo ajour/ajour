@@ -9,6 +9,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+### Added
+- Ajour now has WoWInterface as a source.
+
 ### Fixed
 - Fixed an issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.
 

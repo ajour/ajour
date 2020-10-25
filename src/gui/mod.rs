@@ -114,8 +114,7 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
     CatalogInstallAddonFetched((Flavor, u32, Result<Addon>)),
-    FetchedCurseChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
-    FetchedTukuiChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
+    FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
 }
 
 pub struct Ajour {

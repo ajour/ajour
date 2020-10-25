@@ -324,7 +324,7 @@ impl Addon {
 
         let mut addon = Addon::empty(&primary_folder_id);
         addon.active_repository = Some(Repository::WowI);
-        addon.repository_identifiers.tukui = Some(wowi_id);
+        addon.repository_identifiers.wowi = Some(wowi_id);
         addon.repository_metadata = metadata;
 
         // Get folders that match primary folder id or any folder that has a dependency

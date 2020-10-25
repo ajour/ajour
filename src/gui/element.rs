@@ -519,6 +519,13 @@ pub fn addon_data_cell<'a, 'b>(
                 )));
         }
 
+        if addon_cloned.active_repository == Some(Repository::WowI) {
+            local_version_button =
+                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
+                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
+                )));
+        }
+
         // Lets check if addon is expanded, in changelog mode and local is shown.
         if is_addon_expanded {
             if let ExpandType::Changelog(Changelog::Some(_, _, k)) = expand_type {
@@ -577,6 +584,13 @@ pub fn addon_data_cell<'a, 'b>(
         if addon_cloned.active_repository == Some(Repository::Tukui)
             && addon_cloned.repository_id().is_some()
         {
+            remote_version_button =
+                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
+                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
+                )));
+        }
+
+        if addon_cloned.active_repository == Some(Repository::WowI) {
             remote_version_button =
                 remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
                     Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),

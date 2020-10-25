@@ -29,6 +29,11 @@ pub struct WowIPackage {
     pub description: String,
 }
 
+/// Returns changelog url for addon.
+pub fn changelog_url(id: String) -> String {
+    format!("{}{}/#changelog", ADDON_URL, id)
+}
+
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
 pub async fn fetch_remote_packages(ids: Vec<String>) -> Result<Vec<WowIPackage>> {
