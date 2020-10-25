@@ -479,30 +479,31 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         );
     }
 
-    let mut wowi_ids = vec![];
-    // Filter wowi addons. We only support Retail since the API is limited to that.
-    if flavor.base_flavor() == Flavor::Retail {
-        wowi_ids = addon_folders
-            .iter()
-            .filter_map(|folder| {
-                if let (Some(wowi_id), None, None) = (
-                    folder.repository_identifiers.wowi.clone(),
-                    folder.repository_identifiers.curse,
-                    folder.repository_identifiers.tukui.clone(),
-                ) {
-                    Some(wowi_id)
-                } else {
-                    None
-                }
+    // Addon folders that failed fingerprinting, but we can still build an addon
+    // using the wowi id from the `.toc`
+    let mut wowi_ids_from_nonmatch: Vec<_> = addon_folders
+        .iter()
+        .filter(|f| {
+            !fingerprint_addons.iter().any(|fa| {
+                fa.folders
+                    .iter()
+                    .any(|faf| faf.fingerprint == f.fingerprint)
             })
-            .collect();
-    }
+        })
+        .filter(|f| f.repository_identifiers.wowi.is_some())
+        .map(|f| f.repository_identifiers.wowi.clone().unwrap())
+        .collect();
+    wowi_ids_from_nonmatch.dedup();
 
-    log::debug!("{} - {} addons with wowi id", flavor, wowi_ids.len());
+    log::debug!(
+        "{} - {} addons with wowi id",
+        flavor,
+        wowi_ids_from_nonmatch.len()
+    );
 
     let mut wowi_addons = vec![];
-    if !wowi_ids.is_empty() {
-        if let Ok(packages) = wowi_api::fetch_remote_packages(wowi_ids).await {
+    if !wowi_ids_from_nonmatch.is_empty() {
+        if let Ok(packages) = wowi_api::fetch_remote_packages(wowi_ids_from_nonmatch).await {
             for package in packages {
                 let addon = Addon::from_wowi_package(package.id, &addon_folders, &package);
                 wowi_addons.push(addon);
@@ -518,7 +519,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Concats the different repo addons, and returns.
     let mut concatenated = [
-        &wowi_addons,
+        &wowi_addons[..],
         &tukui_addons[..],
         &fingerprint_addons[..],
         &curse_id_only_addons[..],
