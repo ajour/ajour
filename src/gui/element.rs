@@ -254,7 +254,7 @@ pub fn settings_container<'a, 'b>(
     let (columns_title_row, columns_scrollable) = {
         // Title for the Columns section.
         let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
-        let columns_title_row = Row::new().push(columns_title_text).padding(DEFAULT_PADDING);
+        let columns_title_row = Row::new().push(columns_title_text);
 
         // Scrollable for column selections
         let mut columns_scrollable = Scrollable::new(&mut column_settings.scrollable_state)
@@ -344,7 +344,6 @@ pub fn settings_container<'a, 'b>(
 
     // Colum wrapping all the settings content.
     let left_column = Column::new()
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(directory_info_text)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(path_data_row)
@@ -360,7 +359,6 @@ pub fn settings_container<'a, 'b>(
         .push(bottom_space);
 
     let middle_column = Column::new()
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_title_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_buttons_row)
@@ -389,7 +387,7 @@ pub fn settings_container<'a, 'b>(
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let right_container = Container::new(right_column)
         .width(Length::Units(200))
-        .height(Length::Units(265))
+        .height(Length::Units(268))
         .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
@@ -404,7 +402,7 @@ pub fn settings_container<'a, 'b>(
     Container::new(row)
         .height(Length::Shrink)
         .style(style::BrightForegroundContainer(color_palette))
-        .padding(DEFAULT_PADDING + DEFAULT_PADDING)
+        .padding(DEFAULT_PADDING)
 }
 
 pub fn addon_data_cell<'a, 'b>(
@@ -722,6 +720,32 @@ pub fn addon_data_cell<'a, 'b>(
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::Source && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let source_text = addon
+            .active_repository
+            .map_or_else(|| String::from("Unknown"), |a| a.to_string());
+        let source = Text::new(source_text).size(DEFAULT_FONT_SIZE);
+        let source_container = Container::new(source)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::NormalForegroundContainer(color_palette));
+
+        row_containers.push((idx, source_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
             if *key == ColumnKey::Status && !hidden {
                 Some((idx, width))
             } else {
@@ -795,7 +819,7 @@ pub fn addon_data_cell<'a, 'b>(
                 .center_x()
                 .padding(5)
                 .style(style::NormalForegroundContainer(color_palette)),
-            AddonState::Unknown => Container::new(Text::new("Unknown").size(DEFAULT_FONT_SIZE))
+            AddonState::Unknown => Container::new(Text::new("").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()

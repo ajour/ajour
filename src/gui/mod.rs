@@ -659,6 +659,7 @@ pub enum ColumnKey {
     Author,
     GameVersion,
     DateReleased,
+    Source,
 }
 
 impl ColumnKey {
@@ -674,6 +675,7 @@ impl ColumnKey {
             Author => "Author",
             GameVersion => "Game Version",
             DateReleased => "Latest Release",
+            Source => "Source",
         };
 
         title.to_string()
@@ -691,6 +693,7 @@ impl ColumnKey {
             Author => "author",
             GameVersion => "game_version",
             DateReleased => "date_released",
+            Source => "source",
         };
 
         s.to_string()
@@ -708,6 +711,7 @@ impl From<&str> for ColumnKey {
             "author" => ColumnKey::Author,
             "game_version" => ColumnKey::GameVersion,
             "date_released" => ColumnKey::DateReleased,
+            "source" => ColumnKey::Source,
             _ => panic!(format!("Unknown ColumnKey for {}", s)),
         }
     }
@@ -807,6 +811,13 @@ impl Default for HeaderState {
                     hidden: true,
                     order: 7,
                 },
+                ColumnState {
+                    key: ColumnKey::Source,
+                    btn_state: Default::default(),
+                    width: Length::Units(110),
+                    hidden: true,
+                    order: 8,
+                },
             ],
         }
     }
@@ -892,6 +903,12 @@ impl Default for ColumnSettings {
                 ColumnSettingState {
                     key: ColumnKey::DateReleased,
                     order: 7,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::Source,
+                    order: 8,
                     up_btn_state: Default::default(),
                     down_btn_state: Default::default(),
                 },

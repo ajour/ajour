@@ -89,11 +89,25 @@ pub struct RepositoryIdentifiers {
     pub curse: Option<u32>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
 pub enum Repository {
-    WowI,
-    Tukui,
     Curse,
+    Tukui,
+    WowI,
+}
+
+impl std::fmt::Display for Repository {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Repository::WowI => "WoWInterface",
+                Repository::Tukui => "Tukui",
+                Repository::Curse => "CurseForge",
+            }
+        )
+    }
 }
 
 /// Struct that stores the metadata parsed from an Addon folder's

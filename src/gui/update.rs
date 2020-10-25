@@ -1623,6 +1623,12 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
                     .reverse()
             });
         }
+        (ColumnKey::Source, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.active_repository.cmp(&b.active_repository))
+        }
+        (ColumnKey::Source, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.active_repository.cmp(&b.active_repository).reverse())
+        }
     }
 }
 
