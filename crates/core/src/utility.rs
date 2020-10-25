@@ -99,9 +99,7 @@ pub async fn download_update_to_temp_file(
     // that file and remove the archive.
     #[cfg(target_os = "macos")]
     {
-        let version = &release.tag_name;
-
-        let asset_name = format!("{}-{}-x86_64-apple-darwin.tar.gz", bin_name, version);
+        let asset_name = format!("{}-macos.tar.gz", bin_name);
 
         let asset = release
             .assets
@@ -155,7 +153,7 @@ pub async fn download_update_to_temp_file(
 
 /// Extracts the Ajour binary from a `tar.gz` archive to temp_file path
 #[cfg(target_os = "macos")]
-pub fn extract_binary_from_tar(
+fn extract_binary_from_tar(
     archive_path: &PathBuf,
     temp_file: &PathBuf,
     bin_name: &str,
