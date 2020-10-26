@@ -10,6 +10,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ## [Unreleased]
 ### Fixed
 - Cancelling when changing wow path will empty list 
+- Better changelog formatting
 ### Packaging
 - The linux `AppImage` release assets are now built on Ubuntu 16.04 (Xenial) to improve support.
 
