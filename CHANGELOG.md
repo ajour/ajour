@@ -9,6 +9,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Fixed
+- Some addons failed to install through the catalog.
 - Cancelling when changing wow path will empty list.
 - Fixed case-sensitive issue when sorting addons by title. 
 - Better addon changelog formatting.
