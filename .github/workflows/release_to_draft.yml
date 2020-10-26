@@ -69,7 +69,7 @@ jobs:
         if: ${{ matrix.target.os == 'macos-latest' }}
         run: |
           brew install gnu-tar
-          echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+          echo "/usr/local/opt/gnu-tar/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Build
         run: ${{ matrix.target.make }}
