@@ -10,7 +10,7 @@ on:
 jobs:
   
   build:
-    name: "Build"
+    name: Build
     strategy:
       matrix:
         target:
@@ -59,19 +59,19 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: "Do we need linuxdeploy?"
+      - name: Do we need linuxdeploy?
         if: ${{ matrix.target.os == 'ubuntu-16.04' }} 
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
 
       - name: Do we need GNU tar? # Fix for macos caching, https://github.com/actions/cache/issues/403
-        if: contains('${{ matrix.target.make }}',' tar')
+        if: ${{ matrix.target.os == 'macos-latest' }}
         run: |
           brew install gnu-tar
           echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
 
-      - name: "Build"
+      - name: Build
         run: ${{ matrix.target.make }}
 
       - name: Upload artifact
@@ -82,7 +82,7 @@ jobs:
 
   create-release:
     needs: build
-    name: "Create Release"
+    name: Create Release
     outputs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
     runs-on: ubuntu-latest
@@ -101,7 +101,7 @@ jobs:
 
   add-assets:
     needs: create-release
-    name: "Add Assets"
+    name: Add Assets
 
     strategy:
       matrix:
