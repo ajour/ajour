@@ -11,6 +11,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Fixed
 - Cancelling when changing wow path will empty list.
 - Fixed case-sensitive issue when sorting addons by title. 
+- Better addon changelog formatting.
+
 ### Packaging
 - The linux `AppImage` release assets are now built on Ubuntu 16.04 (Xenial) to improve support.
 
