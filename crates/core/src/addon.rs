@@ -779,6 +779,20 @@ impl Addon {
         false
     }
 
+    /// Returns the first release_package which is `Some`.
+    pub fn fallback_release_package(&self) -> Option<&RemotePackage> {
+        let remote_packages = &self.repository_metadata.remote_packages;
+        if let Some(stable_package) = remote_packages.get(&ReleaseChannel::Stable) {
+            Some(stable_package)
+        } else if let Some(beta_package) = remote_packages.get(&ReleaseChannel::Beta) {
+            Some(beta_package)
+        } else if let Some(alpha_package) = remote_packages.get(&ReleaseChannel::Alpha) {
+            Some(alpha_package)
+        } else {
+            None
+        }
+    }
+
     /// Returns the relevant release_package for the addon.
     /// Logic is that if a release channel above the selected is newer, we return that instead.
     pub fn relevant_release_package(&self) -> Option<&RemotePackage> {
