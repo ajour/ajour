@@ -28,7 +28,7 @@ pub fn regex_html_tags_to_newline() -> Regex {
 }
 
 pub fn regex_html_tags_to_space() -> Regex {
-    regex::Regex::new(r"&nbsp;|&quot;|&lt;|&gt;|&amp;|gt;|lt;|&#x27;|<.+?>").unwrap()
+    regex::Regex::new(r"<[^>]*>|&#?\w+;|\b[gl]t;").unwrap()
 }
 
 #[derive(Deserialize)]
