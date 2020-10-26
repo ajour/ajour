@@ -9,9 +9,16 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 ### Fixed
-- Cancelling when changing wow path will empty list 
+- Some addons failed to install through the catalog.
+- Cancelling when changing wow path will empty list.
+- Fixed case-sensitive issue when sorting addons by title. 
+- Better addon changelog formatting.
+
 ### Packaging
 - The linux `AppImage` release assets are now built on Ubuntu 16.04 (Xenial) to improve support.
+
+### Added
+- Ajour now has WoWInterface as a source.
 
 ### Fixed
 - Fixed an issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.

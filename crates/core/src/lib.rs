@@ -12,6 +12,7 @@ pub mod parse;
 pub mod theme;
 pub mod tukui_api;
 pub mod utility;
+pub mod wowi_api;
 
 use crate::error::ClientError;
 

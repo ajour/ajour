@@ -8,8 +8,7 @@ use crate::{
     error::ClientError,
     fs::PersistentData,
     murmur2::calculate_hash,
-    tukui_api::fetch_remote_package,
-    Result,
+    tukui_api, wowi_api, Result,
 };
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
@@ -279,7 +278,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut tukui_addons = vec![];
     // Loops each tukui_id and fetch a remote package from their api.
     for id in tukui_ids {
-        if let Ok(package) = fetch_remote_package(&id, &flavor).await {
+        if let Ok(package) = tukui_api::fetch_remote_package(&id, &flavor).await {
             let addon = Addon::from_tukui_package(id.clone(), &addon_folders, &package);
 
             tukui_addons.push(addon);
@@ -480,8 +479,51 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         );
     }
 
+    // Addon folders that failed fingerprinting, but we can still build an addon
+    // using the wowi id from the `.toc`
+    let mut wowi_ids_from_nonmatch: Vec<_> = addon_folders
+        .iter()
+        .filter(|f| {
+            !fingerprint_addons.iter().any(|fa| {
+                fa.folders
+                    .iter()
+                    .any(|faf| faf.fingerprint == f.fingerprint)
+            })
+        })
+        .filter(|f| {
+            f.repository_identifiers.tukui.is_none()
+                && f.repository_identifiers.curse.is_none()
+                && f.repository_identifiers.wowi.is_some()
+        })
+        .map(|f| f.repository_identifiers.wowi.clone().unwrap())
+        .collect();
+    wowi_ids_from_nonmatch.dedup();
+
+    log::debug!(
+        "{} - {} addons with wowi id",
+        flavor,
+        wowi_ids_from_nonmatch.len()
+    );
+
+    let mut wowi_addons = vec![];
+    if !wowi_ids_from_nonmatch.is_empty() {
+        if let Ok(packages) = wowi_api::fetch_remote_packages(wowi_ids_from_nonmatch).await {
+            for package in packages {
+                let addon = Addon::from_wowi_package(package.id, &addon_folders, &package);
+                wowi_addons.push(addon);
+            }
+        }
+    }
+
+    log::debug!(
+        "{} - {} addons from wowi package metadata",
+        flavor,
+        wowi_addons.len()
+    );
+
     // Concats the different repo addons, and returns.
     let mut concatenated = [
+        &wowi_addons[..],
         &tukui_addons[..],
         &fingerprint_addons[..],
         &curse_id_only_addons[..],
@@ -801,7 +843,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
 
     // TODO: We should save these somewere so we don't keep creating them.
     let re_toc = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
-    let re_title = regex::Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?").unwrap();
+    let re_title = regex::Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|?r?|\.?\|T[^|]*\|t").unwrap();
 
     for line in reader.lines().filter_map(|l| l.ok()) {
         for cap in re_toc.captures_iter(line.as_str()) {

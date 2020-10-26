@@ -64,7 +64,15 @@ pub async fn download_addon(
     addon: &Addon,
     to_directory: &PathBuf,
 ) -> Result<()> {
-    if let Some(package) = addon.relevant_release_package() {
+    let package = if let Some(relevant_package) = addon.relevant_release_package() {
+        Some(relevant_package)
+    } else if let Some(fallback_package) = addon.fallback_release_package() {
+        Some(fallback_package)
+    } else {
+        None
+    };
+
+    if let Some(package) = package {
         log::debug!(
             "downloading remote version {} for {}",
             package.version,
