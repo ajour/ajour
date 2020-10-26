@@ -65,8 +65,8 @@ jobs:
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
 
-      - name: Install GNU tar for macos # Fix for macos caching, https://github.com/actions/cache/issues/403
-        if: contains(${{ matrix.target.target }},"-tar")
+      - name: Do we need GNU tar? # Fix for macos caching, https://github.com/actions/cache/issues/403
+        if: contains('${{ matrix.target.make }}',' tar')
         run: |
           brew install gnu-tar
           echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
