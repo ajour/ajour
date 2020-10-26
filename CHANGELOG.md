@@ -8,12 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+### Fixed
+- Some addons failed to install through the catalog.
+- Cancelling when changing wow path will empty list.
+- Fixed case-sensitive issue when sorting addons by title. 
+- Better addon changelog formatting.
 
 ### Packaging
 - Ajour can now self update when a new release is available. An "Update" button will appear along with a message that a newer release is available. Clicking this button will automatically update Ajour and relaunch it as the newer version.
   - On windows, self update may fail if you've placed the executable in Program Files due to permissions. Either run as administrator or place the executable under your User folder. We recommend placing it as `%APPDATA%\ajour\ajour.exe` and pinning to the taskbar or creating a desktop shortcut.
   - On linux, self update only works when running from the AppImage.
 - The linux `AppImage` release assets are now built on Ubuntu 16.04 (Xenial) to improve support.
+
+### Added
+- Ajour now has WoWInterface as a source.
 
 ### Fixed
 - Fixed an issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.
