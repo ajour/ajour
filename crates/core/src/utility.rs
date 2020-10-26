@@ -59,7 +59,7 @@ pub async fn get_latest_release() -> Option<Release> {
 
     let mut resp = request_async(
         &client,
-        "https://api.github.com/repos/tarkah/ajour_self_update_test/releases/latest",
+        "https://api.github.com/repos/casperstorm/ajour/releases/latest",
         vec![],
         None,
     )
