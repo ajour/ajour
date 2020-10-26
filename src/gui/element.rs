@@ -4,8 +4,8 @@ use {
     super::{
         style, AddonVersionKey, AjourMode, AjourState, BackupState, CatalogColumnKey,
         CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog, ColumnKey, ColumnSettings,
-        ColumnState, DirectoryType, ExpandType, Interaction, Message, ReleaseChannel, ScaleState,
-        SortDirection, ThemeState,
+        ColumnState, DirectoryType, ExpandType, GameVersion, Interaction, Message, ReleaseChannel,
+        ScaleState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -1799,6 +1799,36 @@ pub fn catalog_data_cell<'a, 'b>(
             .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width))| {
+            if *key == CatalogColumnKey::GameVersion {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let game_version_text = addon_data
+            .game_versions
+            .iter()
+            .find(|gv| gv.flavor == config.wow.flavor.base_flavor())
+            .map(|gv| gv.game_version)
+            .unwrap_or("-".to_owned());
+
+        let game_version_text = Text::new(game_version_text).size(DEFAULT_FONT_SIZE);
+        let game_version_container = Container::new(game_version_text)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::NormalForegroundContainer(color_palette));
+
+        row_containers.push((idx, game_version_container));
     }
 
     if let Some((idx, width)) = column_config

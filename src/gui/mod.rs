@@ -929,6 +929,7 @@ pub enum CatalogColumnKey {
     Description,
     Source,
     NumDownloads,
+    GameVersion,
     DateReleased,
     Install,
 }
@@ -942,6 +943,7 @@ impl CatalogColumnKey {
             Description => "Description",
             Source => "Source",
             NumDownloads => "# Downloads",
+            GameVersion => "Game Version",
             DateReleased => "Latest Release",
             CatalogColumnKey::Install => "Status",
         };
@@ -957,6 +959,7 @@ impl CatalogColumnKey {
             Description => "description",
             Source => "source",
             NumDownloads => "num_downloads",
+            GameVersion => "game_version",
             DateReleased => "date_released",
             CatalogColumnKey::Install => "install",
         };
@@ -973,6 +976,7 @@ impl From<&str> for CatalogColumnKey {
             "source" => CatalogColumnKey::Source,
             "num_downloads" => CatalogColumnKey::NumDownloads,
             "install" => CatalogColumnKey::Install,
+            "game_version" => CatalogColumnKey::GameVersion,
             "date_released" => CatalogColumnKey::DateReleased,
             _ => panic!(format!("Unknown CatalogColumnKey for {}", s)),
         }
@@ -1016,6 +1020,11 @@ impl Default for CatalogHeaderState {
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::NumDownloads,
+                    btn_state: Default::default(),
+                    width: Length::Units(105),
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::GameVersion,
                     btn_state: Default::default(),
                     width: Length::Units(105),
                 },

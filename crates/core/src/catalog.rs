@@ -54,6 +54,12 @@ pub struct Catalog {
     pub addons: Vec<CatalogAddon>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct GameVersion {
+    pub flavor: Flavor,
+    pub game_version: String,
+}
+
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogAddon {
@@ -66,7 +72,9 @@ pub struct CatalogAddon {
     pub summary: String,
     pub number_of_downloads: u64,
     pub source: Source,
+    #[deprecated(since = "0.4.4", note = "Please use game_versions instead")]
     pub flavors: Vec<Flavor>,
+    pub game_versions: Vec<GameVersion>,
 }
 
 mod date_parser {
