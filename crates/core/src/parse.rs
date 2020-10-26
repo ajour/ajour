@@ -801,7 +801,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
 
     // TODO: We should save these somewere so we don't keep creating them.
     let re_toc = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
-    let re_title = regex::Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?").unwrap();
+    let re_title = regex::Regex::new(r"\|[a-fA-F\d]{9}([^|]+)\|r?|\.?\|T[^|]*\|t").unwrap();
 
     for line in reader.lines().filter_map(|l| l.ok()) {
         for cap in re_toc.captures_iter(line.as_str()) {
