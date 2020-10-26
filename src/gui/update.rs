@@ -1538,14 +1538,18 @@ async fn perform_fetch_latest_addon(
 fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {
     match (column_key, sort_direction) {
         (ColumnKey::Title, SortDirection::Asc) => {
-            addons.sort();
+            addons.sort_by(|a, b| a.title().to_lowercase().cmp(&b.title().to_lowercase()));
         }
         (ColumnKey::Title, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.title().cmp(&b.title()).reverse().then_with(|| {
-                    a.relevant_release_package()
-                        .cmp(&b.relevant_release_package())
-                })
+                a.title()
+                    .to_lowercase()
+                    .cmp(&b.title().to_lowercase())
+                    .reverse()
+                    .then_with(|| {
+                        a.relevant_release_package()
+                            .cmp(&b.relevant_release_package())
+                    })
             });
         }
         (ColumnKey::LocalVersion, SortDirection::Asc) => {
