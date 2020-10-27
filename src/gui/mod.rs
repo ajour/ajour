@@ -772,7 +772,7 @@ impl Default for HeaderState {
                 ColumnState {
                     key: ColumnKey::LocalVersion,
                     btn_state: Default::default(),
-                    width: Length::Units(150),
+                    width: Length::Fill,
                     hidden: false,
                     order: 1,
                 },
@@ -840,7 +840,7 @@ pub struct ColumnState {
 
 impl From<&ColumnState> for ColumnConfigV2 {
     fn from(column: &ColumnState) -> Self {
-        // Only `ColumnKey::Title` should be saved as Length::Fill -> width: None
+        // Only `ColumnKey::Description` should be saved as Length::Fill -> width: None
         let width = if let Length::Units(width) = column.width {
             Some(width)
         } else {
