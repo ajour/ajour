@@ -81,6 +81,7 @@ dependencies = [
  "dirs-next",
  "fancy-regex",
  "fern",
+ "flate2",
  "glob",
  "iced_native",
  "isahc",
@@ -88,9 +89,11 @@ dependencies = [
  "log",
  "rayon",
  "regex",
+ "retry",
  "serde",
  "serde_json",
  "serde_yaml",
+ "tar",
  "walkdir",
  "zip",
 ]
@@ -1072,6 +1075,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c9a4820f0ccc8a7afd67c39a0f1a0f4b07ca1725164271a64939d7aeb9af065"
 dependencies = [
  "log",
+]
+
+[[package]]
+name = "filetime"
+version = "0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ed85775dcc68644b5c950ac06a2b23768d3bc9390464151aaf27136998dcf9e"
+dependencies = [
+ "cfg-if 0.1.10",
+ "libc",
+ "redox_syscall",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -3022,6 +3037,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8cab7a364d15cde1e505267766a2d3c4e22a843e1a601f0fa7564c0f82ced11c"
 
 [[package]]
+name = "retry"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddadf3a46af916aa0fe6b8283e676b6bb5cbdf835d986d98a49d7345072341e5"
+dependencies = [
+ "rand 0.7.3",
+]
+
+[[package]]
 name = "rust-argon2"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3407,6 +3431,18 @@ dependencies = [
  "quote",
  "syn",
  "unicode-xid",
+]
+
+[[package]]
+name = "tar"
+version = "0.4.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "489997b7557e9a43e192c527face4feacc78bfbe6eed67fd55c4c9e381cba290"
+dependencies = [
+ "filetime",
+ "libc",
+ "redox_syscall",
+ "xattr",
 ]
 
 [[package]]
@@ -4181,6 +4217,15 @@ dependencies = [
  "libc",
  "maybe-uninit",
  "pkg-config",
+]
+
+[[package]]
+name = "xattr"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "244c3741f4240ef46274860397c7c74e50eb23624996930e484c16679633a54c"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

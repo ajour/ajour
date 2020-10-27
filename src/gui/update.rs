@@ -2,7 +2,8 @@ use {
     super::{
         AddonVersionKey, Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey,
         CatalogInstallStatus, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
-        DirectoryType, DownloadReason, ExpandType, Interaction, Message, SortDirection,
+        DirectoryType, DownloadReason, ExpandType, Interaction, Message, SelfUpdateStatus,
+        SortDirection,
     },
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
@@ -10,11 +11,12 @@ use {
         catalog,
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
         curse_api,
+        error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
         tukui_api,
-        utility::wow_path_resolution,
+        utility::{download_update_to_temp_file, wow_path_resolution},
         wowi_api, Result,
     },
     async_std::sync::{Arc, Mutex},
@@ -887,10 +889,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 addons.retain(|a| a.primary_folder_id != id)
             }
         }
-        Message::NeedsUpdate(Ok(newer_version)) => {
-            log::debug!("Message::NeedsUpdate({:?})", &newer_version);
+        Message::LatestRelease(release) => {
+            log::debug!(
+                "Message::LatestRelease({:?})",
+                release.as_ref().map(|r| &r.tag_name)
+            );
 
-            ajour.needs_update = newer_version;
+            ajour.self_update_state.latest_release = release;
         }
         Message::Interaction(Interaction::SortColumn(column_key)) => {
             // Close settings if shown.
@@ -1397,9 +1402,54 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
+        Message::Interaction(Interaction::UpdateAjour) => {
+            log::debug!("Interaction::UpdateAjour");
+
+            if let Some(release) = &ajour.self_update_state.latest_release {
+                let bin_name = bin_name().to_owned();
+
+                ajour.self_update_state.status = Some(SelfUpdateStatus::InProgress);
+
+                return Ok(Command::perform(
+                    download_update_to_temp_file(bin_name, release.clone()),
+                    Message::AjourUpdateDownloaded,
+                ));
+            }
+        }
+        Message::AjourUpdateDownloaded(result) => {
+            log::debug!("Message::AjourUpdateDownloaded");
+
+            match result {
+                Ok((current_bin_name, temp_bin_path)) => {
+                    // Remove first arg, which is path to binary. We don't use this first
+                    // arg as binary path because it's not reliable, per the docs.
+                    let mut args = std::env::args();
+                    args.next();
+
+                    match std::process::Command::new(&temp_bin_path)
+                        .args(args)
+                        .arg("--self-update-temp")
+                        .arg(&current_bin_name)
+                        .spawn()
+                    {
+                        Ok(_) => std::process::exit(0),
+                        Err(error) => {
+                            log::error!("{}", error);
+                            ajour.state = AjourState::Error(ClientError::from(error));
+                            ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
+                        }
+                    }
+                }
+                Err(error) => {
+                    log::error!("{}", error);
+
+                    ajour.state = AjourState::Error(error);
+                    ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
+                }
+            }
+        }
         Message::Error(error)
         | Message::Parse(Err(error))
-        | Message::NeedsUpdate(Err(error))
         | Message::CatalogDownloaded(Err(error)) => {
             log::error!("{}", error);
 
@@ -1785,5 +1835,39 @@ fn update_catalog_install_status(
         .find(|(f, i, _)| flavor == *f && repository_id == Some(i.to_string()))
     {
         *status = new_status;
+    }
+}
+
+/// Hardcoded binary names for each compilation target
+/// that gets published to the Github Release
+const fn bin_name() -> &'static str {
+    #[cfg(all(target_os = "windows", feature = "opengl"))]
+    {
+        "ajour-opengl.exe"
+    }
+
+    #[cfg(all(target_os = "windows", feature = "wgpu"))]
+    {
+        "ajour.exe"
+    }
+
+    #[cfg(all(target_os = "macos", feature = "opengl"))]
+    {
+        "ajour-opengl"
+    }
+
+    #[cfg(all(target_os = "macos", feature = "wgpu"))]
+    {
+        "ajour"
+    }
+
+    #[cfg(all(target_os = "linux", feature = "opengl"))]
+    {
+        "ajour-opengl.AppImage"
+    }
+
+    #[cfg(all(target_os = "linux", feature = "wgpu"))]
+    {
+        "ajour.AppImage"
     }
 }
