@@ -85,25 +85,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     });
 
-                    ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
                     ajour.column_settings.columns.iter_mut().for_each(|a| {
                         if let Some(idx) = columns
                             .iter()
@@ -121,37 +102,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     });
 
-                    ajour
-                        .catalog_column_settings
-                        .columns
-                        .iter_mut()
-                        .for_each(|a| {
-                            if let Some(idx) = columns
-                                .iter()
-                                .enumerate()
-                                .filter_map(|(idx, column)| {
-                                    if column.key == a.key.as_string() {
-                                        Some(idx)
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .next()
-                            {
-                                a.order = idx;
-                            }
-                        });
-
                     // My Addons
                     ajour.header_state.columns.sort_by_key(|c| c.order);
                     ajour.column_settings.columns.sort_by_key(|c| c.order);
-
-                    // Catalog
-                    ajour.catalog_header_state.columns.sort_by_key(|c| c.order);
-                    ajour
-                        .catalog_column_settings
-                        .columns
-                        .sort_by_key(|c| c.order);
                 }
                 ColumnConfig::V3 {
                     my_addons_columns,
@@ -198,7 +151,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         .columns
                         .iter_mut()
                         .for_each(|a| {
-                            if let Some(idx) = my_addons_columns
+                            if let Some(idx) = catalog_columns
                                 .iter()
                                 .enumerate()
                                 .filter_map(|(idx, column)| {
@@ -1133,18 +1086,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
 
-                    if let Some(column) =
-                        ajour.catalog_header_state.columns.iter_mut().find(|c| {
-                            c.key == left_key && left_key != CatalogColumnKey::Description
-                        })
+                    if let Some(column) = ajour
+                        .catalog_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == left_key && left_key != CatalogColumnKey::Title)
                     {
                         column.width = Length::Units(left_width);
                     }
 
-                    if let Some(column) =
-                        ajour.catalog_header_state.columns.iter_mut().find(|c| {
-                            c.key == right_key && right_key != CatalogColumnKey::Description
-                        })
+                    if let Some(column) = ajour
+                        .catalog_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == right_key && right_key != CatalogColumnKey::Title)
                     {
                         column.width = Length::Units(right_width);
                     }
