@@ -8,13 +8,14 @@ use {
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
         backup::{backup_folders, latest_backup, BackupFolder},
+        cache::{update_addon_cache, AddonCacheEntry, FingerprintCache},
         catalog,
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
         curse_api,
         error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
-        parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
+        parse::{read_addon_directory, update_addon_fingerprint},
         tukui_api,
         utility::{download_update_to_temp_file, wow_path_resolution},
         wowi_api, Result,
@@ -30,6 +31,16 @@ use {
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
+        Message::CachesLoaded(result) => {
+            log::debug!("Message::CachesLoaded(error: {})", result.is_err());
+
+            if let Ok((fingerprint_cache, addon_cache)) = result {
+                ajour.fingerprint_cache = Some(Arc::new(Mutex::new(fingerprint_cache)));
+                ajour.addon_cache = Some(Arc::new(Mutex::new(addon_cache)));
+            }
+
+            return Ok(Command::perform(load_config(), Message::Parse));
+        }
         Message::Parse(Ok(config)) => {
             log::debug!("Message::Parse");
             log::debug!("config loaded:\n{:#?}", config);
@@ -203,7 +214,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     commands.push(Command::perform(
                         perform_read_addon_directory(
-                            ajour.fingerprint_collection.clone(),
+                            ajour.fingerprint_cache.clone(),
                             addon_directory.clone(),
                             *flavor,
                         ),
@@ -799,25 +810,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             addon.set_version(version);
                         }
 
-                        let mut commands = vec![];
+                        if let Some(cache) = ajour.fingerprint_cache.as_ref() {
+                            let mut commands = vec![];
 
-                        for folder in &addon.folders {
-                            commands.push(Command::perform(
-                                perform_hash_addon(
-                                    reason,
-                                    ajour
-                                        .config
-                                        .get_addon_directory_for_flavor(&flavor)
-                                        .expect("Expected a valid path"),
-                                    folder.id.clone(),
-                                    ajour.fingerprint_collection.clone(),
-                                    flavor,
-                                ),
-                                Message::UpdateFingerprint,
-                            ));
+                            for folder in &addon.folders {
+                                commands.push(Command::perform(
+                                    perform_hash_addon(
+                                        reason,
+                                        ajour
+                                            .config
+                                            .get_addon_directory_for_flavor(&flavor)
+                                            .expect("Expected a valid path"),
+                                        folder.id.clone(),
+                                        cache.clone(),
+                                        flavor,
+                                    ),
+                                    Message::UpdateFingerprint,
+                                ));
+                            }
+
+                            return Ok(Command::batch(commands));
                         }
-
-                        return Ok(Command::batch(commands));
                     }
                     Err(err) => {
                         ajour.state = AjourState::Error(err);
@@ -866,6 +879,21 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             flavor,
                             addon.repository_id(),
                         );
+                    }
+
+                    if let Some(addon_cache) = &ajour.addon_cache {
+                        let entry = AddonCacheEntry::from(addon as &_);
+
+                        // Add / update cache entry for addon if it's a Tukui
+                        // or WowI addon
+                        if addon.active_repository == Some(Repository::Tukui)
+                            || addon.active_repository == Some(Repository::WowI)
+                        {
+                            return Ok(Command::perform(
+                                update_addon_cache(addon_cache.clone(), entry, flavor),
+                                Message::AddonCacheUpdated,
+                            ));
+                        }
                     }
                 } else {
                     addon.state = AddonState::Ajour(Some("Error".to_owned()));
@@ -1448,9 +1476,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
+        Message::AddonCacheUpdated(Ok(entry)) => {
+            log::debug!("Message::AddonCacheUpdated({})", entry.title);
+        }
         Message::Error(error)
         | Message::Parse(Err(error))
-        | Message::CatalogDownloaded(Err(error)) => {
+        | Message::CatalogDownloaded(Err(error))
+        | Message::AddonCacheUpdated(Err(error)) => {
             log::error!("{}", error);
 
             ajour.state = AjourState::Error(error);
@@ -1481,13 +1513,13 @@ async fn open_directory() -> Option<PathBuf> {
 }
 
 async fn perform_read_addon_directory(
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: PathBuf,
     flavor: Flavor,
 ) -> (Flavor, Result<Vec<Addon>>) {
     (
         flavor,
-        read_addon_directory(fingerprint_collection, root_dir, flavor).await,
+        read_addon_directory(fingerprint_cache, root_dir, flavor).await,
     )
 }
 
@@ -1551,14 +1583,14 @@ async fn perform_hash_addon(
     reason: DownloadReason,
     addon_dir: impl AsRef<Path>,
     addon_id: String,
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    fingerprint_cache: Arc<Mutex<FingerprintCache>>,
     flavor: Flavor,
 ) -> (DownloadReason, Flavor, String, Result<()>) {
     (
         reason,
         flavor,
         addon_id.clone(),
-        update_addon_fingerprint(fingerprint_collection, flavor, addon_dir, addon_id).await,
+        update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id).await,
     )
 }
 

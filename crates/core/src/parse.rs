@@ -1,5 +1,6 @@
 use crate::{
     addon::{Addon, AddonFolder, AddonState, RepositoryIdentifiers},
+    cache::FingerprintCache,
     config::Flavor,
     curse_api::{
         fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
@@ -30,25 +31,6 @@ pub struct Fingerprint {
     pub title: String,
     pub hash: Option<u32>,
     pub modified: SystemTime,
-}
-
-#[derive(Serialize, Deserialize, Default)]
-pub struct FingerprintCollection(HashMap<Flavor, Vec<Fingerprint>>);
-
-impl FingerprintCollection {
-    fn get_mut_for_flavor(&mut self, flavor: Flavor) -> &mut Vec<Fingerprint> {
-        self.0.entry(flavor).or_default()
-    }
-}
-
-impl PersistentData for FingerprintCollection {
-    fn relative_path() -> PathBuf {
-        PathBuf::from("fingerprints.yml")
-    }
-}
-
-async fn load_fingerprint_collection() -> Result<FingerprintCollection> {
-    Ok(FingerprintCollection::load_or_default()?)
 }
 
 pub struct ParsingPatterns {
@@ -103,7 +85,7 @@ pub async fn file_parsing_regex() -> Result<ParsingPatterns> {
 }
 
 pub async fn read_addon_directory<P: AsRef<Path>>(
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: P,
     flavor: Flavor,
 ) -> Result<Vec<Addon>> {
@@ -149,15 +131,14 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         file_parsing_regex,
     } = file_parsing_regex().await?;
 
-    // Load fingerprint collection from memory else disk.
-    let mut collection_guard = fingerprint_collection.lock().await;
-
-    if collection_guard.is_none() {
-        *collection_guard = Some(load_fingerprint_collection().await?);
-    }
-
-    let fingerprint_collection = collection_guard.as_mut().unwrap();
-    let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
+    let mut fingerprint_cache = if let Some(fingerprint_cache) = fingerprint_cache {
+        Some(fingerprint_cache.lock_arc().await)
+    } else {
+        None
+    };
+    let mut fingerprints = fingerprint_cache
+        .as_mut()
+        .map(|c| c.get_mut_for_flavor(flavor));
 
     // Each addon dir mapped to fingerprint struct.
     let num_cached = AtomicUsize::new(0);
@@ -173,6 +154,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
             // If we have a stored fingerprint on disk, we use that.
             if let Some(fingerprint) = fingerprints
+                .as_ref()
+                .unwrap_or(&&mut vec![])
                 .iter()
                 .find(|f| &f.title == dir_name && f.modified == modified)
             {
@@ -207,7 +190,8 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     {
         let num_cached = num_cached.load(Ordering::Relaxed);
-        let change = fingerprints.len() as isize - new_fingerprints.len() as isize;
+        let change = fingerprints.as_ref().map(|f| f.len()).unwrap_or_default() as isize
+            - new_fingerprints.len() as isize;
         let removed = change.max(0);
         let added = change.min(0).abs();
 
@@ -222,10 +206,21 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         );
     }
 
-    // Update our in memory collection and save to disk.
-    fingerprints.drain(..);
-    fingerprints.extend(new_fingerprints.clone());
-    let _ = fingerprint_collection.save();
+    // Update our in memory collection. We must then drop it to get a reference
+    // to our fingerprint cache as this currently holds a mutable reference.
+    if let Some(fingerprints) = fingerprints.as_mut() {
+        fingerprints.drain(..);
+        fingerprints.extend(new_fingerprints.clone());
+    }
+    drop(fingerprints);
+
+    // Persist cache changes to disk
+    if let Some(fingerprint_cache) = fingerprint_cache.as_ref() {
+        let _ = fingerprint_cache.save();
+    }
+
+    // Drop Mutex guard, cache is no longer needed.
+    drop(fingerprint_cache);
 
     // Maps each `Fingerprint` to `AddonFolder`.
     let mut addon_folders: Vec<_> = all_dirs
@@ -257,9 +252,6 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         flavor,
         addon_folders.len()
     );
-
-    // Drop Mutex guard, collection is no longer needed
-    drop(collection_guard);
 
     // Filters the Tukui ids.
     let tukui_ids: Vec<_> = addon_folders
@@ -563,7 +555,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 }
 
 pub async fn update_addon_fingerprint(
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    fingerprint_cache: Arc<Mutex<FingerprintCache>>,
     flavor: Flavor,
     addon_dir: impl AsRef<Path>,
     addon_id: String,
@@ -587,34 +579,36 @@ pub async fn update_addon_fingerprint(
         &file_parsing_regex,
     ) {
         Ok(hash) => {
-            // Lock Mutex ensuring this is the only operation that can update the collection.
+            // Lock Mutex ensuring this is the only operation that can update the cache.
             // This is needed since during `Update All` we can have concurrent operations updating
-            // this collection and we need to ensure they don't overwrite eachother.
-            let mut collection_guard = fingerprint_collection.lock().await;
+            // this cache and we need to ensure they don't overwrite eachother.
+            let mut fingerprint_cache = fingerprint_cache.lock().await;
 
-            if collection_guard.is_none() {
-                *collection_guard = Some(load_fingerprint_collection().await?);
-            }
-
-            let fingerprint_collection = collection_guard.as_mut().unwrap();
-            let fingerprints = fingerprint_collection.get_mut_for_flavor(flavor);
+            let fingerprints = fingerprint_cache.get_mut_for_flavor(flavor);
             let modified = if let Ok(metadata) = addon_path.metadata() {
                 metadata.modified().unwrap_or_else(|_| SystemTime::now())
             } else {
                 SystemTime::now()
             };
 
-            fingerprints.iter_mut().for_each(|fingerprint| {
-                if fingerprint.title == addon_id {
-                    fingerprint.hash = Some(hash);
-                    fingerprint.modified = modified;
-                }
-            });
+            // If already in cache, update it. Otherwise add entry to cache
+            if let Some(fingerprint) = fingerprints.iter_mut().find(|f| f.title == addon_id) {
+                fingerprint.hash = Some(hash);
+                fingerprint.modified = modified;
+            } else {
+                let fingerprint = Fingerprint {
+                    title: addon_id.clone(),
+                    hash: Some(hash),
+                    modified,
+                };
 
-            // Persist collection to disk
-            let _ = fingerprint_collection.save();
+                fingerprints.push(fingerprint);
+            }
 
-            // Mutex guard is dropped, allowing other operations to work on FingerprintCollection
+            // Persist cache to disk
+            let _ = fingerprint_cache.save();
+
+            // Mutex guard is dropped, allowing other operations to work on FingerprintCache
         }
         Err(e) => {
             log::error!("fingerprinting failed for {:?}: {}", addon_path, e);

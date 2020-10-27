@@ -34,7 +34,7 @@ fn main() {
     let path = args.next().unwrap();
     let fingerprints_idx = args.position(|a| a == "--fingerprints");
 
-    let collection = if let Some(idx) = fingerprints_idx {
+    let fingerprint_cache = if let Some(idx) = fingerprints_idx {
         let path = args
             .nth(idx)
             .expect("--fingerprints must be followed by a path");
@@ -43,13 +43,13 @@ fn main() {
 
         let collection = serde_yaml::from_reader(&file).expect("not a valid fingerprints file");
 
-        Arc::new(Mutex::new(Some(collection)))
+        Some(Arc::new(Mutex::new(collection)))
     } else {
-        Arc::new(Mutex::new(None))
+        None
     };
 
     task::block_on(async move {
-        let addons = read_addon_directory(collection, &path, Flavor::Classic)
+        let addons = read_addon_directory(fingerprint_cache, &path, Flavor::Classic)
             .await
             .unwrap();
 

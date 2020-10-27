@@ -89,7 +89,7 @@ pub struct RepositoryIdentifiers {
     pub curse: Option<u32>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]
 pub enum Repository {
     Curse,
     Tukui,
@@ -356,7 +356,7 @@ impl Addon {
                         &format!("{} 00:00:00", &package.lastupdate),
                         "%Y-%m-%d %T",
                     ),
-                    Result::Ok,
+                    std::result::Result::Ok,
                 )
                 .map(|d| Utc.from_utc_datetime(&d))
                 .ok();

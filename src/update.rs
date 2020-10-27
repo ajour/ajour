@@ -3,11 +3,12 @@
 use crate::log_error;
 
 use ajour_core::addon::Addon;
+use ajour_core::cache::FingerprintCache;
 use ajour_core::config::{load_config, Flavor};
 use ajour_core::error::ClientError;
-use ajour_core::fs::install_addon;
+use ajour_core::fs::{install_addon, PersistentData};
 use ajour_core::network::download_addon;
-use ajour_core::parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection};
+use ajour_core::parse::{read_addon_directory, update_addon_fingerprint};
 use ajour_core::Result;
 
 use async_std::sync::{Arc, Mutex};
@@ -26,8 +27,8 @@ pub fn update_all_addons() -> Result<()> {
     task::block_on(async {
         let config = load_config().await?;
 
-        // Fingerprint cache will be fetched during `read_addon_directory`
-        let fingerprint_collection: Arc<Mutex<_>> = Default::default();
+        let fingerprint_cache: Arc<Mutex<_>> =
+            Arc::new(Mutex::new(FingerprintCache::load_or_default()?));
 
         let mut addons_to_update = vec![];
 
@@ -46,7 +47,7 @@ pub fn update_all_addons() -> Result<()> {
             let addon_directory = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| ClientError::Custom("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line.".to_string()))?;
 
             if let Ok(addons) =
-                read_addon_directory(fingerprint_collection.clone(), &addon_directory, *flavor)
+                read_addon_directory(Some(fingerprint_cache.clone()), &addon_directory, *flavor)
                     .await
             {
                 // Get any saved release channel preferences from config
@@ -85,7 +86,7 @@ pub fn update_all_addons() -> Result<()> {
                         if addon.is_updatable(package) {
                             addons_to_update.push((
                                 shared_client.clone(),
-                                fingerprint_collection.clone(),
+                                fingerprint_cache.clone(),
                                 *flavor,
                                 addon,
                                 temp_directory,
@@ -150,9 +151,9 @@ pub fn update_all_addons() -> Result<()> {
 ///
 /// Downloads the latest file, extracts it and refingerprints the addon, saving it to the cache.
 async fn update_addon(
-    (shared_client, fingerprint_collection, flavor, addon, temp_directory, addon_directory): (
+    (shared_client, fingerprint_cache, flavor, addon, temp_directory, addon_directory): (
         Arc<HttpClient>,
-        Arc<Mutex<Option<FingerprintCollection>>>,
+        Arc<Mutex<FingerprintCache>>,
         Flavor,
         Addon,
         PathBuf,
@@ -171,7 +172,7 @@ async fn update_addon(
     // Store all folder names
     folders_to_fingerprint.extend(addon.folders.iter().map(|f| {
         (
-            fingerprint_collection.clone(),
+            fingerprint_cache.clone(),
             flavor,
             &addon_directory,
             f.id.clone(),
@@ -180,8 +181,8 @@ async fn update_addon(
 
     // Call `update_addon_fingerprint` on each folder concurrently
     for result in join_all(folders_to_fingerprint.into_iter().map(
-        |(fingerprint_collection, flavor, addon_dir, addon_id)| {
-            update_addon_fingerprint(fingerprint_collection, flavor, addon_dir, addon_id)
+        |(fingerprint_cache, flavor, addon_dir, addon_id)| {
+            update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id)
         },
     ))
     .await

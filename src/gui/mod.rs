@@ -5,12 +5,14 @@ mod update;
 use crate::cli::Opts;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonVersionKey, ReleaseChannel},
+    cache::{
+        load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
+    },
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
-    config::{load_config, ColumnConfigV2, Config, Flavor},
+    config::{ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
-    parse::FingerprintCollection,
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
     Result,
@@ -95,6 +97,7 @@ pub enum Interaction {
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum Message {
+    CachesLoaded(Result<(FingerprintCache, AddonCache)>),
     DownloadedAddon((DownloadReason, Flavor, String, Result<()>)),
     Error(ClientError),
     Interaction(Interaction),
@@ -116,6 +119,7 @@ pub enum Message {
     CatalogInstallAddonFetched((Flavor, u32, Result<Addon>)),
     FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
     AjourUpdateDownloaded(Result<(String, PathBuf)>),
+    AddonCacheUpdated(Result<AddonCacheEntry>),
 }
 
 pub struct Ajour {
@@ -135,7 +139,8 @@ pub struct Ajour {
     update_all_btn_state: button::State,
     header_state: HeaderState,
     theme_state: ThemeState,
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
+    addon_cache: Option<Arc<Mutex<AddonCache>>>,
     retail_btn_state: button::State,
     retail_ptr_btn_state: button::State,
     retail_beta_btn_state: button::State,
@@ -178,7 +183,8 @@ impl Default for Ajour {
             update_all_btn_state: Default::default(),
             header_state: Default::default(),
             theme_state: Default::default(),
-            fingerprint_collection: Arc::new(Mutex::new(None)),
+            fingerprint_cache: None,
+            addon_cache: None,
             retail_btn_state: Default::default(),
             retail_ptr_btn_state: Default::default(),
             retail_beta_btn_state: Default::default(),
@@ -205,7 +211,7 @@ impl Application for Ajour {
 
     fn new(_flags: ()) -> (Self, Command<Message>) {
         let init_commands = vec![
-            Command::perform(load_config(), Message::Parse),
+            Command::perform(load_caches(), Message::CachesLoaded),
             Command::perform(get_latest_release(), Message::LatestRelease),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
             Command::perform(get_catalog(), Message::CatalogDownloaded),
@@ -1189,8 +1195,7 @@ impl CatalogSource {
         vec![
             CatalogSource::All,
             CatalogSource::Choice(catalog::Source::Curse),
-            // FIXME: Uncomment once Tukui catalog is enabled
-            //CatalogSource::Choice(catalog::Source::Tukui),
+            CatalogSource::Choice(catalog::Source::Tukui),
         ]
     }
 }
@@ -1290,4 +1295,11 @@ pub struct SelfUpdateState {
     latest_release: Option<utility::Release>,
     status: Option<SelfUpdateStatus>,
     btn_state: button::State,
+}
+
+async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {
+    let fingerprint_cache = load_fingerprint_cache().await?;
+    let addon_cache = load_addon_cache().await?;
+
+    Ok((fingerprint_cache, addon_cache))
 }
