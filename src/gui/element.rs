@@ -256,7 +256,7 @@ pub fn settings_container<'a, 'b>(
 
     let (columns_title_row, columns_scrollable) = {
         // Title for the Columns section.
-        let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
+        let columns_title_text = Text::new("My Addons Columns").size(DEFAULT_FONT_SIZE);
         let columns_title_row = Row::new().push(columns_title_text);
 
         // Scrollable for column selections
@@ -347,7 +347,7 @@ pub fn settings_container<'a, 'b>(
 
     let (catalog_columns_title_row, catalog_columns_scrollable) = {
         // Title for the Columns section.
-        let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
+        let columns_title_text = Text::new("Catalog Columns").size(DEFAULT_FONT_SIZE);
         let columns_title_row = Row::new().push(columns_title_text);
 
         // Scrollable for column selections
@@ -478,20 +478,22 @@ pub fn settings_container<'a, 'b>(
 
     let my_addons_columns_column = Column::new()
         .push(columns_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(columns_scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let my_addons_columns_container = Container::new(my_addons_columns_column)
         .width(Length::Units(200))
-        .height(Length::Units(268))
+        .height(Length::Units(280))
         .style(style::BrightForegroundContainer(color_palette));
 
     let catalog_columns_column = Column::new()
         .push(catalog_columns_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(catalog_columns_scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let catalog_columns_container = Container::new(catalog_columns_column)
         .width(Length::Units(200))
-        .height(Length::Units(268))
+        .height(Length::Units(260))
         .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
