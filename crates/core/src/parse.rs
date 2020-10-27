@@ -253,49 +253,10 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         addon_folders.len()
     );
 
-    // Filters the Tukui ids.
-    let tukui_ids: Vec<_> = addon_folders
-        .iter()
-        .filter_map(|folder| {
-            if let Some(tukui_id) = folder.repository_identifiers.tukui.clone() {
-                Some(tukui_id)
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    log::debug!("{} - {} addons with tukui id", flavor, tukui_ids.len());
-
-    let mut tukui_addons = vec![];
-    // Loops each tukui_id and fetch a remote package from their api.
-    for id in tukui_ids {
-        if let Ok(package) = tukui_api::fetch_remote_package(&id, &flavor).await {
-            let addon = Addon::from_tukui_package(id.clone(), &addon_folders, &package);
-
-            tukui_addons.push(addon);
-        }
-    }
-
-    log::debug!(
-        "{} - {} addons from tukui package metadata",
-        flavor,
-        tukui_addons.len()
-    );
-
     // Filter out addons with fingerprints.
     let mut fingerprint_hashes: Vec<_> = addon_folders
         .iter()
-        .filter_map(|folder| {
-            // Removes any addon which has tukui_id.
-            if folder.repository_identifiers.tukui.is_some() {
-                None
-            } else if let Some(hash) = folder.fingerprint {
-                Some(hash)
-            } else {
-                None
-            }
-        })
+        .filter_map(|folder| folder.fingerprint)
         .collect();
     fingerprint_hashes.dedup();
 
@@ -390,9 +351,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
                     .any(|faf| faf.fingerprint == f.fingerprint)
             })
         })
-        .filter(|f| {
-            f.repository_identifiers.tukui.is_none() && f.repository_identifiers.curse.is_some()
-        })
+        .filter(|f| f.repository_identifiers.curse.is_some())
         .map(|f| f.repository_identifiers.curse.unwrap())
         .filter(|id| !curse_ids_from_match.contains(id))
         .collect();
@@ -470,6 +429,47 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
             created
         );
     }
+
+    // Addon folders that failed fingerprinting, but we can still build an addon
+    // using the tukui id from the `.toc`
+    let tukui_ids_from_nonmatch: Vec<_> = addon_folders
+        .iter()
+        .filter(|f| {
+            !fingerprint_addons.iter().any(|fa| {
+                fa.folders
+                    .iter()
+                    .any(|faf| faf.fingerprint == f.fingerprint)
+            })
+        })
+        .filter(|f| {
+            f.repository_identifiers.tukui.is_some()
+                && f.repository_identifiers.curse.is_none()
+                && f.repository_identifiers.wowi.is_none()
+        })
+        .map(|f| f.repository_identifiers.tukui.clone().unwrap())
+        .collect();
+
+    log::debug!(
+        "{} - {} addons with tukui id",
+        flavor,
+        tukui_ids_from_nonmatch.len()
+    );
+
+    let mut tukui_addons = vec![];
+    // Loops each tukui_id and fetch a remote package from their api.
+    for id in tukui_ids_from_nonmatch {
+        if let Ok(package) = tukui_api::fetch_remote_package(&id, &flavor).await {
+            let addon = Addon::from_tukui_package(id.clone(), &addon_folders, &package);
+
+            tukui_addons.push(addon);
+        }
+    }
+
+    log::debug!(
+        "{} - {} addons from tukui package metadata",
+        flavor,
+        tukui_addons.len()
+    );
 
     // Addon folders that failed fingerprinting, but we can still build an addon
     // using the wowi id from the `.toc`
