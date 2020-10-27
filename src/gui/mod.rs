@@ -82,8 +82,11 @@ pub enum Interaction {
     ScaleDown,
     Backup,
     ToggleColumn(bool, ColumnKey),
+    ToggleCatalogColumn(bool, CatalogColumnKey),
     MoveColumnLeft(ColumnKey),
     MoveColumnRight(ColumnKey),
+    MoveCatalogColumnLeft(CatalogColumnKey),
+    MoveCatalogColumnRight(CatalogColumnKey),
     ModeSelected(AjourMode),
     CatalogQuery(String),
     CatalogInstall(catalog::Source, Flavor, u32),
@@ -146,6 +149,7 @@ pub struct Ajour {
     scale_state: ScaleState,
     backup_state: BackupState,
     column_settings: ColumnSettings,
+    catalog_column_settings: CatalogColumnSettings,
     onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
     catalog_install_statuses: Vec<(Flavor, u32, CatalogInstallStatus)>,
@@ -190,6 +194,7 @@ impl Default for Ajour {
             scale_state: Default::default(),
             backup_state: Default::default(),
             column_settings: Default::default(),
+            catalog_column_settings: Default::default(),
             onboarding_directory_btn_state: Default::default(),
             catalog: None,
             catalog_install_statuses: vec![],
@@ -288,11 +293,14 @@ impl Application for Ajour {
                 color_palette,
                 &mut self.directory_btn_state,
                 &self.config,
+                &self.mode,
                 &mut self.theme_state,
                 &mut self.scale_state,
                 &mut self.backup_state,
                 &mut self.column_settings,
                 &column_config,
+                &mut self.catalog_column_settings,
+                &catalog_column_config,
             );
 
             // Space below settings.
@@ -991,8 +999,11 @@ pub struct CatalogHeaderState {
 }
 
 impl CatalogHeaderState {
-    fn column_config(&self) -> Vec<(CatalogColumnKey, Length)> {
-        self.columns.iter().map(|c| (c.key, c.width)).collect()
+    fn column_config(&self) -> Vec<(CatalogColumnKey, Length, bool)> {
+        self.columns
+            .iter()
+            .map(|c| (c.key, c.width, c.hidden))
+            .collect()
     }
 }
 
@@ -1006,37 +1017,51 @@ impl Default for CatalogHeaderState {
                 CatalogColumnState {
                     key: CatalogColumnKey::Title,
                     btn_state: Default::default(),
-                    width: Length::Units(150),
+                    width: Length::Fill,
+                    hidden: false,
+                    order: 0,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::Description,
                     btn_state: Default::default(),
-                    width: Length::Fill,
+                    width: Length::Units(150),
+                    hidden: false,
+                    order: 1,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::Source,
                     btn_state: Default::default(),
                     width: Length::Units(85),
+                    hidden: false,
+                    order: 2,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::NumDownloads,
                     btn_state: Default::default(),
                     width: Length::Units(105),
+                    hidden: true,
+                    order: 3,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::GameVersion,
                     btn_state: Default::default(),
                     width: Length::Units(105),
+                    hidden: true,
+                    order: 4,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::DateReleased,
                     btn_state: Default::default(),
                     width: Length::Units(105),
+                    hidden: false,
+                    order: 5,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::Install,
                     btn_state: Default::default(),
                     width: Length::Units(85),
+                    hidden: false,
+                    order: 6,
                 },
             ],
         }
@@ -1047,11 +1072,13 @@ pub struct CatalogColumnState {
     key: CatalogColumnKey,
     btn_state: button::State,
     width: Length,
+    hidden: bool,
+    order: usize,
 }
 
 impl From<&CatalogColumnState> for ColumnConfigV2 {
     fn from(column: &CatalogColumnState) -> Self {
-        // Only `CatalogColumnKey::Description` should be saved as Length::Fill -> width: None
+        // Only `CatalogColumnKey::Title` should be saved as Length::Fill -> width: None
         let width = if let Length::Units(width) = column.width {
             Some(width)
         } else {
@@ -1061,9 +1088,73 @@ impl From<&CatalogColumnState> for ColumnConfigV2 {
         ColumnConfigV2 {
             key: column.key.as_string(),
             width,
-            hidden: false,
+            hidden: column.hidden,
         }
     }
+}
+
+pub struct CatalogColumnSettings {
+    pub scrollable_state: scrollable::State,
+    pub columns: Vec<CatalogColumnSettingState>,
+}
+
+impl Default for CatalogColumnSettings {
+    fn default() -> Self {
+        CatalogColumnSettings {
+            scrollable_state: Default::default(),
+            columns: vec![
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Title,
+                    order: 0,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Description,
+                    order: 1,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Source,
+                    order: 2,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::NumDownloads,
+                    order: 3,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::GameVersion,
+                    order: 4,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::DateReleased,
+                    order: 5,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Install,
+                    order: 6,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+            ],
+        }
+    }
+}
+
+pub struct CatalogColumnSettingState {
+    pub key: CatalogColumnKey,
+    pub order: usize,
+    pub up_btn_state: button::State,
+    pub down_btn_state: button::State,
 }
 
 pub struct CatalogSearchState {

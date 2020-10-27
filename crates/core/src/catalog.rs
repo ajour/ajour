@@ -74,7 +74,8 @@ pub struct CatalogAddon {
     pub source: Source,
     #[deprecated(since = "0.4.4", note = "Please use game_versions instead")]
     pub flavors: Vec<Flavor>,
-    pub game_versions: Vec<GameVersion>,
+    // TODO: Waiting for ajour-catalog
+    // pub game_versions: Vec<GameVersion>,
 }
 
 mod date_parser {

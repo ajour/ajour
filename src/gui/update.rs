@@ -145,8 +145,29 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     });
 
+                    ajour
+                        .catalog_column_settings
+                        .columns
+                        .iter_mut()
+                        .for_each(|a| {
+                            if let Some(idx) = my_addons_columns
+                                .iter()
+                                .enumerate()
+                                .filter_map(|(idx, column)| {
+                                    if column.key == a.key.as_string() {
+                                        Some(idx)
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .next()
+                            {
+                                a.order = idx;
+                            }
+                        });
+
                     ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((_idx, column)) = catalog_columns
+                        if let Some((idx, column)) = catalog_columns
                             .iter()
                             .enumerate()
                             .filter_map(|(idx, column)| {
@@ -159,11 +180,21 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             .next()
                         {
                             a.width = column.width.map_or(Length::Fill, Length::Units);
+                            a.hidden = column.hidden;
+                            a.order = idx;
                         }
                     });
 
+                    // My Addons
                     ajour.header_state.columns.sort_by_key(|c| c.order);
                     ajour.column_settings.columns.sort_by_key(|c| c.order);
+
+                    // Catalog
+                    ajour.catalog_header_state.columns.sort_by_key(|c| c.order);
+                    ajour
+                        .catalog_column_settings
+                        .columns
+                        .sort_by_key(|c| c.order);
                 }
             }
 
@@ -1245,6 +1276,105 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .position(|c| c.key == key)
             {
                 ajour.column_settings.columns.swap(idx, idx + 1);
+            }
+        }
+        Message::Interaction(Interaction::ToggleCatalogColumn(is_checked, key)) => {
+            // We can't untoggle the addon title column
+            if key == CatalogColumnKey::Title {
+                return Ok(Command::none());
+            }
+
+            log::debug!(
+                "Interaction::ToggleCatalogColumn({}, {:?})",
+                is_checked,
+                key
+            );
+
+            if is_checked {
+                if let Some(column) = ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .find(|c| c.key == key)
+                {
+                    column.hidden = false;
+                }
+            } else if let Some(column) = ajour
+                .catalog_header_state
+                .columns
+                .iter_mut()
+                .find(|c| c.key == key)
+            {
+                column.hidden = true;
+            }
+
+            // Persist changes to config
+            save_column_configs(ajour);
+        }
+        Message::Interaction(Interaction::MoveCatalogColumnLeft(key)) => {
+            log::debug!("Interaction::MoveCatalogColumnLeft({:?})", key);
+
+            // Update header state ordering and save to config
+            if let Some(idx) = ajour
+                .catalog_header_state
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_header_state.columns.swap(idx, idx - 1);
+
+                ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, column)| column.order = idx);
+
+                // Persist changes to config
+                save_column_configs(ajour);
+            }
+
+            // Update column ordering in settings
+            if let Some(idx) = ajour
+                .catalog_column_settings
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_column_settings.columns.swap(idx, idx - 1);
+            }
+        }
+        Message::Interaction(Interaction::MoveCatalogColumnRight(key)) => {
+            log::debug!("Interaction::MoveCatalogColumnRight({:?})", key);
+
+            // Update header state ordering and save to config
+            if let Some(idx) = ajour
+                .catalog_header_state
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_header_state.columns.swap(idx, idx + 1);
+
+                ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, column)| column.order = idx);
+
+                // Persist changes to config
+                save_column_configs(ajour);
+            }
+
+            // Update column ordering in settings
+            if let Some(idx) = ajour
+                .catalog_column_settings
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_column_settings.columns.swap(idx, idx + 1);
             }
         }
         Message::CatalogDownloaded(Ok(catalog)) => {
