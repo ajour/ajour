@@ -15,6 +15,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Better addon changelog formatting.
 
 ### Packaging
+- Ajour can now self update when a new release is available. An "Update" button will appear along with a message that a newer release is available. Clicking this button will automatically update Ajour and relaunch it as the newer version.
+  - On windows, self update may fail if you've placed the executable in Program Files due to permissions. Either run as administrator or place the executable under your User folder. We recommend placing it as `%APPDATA%\ajour\ajour.exe` and pinning to the taskbar or creating a desktop shortcut.
+  - On linux, self update only works when running from the AppImage.
 - The linux `AppImage` release assets are now built on Ubuntu 16.04 (Xenial) to improve support.
 
 ### Added
@@ -70,6 +73,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
   - This is a breaking changes for old themes, which needs to be refactored to the new format. By default if the theme does not conform to the new format, Ajour will simply not try to parse it.
 - Added a command line option to update all addons with an update without launching the GUI. Process will exit after completing.
   - Use `ajour update` from command line
+- Ajour can now self update when a new release is available.
+  - User is presented with an "Update" buton instead of a "Download" button when a new release is available. Upon clicking, the new release will be downloaded in the background, replace the existing executable file, and will be relaunched as the new version.
 
 ### Fixed
 - Fixed a case where we would choose alpha even though it was older than stable.

@@ -3,7 +3,6 @@ mod style;
 mod update;
 
 use crate::cli::Opts;
-use crate::VERSION;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonVersionKey, ReleaseChannel},
     catalog::get_catalog,
@@ -13,7 +12,7 @@ use ajour_core::{
     fs::PersistentData,
     parse::FingerprintCollection,
     theme::{load_user_themes, Theme},
-    utility::needs_update,
+    utility::{self, get_latest_release},
     Result,
 };
 use async_std::sync::{Arc, Mutex};
@@ -93,6 +92,7 @@ pub enum Interaction {
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
     CatalogSourceSelected(CatalogSource),
+    UpdateAjour,
 }
 
 #[derive(Debug)]
@@ -101,7 +101,7 @@ pub enum Message {
     DownloadedAddon((DownloadReason, Flavor, String, Result<()>)),
     Error(ClientError),
     Interaction(Interaction),
-    NeedsUpdate(Result<Option<String>>),
+    LatestRelease(Option<utility::Release>),
     None(()),
     Parse(Result<Config>),
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
@@ -118,6 +118,7 @@ pub enum Message {
     CatalogDownloaded(Result<Catalog>),
     CatalogInstallAddonFetched((Flavor, u32, Result<Addon>)),
     FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
+    AjourUpdateDownloaded(Result<(String, PathBuf)>),
 }
 
 pub struct Ajour {
@@ -128,8 +129,7 @@ pub struct Ajour {
     directory_btn_state: button::State,
     expanded_type: ExpandType,
     is_showing_settings: bool,
-    needs_update: Option<String>,
-    new_release_button_state: button::State,
+    self_update_state: SelfUpdateState,
     refresh_btn_state: button::State,
     settings_btn_state: button::State,
     shared_client: Arc<HttpClient>,
@@ -167,8 +167,7 @@ impl Default for Ajour {
             directory_btn_state: Default::default(),
             expanded_type: ExpandType::None,
             is_showing_settings: false,
-            needs_update: None,
-            new_release_button_state: Default::default(),
+            self_update_state: Default::default(),
             refresh_btn_state: Default::default(),
             settings_btn_state: Default::default(),
             shared_client: Arc::new(
@@ -212,7 +211,7 @@ impl Application for Ajour {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         let init_commands = vec![
             Command::perform(load_config(), Message::Parse),
-            Command::perform(needs_update(VERSION), Message::NeedsUpdate),
+            Command::perform(get_latest_release(), Message::LatestRelease),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
             Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];
@@ -276,8 +275,7 @@ impl Application for Ajour {
             &mut self.retail_beta_btn_state,
             &mut self.classic_btn_state,
             &mut self.classic_ptr_btn_state,
-            self.needs_update.as_deref(),
-            &mut self.new_release_button_state,
+            &mut self.self_update_state,
         );
 
         let column_config = self.header_state.column_config();
@@ -1369,4 +1367,27 @@ pub struct BackupState {
 pub enum DownloadReason {
     Update,
     Install,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum SelfUpdateStatus {
+    InProgress,
+    Failed,
+}
+
+impl std::fmt::Display for SelfUpdateStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            SelfUpdateStatus::InProgress => "Updating",
+            SelfUpdateStatus::Failed => "Failed",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct SelfUpdateState {
+    latest_release: Option<utility::Release>,
+    status: Option<SelfUpdateStatus>,
+    btn_state: button::State,
 }
