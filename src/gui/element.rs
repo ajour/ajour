@@ -1771,8 +1771,9 @@ pub fn catalog_data_cell<'a, 'b>(
     let install_button_state = &mut addon.install_button_state;
 
     let flavor_exists_for_addon = addon_data
-        .flavors
-        .contains(&config.wow.flavor.base_flavor());
+        .game_versions
+        .iter()
+        .any(|gc| gc.flavor == config.wow.flavor.base_flavor());
 
     if let Some((idx, width)) = column_config
         .iter()
@@ -1929,15 +1930,14 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        // TODO: waiting for ajour-catalog
-        // let game_version_text = addon_data
-        //     .game_versions
-        //     .iter()
-        //     .find(|gv| gv.flavor == config.wow.flavor.base_flavor())
-        //     .map(|gv| gv.game_version.clone())
-        //     .unwrap_or("-".to_owned());
-        // let game_version_text = Text::new(game_version_text).size(DEFAULT_FONT_SIZE);
-        let game_version_text = Text::new("game version").size(DEFAULT_FONT_SIZE);
+        let game_version_text = addon_data
+            .game_versions
+            .iter()
+            .find(|gv| gv.flavor == config.wow.flavor.base_flavor())
+            .map(|gv| gv.game_version.clone())
+            .unwrap_or_else(|| "-".to_owned());
+
+        let game_version_text = Text::new(game_version_text).size(DEFAULT_FONT_SIZE);
         let game_version_container = Container::new(game_version_text)
             .height(default_height)
             .width(*width)

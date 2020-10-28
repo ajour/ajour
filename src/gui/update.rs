@@ -1779,6 +1779,7 @@ fn sort_catalog_addons(
     addons: &mut [CatalogRow],
     sort_direction: SortDirection,
     column_key: CatalogColumnKey,
+    flavor: &Flavor,
 ) {
     match (column_key, sort_direction) {
         (CatalogColumnKey::Title, SortDirection::Asc) => {
@@ -1822,8 +1823,16 @@ fn sort_catalog_addons(
         (CatalogColumnKey::DateReleased, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released).reverse());
         }
-        (CatalogColumnKey::GameVersion, SortDirection::Asc) => { /* TODO: Sort this. */ }
-        (CatalogColumnKey::GameVersion, SortDirection::Desc) => { /* TODO: Sort this. */ }
+        (CatalogColumnKey::GameVersion, SortDirection::Asc) => addons.sort_by(|a, b| {
+            let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            gv_a.cmp(&gv_b)
+        }),
+        (CatalogColumnKey::GameVersion, SortDirection::Desc) => addons.sort_by(|a, b| {
+            let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            gv_a.cmp(&gv_b).reverse()
+        }),
     }
 }
 
@@ -1842,6 +1851,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let mut catalog_rows: Vec<_> = catalog
             .addons
             .iter()
+            .filter(|a| !a.game_versions.is_empty())
             .filter(|a| {
                 let cleaned_text =
                     format!("{} {}", a.name.to_lowercase(), a.summary.to_lowercase());
@@ -1852,7 +1862,11 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     true
                 }
             })
-            .filter(|a| a.flavors.iter().any(|f| *f == flavor.base_flavor()))
+            .filter(|a| {
+                a.game_versions
+                    .iter()
+                    .any(|gc| gc.flavor == flavor.base_flavor())
+            })
             .filter(|a| match source {
                 CatalogSource::All => true,
                 CatalogSource::Choice(source) => a.source == *source,
@@ -1874,7 +1888,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .previous_column_key
             .unwrap_or(CatalogColumnKey::NumDownloads);
 
-        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key);
+        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key, flavor);
 
         catalog_rows = catalog_rows
             .into_iter()
