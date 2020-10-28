@@ -284,12 +284,17 @@ impl Addon {
         }
     }
 
-    /// Creates an `Addon` from the WowI package
-    pub fn from_wowi_package(
+    /// Updates an `Addon` from the WowI package.
+    ///
+    /// When addon_folders is passed, it will update the primary folder id and mapped
+    /// addon folders. This is only used when creating the addon via fallback measure.
+    /// WowI addons cached will have these updated from the cache.
+    pub fn update_with_wowi_package(
+        &mut self,
         wowi_id: i64,
-        addon_folders: &[AddonFolder],
         package: &wowi_api::WowIPackage,
-    ) -> Self {
+        addon_folders: Option<&[AddonFolder]>,
+    ) {
         let wowi_id = wowi_id.to_string();
         let mut remote_packages = HashMap::new();
         {
@@ -314,37 +319,45 @@ impl Addon {
         // metadata.website_url = website_url;
         metadata.remote_packages = remote_packages;
 
-        // Shouldn't panic since we only get `Package` for WowI id's in our
-        // parsed `AddonFolder`s
-        let primary_folder_id = addon_folders
-            .iter()
-            .find(|f| f.repository_identifiers.wowi == Some(wowi_id.clone()))
-            .map(|f| f.id.clone())
-            .unwrap_or_else(|| wowi_id.clone());
+        self.active_repository = Some(Repository::WowI);
+        self.repository_identifiers.wowi = Some(wowi_id.clone());
+        self.repository_metadata = metadata;
 
-        let mut addon = Addon::empty(&primary_folder_id);
-        addon.active_repository = Some(Repository::WowI);
-        addon.repository_identifiers.wowi = Some(wowi_id);
-        addon.repository_metadata = metadata;
+        if let Some(addon_folders) = addon_folders {
+            // Shouldn't panic since we only get `Package` for WowI id's in our
+            // parsed `AddonFolder`s
+            let primary_folder_id = addon_folders
+                .iter()
+                .find(|f| f.repository_identifiers.wowi == Some(wowi_id.clone()))
+                .map(|f| f.id.clone())
+                .unwrap_or_else(|| wowi_id);
+            self.primary_folder_id = primary_folder_id;
 
-        // Get folders that match primary folder id or any folder that has a dependency
-        // of primary folder id
-        let folders = addon_folders
-            .iter()
-            .filter(|f| f.id == primary_folder_id || f.dependencies.contains(&primary_folder_id))
-            .cloned()
-            .collect();
-        addon.folders = folders;
-
-        addon
+            // Get folders that match primary folder id or any folder that has a dependency
+            // of primary folder id
+            let folders = addon_folders
+                .iter()
+                .filter(|f| {
+                    f.id == self.primary_folder_id
+                        || f.dependencies.contains(&self.primary_folder_id)
+                })
+                .cloned()
+                .collect();
+            self.folders = folders;
+        }
     }
 
-    /// Creates an `Addon` from the Tukui package
-    pub fn from_tukui_package(
+    /// Updates an `Addon` from the Tukui package.
+    ///
+    /// When addon_folders is passed, it will update the primary folder id and mapped
+    /// addon folders. This is only used when creating the addon via fallback measure.
+    /// Tukui addons cached will have these updated from the cache.
+    pub fn update_with_tukui_package(
+        &mut self,
         tukui_id: String,
-        addon_folders: &[AddonFolder],
         package: &tukui_api::TukuiPackage,
-    ) -> Self {
+        addon_folders: Option<&[AddonFolder]>,
+    ) {
         let mut remote_packages = HashMap::new();
         {
             let version = package.version.clone();
@@ -380,29 +393,34 @@ impl Addon {
         metadata.game_version = game_version;
         metadata.remote_packages = remote_packages;
 
-        // Shouldn't panic since we only get `Package` for tukui id's in our
-        // parsed `AddonFolder`s
-        let primary_folder_id = addon_folders
-            .iter()
-            .find(|f| f.repository_identifiers.tukui == Some(tukui_id.clone()))
-            .map(|f| f.id.clone())
-            .unwrap_or_else(|| tukui_id.clone());
+        self.active_repository = Some(Repository::Tukui);
+        self.repository_identifiers.tukui = Some(tukui_id.clone());
+        self.repository_metadata = metadata;
 
-        let mut addon = Addon::empty(&primary_folder_id);
-        addon.active_repository = Some(Repository::Tukui);
-        addon.repository_identifiers.tukui = Some(tukui_id);
-        addon.repository_metadata = metadata;
+        // Only update when not a cached addon. When cached, we already assign
+        // the folders correctly
+        if let Some(addon_folders) = addon_folders {
+            // Shouldn't panic since we only get `Package` for tukui id's in our
+            // parsed `AddonFolder`s
+            let primary_folder_id = addon_folders
+                .iter()
+                .find(|f| f.repository_identifiers.tukui == Some(tukui_id.clone()))
+                .map(|f| f.id.clone())
+                .unwrap_or_else(|| tukui_id);
+            self.primary_folder_id = primary_folder_id;
 
-        // Get folders that match primary folder id or any folder that has a dependency
-        // of primary folder id
-        let folders = addon_folders
-            .iter()
-            .filter(|f| f.id == primary_folder_id || f.dependencies.contains(&primary_folder_id))
-            .cloned()
-            .collect();
-        addon.folders = folders;
-
-        addon
+            // Get folders that match primary folder id or any folder that has a dependency
+            // of primary folder id
+            let folders = addon_folders
+                .iter()
+                .filter(|f| {
+                    f.id == self.primary_folder_id
+                        || f.dependencies.contains(&self.primary_folder_id)
+                })
+                .cloned()
+                .collect();
+            self.folders = folders;
+        }
     }
 
     /// Creates an `Addon` from the Curse package. This is a fallback for when we don't

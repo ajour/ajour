@@ -2,11 +2,14 @@
 
 use crate::log_error;
 
-use ajour_core::addon::Addon;
-use ajour_core::cache::FingerprintCache;
+use ajour_core::addon::{Addon, Repository};
+use ajour_core::cache::{
+    load_addon_cache, load_fingerprint_cache, update_addon_cache, AddonCache, AddonCacheEntry,
+    FingerprintCache,
+};
 use ajour_core::config::{load_config, Flavor};
 use ajour_core::error::ClientError;
-use ajour_core::fs::{install_addon, PersistentData};
+use ajour_core::fs::install_addon;
 use ajour_core::network::download_addon;
 use ajour_core::parse::{read_addon_directory, update_addon_fingerprint};
 use ajour_core::Result;
@@ -28,7 +31,9 @@ pub fn update_all_addons() -> Result<()> {
         let config = load_config().await?;
 
         let fingerprint_cache: Arc<Mutex<_>> =
-            Arc::new(Mutex::new(FingerprintCache::load_or_default()?));
+            Arc::new(Mutex::new(load_fingerprint_cache().await?));
+
+        let addon_cache: Arc<Mutex<_>> = Arc::new(Mutex::new(load_addon_cache().await?));
 
         let mut addons_to_update = vec![];
 
@@ -46,9 +51,13 @@ pub fn update_all_addons() -> Result<()> {
             // Only returns None if the path isn't set in the config
             let addon_directory = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| ClientError::Custom("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line.".to_string()))?;
 
-            if let Ok(addons) =
-                read_addon_directory(Some(fingerprint_cache.clone()), &addon_directory, *flavor)
-                    .await
+            if let Ok(addons) = read_addon_directory(
+                Some(addon_cache.clone()),
+                Some(fingerprint_cache.clone()),
+                &addon_directory,
+                *flavor,
+            )
+            .await
             {
                 // Get any saved release channel preferences from config
                 let release_channels = config
@@ -86,6 +95,7 @@ pub fn update_all_addons() -> Result<()> {
                         if addon.is_updatable(package) {
                             addons_to_update.push((
                                 shared_client.clone(),
+                                addon_cache.clone(),
                                 fingerprint_cache.clone(),
                                 *flavor,
                                 addon,
@@ -105,7 +115,7 @@ pub fn update_all_addons() -> Result<()> {
 
         addons_to_update
             .iter()
-            .for_each(|(_, _, flavor, addon, ..)| {
+            .for_each(|(_, _, _, flavor, addon, ..)| {
                 let current_version = addon.version().unwrap_or_default();
                 let new_version = addon
                     .relevant_release_package()
@@ -151,8 +161,17 @@ pub fn update_all_addons() -> Result<()> {
 ///
 /// Downloads the latest file, extracts it and refingerprints the addon, saving it to the cache.
 async fn update_addon(
-    (shared_client, fingerprint_cache, flavor, addon, temp_directory, addon_directory): (
+    (
+        shared_client,
+        addon_cache,
+        fingerprint_cache,
+        flavor,
+        mut addon,
+        temp_directory,
+        addon_directory,
+    ): (
         Arc<HttpClient>,
+        Arc<Mutex<AddonCache>>,
         Arc<Mutex<FingerprintCache>>,
         Flavor,
         Addon,
@@ -164,7 +183,37 @@ async fn update_addon(
     download_addon(&shared_client, &addon, &temp_directory).await?;
 
     // Extracts addon from the downloaded archive to the addon directory and removes the archive
-    install_addon(&addon, &temp_directory, &addon_directory).await?;
+    let mut installed_folders = install_addon(&addon, &temp_directory, &addon_directory).await?;
+
+    // Update addon based on installed folders
+    {
+        installed_folders.sort_by(|a, b| a.id.cmp(&b.id));
+
+        // Assign the primary folder id based on the first folder alphabetically with
+        // a matching repository identifier otherwise just the first
+        // folder alphabetically
+        let primary_folder_id = if let Some(folder) = installed_folders.iter().find(|f| {
+            if let Some(repo) = addon.active_repository {
+                match repo {
+                    Repository::Curse => {
+                        addon.repository_id()
+                            == f.repository_identifiers.curse.as_ref().map(u32::to_string)
+                    }
+                    Repository::Tukui => addon.repository_id() == f.repository_identifiers.tukui,
+                    Repository::WowI => addon.repository_id() == f.repository_identifiers.wowi,
+                }
+            } else {
+                false
+            }
+        }) {
+            folder.id.clone()
+        } else {
+            //TODO: Can this crash? What do we do in that case.
+            installed_folders.get(0).map(|f| f.id.clone()).unwrap()
+        };
+        addon.primary_folder_id = primary_folder_id;
+        addon.folders = installed_folders;
+    }
 
     // Stores each folder name we need to fingerprint
     let mut folders_to_fingerprint = vec![];
@@ -191,6 +240,15 @@ async fn update_addon(
             // Log any errors fingerprinting the folder
             log_error(&e);
         }
+    }
+
+    // Update cache for addon
+    if addon.active_repository == Some(Repository::Tukui)
+        || addon.active_repository == Some(Repository::WowI)
+    {
+        let entry = AddonCacheEntry::from(&addon);
+
+        update_addon_cache(addon_cache, entry, flavor).await?;
     }
 
     Ok(())

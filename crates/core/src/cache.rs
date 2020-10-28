@@ -1,4 +1,4 @@
-use crate::addon::{Addon, Repository};
+use crate::addon::{Addon, AddonFolder, Repository};
 use crate::config::Flavor;
 use crate::fs::{config_dir, PersistentData};
 use crate::parse::Fingerprint;
@@ -115,4 +115,38 @@ impl From<&Addon> for AddonCacheEntry {
             modified: Utc::now(),
         }
     }
+}
+
+pub fn addon_from_cache(
+    flavor: Flavor,
+    entry: &AddonCacheEntry,
+    addon_folders: &[AddonFolder],
+) -> Option<Addon> {
+    let mut addon = Addon::empty(&entry.primary_folder_id);
+    addon.active_repository = Some(entry.repository);
+    addon.set_title(entry.title.clone());
+
+    match entry.repository {
+        Repository::Tukui => addon.repository_identifiers.tukui = Some(entry.repository_id.clone()),
+        Repository::WowI => addon.repository_identifiers.wowi = Some(entry.repository_id.clone()),
+        _ => return None,
+    }
+
+    addon.folders = addon_folders
+        .iter()
+        .filter(|folder| entry.folder_names.iter().any(|name| &folder.id == name))
+        .cloned()
+        .collect();
+
+    if addon.folders.len() != entry.folder_names.len() {
+        log::error!(
+            "{} - missing addon folders while rebuilding from cache\n{:?}",
+            flavor,
+            entry
+        );
+
+        return None;
+    }
+
+    Some(addon)
 }

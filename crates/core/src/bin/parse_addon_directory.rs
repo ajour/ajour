@@ -1,9 +1,12 @@
+use ajour_core::cache::load_addon_cache;
 use ajour_core::config::Flavor;
 use ajour_core::parse::read_addon_directory;
+
 use async_std::{
     sync::{Arc, Mutex},
     task,
 };
+
 use std::env;
 use std::fs::File;
 
@@ -49,7 +52,9 @@ fn main() {
     };
 
     task::block_on(async move {
-        let addons = read_addon_directory(fingerprint_cache, &path, Flavor::Classic)
+        let addon_cache = Some(Arc::new(Mutex::new(load_addon_cache().await.unwrap())));
+
+        let addons = read_addon_directory(addon_cache, fingerprint_cache, &path, Flavor::Classic)
             .await
             .unwrap();
 

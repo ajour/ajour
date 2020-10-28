@@ -8,7 +8,7 @@ use {
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
         backup::{backup_folders, latest_backup, BackupFolder},
-        cache::{update_addon_cache, AddonCacheEntry, FingerprintCache},
+        cache::{update_addon_cache, AddonCache, AddonCacheEntry, FingerprintCache},
         catalog,
         config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
         curse_api,
@@ -214,6 +214,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     commands.push(Command::perform(
                         perform_read_addon_directory(
+                            ajour.addon_cache.clone(),
                             ajour.fingerprint_cache.clone(),
                             addon_directory.clone(),
                             *flavor,
@@ -1513,13 +1514,14 @@ async fn open_directory() -> Option<PathBuf> {
 }
 
 async fn perform_read_addon_directory(
+    addon_cache: Option<Arc<Mutex<AddonCache>>>,
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: PathBuf,
     flavor: Flavor,
 ) -> (Flavor, Result<Vec<Addon>>) {
     (
         flavor,
-        read_addon_directory(fingerprint_cache, root_dir, flavor).await,
+        read_addon_directory(addon_cache, fingerprint_cache, root_dir, flavor).await,
     )
 }
 
