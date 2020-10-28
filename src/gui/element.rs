@@ -3,9 +3,9 @@
 use {
     super::{
         style, AddonVersionKey, AjourMode, AjourState, BackupState, CatalogColumnKey,
-        CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog, ColumnKey, ColumnSettings,
-        ColumnState, DirectoryType, ExpandType, Interaction, Message, ReleaseChannel, ScaleState,
-        SelfUpdateState, SortDirection, ThemeState,
+        CatalogColumnSettings, CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog,
+        ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType, Interaction, Message,
+        ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
