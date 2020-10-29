@@ -201,9 +201,9 @@ impl Default for Ajour {
 impl Application for Ajour {
     type Executor = iced::executor::Default;
     type Message = Message;
-    type Flags = ();
+    type Flags = f64;
 
-    fn new(_flags: ()) -> (Self, Command<Message>) {
+    fn new(scale: f64) -> (Self, Command<Message>) {
         let init_commands = vec![
             Command::perform(load_config(), Message::Parse),
             Command::perform(get_latest_release(), Message::LatestRelease),
@@ -211,7 +211,10 @@ impl Application for Ajour {
             Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];
 
-        (Ajour::default(), Command::batch(init_commands))
+        let mut ajour = Ajour::default();
+        ajour.scale_state.scale = scale;
+
+        (ajour, Command::batch(init_commands))
     }
 
     fn title(&self) -> String {
@@ -615,6 +618,8 @@ pub fn run(opts: Opts) {
     let (width, height) = image.dimensions();
     let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
     settings.window.icon = Some(icon.unwrap());
+
+    settings.flags = config.scale.unwrap_or(1.0);
 
     // Runs the GUI.
     Ajour::run(settings).expect("running Ajour gui");
