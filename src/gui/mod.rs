@@ -33,28 +33,33 @@ use widgets::header;
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
 
-#[derive(Debug)]
-pub enum AjourState {
-    Error(ClientError),
-    Idle,
+#[derive(Debug, Clone, PartialEq)]
+pub enum State {
+    Start,
+    Ready,
     Loading,
-    Welcome,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum AjourMode {
+impl Default for State {
+    fn default() -> Self {
+        State::Start
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Mode {
     MyAddons,
     Catalog,
 }
 
-impl std::fmt::Display for AjourMode {
+impl std::fmt::Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                AjourMode::MyAddons => "My Addons",
-                AjourMode::Catalog => "Catalog",
+                Mode::MyAddons => "My Addons",
+                Mode::Catalog => "Catalog",
             }
         )
     }
@@ -76,7 +81,7 @@ pub enum Interaction {
     SortColumn(ColumnKey),
     SortCatalogColumn(CatalogColumnKey),
     FlavorSelected(Flavor),
-    ResizeColumn(AjourMode, header::ResizeEvent),
+    ResizeColumn(Mode, header::ResizeEvent),
     ScaleUp,
     ScaleDown,
     Backup,
@@ -86,7 +91,7 @@ pub enum Interaction {
     MoveColumnRight(ColumnKey),
     MoveCatalogColumnLeft(CatalogColumnKey),
     MoveCatalogColumnRight(CatalogColumnKey),
-    ModeSelected(AjourMode),
+    ModeSelected(Mode),
     CatalogQuery(String),
     CatalogInstall(catalog::Source, Flavor, u32),
     CatalogCategorySelected(CatalogCategory),
@@ -122,6 +127,9 @@ pub enum Message {
 }
 
 pub struct Ajour {
+    state: HashMap<Mode, State>,
+    error: Option<String>,
+    mode: Mode,
     addons: HashMap<Flavor, Vec<Addon>>,
     addons_scrollable_state: scrollable::State,
     config: Config,
@@ -133,8 +141,6 @@ pub struct Ajour {
     refresh_btn_state: button::State,
     settings_btn_state: button::State,
     shared_client: Arc<HttpClient>,
-    state: AjourState,
-    mode: AjourMode,
     update_all_btn_state: button::State,
     header_state: HeaderState,
     theme_state: ThemeState,
@@ -160,6 +166,15 @@ pub struct Ajour {
 impl Default for Ajour {
     fn default() -> Self {
         Self {
+            state: [
+                (Mode::MyAddons, State::Loading),
+                (Mode::Catalog, State::Loading),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
+            error: None,
+            mode: Mode::MyAddons,
             addons: HashMap::new(),
             addons_scrollable_state: Default::default(),
             config: Config::default(),
@@ -177,8 +192,6 @@ impl Default for Ajour {
                     .build()
                     .unwrap(),
             ),
-            state: AjourState::Loading,
-            mode: AjourMode::MyAddons,
             update_all_btn_state: Default::default(),
             header_state: Default::default(),
             theme_state: Default::default(),
@@ -268,6 +281,7 @@ impl Application for Ajour {
             color_palette,
             &self.mode,
             &self.state,
+            &self.error,
             &self.config,
             &self.valid_flavors,
             &mut self.settings_btn_state,
@@ -315,7 +329,7 @@ impl Application for Ajour {
         content = content.push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
 
         match self.mode {
-            AjourMode::MyAddons => {
+            Mode::MyAddons => {
                 // Get mutable addons for current flavor.
                 let addons = self.addons.entry(flavor).or_default();
 
@@ -395,7 +409,7 @@ impl Application for Ajour {
                         .push(bottom_space)
                 }
             }
-            AjourMode::Catalog => {
+            Mode::Catalog => {
                 if let Some(catalog) = &self.catalog {
                     let default = vec![];
                     let addons = self.addons.get(&flavor).unwrap_or(&default);
@@ -544,44 +558,54 @@ impl Application for Ajour {
             }
         }
 
-        // Status messages.
-        let container: Option<Container<Message>> = match self.state {
-            AjourState::Welcome => Some(element::status_container(
-                color_palette,
-                "Welcome to Ajour!",
-                "Please select your World of Warcraft directory",
-                Some(&mut self.onboarding_directory_btn_state),
-            )),
-            AjourState::Idle => match self.mode {
-                AjourMode::MyAddons => {
-                    if !has_addons {
-                        Some(element::status_container(
-                            color_palette,
-                            "Woops!",
-                            &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
-                            None,
-                        ))
-                    } else {
-                        None
+        let container: Option<Container<Message>> = match self.mode {
+            Mode::MyAddons => {
+                let default = &State::default();
+                let state = self.state.get(&Mode::MyAddons).unwrap_or(default);
+                match state {
+                    State::Start => Some(element::status_container(
+                        color_palette,
+                        "Welcome to Ajour!",
+                        "Please select your World of Warcraft directory",
+                        Some(&mut self.onboarding_directory_btn_state),
+                    )),
+                    State::Loading => Some(element::status_container(
+                        color_palette,
+                        "Loading..",
+                        "Currently parsing addons.",
+                        None,
+                    )),
+                    State::Ready => {
+                        if !has_addons {
+                            Some(element::status_container(
+                                color_palette,
+                                "Woops!",
+                                &format!(
+                                    "You have no {} addons.",
+                                    flavor.to_string().to_lowercase()
+                                ),
+                                None,
+                            ))
+                        } else {
+                            None
+                        }
                     }
                 }
-                AjourMode::Catalog => None,
-            },
-            AjourState::Loading => match self.mode {
-                AjourMode::MyAddons => Some(element::status_container(
-                    color_palette,
-                    "Loading..",
-                    "Currently parsing addons.",
-                    None,
-                )),
-                AjourMode::Catalog => Some(element::status_container(
-                    color_palette,
-                    "Loading..",
-                    "Currently loading addon catalog.",
-                    None,
-                )),
-            },
-            _ => None,
+            }
+            Mode::Catalog => {
+                let default = &State::default();
+                let state = self.state.get(&Mode::Catalog).unwrap_or(default);
+                match state {
+                    State::Start => None,
+                    State::Loading => Some(element::status_container(
+                        color_palette,
+                        "Loading..",
+                        "Currently loading catalog.",
+                        None,
+                    )),
+                    State::Ready => None,
+                }
+            }
         };
 
         if let Some(c) = container {

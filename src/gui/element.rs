@@ -2,10 +2,10 @@
 
 use {
     super::{
-        style, AddonVersionKey, AjourMode, AjourState, BackupState, CatalogColumnKey,
-        CatalogColumnSettings, CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog,
-        ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType, Interaction, Message,
-        ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, ThemeState,
+        style, AddonVersionKey, BackupState, CatalogColumnKey, CatalogColumnSettings,
+        CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog, ColumnKey, ColumnSettings,
+        ColumnState, DirectoryType, ExpandType, Interaction, Message, Mode, ReleaseChannel,
+        ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -20,6 +20,7 @@ use {
         HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
     num_format::{Locale, ToFormattedString},
+    std::collections::HashMap,
     widgets::{header, Header},
 };
 
@@ -32,7 +33,7 @@ pub fn settings_container<'a, 'b>(
     color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
     config: &Config,
-    mode: &AjourMode,
+    mode: &Mode,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
@@ -501,10 +502,10 @@ pub fn settings_container<'a, 'b>(
 
     // Depending on mode, we show different columns to edit.
     match mode {
-        AjourMode::MyAddons => {
+        Mode::MyAddons => {
             row = row.push(my_addons_columns_container);
         }
-        AjourMode::Catalog => {
+        Mode::Catalog => {
             row = row.push(catalog_columns_container);
         }
     }
@@ -1266,7 +1267,7 @@ pub fn addon_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(AjourMode::MyAddons, event))
+        Message::Interaction(Interaction::ResizeColumn(Mode::MyAddons, event))
     })
 }
 
@@ -1275,10 +1276,14 @@ pub fn menu_addons_container<'a>(
     color_palette: ColorPalette,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
-    state: &AjourState,
+    state: &HashMap<Mode, State>,
     addons: &[Addon],
     config: &Config,
 ) -> Container<'a, Message> {
+    // MyAddons state.
+    let default = &State::default();
+    let state = state.get(&Mode::MyAddons).unwrap_or(default);
+
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(35));
 
@@ -1299,7 +1304,8 @@ pub fn menu_addons_container<'a>(
         .iter()
         .any(|a| matches!(a.state, AddonState::Downloading | AddonState::Unpacking));
 
-    let ajour_performing_actions = matches!(state, AjourState::Loading);
+    // TODO: Fix
+    let ajour_performing_actions = matches!(state, State::Loading);
 
     // Is any addon updtable.
     let any_addon_updatable = addons
@@ -1317,10 +1323,7 @@ pub fn menu_addons_container<'a>(
     // Enable refresh_button if:
     //   - No addon is performing any task.
     //   - Ajour isn't loading
-    if !addons_performing_actions
-        && !ajour_performing_actions
-        && !matches!(state, AjourState::Welcome)
-    {
+    if !addons_performing_actions && !ajour_performing_actions && !matches!(state, State::Start) {
         refresh_button = refresh_button.on_press(Interaction::Refresh);
     }
 
@@ -1336,7 +1339,7 @@ pub fn menu_addons_container<'a>(
         .count();
 
     let status_text = match state {
-        AjourState::Idle => Text::new(format!(
+        State::Ready => Text::new(format!(
             "{} {} addons loaded",
             parent_addons_count,
             config.wow.flavor.to_string()
@@ -1372,8 +1375,9 @@ pub fn menu_addons_container<'a>(
 #[allow(clippy::too_many_arguments)]
 pub fn menu_container<'a>(
     color_palette: ColorPalette,
-    mode: &AjourMode,
-    state: &AjourState,
+    mode: &Mode,
+    state: &HashMap<Mode, State>,
+    error: &Option<String>,
     config: &Config,
     valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,
@@ -1386,6 +1390,10 @@ pub fn menu_container<'a>(
     classic_ptr_btn_state: &'a mut button::State,
     self_update_state: &'a mut SelfUpdateState,
 ) -> Container<'a, Message> {
+    // State.
+    let default = &State::default();
+    let myaddons_state = state.get(&Mode::MyAddons).unwrap_or(default);
+
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(50));
 
@@ -1404,28 +1412,26 @@ pub fn menu_container<'a>(
     .style(style::DisabledDefaultButton(color_palette));
 
     match mode {
-        AjourMode::MyAddons => {
+        Mode::MyAddons => {
             addons_mode_button =
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
         }
-        AjourMode::Catalog => {
+        Mode::Catalog => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
         }
     }
 
-    // If we are onboarding, we disable the mode buttons and set proper styling.
-    if !matches!(state, AjourState::Welcome | AjourState::Loading) {
-        addons_mode_button =
-            addons_mode_button.on_press(Interaction::ModeSelected(AjourMode::MyAddons));
-        catalog_mode_button =
-            catalog_mode_button.on_press(Interaction::ModeSelected(AjourMode::Catalog));
-    } else {
+    if matches!(myaddons_state, State::Start) {
         addons_mode_button = addons_mode_button.style(style::DisabledDefaultButton(color_palette));
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
+    } else {
+        addons_mode_button = addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons));
+        catalog_mode_button =
+            catalog_mode_button.on_press(Interaction::ModeSelected(Mode::Catalog));
     }
 
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
@@ -1471,7 +1477,7 @@ pub fn menu_container<'a>(
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::ClassicPTR));
 
-    let disable_flavor_buttons = matches!(state, AjourState::Welcome | AjourState::Loading);
+    let disable_flavor_buttons = matches!(myaddons_state, State::Start | State::Loading);
 
     if !disable_flavor_buttons {
         match config.wow.flavor {
@@ -1554,8 +1560,8 @@ pub fn menu_container<'a>(
     }
 
     // Displays an error, if any has occured.
-    let error_text = if let AjourState::Error(e) = state {
-        Text::new(e.to_string()).size(DEFAULT_FONT_SIZE)
+    let error_text = if let Some(error) = error {
+        Text::new(error).size(DEFAULT_FONT_SIZE)
     } else {
         // Display nothing.
         Text::new("")
@@ -1676,7 +1682,7 @@ pub fn status_container<'a>(
         .push(Space::new(Length::Units(0), Length::Units(2)))
         .push(description_container);
 
-    if let (_, Some(btn_state)) = (AjourState::Welcome, onboarding_directory_btn_state) {
+    if let (_, Some(btn_state)) = (State::Start, onboarding_directory_btn_state) {
         let onboarding_button_title_container =
             Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
                 .width(Length::Units(100))
@@ -1764,7 +1770,7 @@ pub fn catalog_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(AjourMode::Catalog, event))
+        Message::Interaction(Interaction::ResizeColumn(Mode::Catalog, event))
     })
 }
 
