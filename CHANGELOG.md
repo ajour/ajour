@@ -22,6 +22,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - The linux `AppImage` release assets are now built on Ubuntu 16.04 (Xenial) to improve support.
 
 ### Added
+- You can now select which columns you want to see in the Catalog.
+- Game version has been added as a optional column to addons in the Catalog.
 - Ajour now has WoWInterface as a source.
 
 ### Fixed

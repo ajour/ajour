@@ -104,6 +104,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     });
 
+                    // My Addons
                     ajour.header_state.columns.sort_by_key(|c| c.order);
                     ajour.column_settings.columns.sort_by_key(|c| c.order);
                 }
@@ -147,8 +148,29 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     });
 
+                    ajour
+                        .catalog_column_settings
+                        .columns
+                        .iter_mut()
+                        .for_each(|a| {
+                            if let Some(idx) = catalog_columns
+                                .iter()
+                                .enumerate()
+                                .filter_map(|(idx, column)| {
+                                    if column.key == a.key.as_string() {
+                                        Some(idx)
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .next()
+                            {
+                                a.order = idx;
+                            }
+                        });
+
                     ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((_idx, column)) = catalog_columns
+                        if let Some((idx, column)) = catalog_columns
                             .iter()
                             .enumerate()
                             .filter_map(|(idx, column)| {
@@ -161,11 +183,21 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             .next()
                         {
                             a.width = column.width.map_or(Length::Fill, Length::Units);
+                            a.hidden = column.hidden;
+                            a.order = idx;
                         }
                     });
 
+                    // My Addons
                     ajour.header_state.columns.sort_by_key(|c| c.order);
                     ajour.column_settings.columns.sort_by_key(|c| c.order);
+
+                    // Catalog
+                    ajour.catalog_header_state.columns.sort_by_key(|c| c.order);
+                    ajour
+                        .catalog_column_settings
+                        .columns
+                        .sort_by_key(|c| c.order);
                 }
             }
 
@@ -1059,18 +1091,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
 
-                    if let Some(column) =
-                        ajour.catalog_header_state.columns.iter_mut().find(|c| {
-                            c.key == left_key && left_key != CatalogColumnKey::Description
-                        })
+                    if let Some(column) = ajour
+                        .catalog_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == left_key && left_key != CatalogColumnKey::Title)
                     {
                         column.width = Length::Units(left_width);
                     }
 
-                    if let Some(column) =
-                        ajour.catalog_header_state.columns.iter_mut().find(|c| {
-                            c.key == right_key && right_key != CatalogColumnKey::Description
-                        })
+                    if let Some(column) = ajour
+                        .catalog_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == right_key && right_key != CatalogColumnKey::Title)
                     {
                         column.width = Length::Units(right_width);
                     }
@@ -1250,6 +1284,105 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .position(|c| c.key == key)
             {
                 ajour.column_settings.columns.swap(idx, idx + 1);
+            }
+        }
+        Message::Interaction(Interaction::ToggleCatalogColumn(is_checked, key)) => {
+            // We can't untoggle the addon title column
+            if key == CatalogColumnKey::Title {
+                return Ok(Command::none());
+            }
+
+            log::debug!(
+                "Interaction::ToggleCatalogColumn({}, {:?})",
+                is_checked,
+                key
+            );
+
+            if is_checked {
+                if let Some(column) = ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .find(|c| c.key == key)
+                {
+                    column.hidden = false;
+                }
+            } else if let Some(column) = ajour
+                .catalog_header_state
+                .columns
+                .iter_mut()
+                .find(|c| c.key == key)
+            {
+                column.hidden = true;
+            }
+
+            // Persist changes to config
+            save_column_configs(ajour);
+        }
+        Message::Interaction(Interaction::MoveCatalogColumnLeft(key)) => {
+            log::debug!("Interaction::MoveCatalogColumnLeft({:?})", key);
+
+            // Update header state ordering and save to config
+            if let Some(idx) = ajour
+                .catalog_header_state
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_header_state.columns.swap(idx, idx - 1);
+
+                ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, column)| column.order = idx);
+
+                // Persist changes to config
+                save_column_configs(ajour);
+            }
+
+            // Update column ordering in settings
+            if let Some(idx) = ajour
+                .catalog_column_settings
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_column_settings.columns.swap(idx, idx - 1);
+            }
+        }
+        Message::Interaction(Interaction::MoveCatalogColumnRight(key)) => {
+            log::debug!("Interaction::MoveCatalogColumnRight({:?})", key);
+
+            // Update header state ordering and save to config
+            if let Some(idx) = ajour
+                .catalog_header_state
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_header_state.columns.swap(idx, idx + 1);
+
+                ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, column)| column.order = idx);
+
+                // Persist changes to config
+                save_column_configs(ajour);
+            }
+
+            // Update column ordering in settings
+            if let Some(idx) = ajour
+                .catalog_column_settings
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_column_settings.columns.swap(idx, idx + 1);
             }
         }
         Message::CatalogDownloaded(Ok(catalog)) => {
@@ -1696,6 +1829,7 @@ fn sort_catalog_addons(
     addons: &mut [CatalogRow],
     sort_direction: SortDirection,
     column_key: CatalogColumnKey,
+    flavor: &Flavor,
 ) {
     match (column_key, sort_direction) {
         (CatalogColumnKey::Title, SortDirection::Asc) => {
@@ -1739,6 +1873,16 @@ fn sort_catalog_addons(
         (CatalogColumnKey::DateReleased, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released).reverse());
         }
+        (CatalogColumnKey::GameVersion, SortDirection::Asc) => addons.sort_by(|a, b| {
+            let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            gv_a.cmp(&gv_b)
+        }),
+        (CatalogColumnKey::GameVersion, SortDirection::Desc) => addons.sort_by(|a, b| {
+            let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            gv_a.cmp(&gv_b).reverse()
+        }),
     }
 }
 
@@ -1757,6 +1901,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let mut catalog_rows: Vec<_> = catalog
             .addons
             .iter()
+            .filter(|a| !a.game_versions.is_empty())
             .filter(|a| {
                 let cleaned_text =
                     format!("{} {}", a.name.to_lowercase(), a.summary.to_lowercase());
@@ -1767,7 +1912,11 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     true
                 }
             })
-            .filter(|a| a.flavors.iter().any(|f| *f == flavor.base_flavor()))
+            .filter(|a| {
+                a.game_versions
+                    .iter()
+                    .any(|gc| gc.flavor == flavor.base_flavor())
+            })
             .filter(|a| match source {
                 CatalogSource::All => true,
                 CatalogSource::Choice(source) => a.source == *source,
@@ -1789,7 +1938,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .previous_column_key
             .unwrap_or(CatalogColumnKey::NumDownloads);
 
-        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key);
+        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key, flavor);
 
         catalog_rows = catalog_rows
             .into_iter()

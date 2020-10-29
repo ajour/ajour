@@ -3,9 +3,9 @@
 use {
     super::{
         style, AddonVersionKey, AjourMode, AjourState, BackupState, CatalogColumnKey,
-        CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog, ColumnKey, ColumnSettings,
-        ColumnState, DirectoryType, ExpandType, Interaction, Message, ReleaseChannel, ScaleState,
-        SelfUpdateState, SortDirection, ThemeState,
+        CatalogColumnSettings, CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog,
+        ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType, Interaction, Message,
+        ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -32,11 +32,14 @@ pub fn settings_container<'a, 'b>(
     color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
     config: &Config,
+    mode: &AjourMode,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
     column_settings: &'a mut ColumnSettings,
     column_config: &'b [(ColumnKey, Length, bool)],
+    catalog_column_settings: &'a mut CatalogColumnSettings,
+    catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
@@ -253,7 +256,7 @@ pub fn settings_container<'a, 'b>(
 
     let (columns_title_row, columns_scrollable) = {
         // Title for the Columns section.
-        let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
+        let columns_title_text = Text::new("My Addons Columns").size(DEFAULT_FONT_SIZE);
         let columns_title_row = Row::new().push(columns_title_text);
 
         // Scrollable for column selections
@@ -342,6 +345,98 @@ pub fn settings_container<'a, 'b>(
         (columns_title_row, columns_scrollable)
     };
 
+    let (catalog_columns_title_row, catalog_columns_scrollable) = {
+        // Title for the Columns section.
+        let columns_title_text = Text::new("Catalog Columns").size(DEFAULT_FONT_SIZE);
+        let columns_title_row = Row::new().push(columns_title_text);
+
+        // Scrollable for column selections
+        let mut columns_scrollable = Scrollable::new(&mut catalog_column_settings.scrollable_state)
+            .spacing(1)
+            .width(Length::Fill)
+            .height(Length::FillPortion(4))
+            .style(style::SecondaryScrollable(color_palette));
+
+        // Add each column to scrollable as checkbox + label + up / down buttons
+        let columns_len = catalog_column_settings.columns.len();
+        for (idx, column) in catalog_column_settings.columns.iter_mut().enumerate() {
+            let is_first = idx == 0;
+            let is_last = idx == columns_len - 1;
+
+            let title = column.key.title();
+
+            let column_key = column.key;
+
+            let is_checked = catalog_column_config
+                .iter()
+                .any(|(key, _, hidden)| key == &column.key && !hidden)
+                || column_key == CatalogColumnKey::Title;
+
+            let mut left_button = Button::new(
+                &mut column.up_btn_state,
+                Text::new(" ▲  ").size(11).color(if !is_first {
+                    color_palette.bright.primary
+                } else {
+                    color_palette.normal.primary
+                }),
+            )
+            .style(style::DefaultButton(color_palette));
+            if !is_first {
+                left_button = left_button.on_press(Interaction::MoveCatalogColumnLeft(column_key));
+            }
+
+            let mut right_button = Button::new(
+                &mut column.down_btn_state,
+                Text::new(" ▼  ").size(11).color(if !is_last {
+                    color_palette.bright.primary
+                } else {
+                    color_palette.normal.primary
+                }),
+            )
+            .style(style::DefaultButton(color_palette));
+            if !is_last {
+                right_button =
+                    right_button.on_press(Interaction::MoveCatalogColumnRight(column_key));
+            }
+
+            let left_button: Element<Interaction> = left_button.into();
+            let right_button: Element<Interaction> = right_button.into();
+
+            let left_button_container = Container::new(left_button.map(Message::Interaction))
+                .center_x()
+                .center_y();
+            let right_button_container = Container::new(right_button.map(Message::Interaction))
+                .center_x()
+                .center_y();
+
+            let mut checkbox = Checkbox::new(is_checked, title.clone(), move |is_checked| {
+                Message::Interaction(Interaction::ToggleCatalogColumn(is_checked, column_key))
+            })
+            .text_size(DEFAULT_FONT_SIZE)
+            .spacing(5);
+
+            if column_key == CatalogColumnKey::Title {
+                checkbox = checkbox.style(style::AlwaysCheckedCheckbox(color_palette));
+            } else {
+                checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
+            }
+
+            let checkbox_container = Container::new(checkbox).padding(5);
+
+            let row = Row::new()
+                .align_items(Align::Center)
+                .height(Length::Units(26))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(left_button_container)
+                .push(right_button_container)
+                .push(checkbox_container);
+
+            columns_scrollable = columns_scrollable.push(row);
+        }
+
+        (columns_title_row, columns_scrollable)
+    };
+
     // Colum wrapping all the settings content.
     let left_column = Column::new()
         .push(directory_info_text)
@@ -381,19 +476,40 @@ pub fn settings_container<'a, 'b>(
         .height(Length::Shrink)
         .style(style::BrightForegroundContainer(color_palette));
 
-    let right_column = Column::new()
+    let my_addons_columns_column = Column::new()
         .push(columns_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(columns_scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
-    let right_container = Container::new(right_column)
+    let my_addons_columns_container = Container::new(my_addons_columns_column)
         .width(Length::Units(200))
-        .height(Length::Units(268))
+        .height(Length::Units(280))
+        .style(style::BrightForegroundContainer(color_palette));
+
+    let catalog_columns_column = Column::new()
+        .push(catalog_columns_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(catalog_columns_scrollable)
+        .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
+    let catalog_columns_container = Container::new(catalog_columns_column)
+        .width(Length::Units(200))
+        .height(Length::Units(260))
         .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
-    let row = Row::new()
-        .push(left_spacer)
-        .push(right_container)
+    let mut row = Row::new().push(left_spacer);
+
+    // Depending on mode, we show different columns to edit.
+    match mode {
+        AjourMode::MyAddons => {
+            row = row.push(my_addons_columns_container);
+        }
+        AjourMode::Catalog => {
+            row = row.push(catalog_columns_container);
+        }
+    }
+
+    row = row
         .push(middle_container)
         .push(left_container)
         .push(right_spacer);
@@ -1597,7 +1713,7 @@ pub fn catalog_row_titles<'a>(
     // A row containing titles above the addon rows.
     let mut row_titles = vec![];
 
-    for column in column_state.iter_mut() {
+    for column in column_state.iter_mut().filter(|c| !c.hidden) {
         let column_key = column.key;
 
         let row_title = row_title(
@@ -1656,7 +1772,7 @@ pub fn catalog_data_cell<'a, 'b>(
     color_palette: ColorPalette,
     config: &Config,
     addon: &'a mut CatalogRow,
-    column_config: &'b [(CatalogColumnKey, Length)],
+    column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
     statuses: Vec<(Flavor, CatalogInstallStatus)>,
 ) -> Container<'a, Message> {
@@ -1669,14 +1785,15 @@ pub fn catalog_data_cell<'a, 'b>(
     let install_button_state = &mut addon.install_button_state;
 
     let flavor_exists_for_addon = addon_data
-        .flavors
-        .contains(&config.wow.flavor.base_flavor());
+        .game_versions
+        .iter()
+        .any(|gc| gc.flavor == config.wow.flavor.base_flavor());
 
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::Install {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::Install && !hidden {
                 Some((idx, width))
             } else {
                 None
@@ -1744,7 +1861,7 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
+        .filter_map(|(idx, (key, width, _))| {
             if *key == CatalogColumnKey::Title {
                 Some((idx, width))
             } else {
@@ -1771,8 +1888,8 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::Description {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::Description && !hidden {
                 Some((idx, width))
             } else {
                 None
@@ -1794,8 +1911,8 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::Source {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::Source && !hidden {
                 Some((idx, width))
             } else {
                 None
@@ -1818,8 +1935,38 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::DateReleased {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::GameVersion && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let game_version_text = addon_data
+            .game_versions
+            .iter()
+            .find(|gv| gv.flavor == config.wow.flavor.base_flavor())
+            .map(|gv| gv.game_version.clone())
+            .unwrap_or_else(|| "-".to_owned());
+
+        let game_version_text = Text::new(game_version_text).size(DEFAULT_FONT_SIZE);
+        let game_version_container = Container::new(game_version_text)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::NormalForegroundContainer(color_palette));
+
+        row_containers.push((idx, game_version_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::DateReleased && !hidden {
                 Some((idx, width))
             } else {
                 None
@@ -1848,8 +1995,8 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::NumDownloads {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::NumDownloads && !hidden {
                 Some((idx, width))
             } else {
                 None
