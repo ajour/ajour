@@ -13,6 +13,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Cancelling when changing wow path will empty list.
 - Fixed case-sensitive issue when sorting addons by title. 
 - Better addon changelog formatting.
+- Fixed bug on linux that caused window size to grow / shrink between sessions when a <>1.0 scale was set
 
 ### Packaging
 - Ajour can now self update when a new release is available. An "Update" button will appear along with a message that a newer release is available. Clicking this button will automatically update Ajour and relaunch it as the newer version.
