@@ -502,7 +502,7 @@ pub fn settings_container<'a, 'b>(
 
     // Depending on mode, we show different columns to edit.
     match mode {
-        Mode::MyAddons => {
+        Mode::MyAddons(_) => {
             row = row.push(my_addons_columns_container);
         }
         Mode::Catalog => {
@@ -1267,13 +1267,17 @@ pub fn addon_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(Mode::MyAddons, event))
+        Message::Interaction(Interaction::ResizeColumn(
+            Mode::MyAddons(Flavor::default()),
+            event,
+        ))
     })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn menu_addons_container<'a>(
     color_palette: ColorPalette,
+    flavor: Flavor,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
     state: &HashMap<Mode, State>,
@@ -1282,7 +1286,7 @@ pub fn menu_addons_container<'a>(
 ) -> Container<'a, Message> {
     // MyAddons state.
     let default = &State::default();
-    let state = state.get(&Mode::MyAddons).unwrap_or(default);
+    let state = state.get(&Mode::MyAddons(flavor)).unwrap_or(default);
 
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(35));
@@ -1390,9 +1394,11 @@ pub fn menu_container<'a>(
     classic_ptr_btn_state: &'a mut button::State,
     self_update_state: &'a mut SelfUpdateState,
 ) -> Container<'a, Message> {
+    let flavor = config.wow.flavor;
+
     // State.
     let default = &State::default();
-    let myaddons_state = state.get(&Mode::MyAddons).unwrap_or(default);
+    let myaddons_state = state.get(&Mode::MyAddons(flavor)).unwrap_or(default);
 
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(50));
@@ -1412,7 +1418,7 @@ pub fn menu_container<'a>(
     .style(style::DisabledDefaultButton(color_palette));
 
     match mode {
-        Mode::MyAddons => {
+        Mode::MyAddons(_) => {
             addons_mode_button =
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
@@ -1429,7 +1435,8 @@ pub fn menu_container<'a>(
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
     } else {
-        addons_mode_button = addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons));
+        addons_mode_button =
+            addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons(flavor)));
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(Mode::Catalog));
     }
@@ -1477,48 +1484,44 @@ pub fn menu_container<'a>(
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::ClassicPTR));
 
-    let disable_flavor_buttons = matches!(myaddons_state, State::Start | State::Loading);
-
-    if !disable_flavor_buttons {
-        match config.wow.flavor {
-            Flavor::Retail => {
-                retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
-                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::RetailPTR => {
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-                retail_ptr_button =
-                    retail_ptr_button.style(style::SelectedDefaultButton(color_palette));
-                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::RetailBeta => {
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-                retail_beta_button =
-                    retail_beta_button.style(style::SelectedDefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::Classic => {
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-                classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
-                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::ClassicPTR => {
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-                classic_ptr_button =
-                    classic_ptr_button.style(style::SelectedDefaultButton(color_palette));
-            }
+    match config.wow.flavor {
+        Flavor::Retail => {
+            retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
+            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+            classic_button = classic_button.style(style::DefaultButton(color_palette));
+            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+        }
+        Flavor::RetailPTR => {
+            retail_button = retail_button.style(style::DefaultButton(color_palette));
+            retail_ptr_button =
+                retail_ptr_button.style(style::SelectedDefaultButton(color_palette));
+            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+            classic_button = classic_button.style(style::DefaultButton(color_palette));
+            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+        }
+        Flavor::RetailBeta => {
+            retail_button = retail_button.style(style::DefaultButton(color_palette));
+            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+            retail_beta_button =
+                retail_beta_button.style(style::SelectedDefaultButton(color_palette));
+            classic_button = classic_button.style(style::DefaultButton(color_palette));
+            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+        }
+        Flavor::Classic => {
+            retail_button = retail_button.style(style::DefaultButton(color_palette));
+            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+            classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
+            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+        }
+        Flavor::ClassicPTR => {
+            retail_button = retail_button.style(style::DefaultButton(color_palette));
+            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+            classic_button = classic_button.style(style::DefaultButton(color_palette));
+            classic_ptr_button =
+                classic_ptr_button.style(style::SelectedDefaultButton(color_palette));
         }
     }
 

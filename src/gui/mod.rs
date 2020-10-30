@@ -48,7 +48,7 @@ impl Default for State {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Mode {
-    MyAddons,
+    MyAddons(Flavor),
     Catalog,
 }
 
@@ -58,7 +58,7 @@ impl std::fmt::Display for Mode {
             f,
             "{}",
             match self {
-                Mode::MyAddons => "My Addons",
+                Mode::MyAddons(_) => "My Addons",
                 Mode::Catalog => "Catalog",
             }
         )
@@ -166,15 +166,9 @@ pub struct Ajour {
 impl Default for Ajour {
     fn default() -> Self {
         Self {
-            state: [
-                (Mode::MyAddons, State::Loading),
-                (Mode::Catalog, State::Loading),
-            ]
-            .iter()
-            .cloned()
-            .collect(),
+            state: [(Mode::Catalog, State::Loading)].iter().cloned().collect(),
             error: None,
-            mode: Mode::MyAddons,
+            mode: Mode::MyAddons(Flavor::Retail),
             addons: HashMap::new(),
             addons_scrollable_state: Default::default(),
             config: Config::default(),
@@ -329,7 +323,7 @@ impl Application for Ajour {
         content = content.push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
 
         match self.mode {
-            Mode::MyAddons => {
+            Mode::MyAddons(_) => {
                 // Get mutable addons for current flavor.
                 let addons = self.addons.entry(flavor).or_default();
 
@@ -339,6 +333,7 @@ impl Application for Ajour {
                 // Menu for addons.
                 let menu_addons_container = element::menu_addons_container(
                     color_palette,
+                    flavor,
                     &mut self.update_all_btn_state,
                     &mut self.refresh_btn_state,
                     &self.state,
@@ -559,9 +554,9 @@ impl Application for Ajour {
         }
 
         let container: Option<Container<Message>> = match self.mode {
-            Mode::MyAddons => {
+            Mode::MyAddons(_) => {
                 let default = &State::default();
-                let state = self.state.get(&Mode::MyAddons).unwrap_or(default);
+                let state = self.state.get(&Mode::MyAddons(flavor)).unwrap_or(default);
                 match state {
                     State::Start => Some(element::status_container(
                         color_palette,
@@ -572,7 +567,7 @@ impl Application for Ajour {
                     State::Loading => Some(element::status_container(
                         color_palette,
                         "Loading..",
-                        "Currently parsing addons.",
+                        &format!("Currently parsing {} addons.", flavor.to_string()),
                         None,
                     )),
                     State::Ready => {

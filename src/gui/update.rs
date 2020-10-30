@@ -233,6 +233,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.valid_flavors.dedup();
                     }
 
+                    // Sets loading
+                    ajour.state.insert(Mode::MyAddons(*flavor), State::Loading);
+
+                    // Add commands
                     commands.push(Command::perform(
                         perform_read_addon_directory(
                             ajour.fingerprint_collection.clone(),
@@ -245,7 +249,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     log::debug!("addon directory is not set, showing welcome screen");
 
                     // Assume we are welcoming a user because directory is not set.
-                    ajour.state.insert(Mode::MyAddons, State::Start);
+                    let flavor = ajour.config.wow.flavor;
+                    ajour.state.insert(Mode::MyAddons(flavor), State::Start);
 
                     break;
                 }
@@ -275,8 +280,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Cleans the addons.
             ajour.addons = HashMap::new();
+
             // Prepare state for loading.
-            ajour.state.insert(Mode::MyAddons, State::Loading);
+            let flavor = ajour.config.wow.flavor;
+            ajour.state.insert(Mode::MyAddons(flavor), State::Loading);
 
             return Ok(Command::perform(load_config(), Message::Parse));
         }
@@ -373,8 +380,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Persist the newly updated config.
                 let _ = &ajour.config.save();
                 // Set loading state.
-                ajour.state.insert(Mode::MyAddons, State::Loading);
-                // Reload config.
+                let state = ajour.state.clone();
+                for (mode, _) in state {
+                    if matches!(mode, Mode::MyAddons(_)) {
+                        ajour.state.insert(mode, State::Loading);
+                    }
+                }
+
                 return Ok(Command::perform(load_config(), Message::Parse));
             }
         }
@@ -397,21 +409,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
-            // Set ajour mode.
+            // Sets mode.
             ajour.mode = mode;
-            // TODO: Should we do something about state?
-            // match mode {
-            //     Mode::Catalog => {
-            //         let refresh = ajour.catalog.is_none();
-            //         if refresh {
-            //             ajour.state = AjourState::Loading;
-            //         }
-            //         ajour.state = AjourState::Idle;
-            //     }
-            //     Mode::MyAddons => {
-            //         ajour.state = AjourState::Idle;
-            //     }
-            // }
         }
 
         Message::Interaction(Interaction::Expand(expand_type)) => {
@@ -619,9 +618,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::ParsedAddons((flavor, result)) => {
             // if our selected flavor returns (either ok or error) - we change to idle.
-            if flavor == ajour.config.wow.flavor {
-                ajour.state.insert(Mode::MyAddons, State::Ready);
-            }
+            ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
             if let Ok(addons) = result {
                 log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
@@ -672,11 +669,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
                 ajour.header_state.previous_column_key = Some(ColumnKey::Status);
 
-                if flavor == ajour.config.wow.flavor {
-                    // Set the state if flavor matches.
-                    // TODO: Could we make this even better based on flavor?
-                    ajour.state.insert(Mode::MyAddons, State::Ready);
-                }
+                // Sets the flavor state to ready.
+                ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
                 // Insert the addons into the HashMap.
                 ajour.addons.insert(flavor, addons);
@@ -1066,7 +1060,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 right_name,
                 right_width,
             } => match column_type {
-                Mode::MyAddons => {
+                Mode::MyAddons(_) => {
                     let left_key = ColumnKey::from(left_name.as_str());
                     let right_key = ColumnKey::from(right_name.as_str());
 
