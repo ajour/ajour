@@ -400,6 +400,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
             let _ = &ajour.config.save();
+            // Update flavor on MyAddons if thats our current mode.
+            match ajour.mode {
+                Mode::MyAddons(_) => ajour.mode = Mode::MyAddons(flavor),
+                _ => (),
+            }
             // Update catalog
             query_and_sort_catalog(ajour);
         }

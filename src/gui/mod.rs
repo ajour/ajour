@@ -323,7 +323,7 @@ impl Application for Ajour {
         content = content.push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
 
         match self.mode {
-            Mode::MyAddons(_) => {
+            Mode::MyAddons(flavor) => {
                 // Get mutable addons for current flavor.
                 let addons = self.addons.entry(flavor).or_default();
 
@@ -554,7 +554,7 @@ impl Application for Ajour {
         }
 
         let container: Option<Container<Message>> = match self.mode {
-            Mode::MyAddons(_) => {
+            Mode::MyAddons(flavor) => {
                 let default = &State::default();
                 let state = self.state.get(&Mode::MyAddons(flavor)).unwrap_or(default);
                 match state {
