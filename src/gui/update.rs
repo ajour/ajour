@@ -755,7 +755,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Ok(mut folders) => {
                         // Update the folders of the addon since they could have changed from the update,
                         // or if its an addon installed through the catalog, we haven't assigned it folders yet
-                        {
+                        if !folders.is_empty() {
                             folders.sort_by(|a, b| a.id.cmp(&b.id));
 
                             // Assign the primary folder id based on the first folder alphabetically with
@@ -784,7 +784,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             }) {
                                 folder.id.clone()
                             } else {
-                                //TODO: Can this crash? What do we do in that case.
+                                // Wont fail since we already checked if vec is empty
                                 folders.get(0).map(|f| f.id.clone()).unwrap()
                             };
                             addon.primary_folder_id = primary_folder_id;
