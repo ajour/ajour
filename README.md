@@ -45,8 +45,10 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 ## Features
 
 - Addons will be parsed automatically and resolved from multiple repositories:
-  - [tukui.org](https://www.tukui.org/)
-  - [curse](https://www.curseforge.com/wow/addons)
+  - [Tukui](https://www.tukui.org/)
+  - [CurseForge](https://www.curseforge.com/wow/addons)
+  - [WoWInterface](https://www.wowinterface.com/)
+- Install new addons from the catalog
 - Support for release channels, so it's possible to select either `alpha`, `beta` or `stable` for each addon
 - View changelogs for each addon 
 - Bulk addon update without any limitations
