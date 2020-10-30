@@ -8,26 +8,19 @@ mod gui;
 
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::Result;
-
+use i18n_embed::{DesktopLanguageRequester, gettext::{
+    gettext_language_loader
+},unic_langid};
 use rust_embed::RustEmbed;
 
-use i18n_embed::{gettext::GettextLanguageLoader,gettext::gettext_language_loader, DesktopLanguageRequester, LanguageRequester,
-    DefaultLocalizer, Localizer, unic_langid::LanguageIdentifier};
-use std::rc::Rc;
-use lazy_static::lazy_static;
-
 #[derive(RustEmbed)]
-#[folder = "i18n/mo"] // path to the compiled localization resources
+// path to the compiled localization resources,
+// as determined by i18n.toml settings
+#[folder = "i18n/mo"]
 struct Translations;
 
-const TRANSLATIONS: Translations = Translations {};
-
-lazy_static! {
-    static ref LANGUAGE_LOADER: GettextLanguageLoader = gettext_language_loader!();
-}
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-
 
 pub fn main() {
     let opts = cli::get_opts();
@@ -45,17 +38,26 @@ pub fn main() {
 
     log::debug!("Ajour {} has started.", VERSION);
 
-    let localizer = DefaultLocalizer::new(&*LANGUAGE_LOADER, &TRANSLATIONS);
+    // let translations = Translations {};
 
-    let localizer_rc: Rc<dyn Localizer> = Rc::new(localizer);
+    // // Create the GettextLanguageLoader, pulling in settings from `i18n.toml`
+    // // at compile time using the macro.
+    // let language_loader = gettext_language_loader!();
 
-    let mut language_requester = DesktopLanguageRequester::new();
-    language_requester.add_listener(Rc::downgrade(&localizer_rc));
+    // // Use the language requester for the desktop platform (linux, windows, mac).
+    // // There is also a requester available for the web-sys WASM platform called
+    // // WebLanguageRequester, or you can implement your own.
+    // //let requested_languages = DesktopLanguageRequester::requested_languages();
+    
+    // let mut li: unic_langid::LanguageIdentifier = "fr".parse()
+    // .expect("Parsing failed.");
+    // let mut requested_languages = Vec::new();
+    // requested_languages.push(li);
 
-    // Manually check the currently requested system language,
-    // and update the listeners. When the system language changes,
-    // this will automatically be triggered.
-    language_requester.poll().unwrap(); 
+    // log::debug!("Requested languages {:?}", requested_languages);
+
+    // let _result = i18n_embed::select(
+    //     &language_loader, &translations, &requested_languages);
 
     // Start the GUI
     gui::run(opts);

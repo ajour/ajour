@@ -3,8 +3,8 @@
 use {
     super::{
         style, AjourMode, AjourState, BackupState, CatalogColumnKey, CatalogColumnState,
-        CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType, Interaction, Message,
-        ReleaseChannel, ScaleState, SortDirection, ThemeState, LanguageState
+        CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType, Interaction,
+        LanguageState, Message, ReleaseChannel, ScaleState, SortDirection, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -18,10 +18,22 @@ use {
         button, scrollable, Align, Button, Checkbox, Column, Container, Element,
         HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
-    tr::tr,
     num_format::{Locale, ToFormattedString},
+    tr::tr,
     widgets::{header, Header},
+    i18n_embed::{DesktopLanguageRequester, gettext::{
+        gettext_language_loader,
+    },unic_langid},
+    rust_embed::RustEmbed,
 };
+
+#[derive(RustEmbed)]
+// path to the compiled localization resources,
+// as determined by i18n.toml settings
+#[folder = "i18n/mo"]
+struct Translations;
+
+
 
 // Default values used on multiple elements.
 pub static DEFAULT_FONT_SIZE: u16 = 14;
@@ -32,15 +44,15 @@ pub fn settings_container<'a, 'b>(
     color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
     config: &Config,
-    language_state : &'a mut LanguageState,
+    language_state: &'a mut LanguageState,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
     column_settings: &'a mut ColumnSettings,
     column_config: &'b [(ColumnKey, Length, bool)],
 ) -> Container<'a, Message> {
+
     // Title for the World of Warcraft directory selection.
-    log::debug!("thread locale : {}",locale_config::Locale::current());
     let directory_info_text = Text::new(tr!("World of Warcraft directory")).size(14);
 
     // Directory button for World of Warcraft directory selection.
@@ -88,7 +100,7 @@ pub fn settings_container<'a, 'b>(
         .languages
         .iter()
         .cloned()
-        .map(|name|name)
+        .map(|name| name)
         .collect::<Vec<_>>();
     let language_pick_list = PickList::new(
         &mut language_state.pick_list_state,
@@ -262,10 +274,11 @@ pub fn settings_container<'a, 'b>(
                 .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                 .push(backup_status_text_container);
         } else {
-            let backup_status_text =
-                Text::new(tr!("Back up your AddOns and WTF folder to the chosen directory"))
-                    .size(DEFAULT_FONT_SIZE)
-                    .vertical_alignment(VerticalAlignment::Center);
+            let backup_status_text = Text::new(tr!(
+                "Back up your AddOns and WTF folder to the chosen directory"
+            ))
+            .size(DEFAULT_FONT_SIZE)
+            .vertical_alignment(VerticalAlignment::Center);
 
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
@@ -403,7 +416,6 @@ pub fn settings_container<'a, 'b>(
         .push(language_info_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(language_data_row);
-
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
     let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
@@ -677,27 +689,33 @@ pub fn addon_data_cell<'a, 'b>(
                     .padding(5)
                     .style(style::AddonRowSecondaryTextContainer(color_palette))
             }
-            AddonState::Unpacking => Container::new(Text::new(tr!("Unpacking")).size(DEFAULT_FONT_SIZE))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .center_x()
-                .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
-            AddonState::Fingerprint => Container::new(Text::new(tr!("Hashing")).size(DEFAULT_FONT_SIZE))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .center_x()
-                .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
-            AddonState::Ignored => Container::new(Text::new(tr!("Ignored")).size(DEFAULT_FONT_SIZE))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .center_x()
-                .padding(5)
-                .style(style::AddonRowSecondaryTextContainer(color_palette)),
+            AddonState::Unpacking => {
+                Container::new(Text::new(tr!("Unpacking")).size(DEFAULT_FONT_SIZE))
+                    .height(default_height)
+                    .width(*width)
+                    .center_y()
+                    .center_x()
+                    .padding(5)
+                    .style(style::AddonRowSecondaryTextContainer(color_palette))
+            }
+            AddonState::Fingerprint => {
+                Container::new(Text::new(tr!("Hashing")).size(DEFAULT_FONT_SIZE))
+                    .height(default_height)
+                    .width(*width)
+                    .center_y()
+                    .center_x()
+                    .padding(5)
+                    .style(style::AddonRowSecondaryTextContainer(color_palette))
+            }
+            AddonState::Ignored => {
+                Container::new(Text::new(tr!("Ignored")).size(DEFAULT_FONT_SIZE))
+                    .height(default_height)
+                    .width(*width)
+                    .center_y()
+                    .center_x()
+                    .padding(5)
+                    .style(style::AddonRowSecondaryTextContainer(color_palette))
+            }
         };
 
         row_containers.push((idx, update_button_container));
@@ -754,7 +772,8 @@ pub fn addon_data_cell<'a, 'b>(
             .padding(5)
             .style(style::SecondaryTextContainer(color_palette));
 
-        let release_channel_title = Text::new(tr!("Remote release channel")).size(DEFAULT_FONT_SIZE);
+        let release_channel_title =
+            Text::new(tr!("Remote release channel")).size(DEFAULT_FONT_SIZE);
         let release_channel_title_container =
             Container::new(release_channel_title).style(style::DefaultTextContainer(color_palette));
         let release_channel_list = PickList::new(

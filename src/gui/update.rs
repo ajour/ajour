@@ -19,14 +19,25 @@ use {
     async_std::sync::{Arc, Mutex},
     iced::{Command, Length},
     isahc::HttpClient,
+    locale_config::Locale,
     native_dialog::*,
     std::collections::{HashMap, HashSet},
     std::path::{Path, PathBuf},
+    std::ops::Deref,
     widgets::header::ResizeEvent,
-    locale_config::Locale,
+    i18n_embed::{DesktopLanguageRequester, gettext::{
+        gettext_language_loader
+    },unic_langid},
+    rust_embed::RustEmbed,
 };
 
-pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {    
+#[derive(RustEmbed)]
+// path to the compiled localization resources,
+// as determined by i18n.toml settings
+#[folder = "i18n/mo"]
+struct Translations;
+
+pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
         Message::Parse(Ok(config)) => {
             log::debug!("Message::Parse");
@@ -768,6 +779,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.config.language = Some(language_name);
             let _ = ajour.config.save();
+
+            // let translations = Translations {};
+
+            // // Create the GettextLanguageLoader, pulling in settings from `i18n.toml`
+            // // at compile time using the macro.
+            // let language_loader = gettext_language_loader!();
+        
+            // // Use the language requester for the desktop platform (linux, windows, mac).
+            // // There is also a requester available for the web-sys WASM platform called
+            // // WebLanguageRequester, or you can implement your own.
+            // //let requested_languages = DesktopLanguageRequester::requested_languages();
+            
+            // let li: unic_langid::LanguageIdentifier = ajour.language_state.current_language_name.parse()
+            // .expect("Parsing failed.");
+            // let mut requested_languages = Vec::new();
+            // requested_languages.push(li);
+        
+            // log::debug!("Requested languages {:?}", requested_languages);
+        
+            // let _result = i18n_embed::select(
+            //     &language_loader, &translations, &requested_languages);
         }
         Message::ThemeSelected(theme_name) => {
             log::debug!("Message::ThemeSelected({:?})", &theme_name);

@@ -32,9 +32,20 @@ use std::path::PathBuf;
 use widgets::header;
 use tr::tr;
 use locale_config::Locale;
+use i18n_embed::{DesktopLanguageRequester, gettext::{
+    gettext_language_loader,
+},unic_langid};  
+use rust_embed::RustEmbed;
 
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
+
+#[derive(RustEmbed)]
+// path to the compiled localization resources,
+// as determined by i18n.toml settings
+#[folder = "i18n/mo"]
+struct Translations;
+
 
 #[derive(Debug)]
 pub enum AjourState {
@@ -228,12 +239,30 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Message> {
-        // Clone config to be used.
+        // Clone config to be used. 
         // FIXME: This could be done prettier.
         let cloned_config = self.config.clone();
+        
+        // let translations = Translations {};
 
-        let loc = Locale::new(&self.language_state.current_language_name);
-        locale_config::Locale::set_current(loc.unwrap());
+        // // Create the GettextLanguageLoader, pulling in settings from `i18n.toml`
+        // // at compile time using the macro.
+        // let language_loader = gettext_language_loader!();
+
+        // // Use the language requester for the desktop platform (linux, windows, mac).
+        // // There is also a requester available for the web-sys WASM platform called
+        // // WebLanguageRequester, or you can implement your own.
+        // //let requested_languages = DesktopLanguageRequester::requested_languages();
+        
+        // let mut li: unic_langid::LanguageIdentifier = self.language_state.current_language_name.parse()
+        // .expect("Parsing failed.");
+        // let mut requested_languages = Vec::new();
+        // requested_languages.push(li);
+
+        // log::debug!("Requested languages {:?}", requested_languages);
+
+        // let _result = i18n_embed::select(
+        //     &language_loader, &translations, &requested_languages);
 
         // Get color palette of chosen theme.
         let color_palette = self
@@ -1249,7 +1278,7 @@ impl Default for LanguageState{
 
         LanguageState {
             languages,
-            current_language_name: "FR".to_string(),
+            current_language_name: "EN".to_string(),
             pick_list_state: Default::default(),
         }
     }
