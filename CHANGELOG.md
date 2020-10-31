@@ -27,6 +27,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Game version has been added as a optional column to addons in the Catalog.
 - Ajour now has WoWInterface as a source.
 - Added button to Ajour website in Settings.
+- Tukui addons can now be installed via the Catalog.
+  - A cache was added to support this feature since tukui addons have fairly unreliable metadata in their .toc files.
 
 ### Fixed
 - Fixed an issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.
