@@ -1397,8 +1397,10 @@ pub fn menu_container<'a>(
     let flavor = config.wow.flavor;
 
     // State.
-    let default = &State::default();
-    let myaddons_state = state.get(&Mode::MyAddons(flavor)).unwrap_or(default);
+    let myaddons_state = state
+        .get(&Mode::MyAddons(flavor))
+        .cloned()
+        .unwrap_or_default();
 
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(50));
