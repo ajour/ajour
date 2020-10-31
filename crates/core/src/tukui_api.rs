@@ -6,6 +6,7 @@ use crate::{
     utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate},
     Result,
 };
+use async_std::sync::Arc;
 use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 use serde::Deserialize;
@@ -53,19 +54,18 @@ fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
-pub async fn fetch_remote_package(id: &str, flavor: &Flavor) -> Result<TukuiPackage> {
-    let client = HttpClient::builder()
-        .redirect_policy(RedirectPolicy::Follow)
-        .max_connections_per_host(6)
-        .build()
-        .unwrap();
+pub async fn fetch_remote_package(
+    shared_client: Arc<HttpClient>,
+    id: &str,
+    flavor: &Flavor,
+) -> Result<(String, TukuiPackage)> {
     let url = api_endpoint(id, flavor);
     let timeout = Some(30);
-    let mut resp = request_async(&client, &url, vec![], timeout).await?;
+    let mut resp = request_async(&shared_client, &url, vec![], timeout).await?;
 
     if resp.status().is_success() {
         let package = resp.json()?;
-        Ok(package)
+        Ok((id.to_string(), package))
     } else {
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",
@@ -77,9 +77,19 @@ pub async fn fetch_remote_package(id: &str, flavor: &Flavor) -> Result<TukuiPack
 pub async fn latest_addon(tukui_id: u32, flavor: Flavor) -> Result<Addon> {
     let tukui_id_string = tukui_id.to_string();
 
-    let package = fetch_remote_package(&tukui_id_string, &flavor).await?;
+    let client = Arc::new(
+        HttpClient::builder()
+            .redirect_policy(RedirectPolicy::Follow)
+            .max_connections_per_host(6)
+            .build()
+            .unwrap(),
+    );
 
-    let addon = Addon::from_tukui_package(tukui_id_string, &[], &package);
+    let (_, package) = fetch_remote_package(client, &tukui_id_string, &flavor).await?;
+
+    let mut addon = Addon::empty(&tukui_id_string);
+    // We assign the proper addon folders and primary folder id after unpacking the addon
+    addon.update_with_tukui_package(tukui_id_string, &package, None);
 
     Ok(addon)
 }

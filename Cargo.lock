@@ -83,6 +83,7 @@ dependencies = [
  "fancy-regex",
  "fern",
  "flate2",
+ "futures",
  "glob",
  "iced_native",
  "isahc",

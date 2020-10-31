@@ -48,7 +48,7 @@ pub async fn fetch_remote_packages(ids: Vec<String>) -> Result<Vec<WowIPackage>>
 
     if resp.status().is_success() {
         let packages = resp.json();
-        Ok(packages.unwrap())
+        Ok(packages?)
     } else {
         Err(ClientError::Custom(format!(
             "Couldn't fetch details for addon. Server returned: {}",

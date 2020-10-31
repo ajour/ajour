@@ -8,13 +8,14 @@ use {
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
         backup::{backup_folders, latest_backup, BackupFolder},
+        cache::{update_addon_cache, AddonCache, AddonCacheEntry, FingerprintCache},
         catalog,
-        config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
+        config::{ColumnConfig, ColumnConfigV2, Flavor},
         curse_api,
         error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
-        parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
+        parse::{read_addon_directory, update_addon_fingerprint},
         tukui_api,
         utility::{download_update_to_temp_file, wow_path_resolution},
         wowi_api, Result,
@@ -24,189 +25,25 @@ use {
     isahc::HttpClient,
     native_dialog::*,
     std::collections::{HashMap, HashSet},
+    std::convert::TryFrom,
     std::path::{Path, PathBuf},
     widgets::header::ResizeEvent,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
-        Message::Parse(Ok(config)) => {
-            log::debug!("Message::Parse");
-            log::debug!("config loaded:\n{:#?}", config);
+        Message::CachesLoaded(result) => {
+            log::debug!("Message::CachesLoaded(error: {})", result.is_err());
 
-            // When we have the config, we parse the addon directory
-            // which is provided by the config.
-            ajour.config = config;
-
-            // Set column widths from the config
-            match &ajour.config.column_config {
-                ColumnConfig::V1 {
-                    local_version_width,
-                    remote_version_width,
-                    status_width,
-                } => {
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(1)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*local_version_width);
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(2)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*remote_version_width);
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(3)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*status_width);
-                }
-                ColumnConfig::V2 { columns } => {
-                    ajour.header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour.column_settings.columns.iter_mut().for_each(|a| {
-                        if let Some(idx) = columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some(idx)
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.order = idx;
-                        }
-                    });
-
-                    // My Addons
-                    ajour.header_state.columns.sort_by_key(|c| c.order);
-                    ajour.column_settings.columns.sort_by_key(|c| c.order);
-                }
-                ColumnConfig::V3 {
-                    my_addons_columns,
-                    catalog_columns,
-                } => {
-                    ajour.header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = my_addons_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour.column_settings.columns.iter_mut().for_each(|a| {
-                        if let Some(idx) = my_addons_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some(idx)
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour
-                        .catalog_column_settings
-                        .columns
-                        .iter_mut()
-                        .for_each(|a| {
-                            if let Some(idx) = catalog_columns
-                                .iter()
-                                .enumerate()
-                                .filter_map(|(idx, column)| {
-                                    if column.key == a.key.as_string() {
-                                        Some(idx)
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .next()
-                            {
-                                a.order = idx;
-                            }
-                        });
-
-                    ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = catalog_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
-                    // My Addons
-                    ajour.header_state.columns.sort_by_key(|c| c.order);
-                    ajour.column_settings.columns.sort_by_key(|c| c.order);
-
-                    // Catalog
-                    ajour.catalog_header_state.columns.sort_by_key(|c| c.order);
-                    ajour
-                        .catalog_column_settings
-                        .columns
-                        .sort_by_key(|c| c.order);
-                }
+            if let Ok((fingerprint_cache, addon_cache)) = result {
+                ajour.fingerprint_cache = Some(Arc::new(Mutex::new(fingerprint_cache)));
+                ajour.addon_cache = Some(Arc::new(Mutex::new(addon_cache)));
             }
 
-            // Use theme from config. Set to "Dark" if not defined.
-            ajour.theme_state.current_theme_name =
-                ajour.config.theme.as_deref().unwrap_or("Dark").to_string();
-
-            // Use scale from config. Set to 1.0 if not defined.
-            ajour.scale_state.scale = ajour.config.scale.unwrap_or(1.0);
+            return Ok(Command::perform(async {}, Message::Parse));
+        }
+        Message::Parse(_) => {
+            log::debug!("Message::Parse");
 
             // Begin to parse addon folder(s).
             let mut commands = vec![];
@@ -239,7 +76,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // Add commands
                     commands.push(Command::perform(
                         perform_read_addon_directory(
-                            ajour.fingerprint_collection.clone(),
+                            ajour.addon_cache.clone(),
+                            ajour.fingerprint_cache.clone(),
                             addon_directory.clone(),
                             *flavor,
                         ),
@@ -285,7 +123,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let flavor = ajour.config.wow.flavor;
             ajour.state.insert(Mode::MyAddons(flavor), State::Loading);
 
-            return Ok(Command::perform(load_config(), Message::Parse));
+            return Ok(Command::perform(async {}, Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
             log::debug!("Interaction::Settings");
@@ -387,7 +225,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                 }
 
-                return Ok(Command::perform(load_config(), Message::Parse));
+                return Ok(Command::perform(async {}, Message::Parse));
             }
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
@@ -775,7 +613,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Ok(mut folders) => {
                         // Update the folders of the addon since they could have changed from the update,
                         // or if its an addon installed through the catalog, we haven't assigned it folders yet
-                        {
+                        if !folders.is_empty() {
                             folders.sort_by(|a, b| a.id.cmp(&b.id));
 
                             // Assign the primary folder id based on the first folder alphabetically with
@@ -804,7 +642,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             }) {
                                 folder.id.clone()
                             } else {
-                                //TODO: Can this crash? What do we do in that case.
+                                // Wont fail since we already checked if vec is empty
                                 folders.get(0).map(|f| f.id.clone()).unwrap()
                             };
                             addon.primary_folder_id = primary_folder_id;
@@ -831,25 +669,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             addon.set_version(version);
                         }
 
-                        let mut commands = vec![];
+                        if let Some(cache) = ajour.fingerprint_cache.as_ref() {
+                            let mut commands = vec![];
 
-                        for folder in &addon.folders {
-                            commands.push(Command::perform(
-                                perform_hash_addon(
-                                    reason,
-                                    ajour
-                                        .config
-                                        .get_addon_directory_for_flavor(&flavor)
-                                        .expect("Expected a valid path"),
-                                    folder.id.clone(),
-                                    ajour.fingerprint_collection.clone(),
-                                    flavor,
-                                ),
-                                Message::UpdateFingerprint,
-                            ));
+                            for folder in &addon.folders {
+                                commands.push(Command::perform(
+                                    perform_hash_addon(
+                                        reason,
+                                        ajour
+                                            .config
+                                            .get_addon_directory_for_flavor(&flavor)
+                                            .expect("Expected a valid path"),
+                                        folder.id.clone(),
+                                        cache.clone(),
+                                        flavor,
+                                    ),
+                                    Message::UpdateFingerprint,
+                                ));
+                            }
+
+                            return Ok(Command::batch(commands));
                         }
-
-                        return Ok(Command::batch(commands));
                     }
                     Err(error) => {
                         ajour.error = Some(error.to_string());
@@ -897,6 +737,26 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             flavor,
                             addon.repository_id(),
                         );
+                    }
+
+                    if let Some(addon_cache) = &ajour.addon_cache {
+                        match AddonCacheEntry::try_from(addon as &_) {
+                            Ok(entry) => {
+                                // Add / update cache entry for addon if it's a Tukui
+                                // or WowI addon
+                                if addon.active_repository == Some(Repository::Tukui)
+                                    || addon.active_repository == Some(Repository::WowI)
+                                {
+                                    return Ok(Command::perform(
+                                        update_addon_cache(addon_cache.clone(), entry, flavor),
+                                        Message::AddonCacheUpdated,
+                                    ));
+                                }
+                            }
+                            Err(error) => {
+                                log::error!("{}", error);
+                            }
+                        }
                     }
                 } else {
                     addon.state = AddonState::Ajour(Some("Error".to_owned()));
@@ -1580,9 +1440,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
+        Message::AddonCacheUpdated(Ok(entry)) => {
+            log::debug!("Message::AddonCacheUpdated({})", entry.title);
+        }
         Message::Error(error)
-        | Message::Parse(Err(error))
-        | Message::CatalogDownloaded(Err(error)) => {
+        | Message::CatalogDownloaded(Err(error))
+        | Message::AddonCacheUpdated(Err(error)) => {
             log::error!("{}", error);
             ajour.error = Some(error.to_string());
         }
@@ -1612,13 +1475,14 @@ async fn open_directory() -> Option<PathBuf> {
 }
 
 async fn perform_read_addon_directory(
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    addon_cache: Option<Arc<Mutex<AddonCache>>>,
+    fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: PathBuf,
     flavor: Flavor,
 ) -> (Flavor, Result<Vec<Addon>>) {
     (
         flavor,
-        read_addon_directory(fingerprint_collection, root_dir, flavor).await,
+        read_addon_directory(addon_cache, fingerprint_cache, root_dir, flavor).await,
     )
 }
 
@@ -1682,14 +1546,14 @@ async fn perform_hash_addon(
     reason: DownloadReason,
     addon_dir: impl AsRef<Path>,
     addon_id: String,
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    fingerprint_cache: Arc<Mutex<FingerprintCache>>,
     flavor: Flavor,
 ) -> (DownloadReason, Flavor, String, Result<()>) {
     (
         reason,
         flavor,
         addon_id.clone(),
-        update_addon_fingerprint(fingerprint_collection, flavor, addon_dir, addon_id).await,
+        update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id).await,
     )
 }
 
