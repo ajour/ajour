@@ -22,6 +22,7 @@ use futures::future::join_all;
 use isahc::config::RedirectPolicy;
 use isahc::prelude::*;
 
+use std::convert::TryFrom;
 use std::path::PathBuf;
 
 pub fn update_all_addons() -> Result<()> {
@@ -186,7 +187,7 @@ async fn update_addon(
     let mut installed_folders = install_addon(&addon, &temp_directory, &addon_directory).await?;
 
     // Update addon based on installed folders
-    {
+    if !installed_folders.is_empty() {
         installed_folders.sort_by(|a, b| a.id.cmp(&b.id));
 
         // Assign the primary folder id based on the first folder alphabetically with
@@ -208,7 +209,7 @@ async fn update_addon(
         }) {
             folder.id.clone()
         } else {
-            //TODO: Can this crash? What do we do in that case.
+            // Wont fail since we already checked if vec is empty
             installed_folders.get(0).map(|f| f.id.clone()).unwrap()
         };
         addon.primary_folder_id = primary_folder_id;
@@ -246,9 +247,9 @@ async fn update_addon(
     if addon.active_repository == Some(Repository::Tukui)
         || addon.active_repository == Some(Repository::WowI)
     {
-        let entry = AddonCacheEntry::from(&addon);
-
-        update_addon_cache(addon_cache, entry, flavor).await?;
+        if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
+            update_addon_cache(addon_cache, entry, flavor).await?;
+        }
     }
 
     Ok(())

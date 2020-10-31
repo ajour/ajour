@@ -25,6 +25,7 @@ use {
     isahc::HttpClient,
     native_dialog::*,
     std::collections::{HashMap, HashSet},
+    std::convert::TryFrom,
     std::path::{Path, PathBuf},
     widgets::header::ResizeEvent,
 };
@@ -883,17 +884,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
 
                     if let Some(addon_cache) = &ajour.addon_cache {
-                        let entry = AddonCacheEntry::from(addon as &_);
-
-                        // Add / update cache entry for addon if it's a Tukui
-                        // or WowI addon
-                        if addon.active_repository == Some(Repository::Tukui)
-                            || addon.active_repository == Some(Repository::WowI)
-                        {
-                            return Ok(Command::perform(
-                                update_addon_cache(addon_cache.clone(), entry, flavor),
-                                Message::AddonCacheUpdated,
-                            ));
+                        match AddonCacheEntry::try_from(addon as &_) {
+                            Ok(entry) => {
+                                // Add / update cache entry for addon if it's a Tukui
+                                // or WowI addon
+                                if addon.active_repository == Some(Repository::Tukui)
+                                    || addon.active_repository == Some(Repository::WowI)
+                                {
+                                    return Ok(Command::perform(
+                                        update_addon_cache(addon_cache.clone(), entry, flavor),
+                                        Message::AddonCacheUpdated,
+                                    ));
+                                }
+                            }
+                            Err(error) => {
+                                log::error!("{}", error);
+                            }
                         }
                     }
                 } else {

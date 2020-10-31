@@ -1,5 +1,6 @@
 use crate::addon::{Addon, AddonFolder, Repository};
 use crate::config::Flavor;
+use crate::error::ClientError;
 use crate::fs::{config_dir, PersistentData};
 use crate::parse::Fingerprint;
 use crate::Result;
@@ -10,6 +11,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -104,15 +106,26 @@ pub struct AddonCacheEntry {
     pub modified: DateTime<Utc>,
 }
 
-impl From<&Addon> for AddonCacheEntry {
-    fn from(addon: &Addon) -> Self {
-        AddonCacheEntry {
-            title: addon.title().to_owned(),
-            repository: addon.active_repository.unwrap(),
-            repository_id: addon.repository_id().unwrap(),
-            primary_folder_id: addon.primary_folder_id.clone(),
-            folder_names: addon.folders.iter().map(|a| a.id.clone()).collect(),
-            modified: Utc::now(),
+impl TryFrom<&Addon> for AddonCacheEntry {
+    type Error = ClientError;
+
+    fn try_from(addon: &Addon) -> Result<Self> {
+        if let (Some(repository), Some(repository_id)) =
+            (addon.active_repository, addon.repository_id())
+        {
+            Ok(AddonCacheEntry {
+                title: addon.title().to_owned(),
+                repository,
+                repository_id,
+                primary_folder_id: addon.primary_folder_id.clone(),
+                folder_names: addon.folders.iter().map(|a| a.id.clone()).collect(),
+                modified: Utc::now(),
+            })
+        } else {
+            Err(ClientError::Custom(format!(
+                "No repository information set for cache entry: {}",
+                addon.title()
+            )))
         }
     }
 }
