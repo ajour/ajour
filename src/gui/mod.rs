@@ -10,7 +10,7 @@ use ajour_core::{
     },
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
-    config::{ColumnConfigV2, Config, Flavor},
+    config::{ColumnConfig, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
     theme::{load_user_themes, Theme},
@@ -106,7 +106,7 @@ pub enum Message {
     Interaction(Interaction),
     LatestRelease(Option<utility::Release>),
     None(()),
-    Parse(Result<Config>),
+    Parse(()),
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
     UpdateFingerprint((DownloadReason, Flavor, String, Result<()>)),
     ThemeSelected(String),
@@ -214,9 +214,9 @@ impl Default for Ajour {
 impl Application for Ajour {
     type Executor = iced::executor::Default;
     type Message = Message;
-    type Flags = f64;
+    type Flags = Config;
 
-    fn new(scale: f64) -> (Self, Command<Message>) {
+    fn new(config: Config) -> (Self, Command<Message>) {
         let init_commands = vec![
             Command::perform(load_caches(), Message::CachesLoaded),
             Command::perform(get_latest_release(), Message::LatestRelease),
@@ -225,7 +225,8 @@ impl Application for Ajour {
         ];
 
         let mut ajour = Ajour::default();
-        ajour.scale_state.scale = scale;
+
+        apply_config(&mut ajour, config);
 
         (ajour, Command::batch(init_commands))
     }
@@ -636,7 +637,7 @@ pub fn run(opts: Opts) {
     let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
     settings.window.icon = Some(icon.unwrap());
 
-    settings.flags = config.scale.unwrap_or(1.0);
+    settings.flags = config;
 
     // Runs the GUI.
     Ajour::run(settings).expect("running Ajour gui");
@@ -1410,4 +1411,177 @@ async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {
     let addon_cache = load_addon_cache().await?;
 
     Ok((fingerprint_cache, addon_cache))
+}
+
+fn apply_config(ajour: &mut Ajour, config: Config) {
+    // Set column widths from the config
+    match &config.column_config {
+        ColumnConfig::V1 {
+            local_version_width,
+            remote_version_width,
+            status_width,
+        } => {
+            ajour
+                .header_state
+                .columns
+                .get_mut(1)
+                .as_mut()
+                .unwrap()
+                .width = Length::Units(*local_version_width);
+            ajour
+                .header_state
+                .columns
+                .get_mut(2)
+                .as_mut()
+                .unwrap()
+                .width = Length::Units(*remote_version_width);
+            ajour
+                .header_state
+                .columns
+                .get_mut(3)
+                .as_mut()
+                .unwrap()
+                .width = Length::Units(*status_width);
+        }
+        ColumnConfig::V2 { columns } => {
+            ajour.header_state.columns.iter_mut().for_each(|a| {
+                if let Some((idx, column)) = columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some((idx, column))
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.width = column.width.map_or(Length::Fill, Length::Units);
+                    a.hidden = column.hidden;
+                    a.order = idx;
+                }
+            });
+
+            ajour.column_settings.columns.iter_mut().for_each(|a| {
+                if let Some(idx) = columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.order = idx;
+                }
+            });
+
+            // My Addons
+            ajour.header_state.columns.sort_by_key(|c| c.order);
+            ajour.column_settings.columns.sort_by_key(|c| c.order);
+        }
+        ColumnConfig::V3 {
+            my_addons_columns,
+            catalog_columns,
+        } => {
+            ajour.header_state.columns.iter_mut().for_each(|a| {
+                if let Some((idx, column)) = my_addons_columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some((idx, column))
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.width = column.width.map_or(Length::Fill, Length::Units);
+                    a.hidden = column.hidden;
+                    a.order = idx;
+                }
+            });
+
+            ajour.column_settings.columns.iter_mut().for_each(|a| {
+                if let Some(idx) = my_addons_columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.order = idx;
+                }
+            });
+
+            ajour
+                .catalog_column_settings
+                .columns
+                .iter_mut()
+                .for_each(|a| {
+                    if let Some(idx) = catalog_columns
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(idx, column)| {
+                            if column.key == a.key.as_string() {
+                                Some(idx)
+                            } else {
+                                None
+                            }
+                        })
+                        .next()
+                    {
+                        a.order = idx;
+                    }
+                });
+
+            ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
+                if let Some((idx, column)) = catalog_columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some((idx, column))
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.width = column.width.map_or(Length::Fill, Length::Units);
+                    a.hidden = column.hidden;
+                    a.order = idx;
+                }
+            });
+
+            // My Addons
+            ajour.header_state.columns.sort_by_key(|c| c.order);
+            ajour.column_settings.columns.sort_by_key(|c| c.order);
+
+            // Catalog
+            ajour.catalog_header_state.columns.sort_by_key(|c| c.order);
+            ajour
+                .catalog_column_settings
+                .columns
+                .sort_by_key(|c| c.order);
+        }
+    }
+
+    // Use theme from config. Set to "Dark" if not defined.
+    ajour.theme_state.current_theme_name = config.theme.as_deref().unwrap_or("Dark").to_string();
+
+    // Use scale from config. Set to 1.0 if not defined.
+    ajour.scale_state.scale = config.scale.unwrap_or(1.0);
+
+    ajour.config = config;
 }

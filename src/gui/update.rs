@@ -10,7 +10,7 @@ use {
         backup::{backup_folders, latest_backup, BackupFolder},
         cache::{update_addon_cache, AddonCache, AddonCacheEntry, FingerprintCache},
         catalog,
-        config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
+        config::{ColumnConfig, ColumnConfigV2, Flavor},
         curse_api,
         error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
@@ -40,185 +40,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.addon_cache = Some(Arc::new(Mutex::new(addon_cache)));
             }
 
-            return Ok(Command::perform(load_config(), Message::Parse));
+            return Ok(Command::perform(async {}, Message::Parse));
         }
-        Message::Parse(Ok(config)) => {
+        Message::Parse(_) => {
             log::debug!("Message::Parse");
-            log::debug!("config loaded:\n{:#?}", config);
-
-            // When we have the config, we parse the addon directory
-            // which is provided by the config.
-            ajour.config = config;
-
-            // Set column widths from the config
-            match &ajour.config.column_config {
-                ColumnConfig::V1 {
-                    local_version_width,
-                    remote_version_width,
-                    status_width,
-                } => {
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(1)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*local_version_width);
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(2)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*remote_version_width);
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(3)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*status_width);
-                }
-                ColumnConfig::V2 { columns } => {
-                    ajour.header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour.column_settings.columns.iter_mut().for_each(|a| {
-                        if let Some(idx) = columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some(idx)
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.order = idx;
-                        }
-                    });
-
-                    // My Addons
-                    ajour.header_state.columns.sort_by_key(|c| c.order);
-                    ajour.column_settings.columns.sort_by_key(|c| c.order);
-                }
-                ColumnConfig::V3 {
-                    my_addons_columns,
-                    catalog_columns,
-                } => {
-                    ajour.header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = my_addons_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour.column_settings.columns.iter_mut().for_each(|a| {
-                        if let Some(idx) = my_addons_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some(idx)
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour
-                        .catalog_column_settings
-                        .columns
-                        .iter_mut()
-                        .for_each(|a| {
-                            if let Some(idx) = catalog_columns
-                                .iter()
-                                .enumerate()
-                                .filter_map(|(idx, column)| {
-                                    if column.key == a.key.as_string() {
-                                        Some(idx)
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .next()
-                            {
-                                a.order = idx;
-                            }
-                        });
-
-                    ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = catalog_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
-                    // My Addons
-                    ajour.header_state.columns.sort_by_key(|c| c.order);
-                    ajour.column_settings.columns.sort_by_key(|c| c.order);
-
-                    // Catalog
-                    ajour.catalog_header_state.columns.sort_by_key(|c| c.order);
-                    ajour
-                        .catalog_column_settings
-                        .columns
-                        .sort_by_key(|c| c.order);
-                }
-            }
-
-            // Use theme from config. Set to "Dark" if not defined.
-            ajour.theme_state.current_theme_name =
-                ajour.config.theme.as_deref().unwrap_or("Dark").to_string();
-
-            // Use scale from config. Set to 1.0 if not defined.
-            ajour.scale_state.scale = ajour.config.scale.unwrap_or(1.0);
 
             // Begin to parse addon folder(s).
             let mut commands = vec![];
@@ -290,7 +115,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Prepare state for loading.
             ajour.state = AjourState::Loading;
 
-            return Ok(Command::perform(load_config(), Message::Parse));
+            return Ok(Command::perform(async {}, Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
             log::debug!("Interaction::Settings");
@@ -387,7 +212,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Set loading state.
                 ajour.state = AjourState::Loading;
                 // Reload config.
-                return Ok(Command::perform(load_config(), Message::Parse));
+                return Ok(Command::perform(async {}, Message::Parse));
             }
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
@@ -1620,7 +1445,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Message::AddonCacheUpdated({})", entry.title);
         }
         Message::Error(error)
-        | Message::Parse(Err(error))
         | Message::CatalogDownloaded(Err(error))
         | Message::AddonCacheUpdated(Err(error)) => {
             log::error!("{}", error);
