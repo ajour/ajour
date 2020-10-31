@@ -1,9 +1,9 @@
 use {
     super::{
-        AddonVersionKey, Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey,
-        CatalogInstallStatus, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
-        DirectoryType, DownloadReason, ExpandType, Interaction, Message, SelfUpdateStatus,
-        SortDirection,
+        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogInstallStatus,
+        CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey, DirectoryType,
+        DownloadReason, ExpandType, Interaction, Message, Mode, SelfUpdateStatus, SortDirection,
+        State,
     },
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
@@ -233,6 +233,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.valid_flavors.dedup();
                     }
 
+                    // Sets loading
+                    ajour.state.insert(Mode::MyAddons(*flavor), State::Loading);
+
+                    // Add commands
                     commands.push(Command::perform(
                         perform_read_addon_directory(
                             ajour.fingerprint_collection.clone(),
@@ -245,7 +249,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     log::debug!("addon directory is not set, showing welcome screen");
 
                     // Assume we are welcoming a user because directory is not set.
-                    ajour.state = AjourState::Welcome;
+                    let flavor = ajour.config.wow.flavor;
+                    ajour.state.insert(Mode::MyAddons(flavor), State::Start);
+
                     break;
                 }
             }
@@ -274,8 +280,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Cleans the addons.
             ajour.addons = HashMap::new();
+
             // Prepare state for loading.
-            ajour.state = AjourState::Loading;
+            let flavor = ajour.config.wow.flavor;
+            ajour.state.insert(Mode::MyAddons(flavor), State::Loading);
 
             return Ok(Command::perform(load_config(), Message::Parse));
         }
@@ -372,8 +380,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Persist the newly updated config.
                 let _ = &ajour.config.save();
                 // Set loading state.
-                ajour.state = AjourState::Loading;
-                // Reload config.
+                let state = ajour.state.clone();
+                for (mode, _) in state {
+                    if matches!(mode, Mode::MyAddons(_)) {
+                        ajour.state.insert(mode, State::Loading);
+                    }
+                }
+
                 return Ok(Command::perform(load_config(), Message::Parse));
             }
         }
@@ -387,6 +400,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
             let _ = &ajour.config.save();
+            // Update flavor on MyAddons if thats our current mode.
+            if let Mode::MyAddons(_) = ajour.mode {
+                ajour.mode = Mode::MyAddons(flavor)
+            }
             // Update catalog
             query_and_sort_catalog(ajour);
         }
@@ -396,20 +413,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
-            // Set ajour mode.
+            // Sets mode.
             ajour.mode = mode;
-            match mode {
-                AjourMode::Catalog => {
-                    let refresh = ajour.catalog.is_none();
-                    if refresh {
-                        ajour.state = AjourState::Loading;
-                    }
-                    ajour.state = AjourState::Idle;
-                }
-                AjourMode::MyAddons => {
-                    ajour.state = AjourState::Idle;
-                }
-            }
         }
 
         Message::Interaction(Interaction::Expand(expand_type)) => {
@@ -617,9 +622,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::ParsedAddons((flavor, result)) => {
             // if our selected flavor returns (either ok or error) - we change to idle.
-            if flavor == ajour.config.wow.flavor {
-                ajour.state = AjourState::Idle;
-            }
+            ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
             if let Ok(addons) = result {
                 log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
@@ -670,10 +673,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
                 ajour.header_state.previous_column_key = Some(ColumnKey::Status);
 
-                if flavor == ajour.config.wow.flavor {
-                    // Set the state if flavor matches.
-                    ajour.state = AjourState::Idle;
-                }
+                // Sets the flavor state to ready.
+                ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
                 // Insert the addons into the HashMap.
                 ajour.addons.insert(flavor, addons);
@@ -737,8 +738,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                     Err(error) => {
                         log::error!("{}", error);
-
-                        ajour.state = AjourState::Error(error);
+                        ajour.error = Some(error.to_string());
 
                         // Update catalog status for addon
                         if reason == DownloadReason::Install {
@@ -851,9 +851,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         return Ok(Command::batch(commands));
                     }
-                    Err(err) => {
-                        ajour.state = AjourState::Error(err);
-                        addon.state = AddonState::Ajour(Some("Error".to_owned()));
+                    Err(error) => {
+                        ajour.error = Some(error.to_string());
 
                         // Update catalog status for addon
                         if reason == DownloadReason::Install {
@@ -1065,7 +1064,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 right_name,
                 right_width,
             } => match column_type {
-                AjourMode::MyAddons => {
+                Mode::MyAddons(_) => {
                     let left_key = ColumnKey::from(left_name.as_str());
                     let right_key = ColumnKey::from(right_name.as_str());
 
@@ -1087,7 +1086,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         column.width = Length::Units(right_width);
                     }
                 }
-                AjourMode::Catalog => {
+                Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
 
@@ -1206,8 +1205,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::error!("{}", error);
 
             ajour.backup_state.backing_up = false;
-
-            ajour.state = AjourState::Error(error);
+            ajour.error = Some(error.to_string())
         }
         Message::Interaction(Interaction::ToggleColumn(is_checked, key)) => {
             // We can't untoggle the addon title column
@@ -1412,6 +1410,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.catalog = Some(catalog);
 
+            ajour.state.insert(Mode::Catalog, State::Ready);
+
             query_and_sort_catalog(ajour);
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
@@ -1568,15 +1568,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         Ok(_) => std::process::exit(0),
                         Err(error) => {
                             log::error!("{}", error);
-                            ajour.state = AjourState::Error(ClientError::from(error));
+                            ajour.error = Some(ClientError::from(error).to_string());
                             ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
                         }
                     }
                 }
                 Err(error) => {
                     log::error!("{}", error);
-
-                    ajour.state = AjourState::Error(error);
+                    ajour.error = Some(error.to_string());
                     ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
                 }
             }
@@ -1585,8 +1584,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         | Message::Parse(Err(error))
         | Message::CatalogDownloaded(Err(error)) => {
             log::error!("{}", error);
-
-            ajour.state = AjourState::Error(error);
+            ajour.error = Some(error.to_string());
         }
         Message::RuntimeEvent(iced_native::Event::Window(
             iced_native::window::Event::Resized { width, height },
