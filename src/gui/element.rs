@@ -20,6 +20,7 @@ use {
         HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
     num_format::{Locale, ToFormattedString},
+    version_compare::{CompOp, VersionCompare},
     widgets::{header, Header},
 };
 
@@ -1569,7 +1570,7 @@ pub fn menu_container<'a>(
         .style(style::NormalErrorForegroundContainer(color_palette));
 
     let version_text = Text::new(if let Some(release) = &self_update_state.latest_release {
-        if release.tag_name != VERSION {
+        if VersionCompare::compare_to(&release.tag_name, VERSION, &CompOp::Gt).unwrap_or(false) {
             needs_update = true;
 
             format!(
