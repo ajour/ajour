@@ -21,6 +21,7 @@ use {
     },
     num_format::{Locale, ToFormattedString},
     std::collections::HashMap,
+    version_compare::{CompOp, VersionCompare},
     widgets::{header, Header},
 };
 
@@ -41,6 +42,7 @@ pub fn settings_container<'a, 'b>(
     column_config: &'b [(ColumnKey, Length, bool)],
     catalog_column_settings: &'a mut CatalogColumnSettings,
     catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
+    website_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
@@ -438,8 +440,27 @@ pub fn settings_container<'a, 'b>(
         (columns_title_row, columns_scrollable)
     };
 
+    let (website_button, website_title) = {
+        let website_info = Text::new("About").size(14);
+        let website_info_row = Row::new().push(website_info);
+
+        let website_button_title_container =
+            Container::new(Text::new("Website").size(DEFAULT_FONT_SIZE))
+                .width(Length::FillPortion(1))
+                .center_x()
+                .align_x(Align::Center);
+        let website_button: Element<Interaction> =
+            Button::new(website_button_state, website_button_title_container)
+                .width(Length::Units(100))
+                .style(style::DefaultBoxedButton(color_palette))
+                .on_press(Interaction::OpenLink("https://getajour.com".to_owned()))
+                .into();
+
+        (website_button, website_info_row)
+    };
+
     // Colum wrapping all the settings content.
-    let left_column = Column::new()
+    let right_column = Column::new()
         .push(directory_info_text)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(path_data_row)
@@ -458,16 +479,23 @@ pub fn settings_container<'a, 'b>(
         .push(scale_title_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_buttons_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(Space::new(
+            Length::Units(0),
+            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
+        ))
         .push(theme_info_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(theme_data_row);
-
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
+        .push(theme_data_row)
+        .push(Space::new(
+            Length::Units(0),
+            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
+        ))
+        .push(website_title)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(website_button.map(Message::Interaction));
 
     // Container wrapping colum.
-    let left_container = Container::new(left_column)
+    let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
         .height(Length::Shrink)
         .style(style::BrightForegroundContainer(color_palette));
@@ -498,7 +526,7 @@ pub fn settings_container<'a, 'b>(
         .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
-    let mut row = Row::new().push(left_spacer);
+    let mut row = Row::new().push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
 
     // Depending on mode, we show different columns to edit.
     match mode {
@@ -512,8 +540,11 @@ pub fn settings_container<'a, 'b>(
 
     row = row
         .push(middle_container)
-        .push(left_container)
-        .push(right_spacer);
+        .push(right_container)
+        .push(Space::new(
+            Length::Units(DEFAULT_PADDING + 5),
+            Length::Units(0),
+        ));
 
     // Returns the final container.
     Container::new(row)
@@ -1580,7 +1611,7 @@ pub fn menu_container<'a>(
         .style(style::NormalErrorForegroundContainer(color_palette));
 
     let version_text = Text::new(if let Some(release) = &self_update_state.latest_release {
-        if release.tag_name != VERSION {
+        if VersionCompare::compare_to(&release.tag_name, VERSION, &CompOp::Gt).unwrap_or(false) {
             needs_update = true;
 
             format!(

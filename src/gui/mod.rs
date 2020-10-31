@@ -161,6 +161,7 @@ pub struct Ajour {
     catalog_install_statuses: Vec<(Flavor, u32, CatalogInstallStatus)>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
+    website_btn_state: button::State,
 }
 
 impl Default for Ajour {
@@ -206,6 +207,7 @@ impl Default for Ajour {
             catalog_install_statuses: vec![],
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
+            website_btn_state: Default::default(),
         }
     }
 }
@@ -310,6 +312,7 @@ impl Application for Ajour {
                 &column_config,
                 &mut self.catalog_column_settings,
                 &catalog_column_config,
+                &mut self.website_btn_state,
             );
 
             // Space below settings.
