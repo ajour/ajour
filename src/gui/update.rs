@@ -101,6 +101,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if let Some(flavor) = ajour.valid_flavors.first() {
                     // Set nye flavor.
                     ajour.config.wow.flavor = *flavor;
+                    // Set mode.
+                    ajour.mode = Mode::MyAddons(*flavor);
                     // Persist the newly updated config.
                     ajour.config.save()?;
                 }
