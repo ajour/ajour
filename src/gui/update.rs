@@ -627,7 +627,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                                 == f.repository_identifiers
                                                     .curse
                                                     .as_ref()
-                                                    .map(u32::to_string)
+                                                    .map(i32::to_string)
                                         }
                                         Repository::Tukui => {
                                             addon.repository_id() == f.repository_identifiers.tukui
@@ -1576,9 +1576,9 @@ async fn perform_unpack_addon(
 /// Unzips `Addon` at given `from_directory` and moves it `to_directory`.
 async fn perform_fetch_latest_addon(
     source: catalog::Source,
-    source_id: u32,
+    source_id: i32,
     flavor: Flavor,
-) -> (Flavor, u32, Result<Addon>) {
+) -> (Flavor, i32, Result<Addon>) {
     let result = match source {
         catalog::Source::Curse => curse_api::latest_addon(source_id, flavor).await,
         catalog::Source::Tukui => tukui_api::latest_addon(source_id, flavor).await,
@@ -1835,7 +1835,7 @@ fn save_column_configs(ajour: &mut Ajour) {
 }
 
 fn update_catalog_install_status(
-    statuses: &mut Vec<(Flavor, u32, CatalogInstallStatus)>,
+    statuses: &mut Vec<(Flavor, i32, CatalogInstallStatus)>,
     new_status: CatalogInstallStatus,
     flavor: Flavor,
     repository_id: Option<String>,

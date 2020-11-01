@@ -64,7 +64,7 @@ pub struct GameVersion {
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogAddon {
-    pub id: u32,
+    pub id: i32,
     pub website_url: String,
     #[serde(with = "date_parser")]
     pub date_released: Option<DateTime<Utc>>,

@@ -16,7 +16,7 @@ const FINGERPRINT_API_ENDPOINT: &str = "https://hub.wowup.io/curseforge/addons/f
 #[serde(rename_all = "camelCase")]
 /// Struct for applying curse details to an `Addon`.
 pub struct Package {
-    pub id: u32,
+    pub id: i32,
     pub name: String,
     pub website_url: String,
     pub latest_files: Vec<File>,
@@ -90,7 +90,7 @@ pub struct FingerprintInfo {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddonFingerprintInfo {
-    pub id: u32,
+    pub id: i32,
     pub file: File,
     pub latest_files: Vec<File>,
 }
@@ -121,7 +121,7 @@ pub async fn fetch_remote_packages_by_fingerprint(fingerprints: &[u32]) -> Resul
     }
 }
 
-pub async fn fetch_remote_packages_by_ids(curse_ids: &[u32]) -> Result<Vec<Package>> {
+pub async fn fetch_remote_packages_by_ids(curse_ids: &[i32]) -> Result<Vec<Package>> {
     let url = format!("{}/addon", API_ENDPOINT);
     let mut resp = post_json_async(url, curse_ids, vec![], None).await?;
     if resp.status().is_success() {
@@ -170,7 +170,7 @@ pub async fn fetch_game_info() -> Result<GameInfo> {
     }
 }
 
-pub async fn latest_addon(curse_id: u32, flavor: Flavor) -> Result<Addon> {
+pub async fn latest_addon(curse_id: i32, flavor: Flavor) -> Result<Addon> {
     let packages: Vec<Package> = fetch_remote_packages_by_ids(&[curse_id]).await?;
 
     let package = packages.into_iter().next().ok_or_else(|| {

@@ -198,7 +198,7 @@ async fn update_addon(
                 match repo {
                     Repository::Curse => {
                         addon.repository_id()
-                            == f.repository_identifiers.curse.as_ref().map(u32::to_string)
+                            == f.repository_identifiers.curse.as_ref().map(i32::to_string)
                     }
                     Repository::Tukui => addon.repository_id() == f.repository_identifiers.tukui,
                     Repository::WowI => addon.repository_id() == f.repository_identifiers.wowi,
