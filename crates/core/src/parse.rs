@@ -1074,6 +1074,11 @@ where
     Some(current)
 }
 
+lazy_static::lazy_static! {
+    static ref RE_TOC_LINE: regex::Regex = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
+    static ref RE_TOC_TITLE: regex::Regex = regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)").unwrap();
+}
+
 /// Helper function to parse a given TOC file
 /// (`DirEntry`) into a `Addon` struct.
 ///
@@ -1099,21 +1104,27 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
     let mut tukui_id: Option<String> = None;
     let mut curse_id: Option<u32> = None;
 
-    // TODO: We should save these somewere so we don't keep creating them.
-    let re_toc = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
-    let re_title = regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*\|?|t|r)").unwrap();
-
     for line in reader.lines().filter_map(|l| l.ok()) {
-        for cap in re_toc.captures_iter(line.as_str()) {
+        for cap in RE_TOC_LINE.captures_iter(line.as_str()) {
             match &cap["key"] {
                 // Note: Coloring is possible via UI escape sequences.
                 // Since we don't want any color modifications, we will trim it away.
                 "Title" => {
-                    title = Some(re_title.replace_all(&cap["value"], "$1").trim().to_string())
+                    title = Some(
+                        RE_TOC_TITLE
+                            .replace_all(&cap["value"], "$1")
+                            .trim()
+                            .to_string(),
+                    )
                 }
                 "Author" => author = Some(cap["value"].trim().to_string()),
                 "Notes" => {
-                    notes = Some(re_title.replace_all(&cap["value"], "$1").trim().to_string())
+                    notes = Some(
+                        RE_TOC_TITLE
+                            .replace_all(&cap["value"], "$1")
+                            .trim()
+                            .to_string(),
+                    )
                 }
                 "Version" => version = Some(cap["value"].trim().to_owned()),
                 // Names that must be loaded before this addon can be loaded.
@@ -1160,4 +1171,45 @@ fn split_dependencies_into_vec(value: &str) -> Vec<String> {
         .split([','].as_ref())
         .map(|s| s.trim().to_string())
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_toc_title() {
+        let title = RE_TOC_TITLE.replace_all("Atlas |cFF0099FF[Foobar]|r", "$1");
+        assert_eq!(title, "Atlas [Foobar]");
+
+        let title = RE_TOC_TITLE.replace_all(
+            "Foobar|TInterface\\Addons\\Sorted\\Textures\\Title:24:96|t",
+            "$1",
+        );
+        assert_eq!(title, "Foobar");
+        let title = RE_TOC_TITLE.replace_all(
+            "|TInterface\\Addons\\Sorted\\Textures\\Title:24:96|tFoobar|TInterface\\Addons\\Sorted\\Textures\\Title:24:96|t",
+            "$1",
+        );
+        assert_eq!(title, "Foobar");
+
+        let title = RE_TOC_TITLE.replace_all("|cffffd200Deadly Boss Mods|r |cff69ccf0Core|", "$1");
+        assert_eq!(title, "Deadly Boss Mods Core");
+
+        let title = RE_TOC_TITLE.replace_all("Kui |cff9966ffNameplates", "$1");
+        assert_eq!(title, "Kui Nameplates");
+
+        let title = RE_TOC_TITLE.replace_all(
+            "|cffffe00a<|r|cffff7d0aDBM|r|cffffe00a>|r |cff69ccf0Darkmoon Faire|r",
+            "$1",
+        );
+        assert_eq!(title, "<DBM> Darkmoon Faire");
+
+        let title =
+            RE_TOC_TITLE.replace_all("BigWigs [|cffeda55fNy'alotha, the Waking City|r]", "$1");
+        assert_eq!(title, "BigWigs [Ny'alotha, the Waking City]");
+
+        let title = RE_TOC_TITLE.replace_all("|cff1784d1ElvUI |cff83F3F7Absorb Tags", "$1");
+        assert_eq!(title, "ElvUI Absorb Tags");
+    }
 }
