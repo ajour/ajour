@@ -90,10 +90,6 @@ I welcome contributions of any kind, because together we can make Ajour even bet
 
 ## FAQ
 
-**_When will you release Ajour / be feature complete?_**
-
-The plan is to have a stable, polished release in time for the Shadowlands launch. 10.27.20.
-
 **_What features are planned?_**
 
 We have a roadmap [here](https://github.com/casperstorm/ajour/projects/2).
@@ -105,6 +101,13 @@ We encourage you to raise an issue and tell us all about it! We want Ajour to su
 **_macOS won't let me open the app, what should I do?_**
 
 Instead of double clicking it, right click and choose "Open". That should successfully open Ajour.
+
+**_What requirements does Ajour have?_**
+Windows: DX12 or Vulkan
+Linux: Vulkan
+macOS: Metal
+
+If you are having problems with these requirements, then try the OpenGL build.
 
 **_Where does Ajour store its configuration?_**
 
