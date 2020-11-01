@@ -8,13 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
-### Fixed
-- Some addons failed to install through the catalog.
-- Cancelling when changing wow path will empty list.
-- Fixed case-sensitive issue when sorting addons by title. 
-- Better addon changelog formatting.
-- Fixed bug on linux that caused window size to grow / shrink between sessions when a <>1.0 scale was set
-- Fixed issue where Ajour sometimes shows a blank screen while content is loading.
 
 ### Packaging
 - Ajour can now self update when a new release is available. An "Update" button will appear along with a message that a newer release is available. Clicking this button will automatically update Ajour and relaunch it as the newer version.
@@ -25,13 +18,19 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Added
 - You can now select which columns you want to see in the Catalog.
 - Game version has been added as a optional column to addons in the Catalog.
-- Ajour now has WoWInterface as a source.
-- Added button to Ajour website in Settings.
+- Ajour now matches addons against WoWInterface.
+- Button to Ajour website in Settings.
 - Tukui addons can now be installed via the Catalog.
   - A cache was added to support this feature since tukui addons have fairly unreliable metadata in their .toc files.
 
 ### Fixed
-- Fixed an issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.
+- Some addons failed to install through the catalog.
+- Cancelling when changing wow path will empty list.
+- Case-sensitive issue when sorting addons by title. 
+- Better addon changelog formatting.
+- Bug on linux that caused window size to grow / shrink between sessions when a <>1.0 scale was set
+- Issue where Ajour sometimes shows a blank screen while content is loading.
+- Issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.
 
 ## [0.4.4] - 2020-10-23
 
