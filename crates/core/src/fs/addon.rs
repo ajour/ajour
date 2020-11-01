@@ -77,7 +77,8 @@ pub async fn install_addon(
     // Cleanup
     std::fs::remove_file(&zip_path)?;
 
-    let addon_folders = toc_files.iter().filter_map(parse_toc_path).collect();
+    let mut addon_folders: Vec<_> = toc_files.iter().filter_map(parse_toc_path).collect();
+    addon_folders.sort();
 
     Ok(addon_folders)
 }

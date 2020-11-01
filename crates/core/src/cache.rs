@@ -73,6 +73,9 @@ pub async fn load_addon_cache() -> Result<AddonCache> {
     AddonCache::load_or_default()
 }
 
+/// Update the cache with input entry. If an entry already exists in the cache,
+/// with the same folder names as the input entry, that entry will be deleted
+/// before inserting the input entry.
 pub async fn update_addon_cache(
     addon_cache: Arc<Mutex<AddonCache>>,
     entry: AddonCacheEntry,
@@ -85,7 +88,7 @@ pub async fn update_addon_cache(
     let entries = addon_cache.get_mut_for_flavor(flavor);
 
     // Remove old entry, if it exists
-    entries.retain(|e| e.title != entry.title);
+    entries.retain(|e| e.folder_names != entry.folder_names);
 
     // Add new entry
     entries.push(entry.clone());
@@ -94,6 +97,35 @@ pub async fn update_addon_cache(
     let _ = addon_cache.save();
 
     Ok(entry)
+}
+
+/// Remove the cache entry that has the same folder names
+/// as the input entry. Will return the removed entry, if applicable.
+pub async fn remove_addon_cache_entry(
+    addon_cache: Arc<Mutex<AddonCache>>,
+    entry: AddonCacheEntry,
+    flavor: Flavor,
+) -> Option<AddonCacheEntry> {
+    // Lock mutex to get mutable access and block other tasks from trying to update
+    let mut addon_cache = addon_cache.lock().await;
+
+    // Get entries for flavor
+    let entries = addon_cache.get_mut_for_flavor(flavor);
+
+    // Remove old entry, if it exists
+    if let Some(idx) = entries
+        .iter()
+        .position(|e| e.folder_names == entry.folder_names)
+    {
+        let entry = entries.remove(idx);
+
+        // Persist changes to filesystem
+        let _ = addon_cache.save();
+
+        Some(entry)
+    } else {
+        None
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -113,12 +145,15 @@ impl TryFrom<&Addon> for AddonCacheEntry {
         if let (Some(repository), Some(repository_id)) =
             (addon.active_repository, addon.repository_id())
         {
+            let mut folder_names: Vec<_> = addon.folders.iter().map(|a| a.id.clone()).collect();
+            folder_names.sort();
+
             Ok(AddonCacheEntry {
                 title: addon.title().to_owned(),
                 repository,
                 repository_id,
                 primary_folder_id: addon.primary_folder_id.clone(),
-                folder_names: addon.folders.iter().map(|a| a.id.clone()).collect(),
+                folder_names,
                 modified: Utc::now(),
             })
         } else {
