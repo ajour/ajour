@@ -1218,7 +1218,7 @@ impl Default for CatalogSearchState {
             category: Default::default(),
             categories: Default::default(),
             categories_state: Default::default(),
-            source: CatalogSource::All,
+            source: CatalogSource::Choice(catalog::Source::Curse),
             sources: CatalogSource::all(),
             sources_state: Default::default(),
         }
@@ -1314,14 +1314,12 @@ impl std::fmt::Display for CatalogResultSize {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum CatalogSource {
-    All,
     Choice(catalog::Source),
 }
 
 impl CatalogSource {
     pub fn all() -> Vec<CatalogSource> {
         vec![
-            CatalogSource::All,
             CatalogSource::Choice(catalog::Source::Curse),
             CatalogSource::Choice(catalog::Source::Tukui),
         ]
@@ -1331,7 +1329,6 @@ impl CatalogSource {
 impl std::fmt::Display for CatalogSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            CatalogSource::All => "All Sources",
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
