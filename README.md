@@ -103,9 +103,10 @@ We encourage you to raise an issue and tell us all about it! We want Ajour to su
 Instead of double clicking it, right click and choose "Open". That should successfully open Ajour.
 
 **_What requirements does Ajour have?_**
-Windows: DX12 or Vulkan
-Linux: Vulkan
-macOS: Metal
+
+Windows: DX12 or Vulkan  
+Linux: Vulkan  
+macOS: Metal  
 
 If you are having problems with these requirements, then try the OpenGL build.
 
