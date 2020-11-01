@@ -1780,7 +1780,6 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     .any(|gc| gc.flavor == flavor.base_flavor())
             })
             .filter(|a| match source {
-                CatalogSource::All => true,
                 CatalogSource::Choice(source) => a.source == *source,
             })
             .filter(|a| match category {
