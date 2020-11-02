@@ -1604,5 +1604,8 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
     // Use scale from config. Set to 1.0 if not defined.
     ajour.scale_state.scale = config.scale.unwrap_or(1.0);
 
+    // Set the inital mode flavor
+    ajour.mode = Mode::MyAddons(config.wow.flavor);
+
     ajour.config = config;
 }
