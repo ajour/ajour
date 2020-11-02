@@ -870,6 +870,39 @@ impl Addon {
             }
         }
     }
+
+    pub fn update_addon_folders(&mut self, folders: &[AddonFolder]) {
+        let mut folders = folders.to_vec();
+
+        if !folders.is_empty() {
+            folders.sort_by(|a, b| a.id.cmp(&b.id));
+
+            // Assign the primary folder id based on the first folder alphabetically with
+            // a matching repository identifier otherwise just the first
+            // folder alphabetically
+            let primary_folder_id = if let Some(folder) = folders.iter().find(|f| {
+                if let Some(repo) = self.active_repository {
+                    match repo {
+                        Repository::Curse => {
+                            self.repository_id()
+                                == f.repository_identifiers.curse.as_ref().map(u32::to_string)
+                        }
+                        Repository::Tukui => self.repository_id() == f.repository_identifiers.tukui,
+                        Repository::WowI => self.repository_id() == f.repository_identifiers.wowi,
+                    }
+                } else {
+                    false
+                }
+            }) {
+                folder.id.clone()
+            } else {
+                // Wont fail since we already checked if vec is empty
+                folders.get(0).map(|f| f.id.clone()).unwrap()
+            };
+            self.primary_folder_id = primary_folder_id;
+            self.folders = folders;
+        }
+    }
 }
 
 impl PartialEq for Addon {

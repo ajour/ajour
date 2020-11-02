@@ -1,14 +1,17 @@
 use {
     super::{
-        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogInstallStatus,
-        CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey, DirectoryType,
-        DownloadReason, ExpandType, Interaction, Message, Mode, SelfUpdateStatus, SortDirection,
-        State,
+        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogInstallAddon,
+        CatalogInstallStatus, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
+        DirectoryType, DownloadReason, ExpandType, Interaction, Message, Mode, SelfUpdateStatus,
+        SortDirection, State,
     },
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
         backup::{backup_folders, latest_backup, BackupFolder},
-        cache::{update_addon_cache, AddonCache, AddonCacheEntry, FingerprintCache},
+        cache::{
+            remove_addon_cache_entry, update_addon_cache, AddonCache, AddonCacheEntry,
+            FingerprintCache,
+        },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
         curse_api,
@@ -101,6 +104,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if let Some(flavor) = ajour.valid_flavors.first() {
                     // Set nye flavor.
                     ajour.config.wow.flavor = *flavor;
+                    // Set mode.
+                    ajour.mode = Mode::MyAddons(*flavor);
                     // Persist the newly updated config.
                     ajour.config.save()?;
                 }
@@ -384,6 +389,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 // Delete addon(s) from disk.
                 let _ = delete_addons(&addon.folders);
+
+                // Remove addon from cache
+                if let Some(addon_cache) = &ajour.addon_cache {
+                    if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
+                        match addon.active_repository {
+                            // Delete the entry for this cached addon
+                            Some(Repository::Tukui) | Some(Repository::WowI) => {
+                                return Ok(Command::perform(
+                                    remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
+                                    Message::AddonCacheEntryRemoved,
+                                ));
+                            }
+                            _ => {}
+                        }
+                    }
+                }
             }
         }
         Message::Interaction(Interaction::Update(id)) => {
@@ -532,70 +553,70 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 result.is_err()
             );
 
-            // When an addon has been successfully downloaded we begin to unpack it.
-            // If it for some reason fails to download, we handle the error.
-            let from_directory = ajour
-                .config
-                .get_download_directory_for_flavor(flavor)
-                .expect("Expected a valid path");
-            let to_directory = ajour
-                .config
-                .get_addon_directory_for_flavor(&flavor)
-                .expect("Expected a valid path");
-
-            let mut remove_catalog_addon = None;
-
             let addons = ajour.addons.entry(flavor).or_default();
-            if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
-                match result {
-                    Ok(_) => {
-                        // Update catalog status for addon
-                        if reason == DownloadReason::Install {
-                            update_catalog_install_status(
-                                &mut ajour.catalog_install_statuses,
-                                CatalogInstallStatus::Unpacking,
-                                flavor,
-                                addon.repository_id(),
-                            );
-                        }
+            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
 
-                        if addon.state == AddonState::Downloading {
-                            addon.state = AddonState::Unpacking;
-                            let addon = addon.clone();
-                            return Ok(Command::perform(
-                                perform_unpack_addon(
-                                    reason,
-                                    flavor,
-                                    addon,
-                                    from_directory,
-                                    to_directory,
-                                ),
-                                Message::UnpackedAddon,
-                            ));
+            let mut addon = None;
+
+            match result {
+                Ok(_) => match reason {
+                    DownloadReason::Update => {
+                        if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
+                        {
+                            addon = Some(_addon);
                         }
                     }
-                    Err(error) => {
-                        log::error!("{}", error);
-                        ajour.error = Some(error.to_string());
+                    DownloadReason::Install => {
+                        if let Some(install_addon) = install_addons
+                            .iter_mut()
+                            .find(|a| a.addon.as_ref().map(|a| &a.primary_folder_id) == Some(&id))
+                        {
+                            install_addon.status = CatalogInstallStatus::Unpacking;
 
-                        // Update catalog status for addon
-                        if reason == DownloadReason::Install {
-                            update_catalog_install_status(
-                                &mut ajour.catalog_install_statuses,
-                                CatalogInstallStatus::Retry,
-                                flavor,
-                                addon.repository_id(),
-                            );
+                            if let Some(_addon) = install_addon.addon.as_mut() {
+                                addon = Some(_addon);
+                            }
+                        }
+                    }
+                },
+                Err(error) => {
+                    log::error!("{}", error);
+                    ajour.error = Some(error.to_string());
 
-                            remove_catalog_addon = Some(addon.primary_folder_id.clone());
+                    if reason == DownloadReason::Install {
+                        if let Some(install_addon) =
+                            install_addons.iter_mut().find(|a| a.id.to_string() == id)
+                        {
+                            install_addon.status = CatalogInstallStatus::Retry;
                         }
                     }
                 }
             }
 
-            // Remove catalog installed addon from addons since it failed
-            if let Some(id) = remove_catalog_addon {
-                addons.retain(|a| a.primary_folder_id != id)
+            if let Some(addon) = addon {
+                let from_directory = ajour
+                    .config
+                    .get_download_directory_for_flavor(flavor)
+                    .expect("Expected a valid path");
+                let to_directory = ajour
+                    .config
+                    .get_addon_directory_for_flavor(&flavor)
+                    .expect("Expected a valid path");
+
+                if addon.state == AddonState::Downloading {
+                    addon.state = AddonState::Unpacking;
+
+                    return Ok(Command::perform(
+                        perform_unpack_addon(
+                            reason,
+                            flavor,
+                            addon.clone(),
+                            from_directory,
+                            to_directory,
+                        ),
+                        Message::UnpackedAddon,
+                    ));
+                }
             }
         }
         Message::UnpackedAddon((reason, flavor, id, result)) => {
@@ -605,116 +626,122 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 result.is_err()
             );
 
-            let mut remove_catalog_addon = None;
-
             let addons = ajour.addons.entry(flavor).or_default();
-            if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
-                match result {
-                    Ok(mut folders) => {
-                        // Update the folders of the addon since they could have changed from the update,
-                        // or if its an addon installed through the catalog, we haven't assigned it folders yet
-                        if !folders.is_empty() {
-                            folders.sort_by(|a, b| a.id.cmp(&b.id));
+            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
 
-                            // Assign the primary folder id based on the first folder alphabetically with
-                            // a matching repository identifier otherwise just the first
-                            // folder alphabetically
-                            let primary_folder_id = if let Some(folder) = folders.iter().find(|f| {
-                                if let Some(repo) = addon.active_repository {
-                                    match repo {
-                                        Repository::Curse => {
-                                            addon.repository_id()
-                                                == f.repository_identifiers
-                                                    .curse
-                                                    .as_ref()
-                                                    .map(i32::to_string)
-                                        }
-                                        Repository::Tukui => {
-                                            addon.repository_id() == f.repository_identifiers.tukui
-                                        }
-                                        Repository::WowI => {
-                                            addon.repository_id() == f.repository_identifiers.wowi
-                                        }
-                                    }
-                                } else {
-                                    false
-                                }
-                            }) {
-                                folder.id.clone()
-                            } else {
-                                // Wont fail since we already checked if vec is empty
-                                folders.get(0).map(|f| f.id.clone()).unwrap()
-                            };
-                            addon.primary_folder_id = primary_folder_id;
-                            addon.folders = folders;
-                        }
+            let mut addon = None;
+            let mut folders = None;
 
-                        // Update catalog status for addon
-                        if reason == DownloadReason::Install {
-                            update_catalog_install_status(
-                                &mut ajour.catalog_install_statuses,
-                                CatalogInstallStatus::Fingerprint,
-                                flavor,
-                                addon.repository_id(),
-                            );
-                        }
-
-                        addon.state = AddonState::Fingerprint;
-
-                        let mut version = None;
-                        if let Some(package) = addon.relevant_release_package() {
-                            version = Some(package.version.clone());
-                        }
-                        if let Some(version) = version {
-                            addon.set_version(version);
-                        }
-
-                        if let Some(cache) = ajour.fingerprint_cache.as_ref() {
-                            let mut commands = vec![];
-
-                            for folder in &addon.folders {
-                                commands.push(Command::perform(
-                                    perform_hash_addon(
-                                        reason,
-                                        ajour
-                                            .config
-                                            .get_addon_directory_for_flavor(&flavor)
-                                            .expect("Expected a valid path"),
-                                        folder.id.clone(),
-                                        cache.clone(),
-                                        flavor,
-                                    ),
-                                    Message::UpdateFingerprint,
-                                ));
-                            }
-
-                            return Ok(Command::batch(commands));
+            match result {
+                Ok(_folders) => match reason {
+                    DownloadReason::Update => {
+                        if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
+                        {
+                            addon = Some(_addon);
+                            folders = Some(_folders);
                         }
                     }
-                    Err(error) => {
-                        ajour.error = Some(error.to_string());
+                    DownloadReason::Install => {
+                        if let Some(install_addon) = install_addons
+                            .iter_mut()
+                            .find(|a| a.addon.as_ref().map(|a| &a.primary_folder_id) == Some(&id))
+                        {
+                            if let Some(_addon) = install_addon.addon.as_mut() {
+                                // If we are installing from the catalog, remove any existing addon
+                                // that has the same folders and insert this new one
+                                addons.retain(|a| a.folders != _folders);
+                                addons.push(_addon.clone());
 
-                        // Update catalog status for addon
-                        if reason == DownloadReason::Install {
-                            update_catalog_install_status(
-                                &mut ajour.catalog_install_statuses,
-                                CatalogInstallStatus::Retry,
-                                flavor,
-                                addon.repository_id(),
-                            );
+                                addon = addons.iter_mut().find(|a| a.primary_folder_id == id);
+                                folders = Some(_folders);
+                            }
+                        }
 
-                            remove_catalog_addon = Some(addon.primary_folder_id.clone());
+                        // Remove install addon since we've successfully installed it and
+                        // added to main addon vec
+                        install_addons.retain(|a| {
+                            a.addon.as_ref().map(|a| &a.primary_folder_id) != Some(&id)
+                        });
+                    }
+                },
+                Err(error) => {
+                    log::error!("{}", error);
+                    ajour.error = Some(error.to_string());
+
+                    if reason == DownloadReason::Install {
+                        if let Some(install_addon) =
+                            install_addons.iter_mut().find(|a| a.id.to_string() == id)
+                        {
+                            install_addon.status = CatalogInstallStatus::Retry;
                         }
                     }
                 }
             }
 
-            // Remove catalog installed addon from addons since it failed
-            if let Some(id) = remove_catalog_addon {
-                addons.retain(|a| a.primary_folder_id != id)
+            let mut commands = vec![];
+
+            if let (Some(addon), Some(folders)) = (addon, folders) {
+                addon.update_addon_folders(&folders);
+
+                addon.state = AddonState::Fingerprint;
+
+                let mut version = None;
+                if let Some(package) = addon.relevant_release_package() {
+                    version = Some(package.version.clone());
+                }
+                if let Some(version) = version {
+                    addon.set_version(version);
+                }
+
+                // If we are updating / installing a Tukui / WowI
+                // addon, we want to update the cache. If we are installing a Curse
+                // addon, we want to make sure cache entry exists for those folders
+                if let Some(addon_cache) = &ajour.addon_cache {
+                    if let Ok(entry) = AddonCacheEntry::try_from(addon as &_) {
+                        match addon.active_repository {
+                            // Remove any entry related to this cached addon
+                            Some(Repository::Curse) => {
+                                commands.push(Command::perform(
+                                    remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
+                                    Message::AddonCacheEntryRemoved,
+                                ));
+                            }
+                            // Update the entry for this cached addon
+                            Some(Repository::Tukui) | Some(Repository::WowI) => {
+                                commands.push(Command::perform(
+                                    update_addon_cache(addon_cache.clone(), entry, flavor),
+                                    Message::AddonCacheUpdated,
+                                ));
+                            }
+                            None => {}
+                        }
+                    }
+                }
+
+                // Submit all addon folders to be fingerprinted
+                if let Some(cache) = ajour.fingerprint_cache.as_ref() {
+                    for folder in &addon.folders {
+                        commands.push(Command::perform(
+                            perform_hash_addon(
+                                ajour
+                                    .config
+                                    .get_addon_directory_for_flavor(&flavor)
+                                    .expect("Expected a valid path"),
+                                folder.id.clone(),
+                                cache.clone(),
+                                flavor,
+                            ),
+                            Message::UpdateFingerprint,
+                        ));
+                    }
+                }
+            }
+
+            if !commands.is_empty() {
+                return Ok(Command::batch(commands));
             }
         }
-        Message::UpdateFingerprint((reason, flavor, id, result)) => {
+        Message::UpdateFingerprint((flavor, id, result)) => {
             log::debug!(
                 "Message::UpdateFingerprint(({:?}, {}, error: {}))",
                 flavor,
@@ -722,62 +749,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 result.is_err()
             );
 
-            let mut remove_catalog_addon = None;
-
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 if result.is_ok() {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
-
-                    // Update catalog status for addon
-                    if reason == DownloadReason::Install {
-                        update_catalog_install_status(
-                            &mut ajour.catalog_install_statuses,
-                            CatalogInstallStatus::Completed,
-                            flavor,
-                            addon.repository_id(),
-                        );
-                    }
-
-                    if let Some(addon_cache) = &ajour.addon_cache {
-                        match AddonCacheEntry::try_from(addon as &_) {
-                            Ok(entry) => {
-                                // Add / update cache entry for addon if it's a Tukui
-                                // or WowI addon
-                                if addon.active_repository == Some(Repository::Tukui)
-                                    || addon.active_repository == Some(Repository::WowI)
-                                {
-                                    return Ok(Command::perform(
-                                        update_addon_cache(addon_cache.clone(), entry, flavor),
-                                        Message::AddonCacheUpdated,
-                                    ));
-                                }
-                            }
-                            Err(error) => {
-                                log::error!("{}", error);
-                            }
-                        }
-                    }
                 } else {
                     addon.state = AddonState::Ajour(Some("Error".to_owned()));
-
-                    // Update catalog status for addon
-                    if reason == DownloadReason::Install {
-                        update_catalog_install_status(
-                            &mut ajour.catalog_install_statuses,
-                            CatalogInstallStatus::Retry,
-                            flavor,
-                            addon.repository_id(),
-                        );
-
-                        remove_catalog_addon = Some(addon.primary_folder_id.clone());
-                    }
                 }
-            }
-
-            // Remove catalog installed addon from addons since it failed
-            if let Some(id) = remove_catalog_addon {
-                addons.retain(|a| a.primary_folder_id != id)
             }
         }
         Message::LatestRelease(release) => {
@@ -1294,16 +1272,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
+            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+
             // Remove any existing status for this addon since we are going
             // to try and download it again
-            ajour
-                .catalog_install_statuses
-                .retain(|(f, i, _)| if id == *i { flavor != *f } else { true });
+            install_addons.retain(|a| id != a.id);
 
             // Add new status for this addon as Downloading
-            ajour
-                .catalog_install_statuses
-                .push((flavor, id, CatalogInstallStatus::Downloading));
+            install_addons.push(CatalogInstallAddon {
+                id,
+                status: CatalogInstallStatus::Downloading,
+                addon: None,
+            });
 
             return Ok(Command::perform(
                 perform_fetch_latest_addon(source, id, flavor),
@@ -1340,47 +1320,45 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::CatalogInstallAddonFetched((flavor, id, result)) => match result {
-            Ok(mut addon) => {
-                log::debug!(
-                    "Message::CatalogInstallAddonFetched({:?}, {:?})",
-                    flavor,
-                    &id
-                );
+        Message::CatalogInstallAddonFetched((flavor, id, result)) => {
+            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
 
-                if let Some(addons) = ajour.addons.get_mut(&flavor) {
-                    // Add the addon to our collection
-                    addon.state = AddonState::Downloading;
-                    addons.push(addon.clone());
-
-                    let to_directory = ajour
-                        .config
-                        .get_download_directory_for_flavor(flavor)
-                        .expect("Expected a valid path");
-
-                    return Ok(Command::perform(
-                        perform_download_addon(
-                            DownloadReason::Install,
-                            ajour.shared_client.clone(),
+            if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id) {
+                match result {
+                    Ok(mut addon) => {
+                        log::debug!(
+                            "Message::CatalogInstallAddonFetched({:?}, {:?})",
                             flavor,
-                            addon,
-                            to_directory,
-                        ),
-                        Message::DownloadedAddon,
-                    ));
+                            &id,
+                        );
+
+                        addon.state = AddonState::Downloading;
+                        install_addon.addon = Some(addon.clone());
+
+                        let to_directory = ajour
+                            .config
+                            .get_download_directory_for_flavor(flavor)
+                            .expect("Expected a valid path");
+
+                        return Ok(Command::perform(
+                            perform_download_addon(
+                                DownloadReason::Install,
+                                ajour.shared_client.clone(),
+                                flavor,
+                                addon,
+                                to_directory,
+                            ),
+                            Message::DownloadedAddon,
+                        ));
+                    }
+                    Err(error) => {
+                        log::error!("{}", error);
+
+                        install_addon.status = CatalogInstallStatus::Unavilable;
+                    }
                 }
             }
-            Err(error) => {
-                log::error!("{}", error);
-
-                update_catalog_install_status(
-                    &mut ajour.catalog_install_statuses,
-                    CatalogInstallStatus::Unavilable,
-                    flavor,
-                    Some(id.to_string()),
-                );
-            }
-        },
+        }
         Message::FetchedChangelog((addon, key, result)) => {
             log::debug!("Message::FetchedChangelog(error: {})", &result.is_err());
             match result {
@@ -1442,6 +1420,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::AddonCacheUpdated(Ok(entry)) => {
             log::debug!("Message::AddonCacheUpdated({})", entry.title);
+        }
+        Message::AddonCacheEntryRemoved(maybe_entry) => {
+            if let Some(entry) = maybe_entry {
+                log::debug!("Message::AddonCacheEntryRemoved({})", entry.title);
+            }
         }
         Message::Error(error)
         | Message::CatalogDownloaded(Err(error))
@@ -1543,14 +1526,12 @@ async fn perform_download_addon(
 
 /// Rehashes a `Addon`.
 async fn perform_hash_addon(
-    reason: DownloadReason,
     addon_dir: impl AsRef<Path>,
     addon_id: String,
     fingerprint_cache: Arc<Mutex<FingerprintCache>>,
     flavor: Flavor,
-) -> (DownloadReason, Flavor, String, Result<()>) {
+) -> (Flavor, String, Result<()>) {
     (
-        reason,
         flavor,
         addon_id.clone(),
         update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id).await,
@@ -1832,20 +1813,6 @@ fn save_column_configs(ajour: &mut Ajour) {
     };
 
     let _ = ajour.config.save();
-}
-
-fn update_catalog_install_status(
-    statuses: &mut Vec<(Flavor, i32, CatalogInstallStatus)>,
-    new_status: CatalogInstallStatus,
-    flavor: Flavor,
-    repository_id: Option<String>,
-) {
-    if let Some((_, _, status)) = statuses
-        .iter_mut()
-        .find(|(f, i, _)| flavor == *f && repository_id == Some(i.to_string()))
-    {
-        *status = new_status;
-    }
 }
 
 /// Hardcoded binary names for each compilation target
