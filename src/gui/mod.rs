@@ -631,6 +631,8 @@ impl Application for Ajour {
 pub fn run(opts: Opts) {
     let config: Config = Config::load_or_default().expect("loading config on application startup");
 
+    log::debug!("config loaded:\n{:#?}", &config);
+
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
 
