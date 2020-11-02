@@ -64,7 +64,7 @@ pub struct GameVersion {
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogAddon {
-    pub id: u32,
+    pub id: i32,
     pub website_url: String,
     #[serde(with = "date_parser")]
     pub date_released: Option<DateTime<Utc>>,
@@ -94,14 +94,24 @@ mod date_parser {
             .map(|d| d.with_timezone(&Utc))
             .ok();
 
-        // Tukui format
-        if date.is_none() {
-            let date = NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %T")
-                .map(|d| Utc.from_utc_datetime(&d))
-                .ok();
-
+        if date.is_some() {
             return Ok(date);
         }
+
+        // Tukui format
+        let date = NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %T")
+            .map(|d| Utc.from_utc_datetime(&d))
+            .ok();
+
+        if date.is_some() {
+            return Ok(date);
+        }
+
+        // Handles Elvui and Tukui addons which runs in a format without HH:mm:ss.
+        let s_modified = format!("{} 00:00:00", &s);
+        let date = NaiveDateTime::parse_from_str(&s_modified, "%Y-%m-%d %T")
+            .map(|d| Utc.from_utc_datetime(&d))
+            .ok();
 
         Ok(date)
     }

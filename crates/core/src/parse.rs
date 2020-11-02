@@ -1102,7 +1102,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
     let mut dependencies: Vec<String> = Vec::new();
     let mut wowi_id: Option<String> = None;
     let mut tukui_id: Option<String> = None;
-    let mut curse_id: Option<u32> = None;
+    let mut curse_id: Option<i32> = None;
 
     for line in reader.lines().filter_map(|l| l.ok()) {
         for cap in RE_TOC_LINE.captures_iter(line.as_str()) {
@@ -1134,7 +1134,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
                 "X-Tukui-ProjectID" => tukui_id = Some(cap["value"].to_string()),
                 "X-WoWI-ID" => wowi_id = Some(cap["value"].to_string()),
                 "X-Curse-Project-ID" => {
-                    if let Ok(id) = cap["value"].to_string().parse::<u32>() {
+                    if let Ok(id) = cap["value"].to_string().parse::<i32>() {
                         curse_id = Some(id)
                     }
                 }

@@ -95,7 +95,7 @@ pub enum Interaction {
     MoveCatalogColumnRight(CatalogColumnKey),
     ModeSelected(Mode),
     CatalogQuery(String),
-    CatalogInstall(catalog::Source, Flavor, u32),
+    CatalogInstall(catalog::Source, Flavor, i32),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
     CatalogSourceSelected(CatalogSource),
@@ -124,7 +124,7 @@ pub enum Message {
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
-    CatalogInstallAddonFetched((Flavor, u32, Result<Addon>)),
+    CatalogInstallAddonFetched((Flavor, i32, Result<Addon>)),
     FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
     AjourUpdateDownloaded(Result<(String, PathBuf)>),
     AddonCacheUpdated(Result<AddonCacheEntry>),
@@ -1243,7 +1243,7 @@ impl From<CatalogAddon> for CatalogRow {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CatalogInstallAddon {
-    id: u32,
+    id: i32,
     status: CatalogInstallStatus,
     addon: Option<Addon>,
 }

@@ -74,7 +74,7 @@ pub async fn fetch_remote_package(
     }
 }
 
-pub async fn latest_addon(tukui_id: u32, flavor: Flavor) -> Result<Addon> {
+pub async fn latest_addon(tukui_id: i32, flavor: Flavor) -> Result<Addon> {
     let tukui_id_string = tukui_id.to_string();
 
     let client = Arc::new(

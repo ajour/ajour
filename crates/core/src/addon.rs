@@ -86,7 +86,7 @@ pub enum AddonState {
 pub struct RepositoryIdentifiers {
     pub wowi: Option<String>,
     pub tukui: Option<String>,
-    pub curse: Option<u32>,
+    pub curse: Option<i32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]
@@ -532,7 +532,7 @@ impl Addon {
 
     /// Creates an `Addon` from the Curse fingerprint info
     pub fn from_curse_fingerprint_info(
-        curse_id: u32,
+        curse_id: i32,
         info: &curse_api::AddonFingerprintInfo,
         flavor: Flavor,
         addon_folders: &[AddonFolder],
@@ -684,7 +684,7 @@ impl Addon {
     }
 
     /// Returns the curse id of the addon, if applicable.
-    pub fn curse_id(&self) -> Option<u32> {
+    pub fn curse_id(&self) -> Option<i32> {
         let folder_curse = self
             .primary_addon_folder()
             .map(|f| f.repository_identifiers.curse)
@@ -722,7 +722,7 @@ impl Addon {
     }
 
     /// Set the curse id for the addon
-    pub fn set_curse_id(&mut self, curse_id: u32) {
+    pub fn set_curse_id(&mut self, curse_id: i32) {
         self.repository_identifiers.curse = Some(curse_id);
     }
 
@@ -885,7 +885,7 @@ impl Addon {
                     match repo {
                         Repository::Curse => {
                             self.repository_id()
-                                == f.repository_identifiers.curse.as_ref().map(u32::to_string)
+                                == f.repository_identifiers.curse.as_ref().map(i32::to_string)
                         }
                         Repository::Tukui => self.repository_id() == f.repository_identifiers.tukui,
                         Repository::WowI => self.repository_id() == f.repository_identifiers.wowi,

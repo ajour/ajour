@@ -1557,9 +1557,9 @@ async fn perform_unpack_addon(
 /// Unzips `Addon` at given `from_directory` and moves it `to_directory`.
 async fn perform_fetch_latest_addon(
     source: catalog::Source,
-    source_id: u32,
+    source_id: i32,
     flavor: Flavor,
-) -> (Flavor, u32, Result<Addon>) {
+) -> (Flavor, i32, Result<Addon>) {
     let result = match source {
         catalog::Source::Curse => curse_api::latest_addon(source_id, flavor).await,
         catalog::Source::Tukui => tukui_api::latest_addon(source_id, flavor).await,
