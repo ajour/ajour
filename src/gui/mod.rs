@@ -565,8 +565,11 @@ impl Application for Ajour {
 
         let container: Option<Container<Message>> = match self.mode {
             Mode::MyAddons(flavor) => {
-                let default = &State::default();
-                let state = self.state.get(&Mode::MyAddons(flavor)).unwrap_or(default);
+                let state = self
+                    .state
+                    .get(&Mode::MyAddons(flavor))
+                    .cloned()
+                    .unwrap_or_default();
                 match state {
                     State::Start => Some(element::status_container(
                         color_palette,
@@ -598,8 +601,7 @@ impl Application for Ajour {
                 }
             }
             Mode::Catalog => {
-                let default = &State::default();
-                let state = self.state.get(&Mode::Catalog).unwrap_or(default);
+                let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
                     State::Start => None,
                     State::Loading => Some(element::status_container(

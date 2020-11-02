@@ -1316,8 +1316,10 @@ pub fn menu_addons_container<'a>(
     config: &Config,
 ) -> Container<'a, Message> {
     // MyAddons state.
-    let default = &State::default();
-    let state = state.get(&Mode::MyAddons(flavor)).unwrap_or(default);
+    let state = state
+        .get(&Mode::MyAddons(flavor))
+        .cloned()
+        .unwrap_or_default();
 
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(35));
