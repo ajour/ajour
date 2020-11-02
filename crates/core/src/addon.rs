@@ -885,7 +885,7 @@ impl Addon {
                     match repo {
                         Repository::Curse => {
                             self.repository_id()
-                                == f.repository_identifiers.curse.as_ref().map(u32::to_string)
+                                == f.repository_identifiers.curse.as_ref().map(i32::to_string)
                         }
                         Repository::Tukui => self.repository_id() == f.repository_identifiers.tukui,
                         Repository::WowI => self.repository_id() == f.repository_identifiers.wowi,

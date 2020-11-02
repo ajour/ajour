@@ -1243,7 +1243,7 @@ impl From<CatalogAddon> for CatalogRow {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CatalogInstallAddon {
-    id: u32,
+    id: i32,
     status: CatalogInstallStatus,
     addon: Option<Addon>,
 }
