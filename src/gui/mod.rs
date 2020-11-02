@@ -113,7 +113,7 @@ pub enum Message {
     None(()),
     Parse(()),
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
-    UpdateFingerprint((DownloadReason, Flavor, String, Result<()>)),
+    UpdateFingerprint((Flavor, String, Result<()>)),
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
@@ -128,6 +128,7 @@ pub enum Message {
     FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
     AjourUpdateDownloaded(Result<(String, PathBuf)>),
     AddonCacheUpdated(Result<AddonCacheEntry>),
+    AddonCacheEntryRemoved(Option<AddonCacheEntry>),
 }
 
 pub struct Ajour {
@@ -163,7 +164,7 @@ pub struct Ajour {
     catalog_column_settings: CatalogColumnSettings,
     onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
-    catalog_install_statuses: Vec<(Flavor, u32, CatalogInstallStatus)>,
+    catalog_install_addons: HashMap<Flavor, Vec<CatalogInstallAddon>>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
     website_btn_state: button::State,
@@ -210,7 +211,7 @@ impl Default for Ajour {
             catalog_column_settings: Default::default(),
             onboarding_directory_btn_state: Default::default(),
             catalog: None,
-            catalog_install_statuses: vec![],
+            catalog_install_addons: Default::default(),
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
             website_btn_state: Default::default(),
@@ -523,6 +524,8 @@ impl Application for Ajour {
                         &mut self.catalog_search_state.scrollable_state,
                     );
 
+                    let install_addons = self.catalog_install_addons.entry(flavor).or_default();
+
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
                         let installed_for_flavor = addons.iter().any(|a| {
@@ -530,12 +533,7 @@ impl Application for Ajour {
                                 || a.tukui_id() == Some(&addon.addon.id.to_string())
                         });
 
-                        let statuses = self
-                            .catalog_install_statuses
-                            .iter()
-                            .filter(|(_, i, _)| addon.addon.id == *i)
-                            .map(|(flavor, _, status)| (*flavor, *status))
-                            .collect();
+                        let install_addon = install_addons.iter().find(|a| addon.addon.id == a.id);
 
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,
@@ -543,7 +541,7 @@ impl Application for Ajour {
                             addon,
                             &catalog_column_config,
                             installed_for_flavor,
-                            statuses,
+                            install_addon,
                         );
 
                         catalog_scrollable = catalog_scrollable.push(catalog_data_cell);
@@ -1243,12 +1241,17 @@ impl From<CatalogAddon> for CatalogRow {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct CatalogInstallAddon {
+    id: u32,
+    status: CatalogInstallStatus,
+    addon: Option<Addon>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CatalogInstallStatus {
     Downloading,
     Unpacking,
-    Fingerprint,
-    Completed,
     Retry,
     Unavilable,
 }

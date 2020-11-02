@@ -3,9 +3,9 @@
 use {
     super::{
         style, AddonVersionKey, BackupState, CatalogColumnKey, CatalogColumnSettings,
-        CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog, ColumnKey, ColumnSettings,
-        ColumnState, DirectoryType, ExpandType, Interaction, Message, Mode, ReleaseChannel,
-        ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
+        CatalogColumnState, CatalogInstallAddon, CatalogInstallStatus, CatalogRow, Changelog,
+        ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType, Interaction, Message,
+        Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -1818,7 +1818,7 @@ pub fn catalog_data_cell<'a, 'b>(
     addon: &'a mut CatalogRow,
     column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
-    statuses: Vec<(Flavor, CatalogInstallStatus)>,
+    install_addon: Option<&CatalogInstallAddon>,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
 
@@ -1845,10 +1845,7 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let status = statuses
-            .iter()
-            .find(|(f, _)| *f == config.wow.flavor)
-            .map(|(_, status)| *status);
+        let status = install_addon.map(|a| a.status);
 
         let install_text = Text::new(if !flavor_exists_for_addon {
             "N/A"
@@ -1856,8 +1853,6 @@ pub fn catalog_data_cell<'a, 'b>(
             match status {
                 Some(CatalogInstallStatus::Downloading) => "Downloading",
                 Some(CatalogInstallStatus::Unpacking) => "Unpacking",
-                Some(CatalogInstallStatus::Fingerprint) => "Hashing",
-                Some(CatalogInstallStatus::Completed) => "Installed",
                 Some(CatalogInstallStatus::Retry) => "Retry",
                 Some(CatalogInstallStatus::Unavilable) => "Unavailable",
                 None => {
