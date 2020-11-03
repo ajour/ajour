@@ -9,6 +9,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+## [0.5.0] - 2020-11-03
+
 ### Packaging
 - Ajour can now self update when a new release is available. An "Update" button will appear along with a message that a newer release is available. Clicking this button will automatically update Ajour and relaunch it as the newer version.
   - On windows, self update may fail if you've placed the executable in Program Files due to permissions. Either run as administrator or place the executable under your User folder. We recommend placing it as `%APPDATA%\ajour\ajour.exe` and pinning to the taskbar or creating a desktop shortcut.
@@ -28,7 +30,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Cancelling when changing wow path will empty list.
 - Case-sensitive issue when sorting addons by title. 
 - Better addon changelog formatting.
-- Bug on linux that caused window size to grow / shrink between sessions when a <>1.0 scale was set
+- Bug on linux that caused window size to grow / shrink between sessions when a <>1.0 scale was set.
 - Issue where Ajour sometimes shows a blank screen while content is loading.
 - Issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.
 
