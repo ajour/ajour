@@ -3,6 +3,7 @@ use async_std::{
     fs::{create_dir_all, File},
     io::copy,
 };
+use isahc::config::RedirectPolicy;
 use isahc::http::header::CONTENT_LENGTH;
 use isahc::prelude::*;
 use serde::Serialize;
@@ -64,7 +65,15 @@ pub async fn download_addon(
     addon: &Addon,
     to_directory: &PathBuf,
 ) -> Result<()> {
-    if let Some(package) = addon.relevant_release_package() {
+    let package = if let Some(relevant_package) = addon.relevant_release_package() {
+        Some(relevant_package)
+    } else if let Some(fallback_package) = addon.fallback_release_package() {
+        Some(fallback_package)
+    } else {
+        None
+    };
+
+    if let Some(package) = package {
         log::debug!(
             "downloading remote version {} for {}",
             package.version,
@@ -102,6 +111,54 @@ pub async fn download_addon(
 
         copy(body, file).await?;
     }
+
+    Ok(())
+}
+
+/// Download a file from the internet
+pub async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<()> {
+    let url = url.to_string();
+
+    log::debug!("downloading file from {}", &url);
+
+    let client = HttpClient::builder()
+        .redirect_policy(RedirectPolicy::Follow)
+        .build()?;
+
+    let resp = request_async(
+        &client,
+        &url,
+        vec![("ACCEPT", "application/octet-stream")],
+        None,
+    )
+    .await?;
+    let (parts, body) = resp.into_parts();
+
+    // If response length doesn't equal content length, full file wasn't downloaded
+    // so error out
+    {
+        let content_length = parts
+            .headers
+            .get(CONTENT_LENGTH)
+            .map(|v| v.to_str().unwrap_or_default())
+            .unwrap_or_default()
+            .parse::<u64>()
+            .unwrap_or_default();
+
+        let body_length = body.len().unwrap_or_default();
+
+        if body_length != content_length {
+            return Err(ClientError::Custom(
+                "Download failed, body len doesn't match content len".to_string(),
+            ));
+        }
+    }
+
+    let file = File::create(&dest_file).await?;
+
+    copy(body, file).await?;
+
+    log::debug!("file saved as {:?}", &dest_file);
 
     Ok(())
 }

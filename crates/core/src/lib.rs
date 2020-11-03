@@ -1,5 +1,6 @@
 pub mod addon;
 pub mod backup;
+pub mod cache;
 pub mod catalog;
 pub mod config;
 pub mod curse_api;
@@ -12,6 +13,7 @@ pub mod parse;
 pub mod theme;
 pub mod tukui_api;
 pub mod utility;
+pub mod wowi_api;
 
 use crate::error::ClientError;
 

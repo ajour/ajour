@@ -3,17 +3,18 @@ mod style;
 mod update;
 
 use crate::cli::Opts;
-use crate::VERSION;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonVersionKey, ReleaseChannel},
+    cache::{
+        load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
+    },
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
-    config::{load_config, ColumnConfigV2, Config, Flavor},
+    config::{ColumnConfig, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
-    parse::FingerprintCollection,
     theme::{load_user_themes, Theme},
-    utility::needs_update,
+    utility::{self, get_latest_release},
     Result,
 };
 use async_std::sync::{Arc, Mutex};
@@ -34,28 +35,33 @@ use widgets::header;
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
 
-#[derive(Debug)]
-pub enum AjourState {
-    Error(ClientError),
-    Idle,
+#[derive(Debug, Clone, PartialEq)]
+pub enum State {
+    Start,
+    Ready,
     Loading,
-    Welcome,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum AjourMode {
-    MyAddons,
+impl Default for State {
+    fn default() -> Self {
+        State::Start
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Mode {
+    MyAddons(Flavor),
     Catalog,
 }
 
-impl std::fmt::Display for AjourMode {
+impl std::fmt::Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                AjourMode::MyAddons => "My Addons",
-                AjourMode::Catalog => "Catalog",
+                Mode::MyAddons(_) => "My Addons",
+                Mode::Catalog => "Catalog",
             }
         )
     }
@@ -77,32 +83,37 @@ pub enum Interaction {
     SortColumn(ColumnKey),
     SortCatalogColumn(CatalogColumnKey),
     FlavorSelected(Flavor),
-    ResizeColumn(AjourMode, header::ResizeEvent),
+    ResizeColumn(Mode, header::ResizeEvent),
     ScaleUp,
     ScaleDown,
     Backup,
     ToggleColumn(bool, ColumnKey),
+    ToggleCatalogColumn(bool, CatalogColumnKey),
     MoveColumnLeft(ColumnKey),
     MoveColumnRight(ColumnKey),
-    ModeSelected(AjourMode),
+    MoveCatalogColumnLeft(CatalogColumnKey),
+    MoveCatalogColumnRight(CatalogColumnKey),
+    ModeSelected(Mode),
     CatalogQuery(String),
-    CatalogInstall(catalog::Source, Flavor, u32),
+    CatalogInstall(catalog::Source, Flavor, i32),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
     CatalogSourceSelected(CatalogSource),
+    UpdateAjour,
 }
 
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum Message {
+    CachesLoaded(Result<(FingerprintCache, AddonCache)>),
     DownloadedAddon((DownloadReason, Flavor, String, Result<()>)),
     Error(ClientError),
     Interaction(Interaction),
-    NeedsUpdate(Result<Option<String>>),
+    LatestRelease(Option<utility::Release>),
     None(()),
-    Parse(Result<Config>),
+    Parse(()),
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
-    UpdateFingerprint((DownloadReason, Flavor, String, Result<()>)),
+    UpdateFingerprint((Flavor, String, Result<()>)),
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
@@ -113,12 +124,17 @@ pub enum Message {
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
-    CatalogInstallAddonFetched((Flavor, u32, Result<Addon>)),
-    FetchedCurseChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
-    FetchedTukuiChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
+    CatalogInstallAddonFetched((Flavor, i32, Result<Addon>)),
+    FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
+    AjourUpdateDownloaded(Result<(String, PathBuf)>),
+    AddonCacheUpdated(Result<AddonCacheEntry>),
+    AddonCacheEntryRemoved(Option<AddonCacheEntry>),
 }
 
 pub struct Ajour {
+    state: HashMap<Mode, State>,
+    error: Option<String>,
+    mode: Mode,
     addons: HashMap<Flavor, Vec<Addon>>,
     addons_scrollable_state: scrollable::State,
     config: Config,
@@ -126,17 +142,15 @@ pub struct Ajour {
     directory_btn_state: button::State,
     expanded_type: ExpandType,
     is_showing_settings: bool,
-    needs_update: Option<String>,
-    new_release_button_state: button::State,
+    self_update_state: SelfUpdateState,
     refresh_btn_state: button::State,
     settings_btn_state: button::State,
     shared_client: Arc<HttpClient>,
-    state: AjourState,
-    mode: AjourMode,
     update_all_btn_state: button::State,
     header_state: HeaderState,
     theme_state: ThemeState,
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
+    addon_cache: Option<Arc<Mutex<AddonCache>>>,
     retail_btn_state: button::State,
     retail_ptr_btn_state: button::State,
     retail_beta_btn_state: button::State,
@@ -147,16 +161,21 @@ pub struct Ajour {
     scale_state: ScaleState,
     backup_state: BackupState,
     column_settings: ColumnSettings,
+    catalog_column_settings: CatalogColumnSettings,
     onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
-    catalog_install_statuses: Vec<(Flavor, u32, CatalogInstallStatus)>,
+    catalog_install_addons: HashMap<Flavor, Vec<CatalogInstallAddon>>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
+    website_btn_state: button::State,
 }
 
 impl Default for Ajour {
     fn default() -> Self {
         Self {
+            state: [(Mode::Catalog, State::Loading)].iter().cloned().collect(),
+            error: None,
+            mode: Mode::MyAddons(Flavor::Retail),
             addons: HashMap::new(),
             addons_scrollable_state: Default::default(),
             config: Config::default(),
@@ -164,8 +183,7 @@ impl Default for Ajour {
             directory_btn_state: Default::default(),
             expanded_type: ExpandType::None,
             is_showing_settings: false,
-            needs_update: None,
-            new_release_button_state: Default::default(),
+            self_update_state: Default::default(),
             refresh_btn_state: Default::default(),
             settings_btn_state: Default::default(),
             shared_client: Arc::new(
@@ -175,12 +193,11 @@ impl Default for Ajour {
                     .build()
                     .unwrap(),
             ),
-            state: AjourState::Loading,
-            mode: AjourMode::MyAddons,
             update_all_btn_state: Default::default(),
             header_state: Default::default(),
             theme_state: Default::default(),
-            fingerprint_collection: Arc::new(Mutex::new(None)),
+            fingerprint_cache: None,
+            addon_cache: None,
             retail_btn_state: Default::default(),
             retail_ptr_btn_state: Default::default(),
             retail_beta_btn_state: Default::default(),
@@ -191,11 +208,13 @@ impl Default for Ajour {
             scale_state: Default::default(),
             backup_state: Default::default(),
             column_settings: Default::default(),
+            catalog_column_settings: Default::default(),
             onboarding_directory_btn_state: Default::default(),
             catalog: None,
-            catalog_install_statuses: vec![],
+            catalog_install_addons: Default::default(),
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
+            website_btn_state: Default::default(),
         }
     }
 }
@@ -203,17 +222,21 @@ impl Default for Ajour {
 impl Application for Ajour {
     type Executor = iced::executor::Default;
     type Message = Message;
-    type Flags = ();
+    type Flags = Config;
 
-    fn new(_flags: ()) -> (Self, Command<Message>) {
+    fn new(config: Config) -> (Self, Command<Message>) {
         let init_commands = vec![
-            Command::perform(load_config(), Message::Parse),
-            Command::perform(needs_update(VERSION), Message::NeedsUpdate),
+            Command::perform(load_caches(), Message::CachesLoaded),
+            Command::perform(get_latest_release(), Message::LatestRelease),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
             Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];
 
-        (Ajour::default(), Command::batch(init_commands))
+        let mut ajour = Ajour::default();
+
+        apply_config(&mut ajour, config);
+
+        (ajour, Command::batch(init_commands))
     }
 
     fn title(&self) -> String {
@@ -236,10 +259,6 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Message> {
-        // Clone config to be used.
-        // FIXME: This could be done prettier.
-        let cloned_config = self.config.clone();
-
         // Get color palette of chosen theme.
         let color_palette = self
             .theme_state
@@ -266,6 +285,7 @@ impl Application for Ajour {
             color_palette,
             &self.mode,
             &self.state,
+            &self.error,
             &self.config,
             &self.valid_flavors,
             &mut self.settings_btn_state,
@@ -276,8 +296,7 @@ impl Application for Ajour {
             &mut self.retail_beta_btn_state,
             &mut self.classic_btn_state,
             &mut self.classic_ptr_btn_state,
-            self.needs_update.as_deref(),
-            &mut self.new_release_button_state,
+            &mut self.self_update_state,
         );
 
         let column_config = self.header_state.column_config();
@@ -292,12 +311,16 @@ impl Application for Ajour {
             let settings_container = element::settings_container(
                 color_palette,
                 &mut self.directory_btn_state,
-                &cloned_config,
+                &self.config,
+                &self.mode,
                 &mut self.theme_state,
                 &mut self.scale_state,
                 &mut self.backup_state,
                 &mut self.column_settings,
                 &column_config,
+                &mut self.catalog_column_settings,
+                &catalog_column_config,
+                &mut self.website_btn_state,
             );
 
             // Space below settings.
@@ -311,7 +334,7 @@ impl Application for Ajour {
         content = content.push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
 
         match self.mode {
-            AjourMode::MyAddons => {
+            Mode::MyAddons(flavor) => {
                 // Get mutable addons for current flavor.
                 let addons = self.addons.entry(flavor).or_default();
 
@@ -321,11 +344,12 @@ impl Application for Ajour {
                 // Menu for addons.
                 let menu_addons_container = element::menu_addons_container(
                     color_palette,
+                    flavor,
                     &mut self.update_all_btn_state,
                     &mut self.refresh_btn_state,
                     &self.state,
                     addons,
-                    &mut self.config,
+                    &self.config,
                 );
                 content = content.push(menu_addons_container);
 
@@ -391,7 +415,7 @@ impl Application for Ajour {
                         .push(bottom_space)
                 }
             }
-            AjourMode::Catalog => {
+            Mode::Catalog => {
                 if let Some(catalog) = &self.catalog {
                     let default = vec![];
                     let addons = self.addons.get(&flavor).unwrap_or(&default);
@@ -500,6 +524,8 @@ impl Application for Ajour {
                         &mut self.catalog_search_state.scrollable_state,
                     );
 
+                    let install_addons = self.catalog_install_addons.entry(flavor).or_default();
+
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
                         let installed_for_flavor = addons.iter().any(|a| {
@@ -507,12 +533,7 @@ impl Application for Ajour {
                                 || a.tukui_id() == Some(&addon.addon.id.to_string())
                         });
 
-                        let statuses = self
-                            .catalog_install_statuses
-                            .iter()
-                            .filter(|(_, i, _)| addon.addon.id == *i)
-                            .map(|(flavor, _, status)| (*flavor, *status))
-                            .collect();
+                        let install_addon = install_addons.iter().find(|a| addon.addon.id == a.id);
 
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,
@@ -520,7 +541,7 @@ impl Application for Ajour {
                             addon,
                             &catalog_column_config,
                             installed_for_flavor,
-                            statuses,
+                            install_addon,
                         );
 
                         catalog_scrollable = catalog_scrollable.push(catalog_data_cell);
@@ -540,44 +561,56 @@ impl Application for Ajour {
             }
         }
 
-        // Status messages.
-        let container: Option<Container<Message>> = match self.state {
-            AjourState::Welcome => Some(element::status_container(
-                color_palette,
-                "Welcome to Ajour!",
-                "Please select your World of Warcraft directory",
-                Some(&mut self.onboarding_directory_btn_state),
-            )),
-            AjourState::Idle => match self.mode {
-                AjourMode::MyAddons => {
-                    if !has_addons {
-                        Some(element::status_container(
-                            color_palette,
-                            "Woops!",
-                            &format!("You have no {} addons.", flavor.to_string().to_lowercase()),
-                            None,
-                        ))
-                    } else {
-                        None
+        let container: Option<Container<Message>> = match self.mode {
+            Mode::MyAddons(flavor) => {
+                let state = self
+                    .state
+                    .get(&Mode::MyAddons(flavor))
+                    .cloned()
+                    .unwrap_or_default();
+                match state {
+                    State::Start => Some(element::status_container(
+                        color_palette,
+                        "Welcome to Ajour!",
+                        "Please select your World of Warcraft directory",
+                        Some(&mut self.onboarding_directory_btn_state),
+                    )),
+                    State::Loading => Some(element::status_container(
+                        color_palette,
+                        "Loading..",
+                        &format!("Currently parsing {} addons.", flavor.to_string()),
+                        None,
+                    )),
+                    State::Ready => {
+                        if !has_addons {
+                            Some(element::status_container(
+                                color_palette,
+                                "Woops!",
+                                &format!(
+                                    "You have no {} addons.",
+                                    flavor.to_string().to_lowercase()
+                                ),
+                                None,
+                            ))
+                        } else {
+                            None
+                        }
                     }
                 }
-                AjourMode::Catalog => None,
-            },
-            AjourState::Loading => match self.mode {
-                AjourMode::MyAddons => Some(element::status_container(
-                    color_palette,
-                    "Loading..",
-                    "Currently parsing addons.",
-                    None,
-                )),
-                AjourMode::Catalog => Some(element::status_container(
-                    color_palette,
-                    "Loading..",
-                    "Currently loading addon catalog.",
-                    None,
-                )),
-            },
-            _ => None,
+            }
+            Mode::Catalog => {
+                let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
+                match state {
+                    State::Start => None,
+                    State::Loading => Some(element::status_container(
+                        color_palette,
+                        "Loading..",
+                        "Currently loading catalog.",
+                        None,
+                    )),
+                    State::Ready => None,
+                }
+            }
         };
 
         if let Some(c) = container {
@@ -597,6 +630,8 @@ impl Application for Ajour {
 /// This function does not return.
 pub fn run(opts: Opts) {
     let config: Config = Config::load_or_default().expect("loading config on application startup");
+
+    log::debug!("config loaded:\n{:#?}", &config);
 
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
@@ -623,8 +658,10 @@ pub fn run(opts: Opts) {
     let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
     settings.window.icon = Some(icon.unwrap());
 
+    settings.flags = config;
+
     // Runs the GUI.
-    Ajour::run(settings);
+    Ajour::run(settings).expect("running Ajour gui");
 }
 
 #[derive(Debug, Clone)]
@@ -663,6 +700,7 @@ pub enum ColumnKey {
     Author,
     GameVersion,
     DateReleased,
+    Source,
 }
 
 impl ColumnKey {
@@ -678,6 +716,7 @@ impl ColumnKey {
             Author => "Author",
             GameVersion => "Game Version",
             DateReleased => "Latest Release",
+            Source => "Source",
         };
 
         title.to_string()
@@ -695,6 +734,7 @@ impl ColumnKey {
             Author => "author",
             GameVersion => "game_version",
             DateReleased => "date_released",
+            Source => "source",
         };
 
         s.to_string()
@@ -712,6 +752,7 @@ impl From<&str> for ColumnKey {
             "author" => ColumnKey::Author,
             "game_version" => ColumnKey::GameVersion,
             "date_released" => ColumnKey::DateReleased,
+            "source" => ColumnKey::Source,
             _ => panic!(format!("Unknown ColumnKey for {}", s)),
         }
     }
@@ -811,6 +852,13 @@ impl Default for HeaderState {
                     hidden: true,
                     order: 7,
                 },
+                ColumnState {
+                    key: ColumnKey::Source,
+                    btn_state: Default::default(),
+                    width: Length::Units(110),
+                    hidden: true,
+                    order: 8,
+                },
             ],
         }
     }
@@ -899,6 +947,12 @@ impl Default for ColumnSettings {
                     up_btn_state: Default::default(),
                     down_btn_state: Default::default(),
                 },
+                ColumnSettingState {
+                    key: ColumnKey::Source,
+                    order: 8,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
             ],
         }
     }
@@ -917,6 +971,7 @@ pub enum CatalogColumnKey {
     Description,
     Source,
     NumDownloads,
+    GameVersion,
     DateReleased,
     Install,
 }
@@ -930,6 +985,7 @@ impl CatalogColumnKey {
             Description => "Description",
             Source => "Source",
             NumDownloads => "# Downloads",
+            GameVersion => "Game Version",
             DateReleased => "Latest Release",
             CatalogColumnKey::Install => "Status",
         };
@@ -945,6 +1001,7 @@ impl CatalogColumnKey {
             Description => "description",
             Source => "source",
             NumDownloads => "num_downloads",
+            GameVersion => "game_version",
             DateReleased => "date_released",
             CatalogColumnKey::Install => "install",
         };
@@ -961,6 +1018,7 @@ impl From<&str> for CatalogColumnKey {
             "source" => CatalogColumnKey::Source,
             "num_downloads" => CatalogColumnKey::NumDownloads,
             "install" => CatalogColumnKey::Install,
+            "game_version" => CatalogColumnKey::GameVersion,
             "date_released" => CatalogColumnKey::DateReleased,
             _ => panic!(format!("Unknown CatalogColumnKey for {}", s)),
         }
@@ -975,8 +1033,11 @@ pub struct CatalogHeaderState {
 }
 
 impl CatalogHeaderState {
-    fn column_config(&self) -> Vec<(CatalogColumnKey, Length)> {
-        self.columns.iter().map(|c| (c.key, c.width)).collect()
+    fn column_config(&self) -> Vec<(CatalogColumnKey, Length, bool)> {
+        self.columns
+            .iter()
+            .map(|c| (c.key, c.width, c.hidden))
+            .collect()
     }
 }
 
@@ -990,32 +1051,51 @@ impl Default for CatalogHeaderState {
                 CatalogColumnState {
                     key: CatalogColumnKey::Title,
                     btn_state: Default::default(),
-                    width: Length::Units(150),
+                    width: Length::Fill,
+                    hidden: false,
+                    order: 0,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::Description,
                     btn_state: Default::default(),
-                    width: Length::Fill,
+                    width: Length::Units(150),
+                    hidden: false,
+                    order: 1,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::Source,
                     btn_state: Default::default(),
                     width: Length::Units(85),
+                    hidden: false,
+                    order: 2,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::NumDownloads,
                     btn_state: Default::default(),
                     width: Length::Units(105),
+                    hidden: true,
+                    order: 3,
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::GameVersion,
+                    btn_state: Default::default(),
+                    width: Length::Units(105),
+                    hidden: true,
+                    order: 4,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::DateReleased,
                     btn_state: Default::default(),
                     width: Length::Units(105),
+                    hidden: false,
+                    order: 5,
                 },
                 CatalogColumnState {
                     key: CatalogColumnKey::Install,
                     btn_state: Default::default(),
                     width: Length::Units(85),
+                    hidden: false,
+                    order: 6,
                 },
             ],
         }
@@ -1026,11 +1106,13 @@ pub struct CatalogColumnState {
     key: CatalogColumnKey,
     btn_state: button::State,
     width: Length,
+    hidden: bool,
+    order: usize,
 }
 
 impl From<&CatalogColumnState> for ColumnConfigV2 {
     fn from(column: &CatalogColumnState) -> Self {
-        // Only `CatalogColumnKey::Description` should be saved as Length::Fill -> width: None
+        // Only `CatalogColumnKey::Title` should be saved as Length::Fill -> width: None
         let width = if let Length::Units(width) = column.width {
             Some(width)
         } else {
@@ -1040,9 +1122,73 @@ impl From<&CatalogColumnState> for ColumnConfigV2 {
         ColumnConfigV2 {
             key: column.key.as_string(),
             width,
-            hidden: false,
+            hidden: column.hidden,
         }
     }
+}
+
+pub struct CatalogColumnSettings {
+    pub scrollable_state: scrollable::State,
+    pub columns: Vec<CatalogColumnSettingState>,
+}
+
+impl Default for CatalogColumnSettings {
+    fn default() -> Self {
+        CatalogColumnSettings {
+            scrollable_state: Default::default(),
+            columns: vec![
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Title,
+                    order: 0,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Description,
+                    order: 1,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Source,
+                    order: 2,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::NumDownloads,
+                    order: 3,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::GameVersion,
+                    order: 4,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::DateReleased,
+                    order: 5,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Install,
+                    order: 6,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+            ],
+        }
+    }
+}
+
+pub struct CatalogColumnSettingState {
+    pub key: CatalogColumnKey,
+    pub order: usize,
+    pub up_btn_state: button::State,
+    pub down_btn_state: button::State,
 }
 
 pub struct CatalogSearchState {
@@ -1074,7 +1220,7 @@ impl Default for CatalogSearchState {
             category: Default::default(),
             categories: Default::default(),
             categories_state: Default::default(),
-            source: CatalogSource::All,
+            source: CatalogSource::Choice(catalog::Source::Curse),
             sources: CatalogSource::all(),
             sources_state: Default::default(),
         }
@@ -1097,12 +1243,17 @@ impl From<CatalogAddon> for CatalogRow {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct CatalogInstallAddon {
+    id: i32,
+    status: CatalogInstallStatus,
+    addon: Option<Addon>,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CatalogInstallStatus {
     Downloading,
     Unpacking,
-    Fingerprint,
-    Completed,
     Retry,
     Unavilable,
 }
@@ -1170,17 +1321,14 @@ impl std::fmt::Display for CatalogResultSize {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum CatalogSource {
-    All,
     Choice(catalog::Source),
 }
 
 impl CatalogSource {
     pub fn all() -> Vec<CatalogSource> {
         vec![
-            CatalogSource::All,
             CatalogSource::Choice(catalog::Source::Curse),
-            // FIXME: Uncomment once Tukui catalog is enabled
-            //CatalogSource::Choice(catalog::Source::Tukui),
+            CatalogSource::Choice(catalog::Source::Tukui),
         ]
     }
 }
@@ -1188,7 +1336,6 @@ impl CatalogSource {
 impl std::fmt::Display for CatalogSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            CatalogSource::All => "All Sources",
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
@@ -1257,4 +1404,210 @@ pub struct BackupState {
 pub enum DownloadReason {
     Update,
     Install,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum SelfUpdateStatus {
+    InProgress,
+    Failed,
+}
+
+impl std::fmt::Display for SelfUpdateStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            SelfUpdateStatus::InProgress => "Updating",
+            SelfUpdateStatus::Failed => "Failed",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct SelfUpdateState {
+    latest_release: Option<utility::Release>,
+    status: Option<SelfUpdateStatus>,
+    btn_state: button::State,
+}
+
+async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {
+    let fingerprint_cache = load_fingerprint_cache().await?;
+    let addon_cache = load_addon_cache().await?;
+
+    Ok((fingerprint_cache, addon_cache))
+}
+
+fn apply_config(ajour: &mut Ajour, config: Config) {
+    // Set column widths from the config
+    match &config.column_config {
+        ColumnConfig::V1 {
+            local_version_width,
+            remote_version_width,
+            status_width,
+        } => {
+            ajour
+                .header_state
+                .columns
+                .get_mut(1)
+                .as_mut()
+                .unwrap()
+                .width = Length::Units(*local_version_width);
+            ajour
+                .header_state
+                .columns
+                .get_mut(2)
+                .as_mut()
+                .unwrap()
+                .width = Length::Units(*remote_version_width);
+            ajour
+                .header_state
+                .columns
+                .get_mut(3)
+                .as_mut()
+                .unwrap()
+                .width = Length::Units(*status_width);
+        }
+        ColumnConfig::V2 { columns } => {
+            ajour.header_state.columns.iter_mut().for_each(|a| {
+                if let Some((idx, column)) = columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some((idx, column))
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.width = column.width.map_or(Length::Fill, Length::Units);
+                    a.hidden = column.hidden;
+                    a.order = idx;
+                }
+            });
+
+            ajour.column_settings.columns.iter_mut().for_each(|a| {
+                if let Some(idx) = columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.order = idx;
+                }
+            });
+
+            // My Addons
+            ajour.header_state.columns.sort_by_key(|c| c.order);
+            ajour.column_settings.columns.sort_by_key(|c| c.order);
+        }
+        ColumnConfig::V3 {
+            my_addons_columns,
+            catalog_columns,
+        } => {
+            ajour.header_state.columns.iter_mut().for_each(|a| {
+                if let Some((idx, column)) = my_addons_columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some((idx, column))
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.width = column.width.map_or(Length::Fill, Length::Units);
+                    a.hidden = column.hidden;
+                    a.order = idx;
+                }
+            });
+
+            ajour.column_settings.columns.iter_mut().for_each(|a| {
+                if let Some(idx) = my_addons_columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.order = idx;
+                }
+            });
+
+            ajour
+                .catalog_column_settings
+                .columns
+                .iter_mut()
+                .for_each(|a| {
+                    if let Some(idx) = catalog_columns
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(idx, column)| {
+                            if column.key == a.key.as_string() {
+                                Some(idx)
+                            } else {
+                                None
+                            }
+                        })
+                        .next()
+                    {
+                        a.order = idx;
+                    }
+                });
+
+            ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
+                if let Some((idx, column)) = catalog_columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some((idx, column))
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    a.width = column.width.map_or(Length::Fill, Length::Units);
+                    a.hidden = column.hidden;
+                    a.order = idx;
+                }
+            });
+
+            // My Addons
+            ajour.header_state.columns.sort_by_key(|c| c.order);
+            ajour.column_settings.columns.sort_by_key(|c| c.order);
+
+            // Catalog
+            ajour.catalog_header_state.columns.sort_by_key(|c| c.order);
+            ajour
+                .catalog_column_settings
+                .columns
+                .sort_by_key(|c| c.order);
+        }
+    }
+
+    // Use theme from config. Set to "Dark" if not defined.
+    ajour.theme_state.current_theme_name = config.theme.as_deref().unwrap_or("Dark").to_string();
+
+    // Use scale from config. Set to 1.0 if not defined.
+    ajour.scale_state.scale = config.scale.unwrap_or(1.0);
+
+    // Set the inital mode flavor
+    ajour.mode = Mode::MyAddons(config.wow.flavor);
+
+    ajour.config = config;
 }

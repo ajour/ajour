@@ -2,10 +2,10 @@
 
 use {
     super::{
-        style, AddonVersionKey, AjourMode, AjourState, BackupState, CatalogColumnKey,
-        CatalogColumnState, CatalogInstallStatus, CatalogRow, Changelog, ColumnKey, ColumnSettings,
-        ColumnState, DirectoryType, ExpandType, Interaction, Message, ReleaseChannel, ScaleState,
-        SortDirection, ThemeState,
+        style, AddonVersionKey, BackupState, CatalogColumnKey, CatalogColumnSettings,
+        CatalogColumnState, CatalogInstallAddon, CatalogInstallStatus, CatalogRow, Changelog,
+        ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType, Interaction, Message,
+        Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -20,6 +20,8 @@ use {
         HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
     num_format::{Locale, ToFormattedString},
+    std::collections::HashMap,
+    version_compare::{CompOp, VersionCompare},
     widgets::{header, Header},
 };
 
@@ -32,11 +34,15 @@ pub fn settings_container<'a, 'b>(
     color_palette: ColorPalette,
     directory_button_state: &'a mut button::State,
     config: &Config,
+    mode: &Mode,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
     column_settings: &'a mut ColumnSettings,
     column_config: &'b [(ColumnKey, Length, bool)],
+    catalog_column_settings: &'a mut CatalogColumnSettings,
+    catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
+    website_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(14);
@@ -253,8 +259,8 @@ pub fn settings_container<'a, 'b>(
 
     let (columns_title_row, columns_scrollable) = {
         // Title for the Columns section.
-        let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
-        let columns_title_row = Row::new().push(columns_title_text).padding(DEFAULT_PADDING);
+        let columns_title_text = Text::new("My Addons Columns").size(DEFAULT_FONT_SIZE);
+        let columns_title_row = Row::new().push(columns_title_text);
 
         // Scrollable for column selections
         let mut columns_scrollable = Scrollable::new(&mut column_settings.scrollable_state)
@@ -342,9 +348,119 @@ pub fn settings_container<'a, 'b>(
         (columns_title_row, columns_scrollable)
     };
 
+    let (catalog_columns_title_row, catalog_columns_scrollable) = {
+        // Title for the Columns section.
+        let columns_title_text = Text::new("Catalog Columns").size(DEFAULT_FONT_SIZE);
+        let columns_title_row = Row::new().push(columns_title_text);
+
+        // Scrollable for column selections
+        let mut columns_scrollable = Scrollable::new(&mut catalog_column_settings.scrollable_state)
+            .spacing(1)
+            .width(Length::Fill)
+            .height(Length::FillPortion(4))
+            .style(style::SecondaryScrollable(color_palette));
+
+        // Add each column to scrollable as checkbox + label + up / down buttons
+        let columns_len = catalog_column_settings.columns.len();
+        for (idx, column) in catalog_column_settings.columns.iter_mut().enumerate() {
+            let is_first = idx == 0;
+            let is_last = idx == columns_len - 1;
+
+            let title = column.key.title();
+
+            let column_key = column.key;
+
+            let is_checked = catalog_column_config
+                .iter()
+                .any(|(key, _, hidden)| key == &column.key && !hidden)
+                || column_key == CatalogColumnKey::Title;
+
+            let mut left_button = Button::new(
+                &mut column.up_btn_state,
+                Text::new(" ▲  ").size(11).color(if !is_first {
+                    color_palette.bright.primary
+                } else {
+                    color_palette.normal.primary
+                }),
+            )
+            .style(style::DefaultButton(color_palette));
+            if !is_first {
+                left_button = left_button.on_press(Interaction::MoveCatalogColumnLeft(column_key));
+            }
+
+            let mut right_button = Button::new(
+                &mut column.down_btn_state,
+                Text::new(" ▼  ").size(11).color(if !is_last {
+                    color_palette.bright.primary
+                } else {
+                    color_palette.normal.primary
+                }),
+            )
+            .style(style::DefaultButton(color_palette));
+            if !is_last {
+                right_button =
+                    right_button.on_press(Interaction::MoveCatalogColumnRight(column_key));
+            }
+
+            let left_button: Element<Interaction> = left_button.into();
+            let right_button: Element<Interaction> = right_button.into();
+
+            let left_button_container = Container::new(left_button.map(Message::Interaction))
+                .center_x()
+                .center_y();
+            let right_button_container = Container::new(right_button.map(Message::Interaction))
+                .center_x()
+                .center_y();
+
+            let mut checkbox = Checkbox::new(is_checked, title.clone(), move |is_checked| {
+                Message::Interaction(Interaction::ToggleCatalogColumn(is_checked, column_key))
+            })
+            .text_size(DEFAULT_FONT_SIZE)
+            .spacing(5);
+
+            if column_key == CatalogColumnKey::Title {
+                checkbox = checkbox.style(style::AlwaysCheckedCheckbox(color_palette));
+            } else {
+                checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
+            }
+
+            let checkbox_container = Container::new(checkbox).padding(5);
+
+            let row = Row::new()
+                .align_items(Align::Center)
+                .height(Length::Units(26))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(left_button_container)
+                .push(right_button_container)
+                .push(checkbox_container);
+
+            columns_scrollable = columns_scrollable.push(row);
+        }
+
+        (columns_title_row, columns_scrollable)
+    };
+
+    let (website_button, website_title) = {
+        let website_info = Text::new("About").size(14);
+        let website_info_row = Row::new().push(website_info);
+
+        let website_button_title_container =
+            Container::new(Text::new("Website").size(DEFAULT_FONT_SIZE))
+                .width(Length::FillPortion(1))
+                .center_x()
+                .align_x(Align::Center);
+        let website_button: Element<Interaction> =
+            Button::new(website_button_state, website_button_title_container)
+                .width(Length::Units(100))
+                .style(style::DefaultBoxedButton(color_palette))
+                .on_press(Interaction::OpenLink("https://getajour.com".to_owned()))
+                .into();
+
+        (website_button, website_info_row)
+    };
+
     // Colum wrapping all the settings content.
-    let left_column = Column::new()
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+    let right_column = Column::new()
         .push(directory_info_text)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(path_data_row)
@@ -360,20 +476,26 @@ pub fn settings_container<'a, 'b>(
         .push(bottom_space);
 
     let middle_column = Column::new()
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_title_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(scale_buttons_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(Space::new(
+            Length::Units(0),
+            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
+        ))
         .push(theme_info_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(theme_data_row);
-
-    let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-    let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
+        .push(theme_data_row)
+        .push(Space::new(
+            Length::Units(0),
+            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
+        ))
+        .push(website_title)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(website_button.map(Message::Interaction));
 
     // Container wrapping colum.
-    let left_container = Container::new(left_column)
+    let right_container = Container::new(right_column)
         .width(Length::FillPortion(1))
         .height(Length::Shrink)
         .style(style::BrightForegroundContainer(color_palette));
@@ -383,28 +505,52 @@ pub fn settings_container<'a, 'b>(
         .height(Length::Shrink)
         .style(style::BrightForegroundContainer(color_palette));
 
-    let right_column = Column::new()
+    let my_addons_columns_column = Column::new()
         .push(columns_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(columns_scrollable)
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
-    let right_container = Container::new(right_column)
+    let my_addons_columns_container = Container::new(my_addons_columns_column)
         .width(Length::Units(200))
-        .height(Length::Units(265))
+        .height(Length::Units(280))
+        .style(style::BrightForegroundContainer(color_palette));
+
+    let catalog_columns_column = Column::new()
+        .push(catalog_columns_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(catalog_columns_scrollable)
+        .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
+    let catalog_columns_container = Container::new(catalog_columns_column)
+        .width(Length::Units(200))
+        .height(Length::Units(260))
         .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
-    let row = Row::new()
-        .push(left_spacer)
-        .push(right_container)
+    let mut row = Row::new().push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
+
+    // Depending on mode, we show different columns to edit.
+    match mode {
+        Mode::MyAddons(_) => {
+            row = row.push(my_addons_columns_container);
+        }
+        Mode::Catalog => {
+            row = row.push(catalog_columns_container);
+        }
+    }
+
+    row = row
         .push(middle_container)
-        .push(left_container)
-        .push(right_spacer);
+        .push(right_container)
+        .push(Space::new(
+            Length::Units(DEFAULT_PADDING + 5),
+            Length::Units(0),
+        ));
 
     // Returns the final container.
     Container::new(row)
         .height(Length::Shrink)
         .style(style::BrightForegroundContainer(color_palette))
-        .padding(DEFAULT_PADDING + DEFAULT_PADDING)
+        .padding(DEFAULT_PADDING)
 }
 
 pub fn addon_data_cell<'a, 'b>(
@@ -521,6 +667,13 @@ pub fn addon_data_cell<'a, 'b>(
                 )));
         }
 
+        if addon_cloned.active_repository == Some(Repository::WowI) {
+            local_version_button =
+                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
+                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
+                )));
+        }
+
         // Lets check if addon is expanded, in changelog mode and local is shown.
         if is_addon_expanded {
             if let ExpandType::Changelog(Changelog::Some(_, _, k)) = expand_type {
@@ -579,6 +732,13 @@ pub fn addon_data_cell<'a, 'b>(
         if addon_cloned.active_repository == Some(Repository::Tukui)
             && addon_cloned.repository_id().is_some()
         {
+            remote_version_button =
+                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
+                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
+                )));
+        }
+
+        if addon_cloned.active_repository == Some(Repository::WowI) {
             remote_version_button =
                 remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
                     Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
@@ -722,6 +882,32 @@ pub fn addon_data_cell<'a, 'b>(
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::Source && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let source_text = addon
+            .active_repository
+            .map_or_else(|| String::from("Unknown"), |a| a.to_string());
+        let source = Text::new(source_text).size(DEFAULT_FONT_SIZE);
+        let source_container = Container::new(source)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::NormalForegroundContainer(color_palette));
+
+        row_containers.push((idx, source_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
             if *key == ColumnKey::Status && !hidden {
                 Some((idx, width))
             } else {
@@ -795,7 +981,7 @@ pub fn addon_data_cell<'a, 'b>(
                 .center_x()
                 .padding(5)
                 .style(style::NormalForegroundContainer(color_palette)),
-            AddonState::Unknown => Container::new(Text::new("Unknown").size(DEFAULT_FONT_SIZE))
+            AddonState::Unknown => Container::new(Text::new("").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
@@ -1112,19 +1298,29 @@ pub fn addon_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(AjourMode::MyAddons, event))
+        Message::Interaction(Interaction::ResizeColumn(
+            Mode::MyAddons(Flavor::default()),
+            event,
+        ))
     })
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn menu_addons_container<'a>(
     color_palette: ColorPalette,
+    flavor: Flavor,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
-    state: &AjourState,
+    state: &HashMap<Mode, State>,
     addons: &[Addon],
-    config: &'a mut Config,
+    config: &Config,
 ) -> Container<'a, Message> {
+    // MyAddons state.
+    let state = state
+        .get(&Mode::MyAddons(flavor))
+        .cloned()
+        .unwrap_or_default();
+
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(35));
 
@@ -1145,7 +1341,8 @@ pub fn menu_addons_container<'a>(
         .iter()
         .any(|a| matches!(a.state, AddonState::Downloading | AddonState::Unpacking));
 
-    let ajour_performing_actions = matches!(state, AjourState::Loading);
+    // TODO: Fix
+    let ajour_performing_actions = matches!(state, State::Loading);
 
     // Is any addon updtable.
     let any_addon_updatable = addons
@@ -1163,10 +1360,7 @@ pub fn menu_addons_container<'a>(
     // Enable refresh_button if:
     //   - No addon is performing any task.
     //   - Ajour isn't loading
-    if !addons_performing_actions
-        && !ajour_performing_actions
-        && !matches!(state, AjourState::Welcome)
-    {
+    if !addons_performing_actions && !ajour_performing_actions && !matches!(state, State::Start) {
         refresh_button = refresh_button.on_press(Interaction::Refresh);
     }
 
@@ -1182,7 +1376,7 @@ pub fn menu_addons_container<'a>(
         .count();
 
     let status_text = match state {
-        AjourState::Idle => Text::new(format!(
+        State::Ready => Text::new(format!(
             "{} {} addons loaded",
             parent_addons_count,
             config.wow.flavor.to_string()
@@ -1218,8 +1412,9 @@ pub fn menu_addons_container<'a>(
 #[allow(clippy::too_many_arguments)]
 pub fn menu_container<'a>(
     color_palette: ColorPalette,
-    mode: &AjourMode,
-    state: &AjourState,
+    mode: &Mode,
+    state: &HashMap<Mode, State>,
+    error: &Option<String>,
     config: &Config,
     valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,
@@ -1230,11 +1425,20 @@ pub fn menu_container<'a>(
     retail_beta_btn_state: &'a mut button::State,
     classic_btn_state: &'a mut button::State,
     classic_ptr_btn_state: &'a mut button::State,
-    needs_update: Option<&'a str>,
-    new_release_button_state: &'a mut button::State,
+    self_update_state: &'a mut SelfUpdateState,
 ) -> Container<'a, Message> {
+    let flavor = config.wow.flavor;
+
+    // State.
+    let myaddons_state = state
+        .get(&Mode::MyAddons(flavor))
+        .cloned()
+        .unwrap_or_default();
+
     // A row contain general settings.
     let mut settings_row = Row::new().height(Length::Units(50));
+
+    let mut needs_update = false;
 
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,
@@ -1249,28 +1453,27 @@ pub fn menu_container<'a>(
     .style(style::DisabledDefaultButton(color_palette));
 
     match mode {
-        AjourMode::MyAddons => {
+        Mode::MyAddons(_) => {
             addons_mode_button =
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
         }
-        AjourMode::Catalog => {
+        Mode::Catalog => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
         }
     }
 
-    // If we are onboarding, we disable the mode buttons and set proper styling.
-    if !matches!(state, AjourState::Welcome | AjourState::Loading) {
-        addons_mode_button =
-            addons_mode_button.on_press(Interaction::ModeSelected(AjourMode::MyAddons));
-        catalog_mode_button =
-            catalog_mode_button.on_press(Interaction::ModeSelected(AjourMode::Catalog));
-    } else {
+    if matches!(myaddons_state, State::Start) {
         addons_mode_button = addons_mode_button.style(style::DisabledDefaultButton(color_palette));
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
+    } else {
+        addons_mode_button =
+            addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons(flavor)));
+        catalog_mode_button =
+            catalog_mode_button.on_press(Interaction::ModeSelected(Mode::Catalog));
     }
 
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
@@ -1316,48 +1519,44 @@ pub fn menu_container<'a>(
     .style(style::DisabledDefaultButton(color_palette))
     .on_press(Interaction::FlavorSelected(Flavor::ClassicPTR));
 
-    let disable_flavor_buttons = matches!(state, AjourState::Welcome | AjourState::Loading);
-
-    if !disable_flavor_buttons {
-        match config.wow.flavor {
-            Flavor::Retail => {
-                retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
-                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::RetailPTR => {
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-                retail_ptr_button =
-                    retail_ptr_button.style(style::SelectedDefaultButton(color_palette));
-                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::RetailBeta => {
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-                retail_beta_button =
-                    retail_beta_button.style(style::SelectedDefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::Classic => {
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-                classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
-                classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-            }
-            Flavor::ClassicPTR => {
-                retail_button = retail_button.style(style::DefaultButton(color_palette));
-                retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-                retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-                classic_button = classic_button.style(style::DefaultButton(color_palette));
-                classic_ptr_button =
-                    classic_ptr_button.style(style::SelectedDefaultButton(color_palette));
-            }
+    match config.wow.flavor {
+        Flavor::Retail => {
+            retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
+            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+            classic_button = classic_button.style(style::DefaultButton(color_palette));
+            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+        }
+        Flavor::RetailPTR => {
+            retail_button = retail_button.style(style::DefaultButton(color_palette));
+            retail_ptr_button =
+                retail_ptr_button.style(style::SelectedDefaultButton(color_palette));
+            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+            classic_button = classic_button.style(style::DefaultButton(color_palette));
+            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+        }
+        Flavor::RetailBeta => {
+            retail_button = retail_button.style(style::DefaultButton(color_palette));
+            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+            retail_beta_button =
+                retail_beta_button.style(style::SelectedDefaultButton(color_palette));
+            classic_button = classic_button.style(style::DefaultButton(color_palette));
+            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+        }
+        Flavor::Classic => {
+            retail_button = retail_button.style(style::DefaultButton(color_palette));
+            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+            classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
+            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
+        }
+        Flavor::ClassicPTR => {
+            retail_button = retail_button.style(style::DefaultButton(color_palette));
+            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
+            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
+            classic_button = classic_button.style(style::DefaultButton(color_palette));
+            classic_ptr_button =
+                classic_ptr_button.style(style::SelectedDefaultButton(color_palette));
         }
     }
 
@@ -1399,8 +1598,8 @@ pub fn menu_container<'a>(
     }
 
     // Displays an error, if any has occured.
-    let error_text = if let AjourState::Error(e) = state {
-        Text::new(e.to_string()).size(DEFAULT_FONT_SIZE)
+    let error_text = if let Some(error) = error {
+        Text::new(error).size(DEFAULT_FONT_SIZE)
     } else {
         // Display nothing.
         Text::new("")
@@ -1413,8 +1612,17 @@ pub fn menu_container<'a>(
         .width(Length::Fill)
         .style(style::NormalErrorForegroundContainer(color_palette));
 
-    let version_text = Text::new(if let Some(new_version) = needs_update {
-        format!("New Ajour version available {} > {}", VERSION, new_version)
+    let version_text = Text::new(if let Some(release) = &self_update_state.latest_release {
+        if VersionCompare::compare_to(&release.tag_name, VERSION, &CompOp::Gt).unwrap_or(false) {
+            needs_update = true;
+
+            format!(
+                "New Ajour version available {} -> {}",
+                VERSION, &release.tag_name
+            )
+        } else {
+            VERSION.to_owned()
+        }
     } else {
         VERSION.to_owned()
     })
@@ -1447,16 +1655,20 @@ pub fn menu_container<'a>(
         .push(version_container);
 
     // Add download button to latest github release page if Ajour update is available.
-    if needs_update.is_some() {
+    if needs_update {
+        let text = self_update_state
+            .status
+            .as_ref()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "Update".to_string());
+
         let mut new_release_button = Button::new(
-            new_release_button_state,
-            Text::new("Download").size(DEFAULT_FONT_SIZE),
+            &mut self_update_state.btn_state,
+            Text::new(&text).size(DEFAULT_FONT_SIZE),
         )
         .style(style::SecondaryButton(color_palette));
 
-        new_release_button = new_release_button.on_press(Interaction::OpenLink(
-            "https://github.com/casperstorm/ajour/releases/latest".to_owned(),
-        ));
+        new_release_button = new_release_button.on_press(Interaction::UpdateAjour);
 
         let new_release_button: Element<Interaction> = new_release_button.into();
 
@@ -1508,7 +1720,7 @@ pub fn status_container<'a>(
         .push(Space::new(Length::Units(0), Length::Units(2)))
         .push(description_container);
 
-    if let (_, Some(btn_state)) = (AjourState::Welcome, onboarding_directory_btn_state) {
+    if let (_, Some(btn_state)) = (State::Start, onboarding_directory_btn_state) {
         let onboarding_button_title_container =
             Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
                 .width(Length::Units(100))
@@ -1545,7 +1757,7 @@ pub fn catalog_row_titles<'a>(
     // A row containing titles above the addon rows.
     let mut row_titles = vec![];
 
-    for column in column_state.iter_mut() {
+    for column in column_state.iter_mut().filter(|c| !c.hidden) {
         let column_key = column.key;
 
         let row_title = row_title(
@@ -1596,7 +1808,7 @@ pub fn catalog_row_titles<'a>(
     .spacing(1)
     .height(Length::Units(25))
     .on_resize(3, |event| {
-        Message::Interaction(Interaction::ResizeColumn(AjourMode::Catalog, event))
+        Message::Interaction(Interaction::ResizeColumn(Mode::Catalog, event))
     })
 }
 
@@ -1604,9 +1816,9 @@ pub fn catalog_data_cell<'a, 'b>(
     color_palette: ColorPalette,
     config: &Config,
     addon: &'a mut CatalogRow,
-    column_config: &'b [(CatalogColumnKey, Length)],
+    column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
-    statuses: Vec<(Flavor, CatalogInstallStatus)>,
+    install_addon: Option<&CatalogInstallAddon>,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
 
@@ -1617,14 +1829,15 @@ pub fn catalog_data_cell<'a, 'b>(
     let install_button_state = &mut addon.install_button_state;
 
     let flavor_exists_for_addon = addon_data
-        .flavors
-        .contains(&config.wow.flavor.base_flavor());
+        .game_versions
+        .iter()
+        .any(|gc| gc.flavor == config.wow.flavor.base_flavor());
 
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::Install {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::Install && !hidden {
                 Some((idx, width))
             } else {
                 None
@@ -1632,10 +1845,7 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let status = statuses
-            .iter()
-            .find(|(f, _)| *f == config.wow.flavor)
-            .map(|(_, status)| *status);
+        let status = install_addon.map(|a| a.status);
 
         let install_text = Text::new(if !flavor_exists_for_addon {
             "N/A"
@@ -1643,8 +1853,6 @@ pub fn catalog_data_cell<'a, 'b>(
             match status {
                 Some(CatalogInstallStatus::Downloading) => "Downloading",
                 Some(CatalogInstallStatus::Unpacking) => "Unpacking",
-                Some(CatalogInstallStatus::Fingerprint) => "Hashing",
-                Some(CatalogInstallStatus::Completed) => "Installed",
                 Some(CatalogInstallStatus::Retry) => "Retry",
                 Some(CatalogInstallStatus::Unavilable) => "Unavailable",
                 None => {
@@ -1692,7 +1900,7 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
+        .filter_map(|(idx, (key, width, _))| {
             if *key == CatalogColumnKey::Title {
                 Some((idx, width))
             } else {
@@ -1719,8 +1927,8 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::Description {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::Description && !hidden {
                 Some((idx, width))
             } else {
                 None
@@ -1742,8 +1950,8 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::Source {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::Source && !hidden {
                 Some((idx, width))
             } else {
                 None
@@ -1766,8 +1974,38 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::DateReleased {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::GameVersion && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let game_version_text = addon_data
+            .game_versions
+            .iter()
+            .find(|gv| gv.flavor == config.wow.flavor.base_flavor())
+            .map(|gv| gv.game_version.clone())
+            .unwrap_or_else(|| "-".to_owned());
+
+        let game_version_text = Text::new(game_version_text).size(DEFAULT_FONT_SIZE);
+        let game_version_container = Container::new(game_version_text)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::NormalForegroundContainer(color_palette));
+
+        row_containers.push((idx, game_version_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::DateReleased && !hidden {
                 Some((idx, width))
             } else {
                 None
@@ -1796,8 +2034,8 @@ pub fn catalog_data_cell<'a, 'b>(
     if let Some((idx, width)) = column_config
         .iter()
         .enumerate()
-        .filter_map(|(idx, (key, width))| {
-            if *key == CatalogColumnKey::NumDownloads {
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::NumDownloads && !hidden {
                 Some((idx, width))
             } else {
                 None

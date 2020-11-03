@@ -8,7 +8,7 @@ use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
 
 const CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/master/curse.json";
+    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/master/catalog.json";
 
 pub async fn get_catalog() -> Result<Catalog> {
     let client = HttpClient::builder()
@@ -55,9 +55,16 @@ pub struct Catalog {
 }
 
 #[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
+pub struct GameVersion {
+    pub game_version: String,
+    pub flavor: Flavor,
+}
+
+#[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogAddon {
-    pub id: u32,
+    pub id: i32,
     pub website_url: String,
     #[serde(with = "date_parser")]
     pub date_released: Option<DateTime<Utc>>,
@@ -66,7 +73,9 @@ pub struct CatalogAddon {
     pub summary: String,
     pub number_of_downloads: u64,
     pub source: Source,
+    #[deprecated(since = "0.4.4", note = "Please use game_versions instead")]
     pub flavors: Vec<Flavor>,
+    pub game_versions: Vec<GameVersion>,
 }
 
 mod date_parser {
@@ -85,14 +94,24 @@ mod date_parser {
             .map(|d| d.with_timezone(&Utc))
             .ok();
 
-        // Tukui format
-        if date.is_none() {
-            let date = NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %T")
-                .map(|d| Utc.from_utc_datetime(&d))
-                .ok();
-
+        if date.is_some() {
             return Ok(date);
         }
+
+        // Tukui format
+        let date = NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %T")
+            .map(|d| Utc.from_utc_datetime(&d))
+            .ok();
+
+        if date.is_some() {
+            return Ok(date);
+        }
+
+        // Handles Elvui and Tukui addons which runs in a format without HH:mm:ss.
+        let s_modified = format!("{} 00:00:00", &s);
+        let date = NaiveDateTime::parse_from_str(&s_modified, "%Y-%m-%d %T")
+            .map(|d| Utc.from_utc_datetime(&d))
+            .ok();
 
         Ok(date)
     }

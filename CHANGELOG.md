@@ -8,6 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+
+## [0.5.0] - 2020-11-03
+
+### Packaging
+- Ajour can now self update when a new release is available. An "Update" button will appear along with a message that a newer release is available. Clicking this button will automatically update Ajour and relaunch it as the newer version.
+  - On windows, self update may fail if you've placed the executable in Program Files due to permissions. Either run as administrator or place the executable under your User folder. We recommend placing it as `%APPDATA%\ajour\ajour.exe` and pinning to the taskbar or creating a desktop shortcut.
+  - On linux, self update only works when running from the AppImage.
+- The linux `AppImage` release assets are now built on Ubuntu 16.04 (Xenial) to improve support.
+
+### Added
+- You can now select which columns you want to see in the Catalog.
+- Game version has been added as a optional column to addons in the Catalog.
+- Ajour now matches addons against WoWInterface.
+- Button to Ajour website in Settings.
+- Tukui addons can now be installed via the Catalog.
+  - A cache was added to support this feature since tukui addons have fairly unreliable metadata in their .toc files.
+
+### Fixed
+- Some addons failed to install through the catalog.
+- Cancelling when changing wow path will empty list.
+- Case-sensitive issue when sorting addons by title. 
+- Better addon changelog formatting.
+- Bug on linux that caused window size to grow / shrink between sessions when a <>1.0 scale was set.
+- Issue where Ajour sometimes shows a blank screen while content is loading.
+- Issue where forked addons from the curse API would show both versions of the addon in Ajour instead of only the one actually installed.
+
+## [0.4.4] - 2020-10-23
+
 ### Fixed
 - Fixed issue where Tukui addons would delete dependency standalone addons during update.
 - Now correctly shows all sub-addons if they are a seperate addons.
@@ -51,6 +79,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
   - This is a breaking changes for old themes, which needs to be refactored to the new format. By default if the theme does not conform to the new format, Ajour will simply not try to parse it.
 - Added a command line option to update all addons with an update without launching the GUI. Process will exit after completing.
   - Use `ajour update` from command line
+- Ajour can now self update when a new release is available.
+  - User is presented with an "Update" buton instead of a "Download" button when a new release is available. Upon clicking, the new release will be downloaded in the background, replace the existing executable file, and will be relaunched as the new version.
 
 ### Fixed
 - Fixed a case where we would choose alpha even though it was older than stable.

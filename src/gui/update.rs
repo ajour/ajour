@@ -1,178 +1,52 @@
 use {
     super::{
-        AddonVersionKey, Ajour, AjourMode, AjourState, CatalogCategory, CatalogColumnKey,
+        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogInstallAddon,
         CatalogInstallStatus, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
-        DirectoryType, DownloadReason, ExpandType, Interaction, Message, SortDirection,
+        DirectoryType, DownloadReason, ExpandType, Interaction, Message, Mode, SelfUpdateStatus,
+        SortDirection, State,
     },
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
         backup::{backup_folders, latest_backup, BackupFolder},
+        cache::{
+            remove_addon_cache_entry, update_addon_cache, AddonCache, AddonCacheEntry,
+            FingerprintCache,
+        },
         catalog,
-        config::{load_config, ColumnConfig, ColumnConfigV2, Flavor},
+        config::{ColumnConfig, ColumnConfigV2, Flavor},
         curse_api,
+        error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
-        parse::{read_addon_directory, update_addon_fingerprint, FingerprintCollection},
+        parse::{read_addon_directory, update_addon_fingerprint},
         tukui_api,
-        utility::wow_path_resolution,
-        Result,
+        utility::{download_update_to_temp_file, wow_path_resolution},
+        wowi_api, Result,
     },
     async_std::sync::{Arc, Mutex},
     iced::{Command, Length},
     isahc::HttpClient,
     native_dialog::*,
     std::collections::{HashMap, HashSet},
+    std::convert::TryFrom,
     std::path::{Path, PathBuf},
     widgets::header::ResizeEvent,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
-        Message::Parse(Ok(config)) => {
-            log::debug!("Message::Parse");
-            log::debug!("config loaded:\n{:#?}", config);
+        Message::CachesLoaded(result) => {
+            log::debug!("Message::CachesLoaded(error: {})", result.is_err());
 
-            // When we have the config, we parse the addon directory
-            // which is provided by the config.
-            ajour.config = config;
-
-            // Set column widths from the config
-            match &ajour.config.column_config {
-                ColumnConfig::V1 {
-                    local_version_width,
-                    remote_version_width,
-                    status_width,
-                } => {
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(1)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*local_version_width);
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(2)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*remote_version_width);
-                    ajour
-                        .header_state
-                        .columns
-                        .get_mut(3)
-                        .as_mut()
-                        .unwrap()
-                        .width = Length::Units(*status_width);
-                }
-                ColumnConfig::V2 { columns } => {
-                    ajour.header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour.column_settings.columns.iter_mut().for_each(|a| {
-                        if let Some(idx) = columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some(idx)
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour.header_state.columns.sort_by_key(|c| c.order);
-                    ajour.column_settings.columns.sort_by_key(|c| c.order);
-                }
-                ColumnConfig::V3 {
-                    my_addons_columns,
-                    catalog_columns,
-                } => {
-                    ajour.header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((idx, column)) = my_addons_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                            a.hidden = column.hidden;
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour.column_settings.columns.iter_mut().for_each(|a| {
-                        if let Some(idx) = my_addons_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some(idx)
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.order = idx;
-                        }
-                    });
-
-                    ajour.catalog_header_state.columns.iter_mut().for_each(|a| {
-                        if let Some((_idx, column)) = catalog_columns
-                            .iter()
-                            .enumerate()
-                            .filter_map(|(idx, column)| {
-                                if column.key == a.key.as_string() {
-                                    Some((idx, column))
-                                } else {
-                                    None
-                                }
-                            })
-                            .next()
-                        {
-                            a.width = column.width.map_or(Length::Fill, Length::Units);
-                        }
-                    });
-
-                    ajour.header_state.columns.sort_by_key(|c| c.order);
-                    ajour.column_settings.columns.sort_by_key(|c| c.order);
-                }
+            if let Ok((fingerprint_cache, addon_cache)) = result {
+                ajour.fingerprint_cache = Some(Arc::new(Mutex::new(fingerprint_cache)));
+                ajour.addon_cache = Some(Arc::new(Mutex::new(addon_cache)));
             }
 
-            // Use theme from config. Set to "Dark" if not defined.
-            ajour.theme_state.current_theme_name =
-                ajour.config.theme.as_deref().unwrap_or("Dark").to_string();
-
-            // Use scale from config. Set to 1.0 if not defined.
-            ajour.scale_state.scale = ajour.config.scale.unwrap_or(1.0);
+            return Ok(Command::perform(async {}, Message::Parse));
+        }
+        Message::Parse(_) => {
+            log::debug!("Message::Parse");
 
             // Begin to parse addon folder(s).
             let mut commands = vec![];
@@ -199,9 +73,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.valid_flavors.dedup();
                     }
 
+                    // Sets loading
+                    ajour.state.insert(Mode::MyAddons(*flavor), State::Loading);
+
+                    // Add commands
                     commands.push(Command::perform(
                         perform_read_addon_directory(
-                            ajour.fingerprint_collection.clone(),
+                            ajour.addon_cache.clone(),
+                            ajour.fingerprint_cache.clone(),
                             addon_directory.clone(),
                             *flavor,
                         ),
@@ -211,7 +90,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     log::debug!("addon directory is not set, showing welcome screen");
 
                     // Assume we are welcoming a user because directory is not set.
-                    ajour.state = AjourState::Welcome;
+                    let flavor = ajour.config.wow.flavor;
+                    ajour.state.insert(Mode::MyAddons(flavor), State::Start);
+
                     break;
                 }
             }
@@ -223,6 +104,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if let Some(flavor) = ajour.valid_flavors.first() {
                     // Set nye flavor.
                     ajour.config.wow.flavor = *flavor;
+                    // Set mode.
+                    ajour.mode = Mode::MyAddons(*flavor);
                     // Persist the newly updated config.
                     ajour.config.save()?;
                 }
@@ -240,10 +123,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Cleans the addons.
             ajour.addons = HashMap::new();
-            // Prepare state for loading.
-            ajour.state = AjourState::Loading;
 
-            return Ok(Command::perform(load_config(), Message::Parse));
+            // Prepare state for loading.
+            let flavor = ajour.config.wow.flavor;
+            ajour.state.insert(Mode::MyAddons(flavor), State::Loading);
+
+            return Ok(Command::perform(async {}, Message::Parse));
         }
         Message::Interaction(Interaction::Settings) => {
             log::debug!("Interaction::Settings");
@@ -330,18 +215,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let path = wow_path_resolution(chosen_path);
             log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
 
-            // Clear addons.
-            ajour.addons = HashMap::new();
-
             if path.is_some() {
+                // Clear addons.
+                ajour.addons = HashMap::new();
                 // Update the path for World of Warcraft.
                 ajour.config.wow.directory = path;
                 // Persist the newly updated config.
                 let _ = &ajour.config.save();
                 // Set loading state.
-                ajour.state = AjourState::Loading;
-                // Reload config.
-                return Ok(Command::perform(load_config(), Message::Parse));
+                let state = ajour.state.clone();
+                for (mode, _) in state {
+                    if matches!(mode, Mode::MyAddons(_)) {
+                        ajour.state.insert(mode, State::Loading);
+                    }
+                }
+
+                return Ok(Command::perform(async {}, Message::Parse));
             }
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
@@ -354,6 +243,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
             let _ = &ajour.config.save();
+            // Update flavor on MyAddons if thats our current mode.
+            if let Mode::MyAddons(_) = ajour.mode {
+                ajour.mode = Mode::MyAddons(flavor)
+            }
             // Update catalog
             query_and_sort_catalog(ajour);
         }
@@ -363,20 +256,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
-            // Set ajour mode.
+            // Sets mode.
             ajour.mode = mode;
-            match mode {
-                AjourMode::Catalog => {
-                    let refresh = ajour.catalog.is_none();
-                    if refresh {
-                        ajour.state = AjourState::Loading;
-                    }
-                    ajour.state = AjourState::Idle;
-                }
-                AjourMode::MyAddons => {
-                    ajour.state = AjourState::Idle;
-                }
-            }
         }
 
         Message::Interaction(Interaction::Expand(expand_type)) => {
@@ -438,7 +319,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                     ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
                                 return Ok(Command::perform(
                                     perform_fetch_curse_changelog(addon.clone(), *key, id, file_id),
-                                    Message::FetchedCurseChangelog,
+                                    Message::FetchedChangelog,
                                 ));
                             }
                         }
@@ -455,7 +336,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                         ajour.config.wow.flavor,
                                         *key,
                                     ),
-                                    Message::FetchedTukuiChangelog,
+                                    Message::FetchedChangelog,
+                                ));
+                            }
+                        }
+
+                        // If we have a Wowi addon.
+                        if addon.active_repository == Some(Repository::WowI) {
+                            if let Some(id) = addon.repository_id() {
+                                ajour.expanded_type =
+                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                                return Ok(Command::perform(
+                                    perform_fetch_wowi_changelog(addon.clone(), id, *key),
+                                    Message::FetchedChangelog,
                                 ));
                             }
                         }
@@ -496,6 +389,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 // Delete addon(s) from disk.
                 let _ = delete_addons(&addon.folders);
+
+                // Remove addon from cache
+                if let Some(addon_cache) = &ajour.addon_cache {
+                    if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
+                        match addon.active_repository {
+                            // Delete the entry for this cached addon
+                            Some(Repository::Tukui) | Some(Repository::WowI) => {
+                                return Ok(Command::perform(
+                                    remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
+                                    Message::AddonCacheEntryRemoved,
+                                ));
+                            }
+                            _ => {}
+                        }
+                    }
+                }
             }
         }
         Message::Interaction(Interaction::Update(id)) => {
@@ -572,9 +481,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::ParsedAddons((flavor, result)) => {
             // if our selected flavor returns (either ok or error) - we change to idle.
-            if flavor == ajour.config.wow.flavor {
-                ajour.state = AjourState::Idle;
-            }
+            ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
             if let Ok(addons) = result {
                 log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
@@ -625,10 +532,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
                 ajour.header_state.previous_column_key = Some(ColumnKey::Status);
 
-                if flavor == ajour.config.wow.flavor {
-                    // Set the state if flavor matches.
-                    ajour.state = AjourState::Idle;
-                }
+                // Sets the flavor state to ready.
+                ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
                 // Insert the addons into the HashMap.
                 ajour.addons.insert(flavor, addons);
@@ -648,71 +553,70 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 result.is_err()
             );
 
-            // When an addon has been successfully downloaded we begin to unpack it.
-            // If it for some reason fails to download, we handle the error.
-            let from_directory = ajour
-                .config
-                .get_download_directory_for_flavor(flavor)
-                .expect("Expected a valid path");
-            let to_directory = ajour
-                .config
-                .get_addon_directory_for_flavor(&flavor)
-                .expect("Expected a valid path");
-
-            let mut remove_catalog_addon = None;
-
             let addons = ajour.addons.entry(flavor).or_default();
-            if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
-                match result {
-                    Ok(_) => {
-                        // Update catalog status for addon
-                        if reason == DownloadReason::Install {
-                            update_catalog_install_status(
-                                &mut ajour.catalog_install_statuses,
-                                CatalogInstallStatus::Unpacking,
-                                flavor,
-                                addon.repository_id(),
-                            );
-                        }
+            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
 
-                        if addon.state == AddonState::Downloading {
-                            addon.state = AddonState::Unpacking;
-                            let addon = addon.clone();
-                            return Ok(Command::perform(
-                                perform_unpack_addon(
-                                    reason,
-                                    flavor,
-                                    addon,
-                                    from_directory,
-                                    to_directory,
-                                ),
-                                Message::UnpackedAddon,
-                            ));
+            let mut addon = None;
+
+            match result {
+                Ok(_) => match reason {
+                    DownloadReason::Update => {
+                        if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
+                        {
+                            addon = Some(_addon);
                         }
                     }
-                    Err(error) => {
-                        log::error!("{}", error);
+                    DownloadReason::Install => {
+                        if let Some(install_addon) = install_addons
+                            .iter_mut()
+                            .find(|a| a.addon.as_ref().map(|a| &a.primary_folder_id) == Some(&id))
+                        {
+                            install_addon.status = CatalogInstallStatus::Unpacking;
 
-                        ajour.state = AjourState::Error(error);
+                            if let Some(_addon) = install_addon.addon.as_mut() {
+                                addon = Some(_addon);
+                            }
+                        }
+                    }
+                },
+                Err(error) => {
+                    log::error!("{}", error);
+                    ajour.error = Some(error.to_string());
 
-                        // Update catalog status for addon
-                        if reason == DownloadReason::Install {
-                            update_catalog_install_status(
-                                &mut ajour.catalog_install_statuses,
-                                CatalogInstallStatus::Retry,
-                                flavor,
-                                addon.repository_id(),
-                            );
-
-                            remove_catalog_addon = Some(addon.primary_folder_id.clone());
+                    if reason == DownloadReason::Install {
+                        if let Some(install_addon) =
+                            install_addons.iter_mut().find(|a| a.id.to_string() == id)
+                        {
+                            install_addon.status = CatalogInstallStatus::Retry;
                         }
                     }
                 }
             }
 
-            // Remove catalog installed addon from addons since it failed
-            if let Some(id) = remove_catalog_addon {
-                addons.retain(|a| a.primary_folder_id != id)
+            if let Some(addon) = addon {
+                let from_directory = ajour
+                    .config
+                    .get_download_directory_for_flavor(flavor)
+                    .expect("Expected a valid path");
+                let to_directory = ajour
+                    .config
+                    .get_addon_directory_for_flavor(&flavor)
+                    .expect("Expected a valid path");
+
+                if addon.state == AddonState::Downloading {
+                    addon.state = AddonState::Unpacking;
+
+                    return Ok(Command::perform(
+                        perform_unpack_addon(
+                            reason,
+                            flavor,
+                            addon.clone(),
+                            from_directory,
+                            to_directory,
+                        ),
+                        Message::UnpackedAddon,
+                    ));
+                }
             }
         }
         Message::UnpackedAddon((reason, flavor, id, result)) => {
@@ -722,115 +626,122 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 result.is_err()
             );
 
-            let mut remove_catalog_addon = None;
-
             let addons = ajour.addons.entry(flavor).or_default();
-            if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
-                match result {
-                    Ok(mut folders) => {
-                        // Update the folders of the addon since they could have changed from the update,
-                        // or if its an addon installed through the catalog, we haven't assigned it folders yet
+            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+
+            let mut addon = None;
+            let mut folders = None;
+
+            match result {
+                Ok(_folders) => match reason {
+                    DownloadReason::Update => {
+                        if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
                         {
-                            folders.sort_by(|a, b| a.id.cmp(&b.id));
-
-                            // Assign the primary folder id based on the first folder alphabetically with
-                            // a matching repository identifier otherwise just the first
-                            // folder alphabetically
-                            let primary_folder_id = if let Some(folder) = folders.iter().find(|f| {
-                                if let Some(repo) = addon.active_repository {
-                                    match repo {
-                                        Repository::Curse => {
-                                            addon.repository_id()
-                                                == f.repository_identifiers
-                                                    .curse
-                                                    .as_ref()
-                                                    .map(u32::to_string)
-                                        }
-                                        Repository::Tukui => {
-                                            addon.repository_id() == f.repository_identifiers.tukui
-                                        }
-                                        Repository::WowI => {
-                                            addon.repository_id() == f.repository_identifiers.wowi
-                                        }
-                                    }
-                                } else {
-                                    false
-                                }
-                            }) {
-                                folder.id.clone()
-                            } else {
-                                //TODO: Can this crash? What do we do in that case.
-                                folders.get(0).map(|f| f.id.clone()).unwrap()
-                            };
-                            addon.primary_folder_id = primary_folder_id;
-                            addon.folders = folders;
+                            addon = Some(_addon);
+                            folders = Some(_folders);
                         }
-
-                        // Update catalog status for addon
-                        if reason == DownloadReason::Install {
-                            update_catalog_install_status(
-                                &mut ajour.catalog_install_statuses,
-                                CatalogInstallStatus::Fingerprint,
-                                flavor,
-                                addon.repository_id(),
-                            );
-                        }
-
-                        addon.state = AddonState::Fingerprint;
-
-                        let mut version = None;
-                        if let Some(package) = addon.relevant_release_package() {
-                            version = Some(package.version.clone());
-                        }
-                        if let Some(version) = version {
-                            addon.set_version(version);
-                        }
-
-                        let mut commands = vec![];
-
-                        for folder in &addon.folders {
-                            commands.push(Command::perform(
-                                perform_hash_addon(
-                                    reason,
-                                    ajour
-                                        .config
-                                        .get_addon_directory_for_flavor(&flavor)
-                                        .expect("Expected a valid path"),
-                                    folder.id.clone(),
-                                    ajour.fingerprint_collection.clone(),
-                                    flavor,
-                                ),
-                                Message::UpdateFingerprint,
-                            ));
-                        }
-
-                        return Ok(Command::batch(commands));
                     }
-                    Err(err) => {
-                        ajour.state = AjourState::Error(err);
-                        addon.state = AddonState::Ajour(Some("Error".to_owned()));
+                    DownloadReason::Install => {
+                        if let Some(install_addon) = install_addons
+                            .iter_mut()
+                            .find(|a| a.addon.as_ref().map(|a| &a.primary_folder_id) == Some(&id))
+                        {
+                            if let Some(_addon) = install_addon.addon.as_mut() {
+                                // If we are installing from the catalog, remove any existing addon
+                                // that has the same folders and insert this new one
+                                addons.retain(|a| a.folders != _folders);
+                                addons.push(_addon.clone());
 
-                        // Update catalog status for addon
-                        if reason == DownloadReason::Install {
-                            update_catalog_install_status(
-                                &mut ajour.catalog_install_statuses,
-                                CatalogInstallStatus::Retry,
-                                flavor,
-                                addon.repository_id(),
-                            );
+                                addon = addons.iter_mut().find(|a| a.primary_folder_id == id);
+                                folders = Some(_folders);
+                            }
+                        }
 
-                            remove_catalog_addon = Some(addon.primary_folder_id.clone());
+                        // Remove install addon since we've successfully installed it and
+                        // added to main addon vec
+                        install_addons.retain(|a| {
+                            a.addon.as_ref().map(|a| &a.primary_folder_id) != Some(&id)
+                        });
+                    }
+                },
+                Err(error) => {
+                    log::error!("{}", error);
+                    ajour.error = Some(error.to_string());
+
+                    if reason == DownloadReason::Install {
+                        if let Some(install_addon) =
+                            install_addons.iter_mut().find(|a| a.id.to_string() == id)
+                        {
+                            install_addon.status = CatalogInstallStatus::Retry;
                         }
                     }
                 }
             }
 
-            // Remove catalog installed addon from addons since it failed
-            if let Some(id) = remove_catalog_addon {
-                addons.retain(|a| a.primary_folder_id != id)
+            let mut commands = vec![];
+
+            if let (Some(addon), Some(folders)) = (addon, folders) {
+                addon.update_addon_folders(&folders);
+
+                addon.state = AddonState::Fingerprint;
+
+                let mut version = None;
+                if let Some(package) = addon.relevant_release_package() {
+                    version = Some(package.version.clone());
+                }
+                if let Some(version) = version {
+                    addon.set_version(version);
+                }
+
+                // If we are updating / installing a Tukui / WowI
+                // addon, we want to update the cache. If we are installing a Curse
+                // addon, we want to make sure cache entry exists for those folders
+                if let Some(addon_cache) = &ajour.addon_cache {
+                    if let Ok(entry) = AddonCacheEntry::try_from(addon as &_) {
+                        match addon.active_repository {
+                            // Remove any entry related to this cached addon
+                            Some(Repository::Curse) => {
+                                commands.push(Command::perform(
+                                    remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
+                                    Message::AddonCacheEntryRemoved,
+                                ));
+                            }
+                            // Update the entry for this cached addon
+                            Some(Repository::Tukui) | Some(Repository::WowI) => {
+                                commands.push(Command::perform(
+                                    update_addon_cache(addon_cache.clone(), entry, flavor),
+                                    Message::AddonCacheUpdated,
+                                ));
+                            }
+                            None => {}
+                        }
+                    }
+                }
+
+                // Submit all addon folders to be fingerprinted
+                if let Some(cache) = ajour.fingerprint_cache.as_ref() {
+                    for folder in &addon.folders {
+                        commands.push(Command::perform(
+                            perform_hash_addon(
+                                ajour
+                                    .config
+                                    .get_addon_directory_for_flavor(&flavor)
+                                    .expect("Expected a valid path"),
+                                folder.id.clone(),
+                                cache.clone(),
+                                flavor,
+                            ),
+                            Message::UpdateFingerprint,
+                        ));
+                    }
+                }
+            }
+
+            if !commands.is_empty() {
+                return Ok(Command::batch(commands));
             }
         }
-        Message::UpdateFingerprint((reason, flavor, id, result)) => {
+        Message::UpdateFingerprint((flavor, id, result)) => {
             log::debug!(
                 "Message::UpdateFingerprint(({:?}, {}, error: {}))",
                 flavor,
@@ -838,48 +749,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 result.is_err()
             );
 
-            let mut remove_catalog_addon = None;
-
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 if result.is_ok() {
                     addon.state = AddonState::Ajour(Some("Completed".to_owned()));
-
-                    // Update catalog status for addon
-                    if reason == DownloadReason::Install {
-                        update_catalog_install_status(
-                            &mut ajour.catalog_install_statuses,
-                            CatalogInstallStatus::Completed,
-                            flavor,
-                            addon.repository_id(),
-                        );
-                    }
                 } else {
                     addon.state = AddonState::Ajour(Some("Error".to_owned()));
-
-                    // Update catalog status for addon
-                    if reason == DownloadReason::Install {
-                        update_catalog_install_status(
-                            &mut ajour.catalog_install_statuses,
-                            CatalogInstallStatus::Retry,
-                            flavor,
-                            addon.repository_id(),
-                        );
-
-                        remove_catalog_addon = Some(addon.primary_folder_id.clone());
-                    }
                 }
             }
-
-            // Remove catalog installed addon from addons since it failed
-            if let Some(id) = remove_catalog_addon {
-                addons.retain(|a| a.primary_folder_id != id)
-            }
         }
-        Message::NeedsUpdate(Ok(newer_version)) => {
-            log::debug!("Message::NeedsUpdate({:?})", &newer_version);
+        Message::LatestRelease(release) => {
+            log::debug!(
+                "Message::LatestRelease({:?})",
+                release.as_ref().map(|r| &r.tag_name)
+            );
 
-            ajour.needs_update = newer_version;
+            ajour.self_update_state.latest_release = release;
         }
         Message::Interaction(Interaction::SortColumn(column_key)) => {
             // Close settings if shown.
@@ -1017,7 +902,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 right_name,
                 right_width,
             } => match column_type {
-                AjourMode::MyAddons => {
+                Mode::MyAddons(_) => {
                     let left_key = ColumnKey::from(left_name.as_str());
                     let right_key = ColumnKey::from(right_name.as_str());
 
@@ -1039,22 +924,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         column.width = Length::Units(right_width);
                     }
                 }
-                AjourMode::Catalog => {
+                Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
 
-                    if let Some(column) =
-                        ajour.catalog_header_state.columns.iter_mut().find(|c| {
-                            c.key == left_key && left_key != CatalogColumnKey::Description
-                        })
+                    if let Some(column) = ajour
+                        .catalog_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == left_key && left_key != CatalogColumnKey::Title)
                     {
                         column.width = Length::Units(left_width);
                     }
 
-                    if let Some(column) =
-                        ajour.catalog_header_state.columns.iter_mut().find(|c| {
-                            c.key == right_key && right_key != CatalogColumnKey::Description
-                        })
+                    if let Some(column) = ajour
+                        .catalog_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == right_key && right_key != CatalogColumnKey::Title)
                     {
                         column.width = Length::Units(right_width);
                     }
@@ -1068,7 +955,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ScaleUp) => {
             let prev_scale = ajour.scale_state.scale;
 
-            ajour.scale_state.scale = (prev_scale + 0.1).min(2.0);
+            ajour.scale_state.scale = ((prev_scale + 0.1).min(2.0) * 10.0).round() / 10.0;
 
             ajour.config.scale = Some(ajour.scale_state.scale);
             let _ = ajour.config.save();
@@ -1082,7 +969,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ScaleDown) => {
             let prev_scale = ajour.scale_state.scale;
 
-            ajour.scale_state.scale = (prev_scale - 0.1).max(0.5);
+            ajour.scale_state.scale = ((prev_scale - 0.1).max(0.5) * 10.0).round() / 10.0;
 
             ajour.config.scale = Some(ajour.scale_state.scale);
             let _ = ajour.config.save();
@@ -1156,8 +1043,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::error!("{}", error);
 
             ajour.backup_state.backing_up = false;
-
-            ajour.state = AjourState::Error(error);
+            ajour.error = Some(error.to_string())
         }
         Message::Interaction(Interaction::ToggleColumn(is_checked, key)) => {
             // We can't untoggle the addon title column
@@ -1236,6 +1122,105 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.column_settings.columns.swap(idx, idx + 1);
             }
         }
+        Message::Interaction(Interaction::ToggleCatalogColumn(is_checked, key)) => {
+            // We can't untoggle the addon title column
+            if key == CatalogColumnKey::Title {
+                return Ok(Command::none());
+            }
+
+            log::debug!(
+                "Interaction::ToggleCatalogColumn({}, {:?})",
+                is_checked,
+                key
+            );
+
+            if is_checked {
+                if let Some(column) = ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .find(|c| c.key == key)
+                {
+                    column.hidden = false;
+                }
+            } else if let Some(column) = ajour
+                .catalog_header_state
+                .columns
+                .iter_mut()
+                .find(|c| c.key == key)
+            {
+                column.hidden = true;
+            }
+
+            // Persist changes to config
+            save_column_configs(ajour);
+        }
+        Message::Interaction(Interaction::MoveCatalogColumnLeft(key)) => {
+            log::debug!("Interaction::MoveCatalogColumnLeft({:?})", key);
+
+            // Update header state ordering and save to config
+            if let Some(idx) = ajour
+                .catalog_header_state
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_header_state.columns.swap(idx, idx - 1);
+
+                ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, column)| column.order = idx);
+
+                // Persist changes to config
+                save_column_configs(ajour);
+            }
+
+            // Update column ordering in settings
+            if let Some(idx) = ajour
+                .catalog_column_settings
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_column_settings.columns.swap(idx, idx - 1);
+            }
+        }
+        Message::Interaction(Interaction::MoveCatalogColumnRight(key)) => {
+            log::debug!("Interaction::MoveCatalogColumnRight({:?})", key);
+
+            // Update header state ordering and save to config
+            if let Some(idx) = ajour
+                .catalog_header_state
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_header_state.columns.swap(idx, idx + 1);
+
+                ajour
+                    .catalog_header_state
+                    .columns
+                    .iter_mut()
+                    .enumerate()
+                    .for_each(|(idx, column)| column.order = idx);
+
+                // Persist changes to config
+                save_column_configs(ajour);
+            }
+
+            // Update column ordering in settings
+            if let Some(idx) = ajour
+                .catalog_column_settings
+                .columns
+                .iter()
+                .position(|c| c.key == key)
+            {
+                ajour.catalog_column_settings.columns.swap(idx, idx + 1);
+            }
+        }
         Message::CatalogDownloaded(Ok(catalog)) => {
             log::debug!(
                 "Message::CatalogDownloaded({} addons in catalog)",
@@ -1263,6 +1248,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.catalog = Some(catalog);
 
+            ajour.state.insert(Mode::Catalog, State::Ready);
+
             query_and_sort_catalog(ajour);
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
@@ -1285,16 +1272,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
+            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+
             // Remove any existing status for this addon since we are going
             // to try and download it again
-            ajour
-                .catalog_install_statuses
-                .retain(|(f, i, _)| if id == *i { flavor != *f } else { true });
+            install_addons.retain(|a| id != a.id);
 
             // Add new status for this addon as Downloading
-            ajour
-                .catalog_install_statuses
-                .push((flavor, id, CatalogInstallStatus::Downloading));
+            install_addons.push(CatalogInstallAddon {
+                id,
+                status: CatalogInstallStatus::Downloading,
+                addon: None,
+            });
 
             return Ok(Command::perform(
                 perform_fetch_latest_addon(source, id, flavor),
@@ -1331,52 +1320,47 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::CatalogInstallAddonFetched((flavor, id, result)) => match result {
-            Ok(mut addon) => {
-                log::debug!(
-                    "Message::CatalogInstallAddonFetched({:?}, {:?})",
-                    flavor,
-                    &id
-                );
+        Message::CatalogInstallAddonFetched((flavor, id, result)) => {
+            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
 
-                if let Some(addons) = ajour.addons.get_mut(&flavor) {
-                    // Add the addon to our collection
-                    addon.state = AddonState::Downloading;
-                    addons.push(addon.clone());
-
-                    let to_directory = ajour
-                        .config
-                        .get_download_directory_for_flavor(flavor)
-                        .expect("Expected a valid path");
-
-                    return Ok(Command::perform(
-                        perform_download_addon(
-                            DownloadReason::Install,
-                            ajour.shared_client.clone(),
+            if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id) {
+                match result {
+                    Ok(mut addon) => {
+                        log::debug!(
+                            "Message::CatalogInstallAddonFetched({:?}, {:?})",
                             flavor,
-                            addon,
-                            to_directory,
-                        ),
-                        Message::DownloadedAddon,
-                    ));
+                            &id,
+                        );
+
+                        addon.state = AddonState::Downloading;
+                        install_addon.addon = Some(addon.clone());
+
+                        let to_directory = ajour
+                            .config
+                            .get_download_directory_for_flavor(flavor)
+                            .expect("Expected a valid path");
+
+                        return Ok(Command::perform(
+                            perform_download_addon(
+                                DownloadReason::Install,
+                                ajour.shared_client.clone(),
+                                flavor,
+                                addon,
+                                to_directory,
+                            ),
+                            Message::DownloadedAddon,
+                        ));
+                    }
+                    Err(error) => {
+                        log::error!("{}", error);
+
+                        install_addon.status = CatalogInstallStatus::Unavilable;
+                    }
                 }
             }
-            Err(error) => {
-                log::error!("{}", error);
-
-                update_catalog_install_status(
-                    &mut ajour.catalog_install_statuses,
-                    CatalogInstallStatus::Unavilable,
-                    flavor,
-                    Some(id.to_string()),
-                );
-            }
-        },
-        Message::FetchedTukuiChangelog((addon, key, result)) => {
-            log::debug!(
-                "Message::FetchedTukuiChangelog(error: {})",
-                &result.is_err()
-            );
+        }
+        Message::FetchedChangelog((addon, key, result)) => {
+            log::debug!("Message::FetchedChangelog(error: {})", &result.is_err());
             match result {
                 Ok((changelog, url)) => {
                     let payload = ChangelogPayload { changelog, url };
@@ -1384,36 +1368,69 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.expanded_type = ExpandType::Changelog(changelog);
                 }
                 Err(error) => {
-                    log::error!("Message::FetchedTukuiChangelog(error: {})", &error);
+                    log::error!("Message::FetchedChangelog(error: {})", &error);
                     ajour.expanded_type = ExpandType::None;
                 }
             }
         }
-        Message::FetchedCurseChangelog((addon, key, result)) => {
-            log::debug!(
-                "Message::FetchedCurseChangelog(error: {})",
-                &result.is_err()
-            );
+        Message::Interaction(Interaction::UpdateAjour) => {
+            log::debug!("Interaction::UpdateAjour");
+
+            if let Some(release) = &ajour.self_update_state.latest_release {
+                let bin_name = bin_name().to_owned();
+
+                ajour.self_update_state.status = Some(SelfUpdateStatus::InProgress);
+
+                return Ok(Command::perform(
+                    download_update_to_temp_file(bin_name, release.clone()),
+                    Message::AjourUpdateDownloaded,
+                ));
+            }
+        }
+        Message::AjourUpdateDownloaded(result) => {
+            log::debug!("Message::AjourUpdateDownloaded");
 
             match result {
-                Ok((changelog, url)) => {
-                    let payload = ChangelogPayload { changelog, url };
-                    let changelog = Changelog::Some(addon, payload, key);
-                    ajour.expanded_type = ExpandType::Changelog(changelog);
+                Ok((current_bin_name, temp_bin_path)) => {
+                    // Remove first arg, which is path to binary. We don't use this first
+                    // arg as binary path because it's not reliable, per the docs.
+                    let mut args = std::env::args();
+                    args.next();
+
+                    match std::process::Command::new(&temp_bin_path)
+                        .args(args)
+                        .arg("--self-update-temp")
+                        .arg(&current_bin_name)
+                        .spawn()
+                    {
+                        Ok(_) => std::process::exit(0),
+                        Err(error) => {
+                            log::error!("{}", error);
+                            ajour.error = Some(ClientError::from(error).to_string());
+                            ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
+                        }
+                    }
                 }
                 Err(error) => {
-                    log::error!("Message::FetchedCurseChangelog(error: {})", &error);
-                    ajour.expanded_type = ExpandType::None;
+                    log::error!("{}", error);
+                    ajour.error = Some(error.to_string());
+                    ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
                 }
+            }
+        }
+        Message::AddonCacheUpdated(Ok(entry)) => {
+            log::debug!("Message::AddonCacheUpdated({})", entry.title);
+        }
+        Message::AddonCacheEntryRemoved(maybe_entry) => {
+            if let Some(entry) = maybe_entry {
+                log::debug!("Message::AddonCacheEntryRemoved({})", entry.title);
             }
         }
         Message::Error(error)
-        | Message::Parse(Err(error))
-        | Message::NeedsUpdate(Err(error))
-        | Message::CatalogDownloaded(Err(error)) => {
+        | Message::CatalogDownloaded(Err(error))
+        | Message::AddonCacheUpdated(Err(error)) => {
             log::error!("{}", error);
-
-            ajour.state = AjourState::Error(error);
+            ajour.error = Some(error.to_string());
         }
         Message::RuntimeEvent(iced_native::Event::Window(
             iced_native::window::Event::Resized { width, height },
@@ -1441,13 +1458,14 @@ async fn open_directory() -> Option<PathBuf> {
 }
 
 async fn perform_read_addon_directory(
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    addon_cache: Option<Arc<Mutex<AddonCache>>>,
+    fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: PathBuf,
     flavor: Flavor,
 ) -> (Flavor, Result<Vec<Addon>>) {
     (
         flavor,
-        read_addon_directory(fingerprint_collection, root_dir, flavor).await,
+        read_addon_directory(addon_cache, fingerprint_cache, root_dir, flavor).await,
     )
 }
 
@@ -1473,6 +1491,22 @@ async fn perform_fetch_curse_changelog(
     (addon, key, curse_api::fetch_changelog(id, file_id).await)
 }
 
+async fn perform_fetch_wowi_changelog(
+    addon: Addon,
+    id: String,
+    key: AddonVersionKey,
+) -> (Addon, AddonVersionKey, Result<(String, String)>) {
+    (
+        addon,
+        key,
+        Ok((
+            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
+                .to_owned(),
+            wowi_api::changelog_url(id),
+        )),
+    )
+}
+
 /// Downloads the newest version of the addon.
 /// This is for now only downloading from warcraftinterface.
 async fn perform_download_addon(
@@ -1492,17 +1526,15 @@ async fn perform_download_addon(
 
 /// Rehashes a `Addon`.
 async fn perform_hash_addon(
-    reason: DownloadReason,
     addon_dir: impl AsRef<Path>,
     addon_id: String,
-    fingerprint_collection: Arc<Mutex<Option<FingerprintCollection>>>,
+    fingerprint_cache: Arc<Mutex<FingerprintCache>>,
     flavor: Flavor,
-) -> (DownloadReason, Flavor, String, Result<()>) {
+) -> (Flavor, String, Result<()>) {
     (
-        reason,
         flavor,
         addon_id.clone(),
-        update_addon_fingerprint(fingerprint_collection, flavor, addon_dir, addon_id).await,
+        update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id).await,
     )
 }
 
@@ -1525,9 +1557,9 @@ async fn perform_unpack_addon(
 /// Unzips `Addon` at given `from_directory` and moves it `to_directory`.
 async fn perform_fetch_latest_addon(
     source: catalog::Source,
-    source_id: u32,
+    source_id: i32,
     flavor: Flavor,
-) -> (Flavor, u32, Result<Addon>) {
+) -> (Flavor, i32, Result<Addon>) {
     let result = match source {
         catalog::Source::Curse => curse_api::latest_addon(source_id, flavor).await,
         catalog::Source::Tukui => tukui_api::latest_addon(source_id, flavor).await,
@@ -1539,14 +1571,18 @@ async fn perform_fetch_latest_addon(
 fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {
     match (column_key, sort_direction) {
         (ColumnKey::Title, SortDirection::Asc) => {
-            addons.sort();
+            addons.sort_by(|a, b| a.title().to_lowercase().cmp(&b.title().to_lowercase()));
         }
         (ColumnKey::Title, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.title().cmp(&b.title()).reverse().then_with(|| {
-                    a.relevant_release_package()
-                        .cmp(&b.relevant_release_package())
-                })
+                a.title()
+                    .to_lowercase()
+                    .cmp(&b.title().to_lowercase())
+                    .reverse()
+                    .then_with(|| {
+                        a.relevant_release_package()
+                            .cmp(&b.relevant_release_package())
+                    })
             });
         }
         (ColumnKey::LocalVersion, SortDirection::Asc) => {
@@ -1623,6 +1659,12 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
                     .reverse()
             });
         }
+        (ColumnKey::Source, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.active_repository.cmp(&b.active_repository))
+        }
+        (ColumnKey::Source, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.active_repository.cmp(&b.active_repository).reverse())
+        }
     }
 }
 
@@ -1630,6 +1672,7 @@ fn sort_catalog_addons(
     addons: &mut [CatalogRow],
     sort_direction: SortDirection,
     column_key: CatalogColumnKey,
+    flavor: &Flavor,
 ) {
     match (column_key, sort_direction) {
         (CatalogColumnKey::Title, SortDirection::Asc) => {
@@ -1673,6 +1716,16 @@ fn sort_catalog_addons(
         (CatalogColumnKey::DateReleased, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released).reverse());
         }
+        (CatalogColumnKey::GameVersion, SortDirection::Asc) => addons.sort_by(|a, b| {
+            let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            gv_a.cmp(&gv_b)
+        }),
+        (CatalogColumnKey::GameVersion, SortDirection::Desc) => addons.sort_by(|a, b| {
+            let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
+            gv_a.cmp(&gv_b).reverse()
+        }),
     }
 }
 
@@ -1691,6 +1744,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let mut catalog_rows: Vec<_> = catalog
             .addons
             .iter()
+            .filter(|a| !a.game_versions.is_empty())
             .filter(|a| {
                 let cleaned_text =
                     format!("{} {}", a.name.to_lowercase(), a.summary.to_lowercase());
@@ -1701,9 +1755,12 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     true
                 }
             })
-            .filter(|a| a.flavors.iter().any(|f| *f == flavor.base_flavor()))
+            .filter(|a| {
+                a.game_versions
+                    .iter()
+                    .any(|gc| gc.flavor == flavor.base_flavor())
+            })
             .filter(|a| match source {
-                CatalogSource::All => true,
                 CatalogSource::Choice(source) => a.source == *source,
             })
             .filter(|a| match category {
@@ -1723,7 +1780,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .previous_column_key
             .unwrap_or(CatalogColumnKey::NumDownloads);
 
-        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key);
+        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key, flavor);
 
         catalog_rows = catalog_rows
             .into_iter()
@@ -1758,16 +1815,36 @@ fn save_column_configs(ajour: &mut Ajour) {
     let _ = ajour.config.save();
 }
 
-fn update_catalog_install_status(
-    statuses: &mut Vec<(Flavor, u32, CatalogInstallStatus)>,
-    new_status: CatalogInstallStatus,
-    flavor: Flavor,
-    repository_id: Option<String>,
-) {
-    if let Some((_, _, status)) = statuses
-        .iter_mut()
-        .find(|(f, i, _)| flavor == *f && repository_id == Some(i.to_string()))
+/// Hardcoded binary names for each compilation target
+/// that gets published to the Github Release
+const fn bin_name() -> &'static str {
+    #[cfg(all(target_os = "windows", feature = "opengl"))]
     {
-        *status = new_status;
+        "ajour-opengl.exe"
+    }
+
+    #[cfg(all(target_os = "windows", feature = "wgpu"))]
+    {
+        "ajour.exe"
+    }
+
+    #[cfg(all(target_os = "macos", feature = "opengl"))]
+    {
+        "ajour-opengl"
+    }
+
+    #[cfg(all(target_os = "macos", feature = "wgpu"))]
+    {
+        "ajour"
+    }
+
+    #[cfg(all(target_os = "linux", feature = "opengl"))]
+    {
+        "ajour-opengl.AppImage"
+    }
+
+    #[cfg(all(target_os = "linux", feature = "wgpu"))]
+    {
+        "ajour.AppImage"
     }
 }

@@ -45,8 +45,10 @@ Ajour is a World of Warcraft addon manager written in Rust with a strong focus o
 ## Features
 
 - Addons will be parsed automatically and resolved from multiple repositories:
-  - [tukui.org](https://www.tukui.org/)
-  - [curse](https://www.curseforge.com/wow/addons)
+  - [Tukui](https://www.tukui.org/)
+  - [CurseForge](https://www.curseforge.com/wow/addons)
+  - [WoWInterface](https://www.wowinterface.com/)
+- Install new addons from the catalog
 - Support for release channels, so it's possible to select either `alpha`, `beta` or `stable` for each addon
 - View changelogs for each addon 
 - Bulk addon update without any limitations
@@ -88,10 +90,6 @@ I welcome contributions of any kind, because together we can make Ajour even bet
 
 ## FAQ
 
-**_When will you release Ajour / be feature complete?_**
-
-The plan is to have a stable, polished release in time for the Shadowlands launch. 10.27.20.
-
 **_What features are planned?_**
 
 We have a roadmap [here](https://github.com/casperstorm/ajour/projects/2).
@@ -103,6 +101,14 @@ We encourage you to raise an issue and tell us all about it! We want Ajour to su
 **_macOS won't let me open the app, what should I do?_**
 
 Instead of double clicking it, right click and choose "Open". That should successfully open Ajour.
+
+**_What requirements does Ajour have?_**
+
+Windows: DX12 or Vulkan  
+Linux: Vulkan  
+macOS: Metal  
+
+If you are having problems with these requirements, then try the OpenGL build.
 
 **_Where does Ajour store its configuration?_**
 
