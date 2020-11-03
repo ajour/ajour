@@ -7,8 +7,9 @@ use chrono::prelude::*;
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
 
+// TODO: Change this back.
 const CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/master/catalog.json";
+    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/2518dd5d3bb7bf0abdac6601893e08119450f870/wowi.json";
 
 pub async fn get_catalog() -> Result<Catalog> {
     let client = HttpClient::builder()
@@ -36,6 +37,8 @@ pub enum Source {
     Curse,
     #[serde(alias = "tukui")]
     Tukui,
+    #[serde(alias = "wowi")]
+    WowI,
 }
 
 impl std::fmt::Display for Source {
@@ -43,6 +46,7 @@ impl std::fmt::Display for Source {
         let s = match self {
             Source::Curse => "Curse",
             Source::Tukui => "Tukui",
+            Source::WowI => "WowI",
         };
         write!(f, "{}", s)
     }
@@ -113,7 +117,17 @@ mod date_parser {
             .map(|d| Utc.from_utc_datetime(&d))
             .ok();
 
-        Ok(date)
+        if date.is_some() {
+            return Ok(date);
+        }
+
+        // Handles WowI.
+        if let Ok(ts) = &s.parse::<i64>() {
+            let date = Utc.timestamp(ts / 1000, 0);
+            return Ok(Some(date));
+        }
+
+        Ok(None)
     }
 }
 

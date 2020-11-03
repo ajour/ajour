@@ -1563,6 +1563,7 @@ async fn perform_fetch_latest_addon(
     let result = match source {
         catalog::Source::Curse => curse_api::latest_addon(source_id, flavor).await,
         catalog::Source::Tukui => tukui_api::latest_addon(source_id, flavor).await,
+        catalog::Source::WowI => tukui_api::latest_addon(source_id, flavor).await,
     };
 
     (flavor, source_id, result)

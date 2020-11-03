@@ -1329,6 +1329,7 @@ impl CatalogSource {
         vec![
             CatalogSource::Choice(catalog::Source::Curse),
             CatalogSource::Choice(catalog::Source::Tukui),
+            CatalogSource::Choice(catalog::Source::WowI),
         ]
     }
 }
@@ -1339,6 +1340,7 @@ impl std::fmt::Display for CatalogSource {
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
+                catalog::Source::WowI => "WowI",
             },
         };
         write!(f, "{}", s)
