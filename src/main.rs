@@ -4,8 +4,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod cli;
+mod command;
 mod gui;
-mod update;
 
 use ajour_core::error::ClientError;
 use ajour_core::fs::CONFIG_DIR;
@@ -67,7 +67,8 @@ pub fn main() {
         Some(command) => {
             // Process the command and exit
             if let Err(e) = match command {
-                cli::Command::Update => update::update_all_addons(),
+                cli::Command::Update => command::update_all_addons(),
+                cli::Command::Install { url } => command::install_from_source(url),
             } {
                 log_error(&e);
             }

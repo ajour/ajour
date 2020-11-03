@@ -1,5 +1,6 @@
 use crate::VERSION;
 
+use isahc::http::Uri;
 use structopt::{
     clap::{self, AppSettings},
     StructOpt,
@@ -81,4 +82,9 @@ pub struct Opts {
 pub enum Command {
     /// Update all addons from the command line then exit
     Update,
+    /// Install an addon from the command line
+    Install {
+        #[structopt(help = "source url (Github & Gitlab currently supported)")]
+        url: Uri,
+    },
 }

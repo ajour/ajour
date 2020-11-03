@@ -1,5 +1,5 @@
 use super::Flavor;
-use crate::addon::ReleaseChannel;
+use crate::repository::ReleaseChannel;
 use de::de_ignored;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

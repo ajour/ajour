@@ -9,9 +9,10 @@ use {
     },
     crate::VERSION,
     ajour_core::{
-        addon::{Addon, AddonState, Repository},
+        addon::{Addon, AddonState},
         catalog::Catalog,
         config::{Config, Flavor},
+        repository::RepositoryKind,
         theme::ColorPalette,
     },
     chrono::prelude::*,
@@ -568,6 +569,7 @@ pub fn addon_data_cell<'a, 'b>(
     let game_version = addon.game_version().map(str::to_string);
     let notes = addon.notes().map(str::to_string);
     let website_url = addon.website_url().map(str::to_string);
+    let repository_kind = addon.repository_kind();
 
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
@@ -576,7 +578,7 @@ pub fn addon_data_cell<'a, 'b>(
         .map(str::to_string)
         .unwrap_or_else(|| "-".to_string());
     let release_package = addon_cloned.relevant_release_package();
-    let remote_version = if let Some(package) = release_package.as_deref() {
+    let remote_version = if let Some(package) = &release_package {
         package.version.clone()
     } else {
         String::from("-")
@@ -600,7 +602,7 @@ pub fn addon_data_cell<'a, 'b>(
             Interaction::Expand(ExpandType::Details(addon_cloned.clone())),
         );
 
-        if release_package.as_deref().is_some() {}
+        if release_package.is_some() {}
 
         if is_addon_expanded && matches!(expand_type, ExpandType::Details(_)) {
             title_button = title_button.style(style::SelectedBrightTextButton(color_palette));
@@ -649,7 +651,7 @@ pub fn addon_data_cell<'a, 'b>(
         let mut local_version_button = Button::new(&mut addon.local_btn_state, installed_version)
             .style(style::BrightTextButton(color_palette));
 
-        if addon_cloned.active_repository == Some(Repository::Curse)
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Curse)
             && addon_cloned.file_id().is_some()
         {
             local_version_button =
@@ -658,7 +660,7 @@ pub fn addon_data_cell<'a, 'b>(
                 )));
         }
 
-        if addon_cloned.active_repository == Some(Repository::Tukui)
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Tukui)
             && addon_cloned.repository_id().is_some()
         {
             local_version_button =
@@ -667,7 +669,7 @@ pub fn addon_data_cell<'a, 'b>(
                 )));
         }
 
-        if addon_cloned.active_repository == Some(Repository::WowI) {
+        if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
             local_version_button =
                 local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
                     Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
@@ -718,7 +720,7 @@ pub fn addon_data_cell<'a, 'b>(
         let mut remote_version_button = Button::new(&mut addon.remote_btn_state, remote_version)
             .style(style::BrightTextButton(color_palette));
 
-        if addon_cloned.active_repository == Some(Repository::Curse) {
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Curse) {
             if let Some(package) = addon_cloned.relevant_release_package() {
                 if package.file_id.is_some() {
                     remote_version_button =
@@ -729,7 +731,7 @@ pub fn addon_data_cell<'a, 'b>(
             }
         }
 
-        if addon_cloned.active_repository == Some(Repository::Tukui)
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Tukui)
             && addon_cloned.repository_id().is_some()
         {
             remote_version_button =
@@ -738,11 +740,10 @@ pub fn addon_data_cell<'a, 'b>(
                 )));
         }
 
-        if addon_cloned.active_repository == Some(Repository::WowI) {
-            remote_version_button =
-                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
-                )));
+        if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
+            remote_version_button = remote_version_button.on_press(Interaction::Expand(
+                ExpandType::Changelog(Changelog::Request(addon_cloned, AddonVersionKey::Remote)),
+            ));
         }
 
         // Lets check if addon is expanded, in changelog mode and remote is shown.
@@ -855,7 +856,7 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let release_date_text: String = if let Some(package) = release_package {
+        let release_date_text: String = if let Some(package) = &release_package {
             let f = timeago::Formatter::new();
             let now = Local::now();
 
@@ -890,9 +891,8 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let source_text = addon
-            .active_repository
-            .map_or_else(|| String::from("Unknown"), |a| a.to_string());
+        let source_text =
+            repository_kind.map_or_else(|| String::from("Unknown"), |a| a.to_string());
         let source = Text::new(source_text).size(DEFAULT_FONT_SIZE);
         let source_container = Container::new(source)
             .height(default_height)
@@ -1080,7 +1080,7 @@ pub fn addon_data_cell<'a, 'b>(
                 let notes_title_container = Container::new(notes_title_text)
                     .style(style::BrightForegroundContainer(color_palette));
 
-                let release_date_text: String = if let Some(package) = release_package {
+                let release_date_text: String = if let Some(package) = &release_package {
                     let f = timeago::Formatter::new();
                     let now = Local::now();
 

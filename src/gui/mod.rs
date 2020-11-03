@@ -4,7 +4,7 @@ mod update;
 
 use crate::cli::Opts;
 use ajour_core::{
-    addon::{Addon, AddonFolder, AddonVersionKey, ReleaseChannel},
+    addon::{Addon, AddonFolder, AddonVersionKey},
     cache::{
         load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
     },
@@ -13,6 +13,7 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
+    repository::ReleaseChannel,
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
     Result,

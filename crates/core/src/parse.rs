@@ -1,15 +1,12 @@
 use crate::{
-    addon::{Addon, AddonFolder, AddonState, Repository, RepositoryIdentifiers},
-    cache::{addon_from_cache, AddonCache, FingerprintCache},
+    addon::{Addon, AddonFolder, AddonState},
+    cache::{AddonCache, AddonCacheEntry, FingerprintCache},
     config::Flavor,
-    curse_api::{
-        self, fetch_game_info, fetch_remote_packages_by_fingerprint, fetch_remote_packages_by_ids,
-        FingerprintInfo, GameInfo,
-    },
     error::ClientError,
     fs::PersistentData,
     murmur2::calculate_hash,
-    tukui_api, wowi_api, Result,
+    repository::{curse, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage},
+    Result,
 };
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
@@ -26,7 +23,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::SystemTime;
 
 lazy_static::lazy_static! {
-    static ref CACHED_GAME_INFO: Mutex<Option<GameInfo>> = Mutex::new(None);
+    static ref CACHED_GAME_INFO: Mutex<Option<curse::GameInfo>> = Mutex::new(None);
 }
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
@@ -52,7 +49,7 @@ pub async fn file_parsing_regex() -> Result<ParsingPatterns> {
         if let Some(info) = cached_info {
             info
         } else {
-            let info = fetch_game_info().await?;
+            let info = curse::fetch_game_info().await?;
             *CACHED_GAME_INFO.lock().await = Some(info.clone());
 
             info
@@ -137,87 +134,18 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     // respective fingerprint
     let mut addon_folders = parse_addon_folders(root_dir, flavor, &all_dirs, &fingerprints).await;
 
-    // Get cached addons. This is our first priority for assigning folders to addons.
-    let mut cached_addons = get_cached_addons(flavor, addon_cache, &addon_folders).await;
+    // Get all cached entries
+    let cache_entries = get_cache_entries(flavor, addon_cache).await;
 
-    // Remove addon folders that were successfully grouped to cached addons
-    addon_folders.retain(|f| {
-        !cached_addons
-            .iter()
-            .any(|cached| cached.folders.contains(f))
-    });
-
-    // Get fingerprint info from curse API for all remaining addon folder fingerprints
+    // Get fingerprint info
     let fingerprint_info = get_curse_fingerprint_info(flavor, &addon_folders).await?;
 
-    // Get fingerprint addons
-    let mut fingerprint_addons =
-        get_curse_fingerprint_addons(flavor, &addon_folders, &fingerprint_info).await?;
+    // Gets all unique repository packages from the cached ids, toc ids, and fingerprint exact / partial matches
+    let mut all_repo_packages =
+        get_all_repo_packages(flavor, &cache_entries, &addon_folders, &fingerprint_info).await?;
 
-    // Remove addon folders that were successfully grouped to fingerprint addons
-    addon_folders.retain(|f| {
-        !fingerprint_addons
-            .iter()
-            .any(|fingerprint| fingerprint.folders.contains(f))
-    });
-
-    // Get package info for all curse ids. This package info is used to update missing
-    // info on the fingerprint addons and then used as a fallback measure to create
-    // addons for folders that failed fingerprinting, but we were able to get a
-    // curse id from.
-    let curse_packages = get_curse_package_info(
-        flavor,
-        &addon_folders,
-        &fingerprint_addons,
-        &fingerprint_info,
-    )
-    .await
-    .unwrap_or_default();
-
-    // Update the fingerprint addons with package info
-    update_fingerprint_addons_with_package_info(flavor, &mut fingerprint_addons, &curse_packages)
-        .await;
-
-    // Create addons from the package info for all ids that are NOT from a fingerprint addon
-    let curse_id_only_addons =
-        get_curse_id_only_addons(flavor, &addon_folders, &fingerprint_addons, &curse_packages)
-            .await;
-
-    // Remove addon folders that were successfully grouped to curse id only addons
-    addon_folders.retain(|f| {
-        !curse_id_only_addons
-            .iter()
-            .any(|curse_id| curse_id.folders.contains(f))
-    });
-
-    // Get package info for all tukui ids. This package info is used to update
-    // cached addons and then used as a fallback measure to create addons for
-    // folders that are not cached, but we were able to get a tukui id from.
-    let tukui_packages = get_tukui_package_info(flavor, &addon_folders, &cached_addons).await;
-
-    // Update cached addons with tukui info
-    update_cached_addons_with_tukui_info(flavor, &mut cached_addons, &tukui_packages);
-
-    // Get tukui addons. We only create addons from ids that aren't from a cached addon.
-    let tukui_addons =
-        get_tukui_addons(flavor, &addon_folders, &cached_addons, &tukui_packages).await;
-
-    // Remove addon folders that were successfully grouped to tukui addons
-    addon_folders.retain(|f| !tukui_addons.iter().any(|tukui| tukui.folders.contains(f)));
-
-    // Get package info for all wowi ids. This package info is used to update
-    // cached addons and then used as a fallback measure to create addons for
-    // folders that are not cached, but we were able to get a wowi id from.
-    let wowi_packages = get_wowi_package_info(flavor, &addon_folders, &cached_addons).await;
-
-    // Update cached addons with wowi info
-    update_cached_addons_with_wowi_info(flavor, &mut cached_addons, &wowi_packages);
-
-    // Get wowi addons. We only create addons from ids that aren't from a cached addon.
-    let wowi_addons = get_wowi_addons(flavor, &addon_folders, &cached_addons, &wowi_packages).await;
-
-    // Remove addon folders that were successfully grouped to wowi addons
-    addon_folders.retain(|f| !wowi_addons.iter().any(|wowi| wowi.folders.contains(f)));
+    // Build addons with repo packages & addon folders
+    let known_addons = build_addons(&mut all_repo_packages, &mut addon_folders, &cache_entries);
 
     // Any remaining addon folders are unknown, we will show them 1:1 in Ajour
     let unknown_addons = addon_folders
@@ -238,15 +166,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     );
 
     // Concats the different repo addons, and returns.
-    let concatenated = [
-        &cached_addons[..],
-        &fingerprint_addons[..],
-        &curse_id_only_addons[..],
-        &tukui_addons[..],
-        &wowi_addons[..],
-        &unknown_addons[..],
-    ]
-    .concat();
+    let concatenated = [&known_addons[..], &unknown_addons[..]].concat();
 
     log::debug!(
         "{} - {} addons successfully parsed",
@@ -402,36 +322,28 @@ async fn parse_addon_folders(
     addon_folders
 }
 
-async fn get_cached_addons(
+async fn get_cache_entries(
     flavor: Flavor,
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
-    addon_folders: &[AddonFolder],
-) -> Vec<Addon> {
-    let cached_addons = if let Some(addon_cache) = addon_cache {
+) -> Vec<AddonCacheEntry> {
+    let cache_entries = if let Some(addon_cache) = addon_cache {
         let mut addon_cache = addon_cache.lock().await;
         let addon_cache_entries = addon_cache.get_mut_for_flavor(flavor);
 
-        addon_cache_entries
-            .iter()
-            .filter_map(|entry| addon_from_cache(flavor, entry, &addon_folders))
-            .collect::<Vec<_>>()
+        addon_cache_entries.to_vec()
     } else {
         vec![]
     };
 
-    log::debug!(
-        "{} - {} addons created from cache",
-        flavor,
-        cached_addons.len()
-    );
+    log::debug!("{} - {} cached entries", flavor, cache_entries.len());
 
-    cached_addons
+    cache_entries
 }
 
 async fn get_curse_fingerprint_info(
     flavor: Flavor,
     addon_folders: &[AddonFolder],
-) -> Result<FingerprintInfo> {
+) -> Result<curse::FingerprintInfo> {
     // Get all fingerprint hashes
     let mut fingerprint_hashes: Vec<_> = addon_folders
         .iter()
@@ -446,7 +358,8 @@ async fn get_curse_fingerprint_info(
     );
 
     // Fetches fingerprint package from curse_api
-    let mut fingerprint_info = fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
+    let mut fingerprint_info =
+        curse::fetch_remote_packages_by_fingerprint(&fingerprint_hashes).await?;
 
     // We had a case where a addon hash returned a minecraft addon.
     // So we filter out all matches which does not have a valid flavor.
@@ -496,326 +409,287 @@ async fn get_curse_fingerprint_info(
     Ok(fingerprint_info)
 }
 
-async fn get_curse_fingerprint_addons(
+async fn get_all_repo_packages(
     flavor: Flavor,
+    cache_entries: &[AddonCacheEntry],
     addon_folders: &[AddonFolder],
-    fingerprint_info: &FingerprintInfo,
-) -> Result<Vec<Addon>> {
-    log::debug!(
-        "{} - {} exact fingerprint matches against curse api",
-        flavor,
-        fingerprint_info.exact_matches.len()
-    );
+    fingerprint_info: &curse::FingerprintInfo,
+) -> Result<Vec<RepositoryPackage>> {
+    let mut curse_ids = vec![];
+    let mut tukui_ids = vec![];
+    let mut wowi_ids = vec![];
 
-    // Converts the excat matches into our `Addon` struct.
-    let fingerprint_addons: Vec<_> = fingerprint_info
-        .exact_matches
-        .iter()
-        .map(|info| Addon::from_curse_fingerprint_info(info.id, &info, flavor, &addon_folders))
-        .collect();
-
-    log::debug!(
-        "{} - {} addons from fingerprint metadata",
-        flavor,
-        fingerprint_addons.len()
-    );
-
-    Ok(fingerprint_addons)
-}
-
-async fn get_curse_package_info(
-    flavor: Flavor,
-    addon_folders: &[AddonFolder],
-    fingerprint_addons: &[Addon],
-    fingerprint_info: &FingerprintInfo,
-) -> Result<Vec<curse_api::Package>> {
-    // Creates a `Vec` of curse_ids from addons that succeeded fingerprinting
-    let mut curse_ids_from_match: Vec<_> = fingerprint_addons
-        .iter()
-        .filter_map(|addon| addon.repository_identifiers.curse)
-        .collect();
-    curse_ids_from_match.dedup();
-
-    // Addon folders that failed fingerprinting, but we can still build an addon
-    // using the curse id from the `.toc`
-    let mut curse_ids_from_nonmatch: Vec<_> = addon_folders
-        .iter()
-        .filter(|f| f.repository_identifiers.curse.is_some())
-        .map(|f| f.repository_identifiers.curse.unwrap())
-        .collect();
-    curse_ids_from_nonmatch.dedup();
-
-    // Addons that were partial matches that we can get the curse id from. This might return
-    // id's where `curse_ids_from_nonmatch` may not, if the `AddonFolder` `.toc` didn't
-    // contain a Curse ID, but we can get it from the partial match data
-    let mut curse_ids_from_partial: Vec<_> = fingerprint_info
-        .partial_matches
-        .iter()
-        .map(|a| a.id)
-        .collect();
-    curse_ids_from_partial.dedup();
-
-    // Combine all ids and query all at once
-    let mut combined_curse_ids = [
-        &curse_ids_from_match[..],
-        &curse_ids_from_nonmatch[..],
-        &curse_ids_from_partial[..],
-    ]
-    .concat();
-    combined_curse_ids.dedup();
-
-    log::debug!(
-        "{} - {} addons with curse id",
-        flavor,
-        combined_curse_ids.len()
-    );
-
-    // Fetches the curse packages based on the ids.
-    fetch_remote_packages_by_ids(&combined_curse_ids).await
-}
-
-async fn update_fingerprint_addons_with_package_info(
-    flavor: Flavor,
-    fingerprint_addons: &mut [Addon],
-    packages: &[curse_api::Package],
-) {
-    let mut updated = 0;
-
-    // Loops the packages and updates any fingerprint addon with matching id
-    for package in packages {
-        if let Some(addon) = fingerprint_addons
-            .iter_mut()
-            .find(|a| a.repository_id() == Some(package.id.to_string()))
-        {
-            addon.repository_metadata.title = Some(package.name.clone());
-            addon.repository_metadata.website_url = Some(package.website_url.clone());
-
-            updated += 1;
-        }
+    // Get all possible curse ids
+    {
+        curse_ids.extend(fingerprint_info.exact_matches.iter().map(|i| i.id));
+        curse_ids.extend(fingerprint_info.partial_matches.iter().map(|i| i.id));
+        curse_ids.extend(
+            addon_folders
+                .iter()
+                .filter_map(|f| f.repository_identifiers.curse),
+        );
+        curse_ids.dedup();
     }
 
-    log::debug!(
-        "{} - {} addons updated with curse id package metadata",
-        flavor,
-        updated
-    );
-}
-
-async fn get_curse_id_only_addons(
-    flavor: Flavor,
-    addon_folders: &[AddonFolder],
-    fingerprint_addons: &[Addon],
-    packages: &[curse_api::Package],
-) -> Vec<Addon> {
-    let mut curse_id_only_addons = vec![];
-
-    let mut created = 0;
-
-    // Loops the packages and creates an addon from all ids that aren't from
-    // a fingerprint addon
-    for package in packages {
-        let exists_in_fingerprint = fingerprint_addons.iter().any(|a| {
-            a.folders
+    // Get all possible tukui ids
+    {
+        tukui_ids.extend(
+            cache_entries
                 .iter()
-                .any(|f| f.repository_identifiers.curse == Some(package.id))
-                || a.repository_id() == Some(package.id.to_string())
+                .filter(|e| e.repository == RepositoryKind::Tukui)
+                .map(|e| e.repository_id.clone()),
+        );
+        tukui_ids.extend(
+            addon_folders
+                .iter()
+                .filter_map(|f| f.repository_identifiers.tukui.clone()),
+        );
+        tukui_ids.dedup();
+    }
+
+    // Get all possible wowi ids
+    {
+        wowi_ids.extend(
+            cache_entries
+                .iter()
+                .filter(|e| e.repository == RepositoryKind::WowI)
+                .map(|e| e.repository_id.clone()),
+        );
+        wowi_ids.extend(
+            addon_folders
+                .iter()
+                .filter_map(|f| f.repository_identifiers.wowi.clone()),
+        );
+        wowi_ids.dedup();
+    }
+
+    // Get all curse repo packages
+    let curse_repo_packages = {
+        let mut curse_packages = curse::fetch_remote_packages_by_ids(&curse_ids).await?;
+
+        let mut curse_repo_packages = vec![];
+
+        // Get repo packages from fingerprint exact matches
+        curse_repo_packages.extend(
+            fingerprint_info
+                .exact_matches
+                .iter()
+                .map(|info| {
+                    (
+                        info.id.to_string(),
+                        curse::metadata_from_fingerprint_info(flavor, info),
+                    )
+                })
+                .filter_map(|(id, metadata)| {
+                    RepositoryPackage::from_repo_id(flavor, RepositoryKind::Curse, id)
+                        .map(|r| r.with_metadata(metadata))
+                        .ok()
+                }),
+        );
+
+        // Remove any packages that match a fingerprint entry and update missing
+        // metadata fields with that package info
+        curse_repo_packages.iter_mut().for_each(|r| {
+            if let Some(idx) = curse_packages.iter().position(|p| p.id.to_string() == r.id) {
+                let package = curse_packages.remove(idx);
+
+                r.metadata.title = Some(package.name.clone());
+                r.metadata.website_url = Some(package.website_url);
+            }
         });
 
-        if !exists_in_fingerprint {
-            let addon = Addon::from_curse_package(&package, flavor, &addon_folders);
-            if let Some(addon) = addon {
-                curse_id_only_addons.push(addon);
-                created += 1;
+        curse_repo_packages.extend(
+            curse_packages
+                .into_iter()
+                .map(|package| {
+                    (
+                        package.id.to_string(),
+                        curse::metadata_from_curse_package(flavor, package),
+                    )
+                })
+                .filter_map(|(id, metadata)| {
+                    RepositoryPackage::from_repo_id(flavor, RepositoryKind::Curse, id)
+                        .map(|r| r.with_metadata(metadata))
+                        .ok()
+                }),
+        );
+
+        curse_repo_packages
+    };
+
+    // Get all tukui repo packages
+    let tukui_repo_packages = {
+        let client = Arc::new(
+            HttpClient::builder()
+                .redirect_policy(RedirectPolicy::Follow)
+                .max_connections_per_host(6)
+                .build()
+                .unwrap(),
+        );
+
+        let fetch_tasks: Vec<_> = tukui_ids
+            .iter()
+            .map(|id| tukui::fetch_remote_package(client.clone(), &id, &flavor))
+            .collect();
+
+        join_all(fetch_tasks)
+            .await
+            .into_iter()
+            .filter_map(Result::ok)
+            .map(|(id, package)| (id, tukui::metadata_from_tukui_package(package)))
+            .filter_map(|(id, metadata)| {
+                RepositoryPackage::from_repo_id(flavor, RepositoryKind::Tukui, id)
+                    .ok()
+                    .map(|r| r.with_metadata(metadata))
+            })
+            .collect::<Vec<_>>()
+    };
+
+    // Get all wowi repo packages
+    let wowi_repo_packages = {
+        let wowi_packages = wowi::fetch_remote_packages(&wowi_ids).await?;
+
+        wowi_packages
+            .into_iter()
+            .map(|package| {
+                (
+                    package.id.to_string(),
+                    wowi::metadata_from_wowi_package(package),
+                )
+            })
+            .filter_map(|(id, metadata)| {
+                RepositoryPackage::from_repo_id(flavor, RepositoryKind::WowI, id)
+                    .ok()
+                    .map(|r| r.with_metadata(metadata))
+            })
+            .collect::<Vec<_>>()
+    };
+
+    Ok([
+        &curse_repo_packages[..],
+        &tukui_repo_packages[..],
+        &wowi_repo_packages[..],
+    ]
+    .concat())
+}
+
+fn build_addons(
+    repo_packages: &mut Vec<RepositoryPackage>,
+    addon_folders: &mut Vec<AddonFolder>,
+    cache_entries: &[AddonCacheEntry],
+) -> Vec<Addon> {
+    let cached_addons: Vec<_> = cache_entries
+        .iter()
+        .filter_map(|e| {
+            // Get and remove any matching repo package
+            let repo_idx = repo_packages
+                .iter()
+                .position(|r| r.id == e.repository_id && r.kind == e.repository)?;
+            let repo_package = repo_packages.remove(repo_idx);
+
+            // Get and remove all matching addon folders
+            let folder_idxs: Vec<_> = addon_folders
+                .iter()
+                .enumerate()
+                .filter(|(_, f)| e.folder_names.contains(&f.id))
+                .map(|(idx, _)| idx)
+                .collect();
+
+            if folder_idxs.is_empty() {
+                log::error!("No addon folders for cached entry: {}", e.title);
+                return None;
             }
-        }
-    }
 
-    log::debug!(
-        "{} - {} addons created from curse id package metadata",
-        flavor,
-        created
-    );
+            let mut folders = vec![];
 
-    curse_id_only_addons
-}
+            for (offset, idx) in folder_idxs.iter().enumerate() {
+                folders.push(addon_folders.remove(idx - offset));
+            }
 
-async fn get_tukui_package_info(
-    flavor: Flavor,
-    addon_folders: &[AddonFolder],
-    cached_addons: &[Addon],
-) -> Vec<(String, tukui_api::TukuiPackage)> {
-    let ids_from_cached: Vec<_> = cached_addons
-        .iter()
-        .filter(|a| a.active_repository == Some(Repository::Tukui))
-        .filter_map(|a| a.repository_id())
+            Addon::build_with_repo_and_folders(repo_package, folders).ok()
+        })
         .collect();
 
-    let ids_from_remaining_folders: Vec<_> = addon_folders
+    let curse_addons: Vec<_> = repo_packages
+        .clone()
         .iter()
-        .filter(|f| f.repository_identifiers.tukui.is_some())
-        .map(|f| f.repository_identifiers.tukui.clone().unwrap())
+        .enumerate()
+        .filter(|(_, r)| r.kind == RepositoryKind::Curse)
+        .enumerate()
+        .filter_map(|(offset, (idx, r))| {
+            // Get and remove all matching addon folders
+            let module_names = r.metadata.modules();
+
+            // Get and remove all matching addon folders
+            let folder_idxs: Vec<_> = addon_folders
+                .iter()
+                .enumerate()
+                .filter(|(_, f)| module_names.contains(&f.id))
+                .map(|(idx, _)| idx)
+                .collect();
+
+            if folder_idxs.is_empty() {
+                return None;
+            }
+
+            let mut folders = vec![];
+
+            for (offset, idx) in folder_idxs.iter().enumerate() {
+                folders.push(addon_folders.remove(idx - offset));
+            }
+
+            let repo_package = repo_packages.remove(idx - offset);
+
+            Addon::build_with_repo_and_folders(repo_package, folders).ok()
+        })
         .collect();
 
-    let combined_ids = [&ids_from_cached[..], &ids_from_remaining_folders[..]].concat();
-
-    log::debug!("{} - {} addons with tukui id", flavor, combined_ids.len());
-
-    let client = Arc::new(
-        HttpClient::builder()
-            .redirect_policy(RedirectPolicy::Follow)
-            .max_connections_per_host(6)
-            .build()
-            .unwrap(),
-    );
-
-    let fetch_tasks: Vec<_> = combined_ids
+    let tukui_and_wowi_addons: Vec<_> = repo_packages
+        .clone()
         .iter()
-        .map(|id| tukui_api::fetch_remote_package(client.clone(), &id, &flavor))
+        .enumerate()
+        .filter(|(_, r)| r.kind == RepositoryKind::Tukui || r.kind == RepositoryKind::WowI)
+        .enumerate()
+        .filter_map(|(offset, (idx, r))| {
+            let mut folders = vec![];
+
+            // Get addon folder with matching repo id
+            let matching_folder_idx = addon_folders.iter().position(|f| match r.kind {
+                RepositoryKind::Tukui => f.repository_identifiers.tukui.as_ref() == Some(&r.id),
+                RepositoryKind::WowI => f.repository_identifiers.wowi.as_ref() == Some(&r.id),
+                _ => false,
+            })?;
+
+            let matching_folder = addon_folders.remove(matching_folder_idx);
+
+            let dependency_idxs: Vec<_> = addon_folders
+                .iter()
+                .enumerate()
+                .filter(|(_, f)| {
+                    matching_folder.dependencies.contains(&f.id)
+                        || f.dependencies.contains(&matching_folder.id)
+                })
+                .map(|(idx, _)| idx)
+                .collect();
+
+            folders.push(matching_folder);
+
+            for (offset, idx) in dependency_idxs.iter().enumerate() {
+                folders.push(addon_folders.remove(idx - offset));
+            }
+
+            let repo_package = repo_packages.remove(idx - offset);
+
+            Addon::build_with_repo_and_folders(repo_package, folders).ok()
+        })
         .collect();
 
-    join_all(fetch_tasks)
-        .await
-        .into_iter()
-        .filter_map(Result::ok)
-        .collect()
-}
-
-fn update_cached_addons_with_tukui_info(
-    flavor: Flavor,
-    cached_addons: &mut [Addon],
-    packages: &[(String, tukui_api::TukuiPackage)],
-) {
-    let mut updated = 0;
-
-    // Loops the packages and updates any fingerprint addon with matching id
-    for (id, package) in packages {
-        if let Some(addon) = cached_addons
-            .iter_mut()
-            .find(|a| a.repository_id().as_ref() == Some(id))
-        {
-            addon.update_with_tukui_package(id.clone(), package, None);
-
-            updated += 1;
-        }
-    }
-
-    log::debug!(
-        "{} - {} cached addons updated with tukui package metadata",
-        flavor,
-        updated
-    );
-}
-
-async fn get_tukui_addons(
-    flavor: Flavor,
-    addon_folders: &[AddonFolder],
-    cached_addons: &[Addon],
-    packages: &[(String, tukui_api::TukuiPackage)],
-) -> Vec<Addon> {
-    let mut tukui_addons = vec![];
-
-    for (id, package) in packages {
-        let exists_in_cache = cached_addons
-            .iter()
-            .any(|a| a.repository_id().as_ref() == Some(id));
-
-        if !exists_in_cache {
-            let mut addon = Addon::empty("");
-            addon.update_with_tukui_package(id.clone(), package, Some(addon_folders));
-
-            tukui_addons.push(addon);
-        }
-    }
-
-    log::debug!(
-        "{} - {} addons from tukui package metadata",
-        flavor,
-        tukui_addons.len()
-    );
-
-    tukui_addons
-}
-
-async fn get_wowi_package_info(
-    flavor: Flavor,
-    addon_folders: &[AddonFolder],
-    cached_addons: &[Addon],
-) -> Vec<wowi_api::WowIPackage> {
-    let ids_from_cached: Vec<_> = cached_addons
-        .iter()
-        .filter(|a| a.active_repository == Some(Repository::WowI))
-        .filter_map(|a| a.repository_id())
-        .collect();
-
-    let ids_from_remaining_folders: Vec<_> = addon_folders
-        .iter()
-        .filter(|f| f.repository_identifiers.wowi.is_some())
-        .map(|f| f.repository_identifiers.wowi.clone().unwrap())
-        .collect();
-
-    let combined_ids = [&ids_from_cached[..], &ids_from_remaining_folders[..]].concat();
-
-    log::debug!("{} - {} addons with wowi id", flavor, combined_ids.len());
-
-    wowi_api::fetch_remote_packages(combined_ids)
-        .await
-        .unwrap_or_default()
-}
-
-fn update_cached_addons_with_wowi_info(
-    flavor: Flavor,
-    cached_addons: &mut [Addon],
-    packages: &[wowi_api::WowIPackage],
-) {
-    let mut updated = 0;
-
-    // Loops the packages and updates any fingerprint addon with matching id
-    for package in packages {
-        if let Some(addon) = cached_addons
-            .iter_mut()
-            .find(|a| a.repository_id() == Some(package.id.to_string()))
-        {
-            addon.update_with_wowi_package(package.id, package, None);
-
-            updated += 1;
-        }
-    }
-
-    log::debug!(
-        "{} - {} cached addons updated with wowi package metadata",
-        flavor,
-        updated
-    );
-}
-
-async fn get_wowi_addons(
-    flavor: Flavor,
-    addon_folders: &[AddonFolder],
-    cached_addons: &[Addon],
-    packages: &[wowi_api::WowIPackage],
-) -> Vec<Addon> {
-    let mut wowi_addons = vec![];
-
-    for package in packages {
-        let exists_in_cache = cached_addons
-            .iter()
-            .any(|a| a.repository_id() == Some(package.id.to_string()));
-
-        if !exists_in_cache {
-            let mut addon = Addon::empty("");
-            addon.update_with_wowi_package(package.id, package, Some(addon_folders));
-
-            wowi_addons.push(addon);
-        }
-    }
-
-    log::debug!(
-        "{} - {} addons from wowi package metadata",
-        flavor,
-        wowi_addons.len()
-    );
-
-    wowi_addons
+    [
+        &cached_addons[..],
+        &curse_addons[..],
+        &tukui_and_wowi_addons[..],
+    ]
+    .concat()
 }
 
 pub async fn update_addon_fingerprint(
@@ -1151,6 +1025,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
         wowi: wowi_id,
         tukui: tukui_id,
         curse: curse_id,
+        git: None,
     };
 
     Some(AddonFolder::new(

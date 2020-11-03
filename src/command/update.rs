@@ -2,7 +2,7 @@
 
 use crate::log_error;
 
-use ajour_core::addon::{Addon, Repository};
+use ajour_core::addon::Addon;
 use ajour_core::cache::{
     load_addon_cache, load_fingerprint_cache, update_addon_cache, AddonCache, AddonCacheEntry,
     FingerprintCache,
@@ -12,6 +12,7 @@ use ajour_core::error::ClientError;
 use ajour_core::fs::install_addon;
 use ajour_core::network::download_addon;
 use ajour_core::parse::{read_addon_directory, update_addon_fingerprint};
+use ajour_core::repository::RepositoryKind;
 use ajour_core::Result;
 
 use async_std::sync::{Arc, Mutex};
@@ -93,7 +94,7 @@ pub fn update_all_addons() -> Result<()> {
                             .expect("Expected a valid path");
 
                         // Only add addons that have an update available
-                        if addon.is_updatable(package) {
+                        if addon.is_updatable(&package) {
                             addons_to_update.push((
                                 shared_client.clone(),
                                 addon_cache.clone(),
@@ -120,7 +121,7 @@ pub fn update_all_addons() -> Result<()> {
                 let current_version = addon.version().unwrap_or_default();
                 let new_version = addon
                     .relevant_release_package()
-                    .map(|p| p.version.clone())
+                    .map(|p| p.version)
                     .unwrap_or_default();
 
                 log::info!(
@@ -194,14 +195,23 @@ async fn update_addon(
         // a matching repository identifier otherwise just the first
         // folder alphabetically
         let primary_folder_id = if let Some(folder) = installed_folders.iter().find(|f| {
-            if let Some(repo) = addon.active_repository {
+            if let Some(repo) = addon.repository_kind() {
                 match repo {
-                    Repository::Curse => {
+                    RepositoryKind::Curse => {
                         addon.repository_id()
-                            == f.repository_identifiers.curse.as_ref().map(i32::to_string)
+                            == f.repository_identifiers
+                                .curse
+                                .as_ref()
+                                .map(i32::to_string)
+                                .as_deref()
                     }
-                    Repository::Tukui => addon.repository_id() == f.repository_identifiers.tukui,
-                    Repository::WowI => addon.repository_id() == f.repository_identifiers.wowi,
+                    RepositoryKind::Tukui => {
+                        addon.repository_id() == f.repository_identifiers.tukui.as_deref()
+                    }
+                    RepositoryKind::WowI => {
+                        addon.repository_id() == f.repository_identifiers.wowi.as_deref()
+                    }
+                    RepositoryKind::Git => false,
                 }
             } else {
                 false
@@ -244,8 +254,8 @@ async fn update_addon(
     }
 
     // Update cache for addon
-    if addon.active_repository == Some(Repository::Tukui)
-        || addon.active_repository == Some(Repository::WowI)
+    if addon.repository_kind() == Some(RepositoryKind::Tukui)
+        || addon.repository_kind() == Some(RepositoryKind::WowI)
     {
         if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
             update_addon_cache(addon_cache, entry, flavor).await?;

@@ -6,7 +6,7 @@ use {
         SortDirection, State,
     },
     ajour_core::{
-        addon::{Addon, AddonFolder, AddonState, Repository},
+        addon::{Addon, AddonFolder, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
         cache::{
             remove_addon_cache_entry, update_addon_cache, AddonCache, AddonCacheEntry,
@@ -14,14 +14,13 @@ use {
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
-        curse_api,
         error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
-        tukui_api,
+        repository::{RepositoryKind, RepositoryPackage},
         utility::{download_update_to_temp_file, wow_path_resolution},
-        wowi_api, Result,
+        Result,
     },
     async_std::sync::{Arc, Mutex},
     iced::{Command, Length},
@@ -175,7 +174,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 // Check if addon is updatable.
                 if let Some(package) = addon.relevant_release_package() {
-                    if addon.is_updatable(package) {
+                    if addon.is_updatable(&package) {
                         addon.state = AddonState::Updatable;
                     } else {
                         addon.state = AddonState::Ajour(None);
@@ -300,57 +299,33 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
 
                         // If we have a curse addon.
-                        if addon.active_repository == Some(Repository::Curse) {
-                            let file_id = match key {
-                                AddonVersionKey::Local => addon.file_id(),
-                                AddonVersionKey::Remote => {
-                                    if let Some(package) = addon.relevant_release_package() {
-                                        package.file_id
-                                    } else {
-                                        None
-                                    }
-                                }
-                            };
-
-                            if let (Some(id), Some(file_id)) = (addon.repository_id(), file_id) {
-                                let id = id.parse::<u32>().unwrap();
-
-                                ajour.expanded_type =
-                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                                return Ok(Command::perform(
-                                    perform_fetch_curse_changelog(addon.clone(), *key, id, file_id),
-                                    Message::FetchedChangelog,
-                                ));
-                            }
+                        if addon.repository_kind() == Some(RepositoryKind::Curse) {
+                            ajour.expanded_type =
+                                ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                            return Ok(Command::perform(
+                                perform_fetch_changelog(addon.clone(), *key),
+                                Message::FetchedChangelog,
+                            ));
                         }
 
                         // If we have a Tukui addon.
-                        if addon.active_repository == Some(Repository::Tukui) {
-                            if let Some(id) = addon.repository_id() {
-                                ajour.expanded_type =
-                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                                return Ok(Command::perform(
-                                    perform_fetch_tukui_changelog(
-                                        addon.clone(),
-                                        id,
-                                        ajour.config.wow.flavor,
-                                        *key,
-                                    ),
-                                    Message::FetchedChangelog,
-                                ));
-                            }
+                        if addon.repository_kind() == Some(RepositoryKind::Tukui) {
+                            ajour.expanded_type =
+                                ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                            return Ok(Command::perform(
+                                perform_fetch_changelog(addon.clone(), *key),
+                                Message::FetchedChangelog,
+                            ));
                         }
 
                         // If we have a Wowi addon.
-                        if addon.active_repository == Some(Repository::WowI) {
-                            if let Some(id) = addon.repository_id() {
-                                ajour.expanded_type =
-                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                                return Ok(Command::perform(
-                                    perform_fetch_wowi_changelog(addon.clone(), id, *key),
-                                    Message::FetchedChangelog,
-                                ));
-                            }
+                        if addon.repository_kind() == Some(RepositoryKind::WowI) {
+                            ajour.expanded_type =
+                                ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                            return Ok(Command::perform(
+                                perform_fetch_changelog(addon.clone(), *key),
+                                Message::FetchedChangelog,
+                            ));
                         }
                     }
                     Changelog::Loading(a, _) => {
@@ -393,9 +368,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Remove addon from cache
                 if let Some(addon_cache) = &ajour.addon_cache {
                     if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
-                        match addon.active_repository {
+                        match addon.repository_kind() {
                             // Delete the entry for this cached addon
-                            Some(Repository::Tukui) | Some(Repository::WowI) => {
+                            Some(RepositoryKind::Tukui) | Some(RepositoryKind::WowI) => {
                                 return Ok(Command::perform(
                                     remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheEntryRemoved,
@@ -514,7 +489,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         // Check if addon is updatable based on release channel.
                         if let Some(package) = a.relevant_release_package() {
-                            if a.is_updatable(package) && a.state != AddonState::Corrupted {
+                            if a.is_updatable(&package) && a.state != AddonState::Corrupted {
                                 a.state = AddonState::Updatable;
                             }
                         }
@@ -681,13 +656,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let mut commands = vec![];
 
             if let (Some(addon), Some(folders)) = (addon, folders) {
-                addon.update_addon_folders(&folders);
+                addon.update_addon_folders(folders);
 
                 addon.state = AddonState::Fingerprint;
 
                 let mut version = None;
                 if let Some(package) = addon.relevant_release_package() {
-                    version = Some(package.version.clone());
+                    version = Some(package.version);
                 }
                 if let Some(version) = version {
                     addon.set_version(version);
@@ -698,16 +673,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // addon, we want to make sure cache entry exists for those folders
                 if let Some(addon_cache) = &ajour.addon_cache {
                     if let Ok(entry) = AddonCacheEntry::try_from(addon as &_) {
-                        match addon.active_repository {
+                        match addon.repository_kind() {
                             // Remove any entry related to this cached addon
-                            Some(Repository::Curse) => {
+                            Some(RepositoryKind::Curse) => {
                                 commands.push(Command::perform(
                                     remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheEntryRemoved,
                                 ));
                             }
                             // Update the entry for this cached addon
-                            Some(Repository::Tukui) | Some(Repository::WowI) => {
+                            Some(RepositoryKind::Tukui)
+                            | Some(RepositoryKind::WowI)
+                            | Some(RepositoryKind::Git) => {
                                 commands.push(Command::perform(
                                     update_addon_cache(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheUpdated,
@@ -857,7 +834,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     // Check if addon is updatable.
                     if let Some(package) = addon.relevant_release_package() {
-                        if addon.is_updatable(package) {
+                        if addon.is_updatable(&package) {
                             addon.state = AddonState::Updatable;
                         } else {
                             addon.state = AddonState::Ajour(None);
@@ -1469,42 +1446,15 @@ async fn perform_read_addon_directory(
     )
 }
 
-async fn perform_fetch_tukui_changelog(
+async fn perform_fetch_changelog(
     addon: Addon,
-    tukui_id: String,
-    flavor: Flavor,
     key: AddonVersionKey,
 ) -> (Addon, AddonVersionKey, Result<(String, String)>) {
-    (
-        addon,
-        key,
-        tukui_api::fetch_changelog(&tukui_id, &flavor).await,
-    )
-}
+    let is_remote = key == AddonVersionKey::Remote;
 
-async fn perform_fetch_curse_changelog(
-    addon: Addon,
-    key: AddonVersionKey,
-    id: u32,
-    file_id: i64,
-) -> (Addon, AddonVersionKey, Result<(String, String)>) {
-    (addon, key, curse_api::fetch_changelog(id, file_id).await)
-}
+    let result = addon.get_changelog(is_remote).await;
 
-async fn perform_fetch_wowi_changelog(
-    addon: Addon,
-    id: String,
-    key: AddonVersionKey,
-) -> (Addon, AddonVersionKey, Result<(String, String)>) {
-    (
-        addon,
-        key,
-        Ok((
-            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
-                .to_owned(),
-            wowi_api::changelog_url(id),
-        )),
-    )
+    (addon, key, result)
 }
 
 /// Downloads the newest version of the addon.
@@ -1554,19 +1504,34 @@ async fn perform_unpack_addon(
     )
 }
 
-/// Unzips `Addon` at given `from_directory` and moves it `to_directory`.
 async fn perform_fetch_latest_addon(
     source: catalog::Source,
     source_id: i32,
     flavor: Flavor,
 ) -> (Flavor, i32, Result<Addon>) {
-    let result = match source {
-        catalog::Source::Curse => curse_api::latest_addon(source_id, flavor).await,
-        catalog::Source::Tukui => tukui_api::latest_addon(source_id, flavor).await,
-        catalog::Source::WowI => wowi_api::latest_addon(source_id, flavor).await,
+    let kind = match source {
+        catalog::Source::Curse => RepositoryKind::Curse,
+        catalog::Source::Tukui => RepositoryKind::Tukui,
+        catalog::Source::WowI => RepositoryKind::WowI,
     };
+    let id = source_id.to_string();
 
-    (flavor, source_id, result)
+    async fn fetch_latest_addon(flavor: Flavor, kind: RepositoryKind, id: String) -> Result<Addon> {
+        let mut addon = Addon::empty(&format!("{}{}", kind, &id));
+
+        let mut repo_package = RepositoryPackage::from_repo_id(flavor, kind, id)?;
+        repo_package.resolve_metadata().await?;
+
+        addon.set_repository(repo_package);
+
+        Ok(addon)
+    }
+
+    (
+        flavor,
+        source_id,
+        fetch_latest_addon(flavor, kind, id).await,
+    )
 }
 
 fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {
@@ -1661,10 +1626,10 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
             });
         }
         (ColumnKey::Source, SortDirection::Asc) => {
-            addons.sort_by(|a, b| a.active_repository.cmp(&b.active_repository))
+            addons.sort_by(|a, b| a.repository_kind().cmp(&b.repository_kind()))
         }
         (ColumnKey::Source, SortDirection::Desc) => {
-            addons.sort_by(|a, b| a.active_repository.cmp(&b.active_repository).reverse())
+            addons.sort_by(|a, b| a.repository_kind().cmp(&b.repository_kind()).reverse())
         }
     }
 }

@@ -1,6 +1,13 @@
-use crate::{config::Flavor, curse_api, tukui_api, utility::strip_non_digits, wowi_api};
-use chrono::prelude::*;
-use serde::{Deserialize, Serialize};
+use crate::{
+    error,
+    repository::{
+        ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
+        RepositoryPackage,
+    },
+    utility::strip_non_digits,
+    Result,
+};
+
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -9,61 +16,6 @@ use std::path::PathBuf;
 pub enum AddonVersionKey {
     Local,
     Remote,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct RemotePackage {
-    pub version: String,
-    pub download_url: String,
-    pub file_id: Option<i64>,
-    pub date_time: Option<DateTime<Utc>>,
-}
-
-impl PartialOrd for RemotePackage {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.version.cmp(&other.version))
-    }
-}
-
-impl Ord for RemotePackage {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.version.cmp(&other.version)
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
-pub enum ReleaseChannel {
-    Stable,
-    Beta,
-    Alpha,
-}
-
-impl ReleaseChannel {
-    pub const ALL: [ReleaseChannel; 3] = [
-        ReleaseChannel::Stable,
-        ReleaseChannel::Beta,
-        ReleaseChannel::Alpha,
-    ];
-}
-
-impl Default for ReleaseChannel {
-    fn default() -> ReleaseChannel {
-        ReleaseChannel::Stable
-    }
-}
-
-impl std::fmt::Display for ReleaseChannel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                ReleaseChannel::Stable => "Stable",
-                ReleaseChannel::Beta => "Beta",
-                ReleaseChannel::Alpha => "Alpha",
-            }
-        )
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
@@ -79,35 +31,6 @@ pub enum AddonState {
     // This is properly not the best solution going forward, but for now it solves the purpose.
     Corrupted,
     Updatable,
-}
-
-#[derive(Default, Debug, Clone)]
-/// Struct which stores identifiers for the different repositories.
-pub struct RepositoryIdentifiers {
-    pub wowi: Option<String>,
-    pub tukui: Option<String>,
-    pub curse: Option<i32>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]
-pub enum Repository {
-    Curse,
-    Tukui,
-    WowI,
-}
-
-impl std::fmt::Display for Repository {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Repository::WowI => "WoWInterface",
-                Repository::Tukui => "Tukui",
-                Repository::Curse => "CurseForge",
-            }
-        )
-    }
 }
 
 /// Struct that stores the metadata parsed from an Addon folder's
@@ -175,31 +98,6 @@ impl AddonFolder {
     }
 }
 
-/// Metadata from one of the repository APIs
-#[derive(Default, Debug, Clone)]
-pub(crate) struct RepositoryMetadata {
-    // If these fields are not set, we will try to get the value
-    // from the primary `AddonFolder` of the `Addon`
-    pub(crate) version: Option<String>,
-    pub(crate) title: Option<String>,
-    pub(crate) author: Option<String>,
-    pub(crate) notes: Option<String>,
-
-    // These fields are only available from the repo API
-    pub(crate) website_url: Option<String>,
-    pub(crate) game_version: Option<String>,
-    pub(crate) file_id: Option<i64>,
-
-    /// Remote packages available from the Repository
-    pub(crate) remote_packages: HashMap<ReleaseChannel, RemotePackage>,
-}
-
-impl RepositoryMetadata {
-    fn empty() -> Self {
-        Default::default()
-    }
-}
-
 #[derive(Debug, Clone)]
 /// Struct which stores information about a single Addon. This struct is enriched
 /// with metadata from the active repository for the addon. If there is no match
@@ -220,11 +118,9 @@ pub struct Addon {
 
     pub state: AddonState,
     pub release_channel: ReleaseChannel,
-    pub(crate) repository_identifiers: RepositoryIdentifiers,
 
-    /// The `Repository` that this addon is linked against.
-    pub active_repository: Option<Repository>,
-    pub(crate) repository_metadata: RepositoryMetadata,
+    /// The repository package that this addon is linked against.
+    pub(crate) repository: Option<RepositoryPackage>,
 
     // States for GUI
     #[cfg(feature = "gui")]
@@ -256,11 +152,9 @@ impl Addon {
         Addon {
             primary_folder_id: primary_folder_id.to_string(),
             folders: Default::default(),
-            active_repository: None,
             release_channel: Default::default(),
             state: AddonState::Ajour(None),
-            repository_identifiers: Default::default(),
-            repository_metadata: Default::default(),
+            repository: Default::default(),
 
             #[cfg(feature = "gui")]
             details_btn_state: Default::default(),
@@ -287,346 +181,89 @@ impl Addon {
         }
     }
 
-    /// Updates an `Addon` from the WowI package.
-    ///
-    /// When addon_folders is passed, it will update the primary folder id and mapped
-    /// addon folders. This is only used when creating the addon via fallback measure.
-    /// WowI addons cached will have these updated from the cache.
-    pub fn update_with_wowi_package(
-        &mut self,
-        wowi_id: i32,
-        package: &wowi_api::WowIPackage,
-        addon_folders: Option<&[AddonFolder]>,
-    ) {
-        let wowi_id = wowi_id.to_string();
-        let mut remote_packages = HashMap::new();
-        {
-            let version = package.version.clone();
-            let download_url = package.download_uri.clone();
-            let date_time = Utc.timestamp(package.last_update / 1000, 0);
-
-            let package = RemotePackage {
-                version,
-                download_url,
-                date_time: Some(date_time),
-                file_id: None,
-            };
-
-            // Since WowI does not support release channels, our default is 'stable'.
-            remote_packages.insert(ReleaseChannel::Stable, package);
+    pub fn build_with_repo_and_folders(
+        repo_package: RepositoryPackage,
+        folders: Vec<AddonFolder>,
+    ) -> Result<Self> {
+        if folders.is_empty() {
+            return Err(error!("No folders passed to addon"));
         }
 
-        let mut metadata = RepositoryMetadata::empty();
-        metadata.remote_packages = remote_packages;
-        metadata.website_url = Some(wowi_api::addon_url(&wowi_id));
+        let mut addon = Addon::empty("");
+        addon.repository = Some(repo_package);
 
-        self.active_repository = Some(Repository::WowI);
-        self.repository_identifiers.wowi = Some(wowi_id.clone());
-        self.repository_metadata = metadata;
+        addon.update_addon_folders(folders);
 
-        if let Some(addon_folders) = addon_folders {
-            // Shouldn't panic since we only get `Package` for WowI id's in our
-            // parsed `AddonFolder`s
-            let primary_folder_id = addon_folders
-                .iter()
-                .find(|f| f.repository_identifiers.wowi == Some(wowi_id.clone()))
-                .map(|f| f.id.clone())
-                .unwrap_or_else(|| wowi_id);
+        Ok(addon)
+    }
+
+    pub fn set_repository(&mut self, repo_package: RepositoryPackage) {
+        self.repository = Some(repo_package);
+    }
+
+    pub fn update_addon_folders(&mut self, mut folders: Vec<AddonFolder>) {
+        if !folders.is_empty() {
+            folders.sort_by(|a, b| a.id.cmp(&b.id));
+
+            // Assign the primary folder id based on the first folder alphabetically with
+            // a matching repository identifier otherwise just the first
+            // folder alphabetically
+            let primary_folder_id = if let Some(folder) = folders.iter().find(|f| {
+                if let Some(repo) = self.repository_kind() {
+                    match repo {
+                        RepositoryKind::Curse => {
+                            self.repository_id()
+                                == f.repository_identifiers
+                                    .curse
+                                    .as_ref()
+                                    .map(i32::to_string)
+                                    .as_deref()
+                        }
+                        RepositoryKind::Tukui => {
+                            self.repository_id() == f.repository_identifiers.tukui.as_deref()
+                        }
+                        RepositoryKind::WowI => {
+                            self.repository_id() == f.repository_identifiers.wowi.as_deref()
+                        }
+                        // Folder toc will never have the git url in it
+                        RepositoryKind::Git => false,
+                    }
+                } else {
+                    false
+                }
+            }) {
+                folder.id.clone()
+            } else {
+                // Wont fail since we already checked if vec is empty
+                folders.get(0).map(|f| f.id.clone()).unwrap()
+            };
             self.primary_folder_id = primary_folder_id;
-
-            // Get folders that match primary folder id or any folder that has a dependency
-            // of primary folder id
-            let folders = addon_folders
-                .iter()
-                .filter(|f| {
-                    f.id == self.primary_folder_id
-                        || f.dependencies.contains(&self.primary_folder_id)
-                })
-                .cloned()
-                .collect();
             self.folders = folders;
         }
     }
 
-    /// Updates an `Addon` from the Tukui package.
-    ///
-    /// When addon_folders is passed, it will update the primary folder id and mapped
-    /// addon folders. This is only used when creating the addon via fallback measure.
-    /// Tukui addons cached will have these updated from the cache.
-    pub fn update_with_tukui_package(
-        &mut self,
-        tukui_id: String,
-        package: &tukui_api::TukuiPackage,
-        addon_folders: Option<&[AddonFolder]>,
-    ) {
-        let mut remote_packages = HashMap::new();
-        {
-            let version = package.version.clone();
-            let download_url = package.url.clone();
-
-            let date_time = NaiveDateTime::parse_from_str(&package.lastupdate, "%Y-%m-%d %H:%M:%S")
-                .map_or(
-                    NaiveDateTime::parse_from_str(
-                        &format!("{} 00:00:00", &package.lastupdate),
-                        "%Y-%m-%d %T",
-                    ),
-                    std::result::Result::Ok,
-                )
-                .map(|d| Utc.from_utc_datetime(&d))
-                .ok();
-
-            let package = RemotePackage {
-                version,
-                download_url,
-                date_time,
-                file_id: None,
-            };
-
-            // Since Tukui does not support release channels, our default is 'stable'.
-            remote_packages.insert(ReleaseChannel::Stable, package);
-        }
-
-        let website_url = Some(package.web_url.clone());
-        let game_version = package.patch.clone();
-
-        let mut metadata = RepositoryMetadata::empty();
-        metadata.website_url = website_url;
-        metadata.game_version = game_version;
-        metadata.remote_packages = remote_packages;
-
-        self.active_repository = Some(Repository::Tukui);
-        self.repository_identifiers.tukui = Some(tukui_id.clone());
-        self.repository_metadata = metadata;
-
-        // Only update when not a cached addon. When cached, we already assign
-        // the folders correctly
-        if let Some(addon_folders) = addon_folders {
-            // Shouldn't panic since we only get `Package` for tukui id's in our
-            // parsed `AddonFolder`s
-            let primary_folder_id = addon_folders
-                .iter()
-                .find(|f| f.repository_identifiers.tukui == Some(tukui_id.clone()))
-                .map(|f| f.id.clone())
-                .unwrap_or_else(|| tukui_id);
-            self.primary_folder_id = primary_folder_id;
-
-            // Get folders that match primary folder id or any folder that has a dependency
-            // of primary folder id
-            let folders = addon_folders
-                .iter()
-                .filter(|f| {
-                    f.id == self.primary_folder_id
-                        || f.dependencies.contains(&self.primary_folder_id)
-                })
-                .cloned()
-                .collect();
-            self.folders = folders;
-        }
+    fn repository(&self) -> Option<&RepositoryPackage> {
+        self.repository.as_ref()
     }
 
-    /// Creates an `Addon` from the Curse package. This is a fallback for when we don't
-    /// have an exact fingerprint match, but we have a curse id for the addon.
-    pub fn from_curse_package(
-        package: &curse_api::Package,
-        flavor: Flavor,
-        addon_folders: &[AddonFolder],
-    ) -> Option<Self> {
-        let mut remote_packages = HashMap::new();
-        let mut folders: Vec<AddonFolder> = vec![];
-
-        let mut stable_exists = false;
-        let mut beta_exists = false;
-        let mut alpha_exists = false;
-
-        for file in package.latest_files.iter() {
-            let game_version_flavor = file.game_version_flavor.as_ref();
-            if !file.is_alternate && game_version_flavor == Some(&flavor.curse_format()) {
-                let version = file.display_name.clone();
-                let download_url = file.download_url.clone();
-                let date_time = DateTime::parse_from_rfc3339(&file.file_date)
-                    .map(|d| d.with_timezone(&Utc))
-                    .ok();
-                let package = RemotePackage {
-                    version,
-                    download_url,
-                    date_time,
-                    file_id: Some(file.id),
-                };
-
-                let file_folders: Vec<AddonFolder> = addon_folders
-                    .iter()
-                    .filter(|f| file.modules.iter().any(|m| m.foldername == f.id))
-                    .cloned()
-                    .collect();
-                folders.extend(file_folders);
-
-                match file.release_type {
-                    1 /* stable */ => {
-                        stable_exists = true;
-                        remote_packages.insert(ReleaseChannel::Stable, package);
-                    }
-                    2 /* beta */ => {
-                        beta_exists = true;
-                        remote_packages.insert(ReleaseChannel::Beta, package);
-                    }
-                    3 /* alpha */ => {
-                        alpha_exists = true;
-                        remote_packages.insert(ReleaseChannel::Alpha, package);
-                    }
-                    _ => ()
-                };
-            }
-        }
-
-        // Ensure we only have uniques.
-        folders.sort();
-        folders.dedup_by(|a, b| a.id == b.id);
-
-        let mut metadata = RepositoryMetadata::empty();
-        metadata.remote_packages = remote_packages;
-
-        let release_type = if stable_exists {
-            1
-        } else if beta_exists {
-            2
-        } else if alpha_exists {
-            3
-        } else {
-            return None;
-        };
-
-        let file = package
-            .latest_files
-            .iter()
-            .find(|file| {
-                !file.is_alternate
-                    && file.game_version_flavor.as_ref() == Some(&flavor.curse_format())
-                    && file.release_type == release_type
-            })
-            .unwrap_or_else(|| unreachable!("No file in curse package for {}", package.id));
-
-        // Shouldn't panic since we got this curse id from an `AddonFolder`. We use the
-        // first folder (sorted alphabetically) that has a match on curse id as the primary id.
-        // If no folders have a curse id, we just use the first folder alphabetically.
-        let primary_folder_id = if let Some(f) = addon_folders.iter().find(|f| {
-            f.repository_identifiers.curse == Some(package.id)
-                && file.modules.iter().any(|m| m.foldername == f.id)
-        }) {
-            f.id.clone()
-        } else if let Some(f) = addon_folders
-            .iter()
-            .find(|f| file.modules.iter().any(|m| m.foldername == f.id))
-        {
-            f.id.clone()
-        } else {
-            file.file_name.clone()
-        };
-
-        let mut addon = Addon::empty(&primary_folder_id);
-        addon.active_repository = Some(Repository::Curse);
-        addon.repository_identifiers.curse = Some(package.id);
-        addon.repository_metadata = metadata;
-        addon.folders = folders;
-
-        Some(addon)
+    fn metadata(&self) -> Option<&RepositoryMetadata> {
+        self.repository().map(|r| &r.metadata)
     }
 
-    /// Creates an `Addon` from the Curse fingerprint info
-    pub fn from_curse_fingerprint_info(
-        curse_id: i32,
-        info: &curse_api::AddonFingerprintInfo,
-        flavor: Flavor,
-        addon_folders: &[AddonFolder],
-    ) -> Self {
-        let mut remote_packages = HashMap::new();
-        let mut folders: Vec<AddonFolder> = vec![];
-
-        for file in info.latest_files.iter() {
-            let game_version_flavor = file.game_version_flavor.as_ref();
-            if !file.is_alternate && game_version_flavor == Some(&flavor.curse_format()) {
-                let version = file.display_name.clone();
-                let download_url = file.download_url.clone();
-                let date_time = DateTime::parse_from_rfc3339(&file.file_date)
-                    .map(|d| d.with_timezone(&Utc))
-                    .ok();
-                let package = RemotePackage {
-                    version,
-                    download_url,
-                    date_time,
-                    file_id: Some(file.id),
-                };
-
-                let file_folders: Vec<AddonFolder> = addon_folders
-                    .iter()
-                    .filter(|f| file.modules.iter().any(|m| m.foldername == f.id))
-                    .cloned()
-                    .collect();
-                folders.extend(file_folders);
-
-                match file.release_type {
-                    1 /* stable */ => {
-                        remote_packages.insert(ReleaseChannel::Stable, package);
-                    }
-                    2 /* beta */ => {
-                        remote_packages.insert(ReleaseChannel::Beta, package);
-                    }
-                    3 /* alpha */ => {
-                        remote_packages.insert(ReleaseChannel::Alpha, package);
-                    }
-                    _ => ()
-                };
-            }
-        }
-
-        // Ensure we only have uniques.
-        folders.sort();
-        folders.dedup_by(|a, b| a.id == b.id);
-
-        let version = Some(info.file.display_name.clone());
-        let file_id = Some(info.file.id);
-        let game_version = info.file.game_version.get(0).cloned();
-
-        let mut metadata = RepositoryMetadata::empty();
-        metadata.version = version;
-        metadata.file_id = file_id;
-        metadata.game_version = game_version;
-        metadata.remote_packages = remote_packages;
-
-        // Shouldn't panic since we have an exact match on the fingerprint. We use the
-        // first folder (sorted alphabetically) that has a match on curse id as the primary id.
-        // If no folders have a curse id, we just use the first folder alphabetically.
-        let primary_folder_id = if addon_folders.is_empty() {
-            // This is assigned when we install an addon via the catalog and we don't
-            // yet know the AddonFolders for it. This will get updated after the unpack
-            // finished and we can assign the AddonFolders for the addon.
-            info.id.to_string()
-        } else if let Some(f) = addon_folders.iter().find(|f| {
-            f.repository_identifiers.curse == Some(curse_id)
-                && info.file.modules.iter().any(|m| m.foldername == f.id)
-        }) {
-            f.id.clone()
-        } else if let Some(f) = addon_folders
-            .iter()
-            .find(|f| info.file.modules.iter().any(|m| m.foldername == f.id))
-        {
-            f.id.clone()
-        } else {
-            info.file.file_name.clone()
-        };
-
-        let mut addon = Addon::empty(&primary_folder_id);
-        addon.active_repository = Some(Repository::Curse);
-        addon.repository_identifiers.curse = Some(curse_id);
-        addon.repository_metadata = metadata;
-        addon.folders = folders;
-
-        addon
+    /// Returns the repository kind linked to this addon
+    pub fn repository_kind(&self) -> Option<RepositoryKind> {
+        self.repository.as_ref().map(|r| r.kind)
     }
 
     /// Returns the version of the addon
     pub fn version(&self) -> Option<&str> {
-        if self.repository_metadata.version.is_some() {
-            self.repository_metadata.version.as_deref()
+        if self
+            .metadata()
+            .map(|m| m.version.as_deref())
+            .flatten()
+            .is_some()
+        {
+            self.metadata().map(|m| m.version.as_deref()).flatten()
         } else {
             self.folders
                 .iter()
@@ -638,12 +275,14 @@ impl Addon {
 
     /// Sets the version of the addon
     pub fn set_version(&mut self, version: String) {
-        self.repository_metadata.version = Some(version);
+        if let Some(metadata) = self.repository.as_mut().map(|r| &mut r.metadata) {
+            metadata.version = Some(version);
+        }
     }
 
     /// Returns the title of the addon.
     pub fn title(&self) -> &str {
-        let meta_title = self.repository_metadata.title.as_deref();
+        let meta_title = self.metadata().map(|m| m.title.as_deref()).flatten();
         let folder_title = self
             .primary_addon_folder()
             .map(|f| f.title.as_str())
@@ -654,7 +293,7 @@ impl Addon {
 
     /// Returns the author of the addon.
     pub fn author(&self) -> Option<&str> {
-        let meta_author = self.repository_metadata.author.as_deref();
+        let meta_author = self.metadata().map(|m| m.author.as_deref()).flatten();
         let folder_author = self
             .primary_addon_folder()
             .map(|f| f.author.as_deref())
@@ -665,8 +304,13 @@ impl Addon {
 
     /// Returns the game version of the addon.
     pub fn game_version(&self) -> Option<&str> {
-        if self.repository_metadata.game_version.is_some() {
-            self.repository_metadata.game_version.as_deref()
+        if self
+            .metadata()
+            .map(|m| m.game_version.as_deref())
+            .flatten()
+            .is_some()
+        {
+            self.metadata().map(|m| m.game_version.as_deref()).flatten()
         } else {
             self.folders
                 .iter()
@@ -678,7 +322,7 @@ impl Addon {
 
     /// Returns the notes of the addon.
     pub fn notes(&self) -> Option<&str> {
-        let meta_notes = self.repository_metadata.notes.as_deref();
+        let meta_notes = self.metadata().map(|m| m.notes.as_deref()).flatten();
         let folder_notes = self
             .primary_addon_folder()
             .map(|f| f.notes.as_deref())
@@ -689,73 +333,60 @@ impl Addon {
 
     /// Returns the website url of the addon.
     pub fn website_url(&self) -> Option<&str> {
-        self.repository_metadata.website_url.as_deref()
+        self.metadata().map(|m| m.website_url.as_deref()).flatten()
     }
 
     /// Returns the curse id of the addon, if applicable.
     pub fn curse_id(&self) -> Option<i32> {
-        let folder_curse = self
-            .primary_addon_folder()
-            .map(|f| f.repository_identifiers.curse)
-            .flatten();
-
-        self.repository_identifiers
-            .curse
-            .map_or(folder_curse, Option::Some)
+        if self.repository_kind() == Some(RepositoryKind::Curse) {
+            self.repository()
+                .map(|r| r.id.parse::<i32>().ok())
+                .flatten()
+        } else {
+            self.primary_addon_folder()
+                .map(|f| f.repository_identifiers.curse)
+                .flatten()
+        }
     }
 
     /// Returns the tukui id of the addon, if applicable.
     pub fn tukui_id(&self) -> Option<&str> {
-        let folder_tukui = self
-            .primary_addon_folder()
-            .map(|f| f.repository_identifiers.tukui.as_deref())
-            .flatten();
-
-        self.repository_identifiers
-            .tukui
-            .as_deref()
-            .map_or(folder_tukui, Option::Some)
+        if self.repository_kind() == Some(RepositoryKind::Tukui) {
+            self.repository().map(|r| r.id.as_str())
+        } else {
+            self.primary_addon_folder()
+                .map(|f| f.repository_identifiers.tukui.as_deref())
+                .flatten()
+        }
     }
 
     /// Returns the wowi id of the addon, if applicable.
     pub fn wowi_id(&self) -> Option<&str> {
-        let folder_wowi = self
-            .primary_addon_folder()
-            .map(|f| f.repository_identifiers.wowi.as_deref())
-            .flatten();
-
-        self.repository_identifiers
-            .wowi
-            .as_deref()
-            .map_or(folder_wowi, Option::Some)
-    }
-
-    /// Set the curse id for the addon
-    pub fn set_curse_id(&mut self, curse_id: i32) {
-        self.repository_identifiers.curse = Some(curse_id);
-    }
-
-    /// Set the tukui id for the addon
-    pub fn set_tukui_id(&mut self, tukui_id: String) {
-        self.repository_identifiers.tukui = Some(tukui_id);
-    }
-
-    /// Set the wowi id for the addon
-    pub fn set_wowi_id(&mut self, wowi_id: String) {
-        self.repository_identifiers.wowi = Some(wowi_id);
+        if self.repository_kind() == Some(RepositoryKind::WowI) {
+            self.repository().map(|r| r.id.as_str())
+        } else {
+            self.primary_addon_folder()
+                .map(|f| f.repository_identifiers.wowi.as_deref())
+                .flatten()
+        }
     }
 
     /// Set title for the addon
     pub fn set_title(&mut self, title: String) {
-        self.repository_metadata.title = Some(title);
+        if let Some(metadata) = self.repository.as_mut().map(|r| &mut r.metadata) {
+            metadata.title = Some(title);
+        }
     }
 
-    pub fn remote_packages(&self) -> &HashMap<ReleaseChannel, RemotePackage> {
-        &self.repository_metadata.remote_packages
+    pub fn remote_packages(&self) -> HashMap<ReleaseChannel, RemotePackage> {
+        self.metadata()
+            .map(|m| &m.remote_packages)
+            .cloned()
+            .unwrap_or_default()
     }
 
     pub fn file_id(&self) -> Option<i64> {
-        self.repository_metadata.file_id
+        self.metadata().map(|f| f.file_id).flatten()
     }
 
     fn primary_addon_folder(&self) -> Option<&AddonFolder> {
@@ -763,15 +394,8 @@ impl Addon {
     }
 
     /// Returns the repository id for the active repository
-    pub fn repository_id(&self) -> Option<String> {
-        match self.active_repository {
-            Some(repo) => match repo {
-                Repository::Curse => self.repository_identifiers.curse.map(|i| i.to_string()),
-                Repository::Tukui => self.repository_identifiers.tukui.clone(),
-                Repository::WowI => self.repository_identifiers.wowi.clone(),
-            },
-            None => None,
-        }
+    pub fn repository_id(&self) -> Option<&str> {
+        self.repository().map(|r| r.id.as_str())
     }
 
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
@@ -784,11 +408,13 @@ impl Addon {
 
     /// Function returns a `bool` indicating if the `remote_package` is a update.
     pub fn is_updatable(&self, remote_package: &RemotePackage) -> bool {
-        if self.repository_metadata.file_id.is_none() {
+        let file_id = self.file_id();
+
+        if file_id.is_none() {
             return self.is_updatable_by_version_comparison(remote_package);
         }
 
-        remote_package.file_id > self.repository_metadata.file_id
+        remote_package.file_id > file_id
     }
 
     /// We strip both version for non digits, and then
@@ -807,13 +433,13 @@ impl Addon {
     }
 
     /// Returns the first release_package which is `Some`.
-    pub fn fallback_release_package(&self) -> Option<&RemotePackage> {
-        let remote_packages = &self.repository_metadata.remote_packages;
-        if let Some(stable_package) = remote_packages.get(&ReleaseChannel::Stable) {
+    pub fn fallback_release_package(&self) -> Option<RemotePackage> {
+        let mut remote_packages = self.remote_packages();
+        if let Some(stable_package) = remote_packages.remove(&ReleaseChannel::Stable) {
             Some(stable_package)
-        } else if let Some(beta_package) = remote_packages.get(&ReleaseChannel::Beta) {
+        } else if let Some(beta_package) = remote_packages.remove(&ReleaseChannel::Beta) {
             Some(beta_package)
-        } else if let Some(alpha_package) = remote_packages.get(&ReleaseChannel::Alpha) {
+        } else if let Some(alpha_package) = remote_packages.remove(&ReleaseChannel::Alpha) {
             Some(alpha_package)
         } else {
             None
@@ -822,16 +448,16 @@ impl Addon {
 
     /// Returns the relevant release_package for the addon.
     /// Logic is that if a release channel above the selected is newer, we return that instead.
-    pub fn relevant_release_package(&self) -> Option<&RemotePackage> {
-        let remote_packages = &self.repository_metadata.remote_packages;
+    pub fn relevant_release_package(&self) -> Option<RemotePackage> {
+        let mut remote_packages = self.remote_packages();
 
-        let stable_package = remote_packages.get(&ReleaseChannel::Stable);
-        let beta_package = remote_packages.get(&ReleaseChannel::Beta);
-        let alpha_package = remote_packages.get(&ReleaseChannel::Alpha);
+        let stable_package = remote_packages.remove(&ReleaseChannel::Stable);
+        let beta_package = remote_packages.remove(&ReleaseChannel::Beta);
+        let alpha_package = remote_packages.remove(&ReleaseChannel::Alpha);
 
         fn should_choose_other(
-            base: &Option<&RemotePackage>,
-            other: &Option<&RemotePackage>,
+            base: &Option<RemotePackage>,
+            other: &Option<RemotePackage>,
         ) -> bool {
             if base.is_none() {
                 return true;
@@ -880,37 +506,14 @@ impl Addon {
         }
     }
 
-    pub fn update_addon_folders(&mut self, folders: &[AddonFolder]) {
-        let mut folders = folders.to_vec();
-
-        if !folders.is_empty() {
-            folders.sort_by(|a, b| a.id.cmp(&b.id));
-
-            // Assign the primary folder id based on the first folder alphabetically with
-            // a matching repository identifier otherwise just the first
-            // folder alphabetically
-            let primary_folder_id = if let Some(folder) = folders.iter().find(|f| {
-                if let Some(repo) = self.active_repository {
-                    match repo {
-                        Repository::Curse => {
-                            self.repository_id()
-                                == f.repository_identifiers.curse.as_ref().map(i32::to_string)
-                        }
-                        Repository::Tukui => self.repository_id() == f.repository_identifiers.tukui,
-                        Repository::WowI => self.repository_id() == f.repository_identifiers.wowi,
-                    }
-                } else {
-                    false
-                }
-            }) {
-                folder.id.clone()
-            } else {
-                // Wont fail since we already checked if vec is empty
-                folders.get(0).map(|f| f.id.clone()).unwrap()
-            };
-            self.primary_folder_id = primary_folder_id;
-            self.folders = folders;
+    pub async fn get_changelog(&self, is_remote: bool) -> Result<(String, String)> {
+        if let Some(repository) = self.repository() {
+            return repository
+                .get_changelog(self.release_channel, is_remote)
+                .await;
         }
+
+        Err(error!("No repository set for addon"))
     }
 }
 
