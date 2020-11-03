@@ -631,6 +631,8 @@ impl Application for Ajour {
 pub fn run(opts: Opts) {
     let config: Config = Config::load_or_default().expect("loading config on application startup");
 
+    log::debug!("config loaded:\n{:#?}", &config);
+
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
 
@@ -1603,6 +1605,9 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
 
     // Use scale from config. Set to 1.0 if not defined.
     ajour.scale_state.scale = config.scale.unwrap_or(1.0);
+
+    // Set the inital mode flavor
+    ajour.mode = Mode::MyAddons(config.wow.flavor);
 
     ajour.config = config;
 }
