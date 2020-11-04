@@ -38,7 +38,11 @@ impl Backend for Tukui {
         Ok(metadata)
     }
 
-    async fn get_changelog(&self, _file_id: Option<i64>) -> Result<(String, String)> {
+    async fn get_changelog(
+        &self,
+        _file_id: Option<i64>,
+        _tag_name: Option<String>,
+    ) -> Result<(String, String)> {
         let url = changelog_endpoint(&self.id, &self.flavor);
 
         match self.flavor {

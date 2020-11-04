@@ -18,7 +18,11 @@ pub use wowi::WowI;
 pub(crate) trait Backend: DynClone + Send + Sync {
     async fn get_metadata(&self) -> Result<RepositoryMetadata>;
 
-    async fn get_changelog(&self, file_id: Option<i64>) -> Result<(String, String)>;
+    async fn get_changelog(
+        &self,
+        file_id: Option<i64>,
+        tag_name: Option<String>,
+    ) -> Result<(String, String)>;
 }
 
 clone_trait_object!(Backend);

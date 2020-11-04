@@ -151,7 +151,19 @@ impl RepositoryPackage {
             None
         };
 
-        self.backend.get_changelog(file_id).await
+        let tag_name = if self.kind == RepositoryKind::Git {
+            let remote_package = self
+                .metadata
+                .remote_packages
+                .get(&channel)
+                .ok_or_else(|| error!("No remote package for channel {:?}", channel))?;
+
+            Some(remote_package.version.clone())
+        } else {
+            None
+        };
+
+        self.backend.get_changelog(file_id, tag_name).await
     }
 }
 

@@ -41,7 +41,11 @@ impl Backend for Curse {
         Ok(metadata)
     }
 
-    async fn get_changelog(&self, file_id: Option<i64>) -> Result<(String, String)> {
+    async fn get_changelog(
+        &self,
+        file_id: Option<i64>,
+        _tag_name: Option<String>,
+    ) -> Result<(String, String)> {
         let file_id = file_id
             .ok_or_else(|| error!("File id must be provided for curse changelog request"))?;
 

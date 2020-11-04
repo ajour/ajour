@@ -71,8 +71,37 @@ mod github {
             Ok(metadata)
         }
 
-        async fn get_changelog(&self, file_id: Option<i64>) -> Result<(String, String)> {
-            unimplemented!()
+        async fn get_changelog(
+            &self,
+            _file_id: Option<i64>,
+            tag_name: Option<String>,
+        ) -> Result<(String, String)> {
+            let tag_name =
+                tag_name.ok_or_else(|| error!("Tag name must be specified for git changelog"))?;
+
+            let client = HttpClient::new()?;
+
+            let mut path = self.url.path().split('/');
+            // Get rid of leading slash
+            path.next();
+
+            let author = path
+                .next()
+                .ok_or_else(|| error!("author not present in url: {:?}", self.url))?;
+            let repo = path
+                .next()
+                .ok_or_else(|| error!("repo not present in url: {:?}", self.url))?;
+
+            let url = format!(
+                "https://api.github.com/repos/{}/{}/releases/tags/{}",
+                author, repo, tag_name
+            );
+
+            let mut resp = request_async(&client, &url, vec![], None).await?;
+
+            let release: Release = resp.json()?;
+
+            Ok((release.body, release.html_url))
         }
     }
 
@@ -167,8 +196,39 @@ mod gitlab {
             Ok(metadata)
         }
 
-        async fn get_changelog(&self, file_id: Option<i64>) -> Result<(String, String)> {
-            unimplemented!()
+        async fn get_changelog(
+            &self,
+            _file_id: Option<i64>,
+            tag_name: Option<String>,
+        ) -> Result<(String, String)> {
+            let tag_name =
+                tag_name.ok_or_else(|| error!("Tag name must be specified for git changelog"))?;
+
+            let client = HttpClient::new()?;
+
+            let mut path = self.url.path().split('/');
+            // Get rid of leading slash
+            path.next();
+
+            let author = path
+                .next()
+                .ok_or_else(|| error!("author not present in url: {:?}", self.url))?;
+            let repo = path
+                .next()
+                .ok_or_else(|| error!("repo not present in url: {:?}", self.url))?;
+
+            let url = format!(
+                "https://gitlab.com/api/v4/projects/{}%2F{}/releases/{}",
+                author, repo, tag_name
+            );
+
+            let mut resp = request_async(&client, &url, vec![], None).await?;
+
+            let release: Release = resp.json()?;
+
+            let release_url = format!("https://gitlab.com{}", &release.tag_path);
+
+            Ok((release.description, release_url))
         }
     }
 

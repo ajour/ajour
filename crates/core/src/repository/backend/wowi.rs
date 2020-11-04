@@ -36,7 +36,11 @@ impl Backend for WowI {
         Ok(metadata)
     }
 
-    async fn get_changelog(&self, _file_id: Option<i64>) -> Result<(String, String)> {
+    async fn get_changelog(
+        &self,
+        _file_id: Option<i64>,
+        _tag_name: Option<String>,
+    ) -> Result<(String, String)> {
         Ok((
             "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
                 .to_owned(),
