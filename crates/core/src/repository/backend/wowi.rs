@@ -68,6 +68,9 @@ pub fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMetadata {
     let mut metadata = RepositoryMetadata::empty();
     metadata.remote_packages = remote_packages;
 
+    let website_url = addon_url(&package.id.to_string());
+    metadata.website_url = Some(website_url);
+
     metadata
 }
 
