@@ -9,6 +9,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+### Added
+- WoWInterface addons has been added to the Catalog.
+
 ## [0.5.0] - 2020-11-03
 
 ### Packaging
