@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 // TODO: Change this back.
 const CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/2518dd5d3bb7bf0abdac6601893e08119450f870/wowi.json";
+    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/feat/wowi-source/catalog.json";
 
 pub async fn get_catalog() -> Result<Catalog> {
     let client = HttpClient::builder()
