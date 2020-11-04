@@ -1936,7 +1936,15 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let description = Text::new(&addon_data.summary).size(DEFAULT_FONT_SIZE);
+        let description = {
+            let text = &addon_data.summary;
+            if !text.is_empty() {
+                text
+            } else {
+                "-"
+            }
+        };
+        let description = Text::new(description).size(DEFAULT_FONT_SIZE);
         let description_container = Container::new(description)
             .height(default_height)
             .width(*width)

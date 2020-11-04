@@ -531,6 +531,7 @@ impl Application for Ajour {
                         let installed_for_flavor = addons.iter().any(|a| {
                             a.curse_id() == Some(addon.addon.id)
                                 || a.tukui_id() == Some(&addon.addon.id.to_string())
+                                || a.wowi_id() == Some(&addon.addon.id.to_string())
                         });
 
                         let install_addon = install_addons.iter().find(|a| addon.addon.id == a.id);

@@ -291,7 +291,7 @@ impl Addon {
     /// WowI addons cached will have these updated from the cache.
     pub fn update_with_wowi_package(
         &mut self,
-        wowi_id: i64,
+        wowi_id: i32,
         package: &wowi_api::WowIPackage,
         addon_folders: Option<&[AddonFolder]>,
     ) {
@@ -313,11 +313,9 @@ impl Addon {
             remote_packages.insert(ReleaseChannel::Stable, package);
         }
 
-        // let website_url = Some(package.web_url.clone());
-
         let mut metadata = RepositoryMetadata::empty();
-        // metadata.website_url = website_url;
         metadata.remote_packages = remote_packages;
+        metadata.website_url = Some(wowi_api::addon_url(&wowi_id));
 
         self.active_repository = Some(Repository::WowI);
         self.repository_identifiers.wowi = Some(wowi_id.clone());
