@@ -7,11 +7,11 @@ use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
 
 const CURSE_CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/feat/wowi-source/curse.json";
+    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/curse.json";
 const TUKUI_CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/feat/wowi-source/tukui.json";
+    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/tukui.json";
 const WOWI_CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/feat/wowi-source/wowi.json";
+    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/wowi.json";
 
 pub async fn get_catalog() -> Result<Catalog> {
     let client = HttpClient::builder()
