@@ -156,6 +156,7 @@ pub async fn fetch_remote_package(
     flavor: &Flavor,
 ) -> Result<(String, TukuiPackage)> {
     let url = api_endpoint(id, flavor);
+
     let timeout = Some(30);
     let mut resp = request_async(&shared_client, &url, vec![], timeout).await?;
 

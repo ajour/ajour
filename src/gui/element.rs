@@ -741,6 +741,13 @@ pub fn addon_data_cell<'a, 'b>(
         }
 
         if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
+            remote_version_button =
+                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
+                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
+                )));
+        }
+
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Git) {
             remote_version_button = remote_version_button.on_press(Interaction::Expand(
                 ExpandType::Changelog(Changelog::Request(addon_cloned, AddonVersionKey::Remote)),
             ));

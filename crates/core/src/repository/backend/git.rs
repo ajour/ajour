@@ -46,9 +46,14 @@ mod github {
             let mut resp = request_async(&client, &url, vec![], None).await?;
 
             let release: Release = resp.json()?;
+            let asset = release
+                .assets
+                .iter()
+                .find(|f| f.name.ends_with(".zip"))
+                .ok_or_else(|| error!("No zip asset for {}", &url))?;
 
             let version = release.tag_name.clone();
-            let download_url = release.zipball_url.clone();
+            let download_url = asset.browser_download_url.clone();
             let date_time = Some(release.published_at);
 
             let mut remote_packages = HashMap::new();
@@ -65,6 +70,7 @@ mod github {
             let metadata = RepositoryMetadata {
                 website_url: Some(self.url.to_string()),
                 remote_packages,
+                title: Some(repo.to_string()),
                 ..Default::default()
             };
 
@@ -108,11 +114,17 @@ mod github {
     #[derive(Debug, Deserialize, Clone)]
     pub struct Release {
         pub tag_name: String,
-        pub zipball_url: String,
         pub published_at: DateTime<Utc>,
         pub prerelease: bool,
         pub html_url: String,
         pub body: String,
+        pub assets: Vec<ReleaseAsset>,
+    }
+
+    #[derive(Debug, Deserialize, Clone)]
+    pub struct ReleaseAsset {
+        pub name: String,
+        pub browser_download_url: String,
     }
 }
 
@@ -168,10 +180,10 @@ mod gitlab {
             let version = release.tag_name.clone();
             let asset = release
                 .assets
-                .sources
+                .links
                 .iter()
-                .find(|a| a.format == "zip")
-                .ok_or_else(|| error!("No zip source for {}", &url))?;
+                .find(|a| a.name.ends_with("zip"))
+                .ok_or_else(|| error!("No zip asset for {}", &url))?;
 
             let download_url = asset.url.clone();
             let date_time = Some(release.released_at);
@@ -190,6 +202,7 @@ mod gitlab {
             let metadata = RepositoryMetadata {
                 website_url: Some(self.url.to_string()),
                 remote_packages,
+                title: Some(repo.to_string()),
                 ..Default::default()
             };
 
@@ -245,12 +258,12 @@ mod gitlab {
     #[derive(Debug, Deserialize, Clone)]
     pub struct ReleaseAssets {
         pub count: u8,
-        pub sources: Vec<Asset>,
+        pub links: Vec<ReleaseLink>,
     }
 
     #[derive(Debug, Deserialize, Clone)]
-    pub struct Asset {
-        pub format: String,
+    pub struct ReleaseLink {
+        pub name: String,
         pub url: String,
     }
 }

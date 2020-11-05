@@ -2,6 +2,7 @@ use crate::{
     addon::{Addon, AddonFolder, AddonState},
     cache::{AddonCache, AddonCacheEntry, FingerprintCache},
     config::Flavor,
+    error,
     error::ClientError,
     fs::PersistentData,
     murmur2::calculate_hash,
@@ -12,6 +13,7 @@ use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use futures::future::join_all;
 use isahc::config::RedirectPolicy;
+use isahc::http::Uri;
 use isahc::{prelude::Configurable, HttpClient};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -418,6 +420,7 @@ async fn get_all_repo_packages(
     let mut curse_ids = vec![];
     let mut tukui_ids = vec![];
     let mut wowi_ids = vec![];
+    let mut git_urls = vec![];
 
     // Get all possible curse ids
     {
@@ -463,8 +466,19 @@ async fn get_all_repo_packages(
         wowi_ids.dedup();
     }
 
+    // Get all possible git urls
+    {
+        git_urls.extend(
+            cache_entries
+                .iter()
+                .filter(|e| e.repository == RepositoryKind::Git)
+                .map(|e| e.repository_id.clone()),
+        );
+        git_urls.dedup();
+    }
+
     // Get all curse repo packages
-    let curse_repo_packages = {
+    let curse_repo_packages = if !curse_ids.is_empty() {
         let mut curse_packages = curse::fetch_remote_packages_by_ids(&curse_ids).await?;
 
         let mut curse_repo_packages = vec![];
@@ -515,10 +529,12 @@ async fn get_all_repo_packages(
         );
 
         curse_repo_packages
+    } else {
+        vec![]
     };
 
     // Get all tukui repo packages
-    let tukui_repo_packages = {
+    let tukui_repo_packages = if !tukui_ids.is_empty() {
         let client = Arc::new(
             HttpClient::builder()
                 .redirect_policy(RedirectPolicy::Follow)
@@ -543,10 +559,12 @@ async fn get_all_repo_packages(
                     .map(|r| r.with_metadata(metadata))
             })
             .collect::<Vec<_>>()
+    } else {
+        vec![]
     };
 
     // Get all wowi repo packages
-    let wowi_repo_packages = {
+    let wowi_repo_packages = if !wowi_ids.is_empty() {
         let wowi_packages = wowi::fetch_remote_packages(&wowi_ids).await?;
 
         wowi_packages
@@ -563,12 +581,51 @@ async fn get_all_repo_packages(
                     .map(|r| r.with_metadata(metadata))
             })
             .collect::<Vec<_>>()
+    } else {
+        vec![]
+    };
+
+    // Get all git repo packages
+    let git_repo_packages = if !git_urls.is_empty() {
+        let fetch_tasks = git_urls
+            .iter()
+            .map(|url| {
+                let url = url
+                    .parse::<Uri>()
+                    .map_err(|_| error!("invalid url: {:?}", url))?;
+
+                Result::Ok(RepositoryPackage::from_source_url(flavor, url)?)
+            })
+            .filter_map(|result| match result {
+                Ok(package) => Some(package),
+                Err(e) => {
+                    log::error!("{}", e);
+                    None
+                }
+            })
+            .map(|mut package| async {
+                if let Err(e) = package.resolve_metadata().await {
+                    log::error!("{}", e);
+                    Err(e)
+                } else {
+                    Ok(package)
+                }
+            });
+
+        join_all(fetch_tasks)
+            .await
+            .into_iter()
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>()
+    } else {
+        vec![]
     };
 
     Ok([
         &curse_repo_packages[..],
         &tukui_repo_packages[..],
         &wowi_repo_packages[..],
+        &git_repo_packages[..],
     ]
     .concat())
 }
@@ -606,7 +663,12 @@ fn build_addons(
                 folders.push(addon_folders.remove(idx - offset));
             }
 
-            Addon::build_with_repo_and_folders(repo_package, folders).ok()
+            if let Ok(mut addon) = Addon::build_with_repo_and_folders(repo_package, folders) {
+                addon.primary_folder_id = e.primary_folder_id.clone();
+                Some(addon)
+            } else {
+                None
+            }
         })
         .collect();
 

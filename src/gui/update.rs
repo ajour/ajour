@@ -298,35 +298,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             }
                         }
 
-                        // If we have a curse addon.
-                        if addon.repository_kind() == Some(RepositoryKind::Curse) {
-                            ajour.expanded_type =
-                                ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                            return Ok(Command::perform(
-                                perform_fetch_changelog(addon.clone(), *key),
-                                Message::FetchedChangelog,
-                            ));
-                        }
-
-                        // If we have a Tukui addon.
-                        if addon.repository_kind() == Some(RepositoryKind::Tukui) {
-                            ajour.expanded_type =
-                                ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                            return Ok(Command::perform(
-                                perform_fetch_changelog(addon.clone(), *key),
-                                Message::FetchedChangelog,
-                            ));
-                        }
-
-                        // If we have a Wowi addon.
-                        if addon.repository_kind() == Some(RepositoryKind::WowI) {
-                            ajour.expanded_type =
-                                ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                            return Ok(Command::perform(
-                                perform_fetch_changelog(addon.clone(), *key),
-                                Message::FetchedChangelog,
-                            ));
-                        }
+                        ajour.expanded_type =
+                            ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                        return Ok(Command::perform(
+                            perform_fetch_changelog(addon.clone(), *key),
+                            Message::FetchedChangelog,
+                        ));
                     }
                     Changelog::Loading(a, _) => {
                         log::debug!(

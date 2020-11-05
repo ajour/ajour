@@ -225,8 +225,8 @@ impl Addon {
                         RepositoryKind::WowI => {
                             self.repository_id() == f.repository_identifiers.wowi.as_deref()
                         }
-                        // Folder toc will never have the git url in it
-                        RepositoryKind::Git => false,
+                        // For git sources, prioritize the folder that has a version in it
+                        RepositoryKind::Git => f.version.is_some(),
                     }
                 } else {
                     false
