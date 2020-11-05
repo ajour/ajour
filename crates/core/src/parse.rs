@@ -1096,6 +1096,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
     let path = toc_path.parent()?.to_path_buf();
     let id = path.file_name()?.to_str()?.to_string();
     let mut title: Option<String> = None;
+    let mut interface: Option<String> = None;
     let mut author: Option<String> = None;
     let mut notes: Option<String> = None;
     let mut version: Option<String> = None;
@@ -1116,6 +1117,9 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
                             .trim()
                             .to_string(),
                     )
+                }
+                "Interface" => {
+                    interface = Some(format_interface_into_game_version(cap["value"].trim()));
                 }
                 "Author" => author = Some(cap["value"].trim().to_string()),
                 "Notes" => {
@@ -1152,6 +1156,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
     Some(AddonFolder::new(
         id.clone(),
         title.unwrap_or(id),
+        interface,
         path,
         author,
         notes,
@@ -1171,6 +1176,19 @@ fn split_dependencies_into_vec(value: &str) -> Vec<String> {
         .split([','].as_ref())
         .map(|s| s.trim().to_string())
         .collect()
+}
+
+fn format_interface_into_game_version(interface: &str) -> String {
+    if interface.len() == 5 {
+        let major = interface[..1].parse::<u8>();
+        let minor = interface[1..3].parse::<u8>();
+        let patch = interface[3..5].parse::<u8>();
+        if let (Ok(major), Ok(minor), Ok(patch)) = (major, minor, patch) {
+            return format!("{}.{}.{}", major, minor, patch);
+        }
+    }
+
+    interface.to_owned()
 }
 
 #[cfg(test)]
@@ -1211,5 +1229,17 @@ mod tests {
 
         let title = RE_TOC_TITLE.replace_all("|cff1784d1ElvUI |cff83F3F7Absorb Tags", "$1");
         assert_eq!(title, "ElvUI Absorb Tags");
+    }
+
+    #[test]
+    fn test_interface() {
+        let interface = "90001";
+        assert_eq!("9.0.1", format_interface_into_game_version(interface));
+
+        let interface = "11305";
+        assert_eq!("1.13.5", format_interface_into_game_version(interface));
+
+        let interface = "100000";
+        assert_eq!("100000", format_interface_into_game_version(interface));
     }
 }

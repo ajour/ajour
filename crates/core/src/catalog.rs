@@ -58,7 +58,7 @@ impl std::fmt::Display for Source {
         let s = match self {
             Source::Curse => "Curse",
             Source::Tukui => "Tukui",
-            Source::WowI => "WowI",
+            Source::WowI => "WowInterface",
         };
         write!(f, "{}", s)
     }

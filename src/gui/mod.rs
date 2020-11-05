@@ -1066,8 +1066,8 @@ impl Default for CatalogHeaderState {
                 CatalogColumnState {
                     key: CatalogColumnKey::Source,
                     btn_state: Default::default(),
-                    width: Length::Units(85),
-                    hidden: false,
+                    width: Length::Units(110),
+                    hidden: true,
                     order: 2,
                 },
                 CatalogColumnState {
