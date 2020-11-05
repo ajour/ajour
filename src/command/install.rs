@@ -15,6 +15,7 @@ use ajour_core::Result;
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
 use futures::future::join_all;
+use isahc::config::RedirectPolicy;
 use isahc::http::Uri;
 use isahc::prelude::*;
 
@@ -48,7 +49,10 @@ pub fn install_from_source(url: Uri, flavor: Flavor) -> Result<()> {
         let download_directory = config.get_download_directory_for_flavor(flavor).ok_or_else(|| error!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
         let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| error!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
-        let client = HttpClient::builder().build().unwrap();
+        let client = HttpClient::builder()
+            .redirect_policy(RedirectPolicy::Follow)
+            .build()
+            .unwrap();
 
         // Download the addon
         download_addon(&client, &addon, &download_directory).await?;
