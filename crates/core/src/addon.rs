@@ -117,6 +117,7 @@ pub struct AddonFolder {
     /// ID is always the folder name
     pub id: String,
     pub title: String,
+    pub interface: Option<String>,
     pub path: PathBuf,
     pub author: Option<String>,
     pub notes: Option<String>,
@@ -151,6 +152,7 @@ impl AddonFolder {
     pub fn new(
         id: String,
         title: String,
+        interface: Option<String>,
         path: PathBuf,
         author: Option<String>,
         notes: Option<String>,
@@ -161,6 +163,7 @@ impl AddonFolder {
         AddonFolder {
             id,
             title,
+            interface,
             path,
             author,
             notes,
@@ -662,7 +665,15 @@ impl Addon {
 
     /// Returns the game version of the addon.
     pub fn game_version(&self) -> Option<&str> {
-        self.repository_metadata.game_version.as_deref()
+        if self.repository_metadata.game_version.is_some() {
+            self.repository_metadata.game_version.as_deref()
+        } else {
+            self.folders
+                .iter()
+                .find(|f| f.id == self.primary_folder_id)
+                .map(|f| f.interface.as_deref())
+                .flatten()
+        }
     }
 
     /// Returns the notes of the addon.
