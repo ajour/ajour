@@ -68,7 +68,7 @@ pub fn main() {
             // Process the command and exit
             if let Err(e) = match command {
                 cli::Command::Update => command::update_all_addons(),
-                cli::Command::Install { url } => command::install_from_source(url),
+                cli::Command::Install { url, flavor } => command::install_from_source(url, flavor),
             } {
                 log_error(&e);
             }
