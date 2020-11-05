@@ -12,6 +12,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Added
 - WoWInterface addons has been added to the Catalog.
 
+### Fixed
+- If we don't get Game Version from API we fallback to the one in the TOC file if present.
+
 ## [0.5.0] - 2020-11-03
 
 ### Packaging
