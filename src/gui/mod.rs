@@ -531,6 +531,7 @@ impl Application for Ajour {
                         let installed_for_flavor = addons.iter().any(|a| {
                             a.curse_id() == Some(addon.addon.id)
                                 || a.tukui_id() == Some(&addon.addon.id.to_string())
+                                || a.wowi_id() == Some(&addon.addon.id.to_string())
                         });
 
                         let install_addon = install_addons.iter().find(|a| addon.addon.id == a.id);
@@ -1329,6 +1330,7 @@ impl CatalogSource {
         vec![
             CatalogSource::Choice(catalog::Source::Curse),
             CatalogSource::Choice(catalog::Source::Tukui),
+            CatalogSource::Choice(catalog::Source::WowI),
         ]
     }
 }
@@ -1339,6 +1341,7 @@ impl std::fmt::Display for CatalogSource {
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
+                catalog::Source::WowI => "WowI",
             },
         };
         write!(f, "{}", s)
