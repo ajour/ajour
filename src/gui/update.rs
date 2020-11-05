@@ -347,7 +347,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
                         match addon.repository_kind() {
                             // Delete the entry for this cached addon
-                            Some(RepositoryKind::Tukui) | Some(RepositoryKind::WowI) => {
+                            Some(RepositoryKind::Tukui)
+                            | Some(RepositoryKind::WowI)
+                            | Some(RepositoryKind::Git) => {
                                 return Ok(Command::perform(
                                     remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheEntryRemoved,
