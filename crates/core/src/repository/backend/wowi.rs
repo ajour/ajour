@@ -74,6 +74,7 @@ pub fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMetadata {
 
     let website_url = addon_url(&package.id.to_string());
     metadata.website_url = Some(website_url);
+    metadata.title = Some(package.title);
 
     metadata
 }
