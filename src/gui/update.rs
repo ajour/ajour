@@ -349,7 +349,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             // Delete the entry for this cached addon
                             Some(RepositoryKind::Tukui)
                             | Some(RepositoryKind::WowI)
-                            | Some(RepositoryKind::Git) => {
+                            | Some(RepositoryKind::Git(_)) => {
                                 return Ok(Command::perform(
                                     remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheEntryRemoved,
@@ -663,7 +663,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             // Update the entry for this cached addon
                             Some(RepositoryKind::Tukui)
                             | Some(RepositoryKind::WowI)
-                            | Some(RepositoryKind::Git) => {
+                            | Some(RepositoryKind::Git(_)) => {
                                 commands.push(Command::perform(
                                     update_addon_cache(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheUpdated,

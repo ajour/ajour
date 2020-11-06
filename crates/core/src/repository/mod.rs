@@ -20,7 +20,7 @@ pub enum RepositoryKind {
     Curse,
     Tukui,
     WowI,
-    Git,
+    Git(GitKind),
 }
 
 impl std::fmt::Display for RepositoryKind {
@@ -32,10 +32,25 @@ impl std::fmt::Display for RepositoryKind {
                 RepositoryKind::WowI => "WoWInterface",
                 RepositoryKind::Tukui => "Tukui",
                 RepositoryKind::Curse => "CurseForge",
-                RepositoryKind::Git => "Git",
+                RepositoryKind::Git(git) => match git {
+                    GitKind::Github => "GitHub",
+                    GitKind::Gitlab => "GitLab",
+                },
             }
         )
     }
+}
+
+impl RepositoryKind {
+    pub fn is_git(self) -> bool {
+        matches!(self, RepositoryKind::Git(_))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]
+pub enum GitKind {
+    Github,
+    Gitlab,
 }
 
 #[derive(Clone)]
@@ -62,15 +77,21 @@ impl RepositoryPackage {
             .host()
             .ok_or_else(|| error!("no host for url: {:?}", url))?;
 
-        let backend: Box<dyn Backend> = match host {
-            "github.com" => Box::new(Github {
-                url: url.clone(),
-                flavor,
-            }),
-            "gitlab.com" => Box::new(Gitlab {
-                url: url.clone(),
-                flavor,
-            }),
+        let (backend, kind): (Box<dyn Backend>, _) = match host {
+            "github.com" => (
+                Box::new(Github {
+                    url: url.clone(),
+                    flavor,
+                }),
+                RepositoryKind::Git(GitKind::Github),
+            ),
+            "gitlab.com" => (
+                Box::new(Gitlab {
+                    url: url.clone(),
+                    flavor,
+                }),
+                RepositoryKind::Git(GitKind::Gitlab),
+            ),
             _ => {
                 return Err(error!(
                     "invalid host, only github and gitlab are supported: {}",
@@ -82,7 +103,7 @@ impl RepositoryPackage {
         Ok(RepositoryPackage {
             backend,
             id: url.to_string(),
-            kind: RepositoryKind::Git,
+            kind,
             metadata: Default::default(),
         })
     }
@@ -101,7 +122,7 @@ impl RepositoryPackage {
                 id: id.clone(),
                 flavor,
             }),
-            RepositoryKind::Git => {
+            RepositoryKind::Git(_) => {
                 return Err(error!("Git repo must be created with `from_source_url`"))
             }
         };
@@ -151,7 +172,7 @@ impl RepositoryPackage {
             None
         };
 
-        let tag_name = if self.kind == RepositoryKind::Git {
+        let tag_name = if self.kind.is_git() {
             let remote_package = self
                 .metadata
                 .remote_packages

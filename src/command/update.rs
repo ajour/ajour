@@ -185,46 +185,9 @@ async fn update_addon(
     download_addon(&shared_client, &addon, &temp_directory).await?;
 
     // Extracts addon from the downloaded archive to the addon directory and removes the archive
-    let mut installed_folders = install_addon(&addon, &temp_directory, &addon_directory).await?;
+    let installed_folders = install_addon(&addon, &temp_directory, &addon_directory).await?;
 
-    // Update addon based on installed folders
-    if !installed_folders.is_empty() {
-        installed_folders.sort_by(|a, b| a.id.cmp(&b.id));
-
-        // Assign the primary folder id based on the first folder alphabetically with
-        // a matching repository identifier otherwise just the first
-        // folder alphabetically
-        let primary_folder_id = if let Some(folder) = installed_folders.iter().find(|f| {
-            if let Some(repo) = addon.repository_kind() {
-                match repo {
-                    RepositoryKind::Curse => {
-                        addon.repository_id()
-                            == f.repository_identifiers
-                                .curse
-                                .as_ref()
-                                .map(i32::to_string)
-                                .as_deref()
-                    }
-                    RepositoryKind::Tukui => {
-                        addon.repository_id() == f.repository_identifiers.tukui.as_deref()
-                    }
-                    RepositoryKind::WowI => {
-                        addon.repository_id() == f.repository_identifiers.wowi.as_deref()
-                    }
-                    RepositoryKind::Git => false,
-                }
-            } else {
-                false
-            }
-        }) {
-            folder.id.clone()
-        } else {
-            // Wont fail since we already checked if vec is empty
-            installed_folders.get(0).map(|f| f.id.clone()).unwrap()
-        };
-        addon.primary_folder_id = primary_folder_id;
-        addon.folders = installed_folders;
-    }
+    addon.update_addon_folders(installed_folders);
 
     // Stores each folder name we need to fingerprint
     let mut folders_to_fingerprint = vec![];
@@ -256,6 +219,7 @@ async fn update_addon(
     // Update cache for addon
     if addon.repository_kind() == Some(RepositoryKind::Tukui)
         || addon.repository_kind() == Some(RepositoryKind::WowI)
+        || matches!(addon.repository_kind(), Some(RepositoryKind::Git(_)))
     {
         if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
             update_addon_cache(addon_cache, entry, flavor).await?;

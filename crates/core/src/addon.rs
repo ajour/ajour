@@ -226,7 +226,7 @@ impl Addon {
                             self.repository_id() == f.repository_identifiers.wowi.as_deref()
                         }
                         // For git sources, prioritize the folder that has a version in it
-                        RepositoryKind::Git => f.version.is_some(),
+                        RepositoryKind::Git(_) => f.version.is_some(),
                     }
                 } else {
                     false

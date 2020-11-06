@@ -471,7 +471,7 @@ async fn get_all_repo_packages(
         git_urls.extend(
             cache_entries
                 .iter()
-                .filter(|e| e.repository == RepositoryKind::Git)
+                .filter(|e| e.repository.is_git())
                 .map(|e| e.repository_id.clone()),
         );
         git_urls.dedup();
