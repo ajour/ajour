@@ -1,3 +1,4 @@
+mod component;
 mod element;
 mod style;
 mod update;
@@ -308,7 +309,7 @@ impl Application for Ajour {
         // This ensure we only draw settings, when we need to.
         if self.is_showing_settings {
             // Settings container, containing all data releated to settings.
-            let settings_container = element::settings_container(
+            let settings_container = component::settings::view(
                 color_palette,
                 &mut self.directory_btn_state,
                 &self.config,
