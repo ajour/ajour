@@ -21,8 +21,8 @@ use ajour_core::{
 use async_std::sync::{Arc, Mutex};
 use chrono::NaiveDateTime;
 use iced::{
-    button, pick_list, scrollable, text_input, Application, Column, Command, Container, Element,
-    Length, PickList, Row, Settings, Space, Subscription, TextInput,
+    Button, Align, button, pick_list, scrollable, text_input, Application, Column, Command, Container, Element,
+    Length, PickList, Row, Settings, Space, Subscription, TextInput, Text, HorizontalAlignment
 };
 use image::ImageFormat;
 use isahc::{
@@ -52,6 +52,7 @@ impl Default for State {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Mode {
     MyAddons(Flavor),
+    Install,
     Catalog,
 }
 
@@ -62,6 +63,7 @@ impl std::fmt::Display for Mode {
             "{}",
             match self {
                 Mode::MyAddons(_) => "My Addons",
+                Mode::Install => "Install",
                 Mode::Catalog => "Catalog",
             }
         )
@@ -96,6 +98,8 @@ pub enum Interaction {
     MoveCatalogColumnRight(CatalogColumnKey),
     ModeSelected(Mode),
     CatalogQuery(String),
+    InstallSCMQuery(String),
+    InstallSCMURL,
     CatalogInstall(catalog::Source, Flavor, i32),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
@@ -159,6 +163,7 @@ pub struct Ajour {
     classic_ptr_btn_state: button::State,
     addon_mode_btn_state: button::State,
     catalog_mode_btn_state: button::State,
+    install_mode_btn_state: button::State,
     scale_state: ScaleState,
     backup_state: BackupState,
     column_settings: ColumnSettings,
@@ -169,7 +174,10 @@ pub struct Ajour {
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
     website_btn_state: button::State,
+    install_from_scm_state: InstallFromSCMState,
 }
+
+
 
 impl Default for Ajour {
     fn default() -> Self {
@@ -206,6 +214,7 @@ impl Default for Ajour {
             classic_ptr_btn_state: Default::default(),
             addon_mode_btn_state: Default::default(),
             catalog_mode_btn_state: Default::default(),
+            install_mode_btn_state: Default::default(),
             scale_state: Default::default(),
             backup_state: Default::default(),
             column_settings: Default::default(),
@@ -216,6 +225,7 @@ impl Default for Ajour {
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
             website_btn_state: Default::default(),
+            install_from_scm_state: Default::default(),
         }
     }
 }
@@ -292,6 +302,7 @@ impl Application for Ajour {
             &mut self.settings_btn_state,
             &mut self.addon_mode_btn_state,
             &mut self.catalog_mode_btn_state,
+            &mut self.install_mode_btn_state,
             &mut self.retail_btn_state,
             &mut self.retail_ptr_btn_state,
             &mut self.retail_beta_btn_state,
@@ -415,6 +426,74 @@ impl Application for Ajour {
                         .push(addons_scrollable)
                         .push(bottom_space)
                 }
+            }
+            Mode::Install => {
+                    let query = self
+                        .install_from_scm_state
+                        .query
+                        .as_deref()
+                        .unwrap_or_default();
+                    let install_scm_query = TextInput::new(
+                        &mut self.install_from_scm_state.query_state,
+                        "Enter Addon URL",
+                        query,
+                        Interaction::InstallSCMQuery,
+                    )
+                    .size(DEFAULT_FONT_SIZE)
+                    .padding(10)
+                    .width(Length::FillPortion(3))
+                    .style(style::CatalogQueryInput(color_palette));
+
+                    let install_scm_query: Element<Interaction> = install_scm_query.into();
+
+                    let title = Text::new("Something")
+                        .size(DEFAULT_FONT_SIZE)
+                        .width(Length::Fill)
+                        .horizontal_alignment(HorizontalAlignment::Center);
+                    let title_container = Container::new(title)
+                        .width(Length::Fill)
+                        .style(style::BrightBackgroundContainer(color_palette));
+
+                    let description = Text::new("Some more...")
+                        .size(DEFAULT_FONT_SIZE)
+                        .width(Length::Fill)
+                        .horizontal_alignment(HorizontalAlignment::Center);
+                    let description_container = Container::new(description)
+                        .width(Length::Fill)
+                        .style(style::NormalBackgroundContainer(color_palette));
+
+                    let query_row = Row::new()
+                        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                        .push(install_scm_query.map(Message::Interaction))
+                        .spacing(1);
+
+                    let install_button_title_container =
+                        Container::new(Text::new("Install from URL").size(DEFAULT_FONT_SIZE))
+                        .width(Length::Units(100))
+                        .center_x()
+                        .align_x(Align::Center);
+
+
+                    let install_button: Element<Interaction> =
+                        Button::new(&mut self.install_from_scm_state.install_button_state, install_button_title_container)
+                        .width(Length::Units(120))
+                        .style(style::DefaultButton(color_palette))
+                        .on_press(Interaction::InstallSCMURL)
+                        .into();
+
+                    let colum = Column::new()
+                        .push(query_row)
+                        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+                        .push(install_button.map(Message::Interaction)).align_items(Align::Center)
+                        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+                        .push(title_container)
+                        .push(description_container);
+
+                    let container = Container::new(colum)
+                        .width(Length::Fill)
+                        .height(Length::Fill);
+
+                    content = content.push(container);
             }
             Mode::Catalog => {
                 if let Some(catalog) = &self.catalog {
@@ -600,6 +679,7 @@ impl Application for Ajour {
                     }
                 }
             }
+            Mode::Install => { None }
             Mode::Catalog => {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
@@ -664,6 +744,22 @@ pub fn run(opts: Opts) {
 
     // Runs the GUI.
     Ajour::run(settings).expect("running Ajour gui");
+}
+
+pub struct InstallFromSCMState {
+    pub query: Option<String>,
+    pub query_state: text_input::State,
+    pub install_button_state: button::State,
+}
+
+impl Default for InstallFromSCMState {
+    fn default() -> Self {
+        InstallFromSCMState {
+            query: None,
+            query_state: Default::default(),
+            install_button_state: Default::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

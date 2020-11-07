@@ -880,6 +880,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         column.width = Length::Units(right_width);
                     }
                 }
+                Mode::Install => {}
                 Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
@@ -1381,6 +1382,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(entry) = maybe_entry {
                 log::debug!("Message::AddonCacheEntryRemoved({})", entry.title);
             }
+        }
+        Message::Interaction(Interaction::InstallSCMQuery(query)) => {
+            // install from scm search query
+            ajour.install_from_scm_state.query = Some(query);
+        }
+        Message::Interaction(Interaction::InstallSCMURL) => {
+            println!("{:?}", ajour.install_from_scm_state.query);
         }
         Message::Error(error)
         | Message::CatalogDownloaded(Err(error))

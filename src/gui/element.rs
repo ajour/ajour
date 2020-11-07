@@ -516,6 +516,13 @@ pub fn settings_container<'a, 'b>(
         .height(Length::Units(280))
         .style(style::BrightForegroundContainer(color_palette));
 
+    let install_columns_column =
+        Column::new().push(Text::new("Install Columns").size(DEFAULT_FONT_SIZE));
+    let install_columns_container = Container::new(install_columns_column)
+        .width(Length::Units(200))
+        .height(Length::Units(200))
+        .style(style::BrightForegroundContainer(color_palette));
+
     let catalog_columns_column = Column::new()
         .push(catalog_columns_title_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
@@ -523,7 +530,7 @@ pub fn settings_container<'a, 'b>(
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let catalog_columns_container = Container::new(catalog_columns_column)
         .width(Length::Units(200))
-        .height(Length::Units(260))
+        .height(Length::Units(230))
         .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
@@ -533,6 +540,9 @@ pub fn settings_container<'a, 'b>(
     match mode {
         Mode::MyAddons(_) => {
             row = row.push(my_addons_columns_container);
+        }
+        Mode::Install => {
+            row = row.push(install_columns_container);
         }
         Mode::Catalog => {
             row = row.push(catalog_columns_container);
@@ -1427,6 +1437,7 @@ pub fn menu_container<'a>(
     settings_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
+    install_mode_btn_state: &'a mut button::State,
     retail_btn_state: &'a mut button::State,
     retail_ptr_btn_state: &'a mut button::State,
     retail_beta_btn_state: &'a mut button::State,
@@ -1459,16 +1470,30 @@ pub fn menu_container<'a>(
     )
     .style(style::DisabledDefaultButton(color_palette));
 
+    let mut install_mode_button = Button::new(
+        install_mode_btn_state,
+        Text::new("Install").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette));
+
     match mode {
         Mode::MyAddons(_) => {
             addons_mode_button =
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+        }
+        Mode::Install => {
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button =
+                install_mode_button.style(style::SelectedDefaultButton(color_palette));
         }
         Mode::Catalog => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
         }
     }
 
@@ -1476,19 +1501,25 @@ pub fn menu_container<'a>(
         addons_mode_button = addons_mode_button.style(style::DisabledDefaultButton(color_palette));
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
+        install_mode_button =
+            install_mode_button.style(style::DisabledDefaultButton(color_palette));
     } else {
         addons_mode_button =
             addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons(flavor)));
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(Mode::Catalog));
+        install_mode_button =
+            install_mode_button.on_press(Interaction::ModeSelected(Mode::Install));
     }
 
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
     let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
+    let install_mode_button: Element<Interaction> = install_mode_button.into();
 
     let segmented_mode_control_container = Row::new()
         .push(addons_mode_button.map(Message::Interaction))
         .push(catalog_mode_button.map(Message::Interaction))
+        .push(install_mode_button.map(Message::Interaction))
         .spacing(1);
 
     let mut retail_button = Button::new(
