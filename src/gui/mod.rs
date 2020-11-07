@@ -18,7 +18,7 @@ use ajour_core::{
     Result,
 };
 use async_std::sync::{Arc, Mutex};
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::{
     button, pick_list, scrollable, text_input, Application, Column, Command, Container, Element,
     Length, PickList, Row, Settings, Space, Subscription, TextInput,
@@ -30,6 +30,7 @@ use isahc::{
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 use widgets::header;
 
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
@@ -129,6 +130,7 @@ pub enum Message {
     AjourUpdateDownloaded(Result<(String, PathBuf)>),
     AddonCacheUpdated(Result<AddonCacheEntry>),
     AddonCacheEntryRemoved(Option<AddonCacheEntry>),
+    RefreshCatalog(Instant),
 }
 
 pub struct Ajour {
@@ -164,6 +166,7 @@ pub struct Ajour {
     catalog_column_settings: CatalogColumnSettings,
     onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
+    catalog_last_updated: Option<DateTime<Utc>>,
     catalog_install_addons: HashMap<Flavor, Vec<CatalogInstallAddon>>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
@@ -211,6 +214,7 @@ impl Default for Ajour {
             catalog_column_settings: Default::default(),
             onboarding_directory_btn_state: Default::default(),
             catalog: None,
+            catalog_last_updated: None,
             catalog_install_addons: Default::default(),
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
@@ -248,7 +252,11 @@ impl Application for Ajour {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        iced_native::subscription::events().map(Message::RuntimeEvent)
+        let runtime_subscription = iced_native::subscription::events().map(Message::RuntimeEvent);
+        let catalog_subscription =
+            iced_futures::time::every(Duration::from_secs(5)).map(Message::RefreshCatalog);
+
+        iced::Subscription::batch(vec![runtime_subscription, catalog_subscription])
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
