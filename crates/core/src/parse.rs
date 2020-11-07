@@ -675,10 +675,8 @@ fn build_addons(
     let curse_addons: Vec<_> = repo_packages
         .clone()
         .iter()
-        .enumerate()
-        .filter(|(_, r)| r.kind == RepositoryKind::Curse)
-        .enumerate()
-        .filter_map(|(offset, (idx, r))| {
+        .filter(|r| r.kind == RepositoryKind::Curse)
+        .filter_map(|r| {
             // Get and remove all matching addon folders
             let module_names = r.metadata.modules();
 
@@ -700,7 +698,12 @@ fn build_addons(
                 folders.push(addon_folders.remove(idx - offset));
             }
 
-            let repo_package = repo_packages.remove(idx - offset);
+            let repo_package = repo_packages.remove(
+                repo_packages
+                    .iter()
+                    .position(|p| r.id == p.id && r.kind == p.kind)
+                    .unwrap(),
+            );
 
             Addon::build_with_repo_and_folders(repo_package, folders).ok()
         })
@@ -709,10 +712,8 @@ fn build_addons(
     let tukui_and_wowi_addons: Vec<_> = repo_packages
         .clone()
         .iter()
-        .enumerate()
-        .filter(|(_, r)| r.kind == RepositoryKind::Tukui || r.kind == RepositoryKind::WowI)
-        .enumerate()
-        .filter_map(|(offset, (idx, r))| {
+        .filter(|r| r.kind == RepositoryKind::Tukui || r.kind == RepositoryKind::WowI)
+        .filter_map(|r| {
             let mut folders = vec![];
 
             // Get addon folder with matching repo id
@@ -740,7 +741,12 @@ fn build_addons(
                 folders.push(addon_folders.remove(idx - offset));
             }
 
-            let repo_package = repo_packages.remove(idx - offset);
+            let repo_package = repo_packages.remove(
+                repo_packages
+                    .iter()
+                    .position(|p| r.id == p.id && r.kind == p.kind)
+                    .unwrap(),
+            );
 
             Addon::build_with_repo_and_folders(repo_package, folders).ok()
         })
