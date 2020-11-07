@@ -391,7 +391,7 @@ impl Addon {
 
         let mut metadata = RepositoryMetadata::empty();
         metadata.website_url = website_url;
-        metadata.game_version = game_version;
+        metadata.game_version = game_version.and_then(|s| if s == "" { None } else { Some(s) });
         metadata.remote_packages = remote_packages;
 
         self.active_repository = Some(Repository::Tukui);
@@ -584,12 +584,17 @@ impl Addon {
 
         let version = Some(info.file.display_name.clone());
         let file_id = Some(info.file.id);
-        let game_version = info.file.game_version.get(0).cloned();
+        let game_version =
+            info.file
+                .game_version
+                .get(0)
+                .cloned()
+                .and_then(|s| if s == "" { None } else { Some(s) });
 
         let mut metadata = RepositoryMetadata::empty();
         metadata.version = version;
         metadata.file_id = file_id;
-        metadata.game_version = game_version;
+        metadata.game_version = game_version.and_then(|s| if s == "" { None } else { Some(s) });
         metadata.remote_packages = remote_packages;
 
         // Shouldn't panic since we have an exact match on the fingerprint. We use the
