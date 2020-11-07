@@ -41,51 +41,6 @@ pub struct ParsingPatterns {
     pub file_parsing_regex: HashMap<String, (regex::Regex, Regex)>,
 }
 
-/// File parsing regexes used for parsing the addon files.
-pub async fn file_parsing_regex() -> Result<ParsingPatterns> {
-    // Fetches game_info from memory or API if not in memory
-    // Used to get regexs for various operations.
-    let game_info = {
-        let cached_info = { CACHED_GAME_INFO.lock().await.clone() };
-
-        if let Some(info) = cached_info {
-            info
-        } else {
-            let info = curse::fetch_game_info().await?;
-            *CACHED_GAME_INFO.lock().await = Some(info.clone());
-
-            info
-        }
-    };
-
-    // Compile regexes
-    let addon_cat = &game_info.category_sections[0];
-    let initial_inclusion_regex =
-        Regex::new(&addon_cat.initial_inclusion_pattern).expect("Error compiling inclusion regex");
-    let extra_inclusion_regex = Regex::new(&addon_cat.extra_include_pattern)
-        .expect("Error compiling extra inclusion regex");
-    let file_parsing_regex = game_info
-        .file_parsing_rules
-        .iter()
-        .map(|data| {
-            let comment_strip_regex = regex::Regex::new(&data.comment_strip_pattern)
-                .expect("Error compiling comment strip regex");
-            let inclusion_regex =
-                Regex::new(&data.inclusion_pattern).expect("Error compiling inclusion pattern");
-            (
-                data.file_extension.clone(),
-                (comment_strip_regex, inclusion_regex),
-            )
-        })
-        .collect();
-
-    Ok(ParsingPatterns {
-        initial_inclusion_regex,
-        extra_inclusion_regex,
-        file_parsing_regex,
-    })
-}
-
 pub async fn read_addon_directory<P: AsRef<Path>>(
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
@@ -191,12 +146,6 @@ async fn fingerprint_all_dirs(
     all_dirs: &[String],
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
 ) -> Result<Vec<Fingerprint>> {
-    let ParsingPatterns {
-        initial_inclusion_regex,
-        extra_inclusion_regex,
-        file_parsing_regex,
-    } = file_parsing_regex().await?;
-
     let mut fingerprint_cache = if let Some(fingerprint_cache) = fingerprint_cache {
         Some(fingerprint_cache.lock_arc().await)
     } else {
@@ -228,12 +177,7 @@ async fn fingerprint_all_dirs(
                 let _ = num_cached.fetch_add(1, Ordering::SeqCst);
                 fingerprint.to_owned()
             } else {
-                let hash_result = fingerprint_addon_dir(
-                    &addon_dir,
-                    &initial_inclusion_regex,
-                    &extra_inclusion_regex,
-                    &file_parsing_regex,
-                );
+                let hash_result = fingerprint_addon_dir(&addon_dir);
 
                 let hash = match hash_result {
                     Ok(hash) => Some(hash),
@@ -863,22 +807,10 @@ pub async fn update_addon_fingerprint(
 ) -> Result<()> {
     log::debug!("{} - updating fingerprint for {}", flavor, &addon_id);
 
-    // Regexes
-    let ParsingPatterns {
-        initial_inclusion_regex,
-        extra_inclusion_regex,
-        file_parsing_regex,
-    } = file_parsing_regex().await?;
-
     let addon_path = addon_dir.as_ref().join(&addon_id);
 
     // Generate new hash, and update collection.
-    match fingerprint_addon_dir(
-        &addon_path,
-        &initial_inclusion_regex,
-        &extra_inclusion_regex,
-        &file_parsing_regex,
-    ) {
+    match fingerprint_addon_dir(&addon_path) {
         Ok(hash) => {
             // Lock Mutex ensuring this is the only operation that can update the cache.
             // This is needed since during `Update All` we can have concurrent operations updating
@@ -919,12 +851,7 @@ pub async fn update_addon_fingerprint(
     Ok(())
 }
 
-pub fn fingerprint_addon_dir(
-    addon_dir: &PathBuf,
-    initial_inclusion_regex: &Regex,
-    extra_inclusion_regex: &Regex,
-    file_parsing_regex: &HashMap<String, (regex::Regex, Regex)>,
-) -> Result<u32> {
+pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
     let root_dir = addon_dir.parent().ok_or_else(|| {
@@ -955,12 +882,14 @@ pub fn fingerprint_addon_dir(
             .ok_or_else(|| ClientError::FingerprintError(format!("Invalid UTF8 path: {:?}", path)))?
             .to_ascii_lowercase()
             .replace("/", "\\"); // Convert to windows seperator
-        if initial_inclusion_regex
+        if RE_TEST
+            .extra_inclusion_regex
             .is_match(&relative_path)
             .map_err(ClientError::fingerprint)?
         {
             to_parse.push_back(path);
-        } else if extra_inclusion_regex
+        } else if RE_TEST
+            .extra_inclusion_regex
             .is_match(&relative_path)
             .map_err(ClientError::fingerprint)?
         {
@@ -993,13 +922,13 @@ pub fn fingerprint_addon_dir(
                     path
                 )))?
         );
-        if !file_parsing_regex.contains_key(&ext) {
+        if !RE_TEST.file_parsing_regex.contains_key(&ext) {
             continue;
         }
 
         // Parse file for matches
         let (comment_strip_regex, inclusion_regex) =
-            file_parsing_regex.get(&ext).ok_or_else(|| {
+            RE_TEST.file_parsing_regex.get(&ext).ok_or_else(|| {
                 ClientError::FingerprintError(format!("ext not in file parsing regex: {:?}", ext))
             })?;
         let mut file = File::open(&path).map_err(ClientError::fingerprint)?;
@@ -1114,6 +1043,23 @@ where
 lazy_static::lazy_static! {
     static ref RE_TOC_LINE: regex::Regex = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
     static ref RE_TOC_TITLE: regex::Regex = regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)").unwrap();
+    static ref RE_TEST: ParsingPatterns = {
+        let mut file_parsing_regex = HashMap::new();
+        file_parsing_regex.insert(".xml".to_string(), (
+            regex::Regex::new(r"(?s)<!--.*?-->").unwrap(),
+            fancy_regex::Regex::new(r"(?i)<(?:Include|Script)\\s+file=[\'\'']((?:(?<!\\.\\.).)+)[\'\'']\\s*/>").unwrap(),
+        ));
+        file_parsing_regex.insert(".toc".to_string(), (
+            regex::Regex::new(r"(?m)\\s*#.*$").unwrap(),
+            fancy_regex::Regex::new(r"(?mi)^\\s*((?:(?<!\\.\\.).)+\\.(?:xml|lua))\\s*$").unwrap(),
+        ));
+
+        ParsingPatterns {
+            extra_inclusion_regex: fancy_regex::Regex::new(r"(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
+            initial_inclusion_regex: fancy_regex::Regex::new(r"(?i)^([^/]+)[\\\/]\\1\\.toc$").unwrap(),
+            file_parsing_regex,
+        }
+    };
 }
 
 /// Helper function to parse a given TOC file

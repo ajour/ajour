@@ -12,9 +12,6 @@ edition = "2018"
 gui = ['iced_native']
 
 [[bin]]
-name = "file_parsing_regex"
-
-[[bin]]
 name = "fingerprint_addon"
 
 [[bin]]
