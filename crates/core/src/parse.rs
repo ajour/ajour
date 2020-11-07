@@ -148,7 +148,12 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
         get_all_repo_packages(flavor, &cache_entries, &addon_folders, &fingerprint_info).await?;
 
     // Build addons with repo packages & addon folders
-    let known_addons = build_addons(&mut all_repo_packages, &mut addon_folders, &cache_entries);
+    let known_addons = build_addons(
+        flavor,
+        &mut all_repo_packages,
+        &mut addon_folders,
+        &cache_entries,
+    );
 
     // Any remaining addon folders are unknown, we will show them 1:1 in Ajour
     let unknown_addons = addon_folders
@@ -317,7 +322,7 @@ async fn parse_addon_folders(
     addon_folders.sort_by(|a, b| a.id.cmp(&b.id));
 
     log::debug!(
-        "{} - {} successfully parsed from '.toc'",
+        "{} - {} addon folders successfully parsed from '.toc'",
         flavor,
         addon_folders.len()
     );
@@ -560,6 +565,12 @@ async fn get_all_repo_packages(
         vec![]
     };
 
+    log::debug!(
+        "{} - {} curse packages fetched",
+        flavor,
+        curse_repo_packages.len()
+    );
+
     // Get all tukui repo packages
     let tukui_repo_packages = if !tukui_ids.is_empty() {
         let client = Arc::new(
@@ -590,6 +601,12 @@ async fn get_all_repo_packages(
         vec![]
     };
 
+    log::debug!(
+        "{} - {} tukui packages fetched",
+        flavor,
+        tukui_repo_packages.len()
+    );
+
     // Get all wowi repo packages
     let wowi_repo_packages = if !wowi_ids.is_empty() {
         let wowi_packages = wowi::fetch_remote_packages(&wowi_ids).await?;
@@ -611,6 +628,12 @@ async fn get_all_repo_packages(
     } else {
         vec![]
     };
+
+    log::debug!(
+        "{} - {} wowi packages fetched",
+        flavor,
+        wowi_repo_packages.len()
+    );
 
     // Get all git repo packages
     let git_repo_packages = if !git_urls.is_empty() {
@@ -648,6 +671,12 @@ async fn get_all_repo_packages(
         vec![]
     };
 
+    log::debug!(
+        "{} - {} git packages fetched",
+        flavor,
+        git_repo_packages.len()
+    );
+
     Ok([
         &curse_repo_packages[..],
         &tukui_repo_packages[..],
@@ -658,6 +687,7 @@ async fn get_all_repo_packages(
 }
 
 fn build_addons(
+    flavor: Flavor,
     repo_packages: &mut Vec<RepositoryPackage>,
     addon_folders: &mut Vec<AddonFolder>,
     cache_entries: &[AddonCacheEntry],
@@ -779,12 +809,50 @@ fn build_addons(
         })
         .collect();
 
-    [
+    let concatenated_addons = [
         &cached_addons[..],
         &curse_addons[..],
         &tukui_and_wowi_addons[..],
     ]
-    .concat()
+    .concat();
+
+    log::debug!(
+        "{} - {} addons built from curse packages",
+        flavor,
+        concatenated_addons
+            .iter()
+            .filter(|a| a.repository_kind() == Some(RepositoryKind::Curse))
+            .count()
+    );
+
+    log::debug!(
+        "{} - {} addons built from tukui packages",
+        flavor,
+        concatenated_addons
+            .iter()
+            .filter(|a| a.repository_kind() == Some(RepositoryKind::Tukui))
+            .count()
+    );
+
+    log::debug!(
+        "{} - {} addons built from wowi packages",
+        flavor,
+        concatenated_addons
+            .iter()
+            .filter(|a| a.repository_kind() == Some(RepositoryKind::WowI))
+            .count()
+    );
+
+    log::debug!(
+        "{} - {} addons built from git packages",
+        flavor,
+        concatenated_addons
+            .iter()
+            .filter(|a| matches!(a.repository_kind(), Some(RepositoryKind::Git(_))))
+            .count()
+    );
+
+    concatenated_addons
 }
 
 pub async fn update_addon_fingerprint(
