@@ -139,8 +139,9 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     // Get all cached entries
     let cache_entries = get_cache_entries(flavor, addon_cache).await;
 
-    // Get fingerprint info
-    let fingerprint_info = get_curse_fingerprint_info(flavor, &addon_folders).await?;
+    // Get fingerprint info for all non-cached addon folders
+    let fingerprint_info =
+        get_curse_fingerprint_info(flavor, &addon_folders, &cache_entries).await?;
 
     // Gets all unique repository packages from the cached ids, toc ids, and fingerprint exact / partial matches
     let mut all_repo_packages =
@@ -345,10 +346,21 @@ async fn get_cache_entries(
 async fn get_curse_fingerprint_info(
     flavor: Flavor,
     addon_folders: &[AddonFolder],
+    cache_entries: &[AddonCacheEntry],
 ) -> Result<curse::FingerprintInfo> {
     // Get all fingerprint hashes
     let mut fingerprint_hashes: Vec<_> = addon_folders
         .iter()
+        // Remove all addon folders that exist in the cache, since we
+        // will extract the proper repository to query from the cache entry
+        .filter(|folder| {
+            cache_entries
+                .iter()
+                .map(|e| &e.folder_names)
+                .flatten()
+                .position(|name| name == &folder.id)
+                .is_none()
+        })
         .filter_map(|folder| folder.fingerprint)
         .collect();
     fingerprint_hashes.dedup();
@@ -422,6 +434,12 @@ async fn get_all_repo_packages(
     let mut wowi_ids = vec![];
     let mut git_urls = vec![];
 
+    let cached_folder_names: Vec<_> = cache_entries
+        .iter()
+        .map(|e| &e.folder_names)
+        .flatten()
+        .collect();
+
     // Get all possible curse ids
     {
         curse_ids.extend(fingerprint_info.exact_matches.iter().map(|i| i.id));
@@ -429,6 +447,9 @@ async fn get_all_repo_packages(
         curse_ids.extend(
             addon_folders
                 .iter()
+                // Remove all addon folders that exist in the cache, since we
+                // will extract the proper repository to query from the cache entry
+                .filter(|folder| !cached_folder_names.contains(&&folder.id))
                 .filter_map(|f| f.repository_identifiers.curse),
         );
         curse_ids.dedup();
@@ -445,6 +466,9 @@ async fn get_all_repo_packages(
         tukui_ids.extend(
             addon_folders
                 .iter()
+                // Remove all addon folders that exist in the cache, since we
+                // will extract the proper repository to query from the cache entry
+                .filter(|folder| !cached_folder_names.contains(&&folder.id))
                 .filter_map(|f| f.repository_identifiers.tukui.clone()),
         );
         tukui_ids.dedup();
@@ -461,6 +485,9 @@ async fn get_all_repo_packages(
         wowi_ids.extend(
             addon_folders
                 .iter()
+                // Remove all addon folders that exist in the cache, since we
+                // will extract the proper repository to query from the cache entry
+                .filter(|folder| !cached_folder_names.contains(&&folder.id))
                 .filter_map(|f| f.repository_identifiers.wowi.clone()),
         );
         wowi_ids.dedup();
