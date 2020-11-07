@@ -203,21 +203,6 @@ pub async fn fetch_remote_packages_by_ids(curse_ids: &[i32]) -> Result<Vec<Packa
     }
 }
 
-pub async fn fetch_game_info() -> Result<GameInfo> {
-    let url = format!("{}/game/1", API_ENDPOINT);
-    let client = HttpClient::builder().build().unwrap();
-    let mut resp = request_async(&client, url, vec![], None).await?;
-    if resp.status().is_success() {
-        let game_info = resp.json()?;
-        Ok(game_info)
-    } else {
-        Err(error!(
-            "Coudn't fetch game information. Server returned: {}",
-            resp.text()?
-        ))
-    }
-}
-
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// Struct for applying curse details to an `Addon`.
