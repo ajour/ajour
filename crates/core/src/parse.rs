@@ -882,13 +882,13 @@ pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
             .ok_or_else(|| ClientError::FingerprintError(format!("Invalid UTF8 path: {:?}", path)))?
             .to_ascii_lowercase()
             .replace("/", "\\"); // Convert to windows seperator
-        if RE_TEST
-            .extra_inclusion_regex
+        if RE_PARSING_PATTERNS
+            .initial_inclusion_regex
             .is_match(&relative_path)
             .map_err(ClientError::fingerprint)?
         {
             to_parse.push_back(path);
-        } else if RE_TEST
+        } else if RE_PARSING_PATTERNS
             .extra_inclusion_regex
             .is_match(&relative_path)
             .map_err(ClientError::fingerprint)?
@@ -922,13 +922,15 @@ pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
                     path
                 )))?
         );
-        if !RE_TEST.file_parsing_regex.contains_key(&ext) {
+        if !RE_PARSING_PATTERNS.file_parsing_regex.contains_key(&ext) {
             continue;
         }
 
         // Parse file for matches
-        let (comment_strip_regex, inclusion_regex) =
-            RE_TEST.file_parsing_regex.get(&ext).ok_or_else(|| {
+        let (comment_strip_regex, inclusion_regex) = RE_PARSING_PATTERNS
+            .file_parsing_regex
+            .get(&ext)
+            .ok_or_else(|| {
                 ClientError::FingerprintError(format!("ext not in file parsing regex: {:?}", ext))
             })?;
         let mut file = File::open(&path).map_err(ClientError::fingerprint)?;
@@ -1043,20 +1045,22 @@ where
 lazy_static::lazy_static! {
     static ref RE_TOC_LINE: regex::Regex = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
     static ref RE_TOC_TITLE: regex::Regex = regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)").unwrap();
-    static ref RE_TEST: ParsingPatterns = {
+    static ref RE_PARSING_PATTERNS: ParsingPatterns = {
         let mut file_parsing_regex = HashMap::new();
         file_parsing_regex.insert(".xml".to_string(), (
-            regex::Regex::new(r"(?s)<!--.*?-->").unwrap(),
-            fancy_regex::Regex::new(r"(?i)<(?:Include|Script)\\s+file=[\'\'']((?:(?<!\\.\\.).)+)[\'\'']\\s*/>").unwrap(),
+            regex::Regex::new("(?s)<!--.*?-->").unwrap(),
+            Regex::new("(?i)<(?:Include|Script)\\s+file=[\"\"']((?:(?<!\\.\\.).)+)[\"\"']\\s*/>").unwrap(),
         ));
+
+
         file_parsing_regex.insert(".toc".to_string(), (
-            regex::Regex::new(r"(?m)\\s*#.*$").unwrap(),
-            fancy_regex::Regex::new(r"(?mi)^\\s*((?:(?<!\\.\\.).)+\\.(?:xml|lua))\\s*$").unwrap(),
+            regex::Regex::new("(?m)\\s*#.*$").unwrap(),
+            Regex::new("(?mi)^\\s*((?:(?<!\\.\\.).)+\\.(?:xml|lua))\\s*$").unwrap(),
         ));
 
         ParsingPatterns {
-            extra_inclusion_regex: fancy_regex::Regex::new(r"(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
-            initial_inclusion_regex: fancy_regex::Regex::new(r"(?i)^([^/]+)[\\\/]\\1\\.toc$").unwrap(),
+            extra_inclusion_regex: Regex::new("(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
+            initial_inclusion_regex: Regex::new("(?i)^([^/]+)[\\\\/]\\1\\.toc$").unwrap(),
             file_parsing_regex,
         }
     };
