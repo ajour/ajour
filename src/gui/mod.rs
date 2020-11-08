@@ -254,7 +254,7 @@ impl Application for Ajour {
     fn subscription(&self) -> Subscription<Self::Message> {
         let runtime_subscription = iced_native::subscription::events().map(Message::RuntimeEvent);
         let catalog_subscription =
-            iced_futures::time::every(Duration::from_secs(5)).map(Message::RefreshCatalog);
+            iced_futures::time::every(Duration::from_secs(60 * 5)).map(Message::RefreshCatalog);
 
         iced::Subscription::batch(vec![runtime_subscription, catalog_subscription])
     }
