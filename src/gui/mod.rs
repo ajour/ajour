@@ -433,17 +433,6 @@ impl Application for Ajour {
                     .query
                     .as_deref()
                     .unwrap_or_default();
-                let install_scm_query = TextInput::new(
-                    &mut self.install_from_scm_state.query_state,
-                    "Enter Addon URL",
-                    query,
-                    Interaction::InstallSCMQuery,
-                )
-                .on_submit(Interaction::InstallSCMURL)
-                .size(DEFAULT_FONT_SIZE)
-                .padding(10)
-                .width(Length::FillPortion(3))
-                .style(style::CatalogQueryInput(color_palette));
 
                 let default = vec![];
                 let addons = self.addons.get(&flavor).unwrap_or(&default);
@@ -474,6 +463,21 @@ impl Application for Ajour {
                     .iter()
                     .find(|a| a.kind == InstallKind::Source)
                     .map(|a| a.status.clone());
+
+                let mut install_scm_query = TextInput::new(
+                    &mut self.install_from_scm_state.query_state,
+                    "Enter Addon URL",
+                    query,
+                    Interaction::InstallSCMQuery,
+                )
+                .size(DEFAULT_FONT_SIZE)
+                .padding(10)
+                .width(Length::FillPortion(3))
+                .style(style::CatalogQueryInput(color_palette));
+
+                if !installed && !matches!(install_status, Some(InstallStatus::Error(_))) {
+                    install_scm_query = install_scm_query.on_submit(Interaction::InstallSCMURL);
+                }
 
                 let install_scm_query: Element<Interaction> = install_scm_query.into();
 
@@ -523,7 +527,7 @@ impl Application for Ajour {
                 .width(Length::Units(120))
                 .style(style::DefaultButton(color_palette));
 
-                if !installed {
+                if !installed && !matches!(install_status, Some(InstallStatus::Error(_))) {
                     install_button = install_button.on_press(Interaction::InstallSCMURL);
                 }
 

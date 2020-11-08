@@ -1393,6 +1393,25 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::InstallSCMQuery(query)) => {
             // install from scm search query
             ajour.install_from_scm_state.query = Some(query);
+
+            // Remove the status if it's an error and user typed into
+            // text input
+            {
+                let install_addons = ajour
+                    .install_addons
+                    .entry(ajour.config.wow.flavor)
+                    .or_default();
+
+                if let Some((idx, install_addon)) = install_addons
+                    .iter()
+                    .enumerate()
+                    .find(|(_, a)| a.kind == InstallKind::Source)
+                {
+                    if matches!(install_addon.status, InstallStatus::Error(_)) {
+                        install_addons.remove(idx);
+                    }
+                }
+            }
         }
         Message::Interaction(Interaction::InstallSCMURL) => {
             println!("{:?}", ajour.install_from_scm_state.query);
