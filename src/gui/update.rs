@@ -1,8 +1,8 @@
 use {
     super::{
-        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogInstallAddon,
-        CatalogInstallStatus, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
-        DirectoryType, DownloadReason, ExpandType, Interaction, Message, Mode, SelfUpdateStatus,
+        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
+        Changelog, ChangelogPayload, ColumnKey, DirectoryType, DownloadReason, ExpandType,
+        InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, SelfUpdateStatus,
         SortDirection, State,
     },
     ajour_core::{
@@ -14,6 +14,7 @@ use {
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
+        error,
         error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
@@ -24,10 +25,11 @@ use {
     },
     async_std::sync::{Arc, Mutex},
     iced::{Command, Length},
-    isahc::HttpClient,
+    isahc::{http::Uri, HttpClient},
     native_dialog::*,
-    std::collections::{HashMap, HashSet},
+    std::collections::{hash_map::DefaultHasher, HashMap, HashSet},
     std::convert::TryFrom,
+    std::hash::Hasher,
     std::path::{Path, PathBuf},
     widgets::header::ResizeEvent,
 };
@@ -508,7 +510,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             let addons = ajour.addons.entry(flavor).or_default();
-            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+            let install_addons = ajour.install_addons.entry(flavor).or_default();
 
             let mut addon = None;
 
@@ -525,7 +527,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             .iter_mut()
                             .find(|a| a.addon.as_ref().map(|a| &a.primary_folder_id) == Some(&id))
                         {
-                            install_addon.status = CatalogInstallStatus::Unpacking;
+                            install_addon.status = InstallStatus::Unpacking;
 
                             if let Some(_addon) = install_addon.addon.as_mut() {
                                 addon = Some(_addon);
@@ -538,10 +540,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.error = Some(error.to_string());
 
                     if reason == DownloadReason::Install {
-                        if let Some(install_addon) =
-                            install_addons.iter_mut().find(|a| a.id.to_string() == id)
+                        if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
                         {
-                            install_addon.status = CatalogInstallStatus::Retry;
+                            install_addon.status = InstallStatus::Retry;
                         }
                     }
                 }
@@ -581,7 +582,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             let addons = ajour.addons.entry(flavor).or_default();
-            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+            let install_addons = ajour.install_addons.entry(flavor).or_default();
 
             let mut addon = None;
             let mut folders = None;
@@ -623,10 +624,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.error = Some(error.to_string());
 
                     if reason == DownloadReason::Install {
-                        if let Some(install_addon) =
-                            install_addons.iter_mut().find(|a| a.id.to_string() == id)
+                        if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
                         {
-                            install_addon.status = CatalogInstallStatus::Retry;
+                            install_addon.status = InstallStatus::Retry;
                         }
                     }
                 }
@@ -1218,33 +1218,33 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::Interaction(Interaction::CatalogInstall(source, flavor, id)) => {
-            log::debug!(
-                "Interaction::CatalogInstall({}, {}, {})",
-                source,
-                flavor,
-                &id
-            );
+        Message::Interaction(Interaction::InstallAddon(flavor, id, kind)) => {
+            log::debug!("Interaction::InstallAddon({}, {:?})", flavor, &kind);
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
-            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+            let install_addons = ajour.install_addons.entry(flavor).or_default();
 
             // Remove any existing status for this addon since we are going
-            // to try and download it again
-            install_addons.retain(|a| id != a.id);
+            // to try and download it again. For InstallKind::Source, we should only
+            // ever have one entry here so we just remove it
+            install_addons.retain(|a| match kind {
+                InstallKind::Catalog { .. } => !(id == a.id && a.kind == kind),
+                InstallKind::Source => a.kind != kind,
+            });
 
             // Add new status for this addon as Downloading
-            install_addons.push(CatalogInstallAddon {
-                id,
-                status: CatalogInstallStatus::Downloading,
+            install_addons.push(InstallAddon {
+                id: id.clone(),
+                kind,
+                status: InstallStatus::Downloading,
                 addon: None,
             });
 
             return Ok(Command::perform(
-                perform_fetch_latest_addon(source, id, flavor),
-                Message::CatalogInstallAddonFetched,
+                perform_fetch_latest_addon(kind, id, flavor),
+                Message::InstallAddonFetched,
             ));
         }
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
@@ -1277,8 +1277,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::CatalogInstallAddonFetched((flavor, id, result)) => {
-            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+        Message::InstallAddonFetched((flavor, id, result)) => {
+            let install_addons = ajour.install_addons.entry(flavor).or_default();
 
             if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id) {
                 match result {
@@ -1311,7 +1311,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Err(error) => {
                         log::error!("{}", error);
 
-                        install_addon.status = CatalogInstallStatus::Unavilable;
+                        match install_addon.kind {
+                            InstallKind::Catalog { .. } => {
+                                install_addon.status = InstallStatus::Unavilable;
+                            }
+                            InstallKind::Source => {
+                                install_addon.status = InstallStatus::Error(error.to_string());
+                            }
+                        }
                     }
                 }
             }
@@ -1389,6 +1396,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::InstallSCMURL) => {
             println!("{:?}", ajour.install_from_scm_state.query);
+
+            if let Some(url) = ajour.install_from_scm_state.query.clone() {
+                if !url.is_empty() {
+                    return handle_message(
+                        ajour,
+                        Message::Interaction(Interaction::InstallAddon(
+                            ajour.config.wow.flavor,
+                            url,
+                            InstallKind::Source,
+                        )),
+                    );
+                }
+            }
         }
         Message::Error(error)
         | Message::CatalogDownloaded(Err(error))
@@ -1492,21 +1512,41 @@ async fn perform_unpack_addon(
 }
 
 async fn perform_fetch_latest_addon(
-    source: catalog::Source,
-    source_id: i32,
+    install_kind: InstallKind,
+    id: String,
     flavor: Flavor,
-) -> (Flavor, i32, Result<Addon>) {
-    let kind = match source {
-        catalog::Source::Curse => RepositoryKind::Curse,
-        catalog::Source::Tukui => RepositoryKind::Tukui,
-        catalog::Source::WowI => RepositoryKind::WowI,
-    };
-    let id = source_id.to_string();
+) -> (Flavor, String, Result<Addon>) {
+    async fn fetch_latest_addon(
+        flavor: Flavor,
+        install_kind: InstallKind,
+        id: String,
+    ) -> Result<Addon> {
+        // Needed since id for source install is a URL and this id needs to be safe
+        // when using as the temp path of the downloaded zip
+        let mut hasher = DefaultHasher::new();
+        hasher.write(format!("{:?}{}", install_kind, &id).as_bytes());
+        let temp_id = hasher.finish();
 
-    async fn fetch_latest_addon(flavor: Flavor, kind: RepositoryKind, id: String) -> Result<Addon> {
-        let mut addon = Addon::empty(&format!("{}{}", kind, &id));
+        let mut addon = Addon::empty(&temp_id.to_string());
 
-        let mut repo_package = RepositoryPackage::from_repo_id(flavor, kind, id)?;
+        let mut repo_package = match install_kind {
+            InstallKind::Catalog { source } => {
+                let kind = match source {
+                    catalog::Source::Curse => RepositoryKind::Curse,
+                    catalog::Source::Tukui => RepositoryKind::Tukui,
+                    catalog::Source::WowI => RepositoryKind::WowI,
+                };
+
+                RepositoryPackage::from_repo_id(flavor, kind, id)?
+            }
+            InstallKind::Source => {
+                let url = id
+                    .parse::<Uri>()
+                    .map_err(|_| error!("invalid url: {}", id))?;
+
+                RepositoryPackage::from_source_url(flavor, url)?
+            }
+        };
         repo_package.resolve_metadata().await?;
 
         addon.set_repository(repo_package);
@@ -1516,8 +1556,8 @@ async fn perform_fetch_latest_addon(
 
     (
         flavor,
-        source_id,
-        fetch_latest_addon(flavor, kind, id).await,
+        id.clone(),
+        fetch_latest_addon(flavor, install_kind, id).await,
     )
 }
 

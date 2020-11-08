@@ -3,8 +3,8 @@
 use {
     super::{
         style, AddonVersionKey, BackupState, CatalogColumnKey, CatalogColumnSettings,
-        CatalogColumnState, CatalogInstallAddon, CatalogInstallStatus, CatalogRow, Changelog,
-        ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType, Interaction, Message,
+        CatalogColumnState, CatalogRow, Changelog, ColumnKey, ColumnSettings, ColumnState,
+        DirectoryType, ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message,
         Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
     },
     crate::VERSION,
@@ -1856,7 +1856,7 @@ pub fn catalog_data_cell<'a, 'b>(
     addon: &'a mut CatalogRow,
     column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
-    install_addon: Option<&CatalogInstallAddon>,
+    install_addon: Option<&InstallAddon>,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
 
@@ -1883,16 +1883,16 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let status = install_addon.map(|a| a.status);
+        let status = install_addon.map(|a| a.status.clone());
 
         let install_text = Text::new(if !flavor_exists_for_addon {
             "N/A"
         } else {
             match status {
-                Some(CatalogInstallStatus::Downloading) => "Downloading",
-                Some(CatalogInstallStatus::Unpacking) => "Unpacking",
-                Some(CatalogInstallStatus::Retry) => "Retry",
-                Some(CatalogInstallStatus::Unavilable) => "Unavailable",
+                Some(InstallStatus::Downloading) => "Downloading",
+                Some(InstallStatus::Unpacking) => "Unpacking",
+                Some(InstallStatus::Retry) => "Retry",
+                Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => "Unavailable",
                 None => {
                     if installed_for_flavor {
                         "Installed"
@@ -1914,13 +1914,14 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width);
 
         if flavor_exists_for_addon
-            && (status == Some(CatalogInstallStatus::Retry)
-                || (status == None && !installed_for_flavor))
+            && (status == Some(InstallStatus::Retry) || (status == None && !installed_for_flavor))
         {
-            install_button = install_button.on_press(Interaction::CatalogInstall(
-                addon_data.source,
+            install_button = install_button.on_press(Interaction::InstallAddon(
                 config.wow.flavor,
-                addon_data.id,
+                addon_data.id.to_string(),
+                InstallKind::Catalog {
+                    source: addon_data.source,
+                },
             ));
         }
 

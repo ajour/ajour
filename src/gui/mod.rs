@@ -21,12 +21,14 @@ use ajour_core::{
 use async_std::sync::{Arc, Mutex};
 use chrono::NaiveDateTime;
 use iced::{
-    Button, Align, button, pick_list, scrollable, text_input, Application, Column, Command, Container, Element,
-    Length, PickList, Row, Settings, Space, Subscription, TextInput, Text, HorizontalAlignment
+    button, pick_list, scrollable, text_input, Align, Application, Button, Column, Command,
+    Container, Element, HorizontalAlignment, Length, PickList, Row, Settings, Space, Subscription,
+    Text, TextInput,
 };
 use image::ImageFormat;
 use isahc::{
     config::{Configurable, RedirectPolicy},
+    http::Uri,
     HttpClient,
 };
 use std::collections::HashMap;
@@ -100,7 +102,7 @@ pub enum Interaction {
     CatalogQuery(String),
     InstallSCMQuery(String),
     InstallSCMURL,
-    CatalogInstall(catalog::Source, Flavor, i32),
+    InstallAddon(Flavor, String, InstallKind),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
     CatalogSourceSelected(CatalogSource),
@@ -129,7 +131,7 @@ pub enum Message {
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
-    CatalogInstallAddonFetched((Flavor, i32, Result<Addon>)),
+    InstallAddonFetched((Flavor, String, Result<Addon>)),
     FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
     AjourUpdateDownloaded(Result<(String, PathBuf)>),
     AddonCacheUpdated(Result<AddonCacheEntry>),
@@ -170,14 +172,12 @@ pub struct Ajour {
     catalog_column_settings: CatalogColumnSettings,
     onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
-    catalog_install_addons: HashMap<Flavor, Vec<CatalogInstallAddon>>,
+    install_addons: HashMap<Flavor, Vec<InstallAddon>>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
     website_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
 }
-
-
 
 impl Default for Ajour {
     fn default() -> Self {
@@ -221,7 +221,7 @@ impl Default for Ajour {
             catalog_column_settings: Default::default(),
             onboarding_directory_btn_state: Default::default(),
             catalog: None,
-            catalog_install_addons: Default::default(),
+            install_addons: Default::default(),
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
             website_btn_state: Default::default(),
@@ -428,72 +428,132 @@ impl Application for Ajour {
                 }
             }
             Mode::Install => {
-                    let query = self
-                        .install_from_scm_state
-                        .query
-                        .as_deref()
-                        .unwrap_or_default();
-                    let install_scm_query = TextInput::new(
-                        &mut self.install_from_scm_state.query_state,
-                        "Enter Addon URL",
-                        query,
-                        Interaction::InstallSCMQuery,
-                    )
+                let query = self
+                    .install_from_scm_state
+                    .query
+                    .as_deref()
+                    .unwrap_or_default();
+                let install_scm_query = TextInput::new(
+                    &mut self.install_from_scm_state.query_state,
+                    "Enter Addon URL",
+                    query,
+                    Interaction::InstallSCMQuery,
+                )
+                .on_submit(Interaction::InstallSCMURL)
+                .size(DEFAULT_FONT_SIZE)
+                .padding(10)
+                .width(Length::FillPortion(3))
+                .style(style::CatalogQueryInput(color_palette));
+
+                let default = vec![];
+                let addons = self.addons.get(&flavor).unwrap_or(&default);
+
+                let installed = addons
+                    .iter()
+                    .filter_map(|a| {
+                        let id = a.repository_id()?;
+
+                        let a = id.parse::<Uri>().ok()?;
+                        let b = query.parse::<Uri>().ok()?;
+
+                        if a.host().map(|s| s.to_lowercase()) == b.host().map(|s| s.to_lowercase())
+                            && a.path().to_lowercase() == b.path().to_lowercase()
+                        {
+                            Some(a)
+                        } else {
+                            None
+                        }
+                    })
+                    .count()
+                    > 0;
+
+                let install_status = self
+                    .install_addons
+                    .entry(flavor)
+                    .or_default()
+                    .iter()
+                    .find(|a| a.kind == InstallKind::Source)
+                    .map(|a| a.status.clone());
+
+                let install_scm_query: Element<Interaction> = install_scm_query.into();
+
+                let title = Text::new("Something")
                     .size(DEFAULT_FONT_SIZE)
-                    .padding(10)
-                    .width(Length::FillPortion(3))
-                    .style(style::CatalogQueryInput(color_palette));
+                    .width(Length::Fill)
+                    .horizontal_alignment(HorizontalAlignment::Center);
+                let title_container = Container::new(title)
+                    .width(Length::Fill)
+                    .style(style::BrightBackgroundContainer(color_palette));
 
-                    let install_scm_query: Element<Interaction> = install_scm_query.into();
+                let description = Text::new("Some more...")
+                    .size(DEFAULT_FONT_SIZE)
+                    .width(Length::Fill)
+                    .horizontal_alignment(HorizontalAlignment::Center);
+                let description_container = Container::new(description)
+                    .width(Length::Fill)
+                    .style(style::NormalBackgroundContainer(color_palette));
 
-                    let title = Text::new("Something")
-                        .size(DEFAULT_FONT_SIZE)
-                        .width(Length::Fill)
-                        .horizontal_alignment(HorizontalAlignment::Center);
-                    let title_container = Container::new(title)
-                        .width(Length::Fill)
-                        .style(style::BrightBackgroundContainer(color_palette));
+                let query_row = Row::new()
+                    .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                    .push(install_scm_query.map(Message::Interaction))
+                    .spacing(1);
 
-                    let description = Text::new("Some more...")
-                        .size(DEFAULT_FONT_SIZE)
-                        .width(Length::Fill)
-                        .horizontal_alignment(HorizontalAlignment::Center);
-                    let description_container = Container::new(description)
-                        .width(Length::Fill)
-                        .style(style::NormalBackgroundContainer(color_palette));
+                let install_text = Text::new(if installed {
+                    "Installed"
+                } else {
+                    match install_status {
+                        Some(InstallStatus::Downloading) => "Downloading",
+                        Some(InstallStatus::Unpacking) => "Unpacking",
+                        Some(InstallStatus::Retry) => "Retry",
+                        Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => "Error",
+                        None => "Install from URL",
+                    }
+                })
+                .size(DEFAULT_FONT_SIZE);
 
-                    let query_row = Row::new()
-                        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-                        .push(install_scm_query.map(Message::Interaction))
-                        .spacing(1);
+                let install_button_title_container = Container::new(install_text)
+                    .width(Length::Units(100))
+                    .center_x()
+                    .align_x(Align::Center);
 
-                    let install_button_title_container =
-                        Container::new(Text::new("Install from URL").size(DEFAULT_FONT_SIZE))
-                        .width(Length::Units(100))
-                        .center_x()
-                        .align_x(Align::Center);
+                let mut install_button = Button::new(
+                    &mut self.install_from_scm_state.install_button_state,
+                    install_button_title_container,
+                )
+                .width(Length::Units(120))
+                .style(style::DefaultButton(color_palette));
 
+                if !installed {
+                    install_button = install_button.on_press(Interaction::InstallSCMURL);
+                }
 
-                    let install_button: Element<Interaction> =
-                        Button::new(&mut self.install_from_scm_state.install_button_state, install_button_title_container)
-                        .width(Length::Units(120))
-                        .style(style::DefaultButton(color_palette))
-                        .on_press(Interaction::InstallSCMURL)
-                        .into();
+                let install_button: Element<Interaction> = install_button.into();
 
-                    let colum = Column::new()
-                        .push(query_row)
+                let mut column = Column::new()
+                    .push(query_row)
+                    .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+                    .push(install_button.map(Message::Interaction))
+                    .align_items(Align::Center)
+                    .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+                    .push(title_container)
+                    .push(description_container);
+
+                if let Some(InstallStatus::Error(error)) = install_status {
+                    column = column
                         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-                        .push(install_button.map(Message::Interaction)).align_items(Align::Center)
-                        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-                        .push(title_container)
-                        .push(description_container);
+                        .push(
+                            Container::new(Text::new(error).size(DEFAULT_FONT_SIZE))
+                                .width(Length::Units(100))
+                                .center_x()
+                                .align_x(Align::Center),
+                        );
+                }
 
-                    let container = Container::new(colum)
-                        .width(Length::Fill)
-                        .height(Length::Fill);
+                let container = Container::new(column)
+                    .width(Length::Fill)
+                    .height(Length::Fill);
 
-                    content = content.push(container);
+                content = content.push(container);
             }
             Mode::Catalog => {
                 if let Some(catalog) = &self.catalog {
@@ -604,7 +664,7 @@ impl Application for Ajour {
                         &mut self.catalog_search_state.scrollable_state,
                     );
 
-                    let install_addons = self.catalog_install_addons.entry(flavor).or_default();
+                    let install_addons = self.install_addons.entry(flavor).or_default();
 
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
                         // TODO: We should make this prettier with new sources coming in.
@@ -614,7 +674,10 @@ impl Application for Ajour {
                                 || a.wowi_id() == Some(&addon.addon.id.to_string())
                         });
 
-                        let install_addon = install_addons.iter().find(|a| addon.addon.id == a.id);
+                        let install_addon = install_addons.iter().find(|a| {
+                            addon.addon.id.to_string() == a.id
+                                && matches!(a.kind, InstallKind::Catalog {..})
+                        });
 
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,
@@ -679,7 +742,7 @@ impl Application for Ajour {
                     }
                 }
             }
-            Mode::Install => { None }
+            Mode::Install => None,
             Mode::Catalog => {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
@@ -1342,18 +1405,26 @@ impl From<CatalogAddon> for CatalogRow {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct CatalogInstallAddon {
-    id: i32,
-    status: CatalogInstallStatus,
+pub struct InstallAddon {
+    id: String,
+    kind: InstallKind,
+    status: InstallStatus,
     addon: Option<Addon>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum CatalogInstallStatus {
+#[derive(Debug, Clone, PartialEq)]
+pub enum InstallStatus {
     Downloading,
     Unpacking,
     Retry,
     Unavilable,
+    Error(String),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum InstallKind {
+    Catalog { source: catalog::Source },
+    Source,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
