@@ -1414,8 +1414,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::Interaction(Interaction::InstallSCMURL) => {
-            println!("{:?}", ajour.install_from_scm_state.query);
-
             if let Some(url) = ajour.install_from_scm_state.query.clone() {
                 if !url.is_empty() {
                     return handle_message(
