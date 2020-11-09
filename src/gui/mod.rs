@@ -464,15 +464,46 @@ impl Application for Ajour {
                     .find(|a| a.kind == InstallKind::Source)
                     .map(|a| a.status.clone());
 
+                let install_text = Text::new(if installed {
+                    "Installed"
+                } else {
+                    match install_status {
+                        Some(InstallStatus::Downloading) => "Downloading",
+                        Some(InstallStatus::Unpacking) => "Unpacking",
+                        Some(InstallStatus::Retry) => "Retry",
+                        Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => "Error",
+                        None => "Install",
+                    }
+                })
+                .size(DEFAULT_FONT_SIZE);
+
+                let install_button_title_container = Container::new(install_text)
+                    .center_x()
+                    .center_y()
+                    .width(Length::Units(100))
+                    .height(Length::Units(24));
+
+                let mut install_button = Button::new(
+                    &mut self.install_from_scm_state.install_button_state,
+                    install_button_title_container,
+                )
+                .style(style::DefaultBoxedButton(color_palette));
+
+                if matches!(install_status, None) && !installed {
+                    install_button = install_button.on_press(Interaction::InstallSCMURL);
+                }
+
+                let install_button: Element<Interaction> = install_button.into();
+
                 let mut install_scm_query = TextInput::new(
                     &mut self.install_from_scm_state.query_state,
-                    "Enter Addon URL",
+                    "E.g.: https://github.com/author/repository",
                     query,
                     Interaction::InstallSCMQuery,
                 )
                 .size(DEFAULT_FONT_SIZE)
                 .padding(10)
-                .width(Length::Units(400))
+                .width(Length::Units(350))
                 .style(style::CatalogQueryInput(color_palette));
 
                 if !installed && !matches!(install_status, Some(InstallStatus::Error(_))) {
@@ -481,7 +512,7 @@ impl Application for Ajour {
 
                 let install_scm_query: Element<Interaction> = install_scm_query.into();
 
-                let description = Text::new("Install an addon directly from a URL.\nCurrently GitHub and GitLab is supported.")
+                let description = Text::new("Install an addon directly from a Git repository\nCurrently GitHub and GitLab URLs are supported")
                     .size(DEFAULT_FONT_SIZE)
                     .width(Length::Fill)
                     .horizontal_alignment(HorizontalAlignment::Center);
@@ -492,54 +523,27 @@ impl Application for Ajour {
                 let query_row = Row::new()
                     .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                     .push(install_scm_query.map(Message::Interaction))
+                    .push(install_button.map(Message::Interaction))
                     .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                    .align_items(Align::Center)
                     .spacing(1);
 
-                let install_text = Text::new(if installed {
-                    "Installed"
-                } else {
-                    match install_status {
-                        Some(InstallStatus::Downloading) => "Downloading",
-                        Some(InstallStatus::Unpacking) => "Unpacking",
-                        Some(InstallStatus::Retry) => "Retry",
-                        Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => "Error",
-                        None => "Install from URL",
-                    }
-                })
-                .size(DEFAULT_FONT_SIZE);
-
-                let install_button_title_container = Container::new(install_text);
-
-                let mut install_button = Button::new(
-                    &mut self.install_from_scm_state.install_button_state,
-                    install_button_title_container,
-                )
-                .style(style::DefaultBoxedButton(color_palette));
-
-                if !installed && !matches!(install_status, Some(InstallStatus::Error(_))) {
-                    install_button = install_button.on_press(Interaction::InstallSCMURL);
+                // Empty error initially to keep design aligned.
+                let mut error_text: String = String::from(" ");
+                if let Some(InstallStatus::Error(error)) = install_status {
+                    error_text = error;
                 }
 
-                let install_button: Element<Interaction> = install_button.into();
-
-                let mut column = Column::new()
+                let column = Column::new()
                     .push(description_container)
                     .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
                     .push(query_row)
                     .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-                    .push(install_button.map(Message::Interaction))
+                    .push(
+                        Container::new(Text::new(error_text).size(DEFAULT_FONT_SIZE))
+                            .style(style::NormalErrorBackgroundContainer(color_palette)),
+                    )
                     .align_items(Align::Center);
-
-                if let Some(InstallStatus::Error(error)) = install_status {
-                    column = column
-                        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-                        .push(
-                            Container::new(Text::new(error).size(DEFAULT_FONT_SIZE))
-                                .width(Length::Units(100))
-                                .center_x()
-                                .align_x(Align::Center),
-                        );
-                }
 
                 let container = Container::new(column)
                     .width(Length::Fill)
