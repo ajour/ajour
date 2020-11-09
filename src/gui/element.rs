@@ -1472,7 +1472,7 @@ pub fn menu_container<'a>(
 
     let mut install_mode_button = Button::new(
         install_mode_btn_state,
-        Text::new("Install").size(DEFAULT_FONT_SIZE),
+        Text::new("Install From URL").size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 

@@ -94,7 +94,7 @@ impl RepositoryPackage {
             ),
             _ => {
                 return Err(error!(
-                    "invalid host, only github and gitlab are supported: {}",
+                    "Invalid host, only GitHub and GitLab are supported: {}",
                     host
                 ))
             }
