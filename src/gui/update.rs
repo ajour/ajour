@@ -24,6 +24,7 @@ use {
         wowi_api, Result,
     },
     async_std::sync::{Arc, Mutex},
+    chrono::{NaiveTime, Utc},
     iced::{Command, Length},
     isahc::HttpClient,
     native_dialog::*,
@@ -1227,6 +1228,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 catalog.addons.len()
             );
 
+            ajour.catalog_last_updated = Some(Utc::now());
+
             let mut categories = HashSet::new();
             catalog.addons.iter().for_each(|a| {
                 for category in &a.categories {
@@ -1424,6 +1427,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::AddonCacheEntryRemoved(maybe_entry) => {
             if let Some(entry) = maybe_entry {
                 log::debug!("Message::AddonCacheEntryRemoved({})", entry.title);
+            }
+        }
+        Message::RefreshCatalog(_) => {
+            if let Some(last_updated) = &ajour.catalog_last_updated {
+                let now = Utc::now();
+                let now_time = now.time();
+                let refresh_time = NaiveTime::from_hms(0, 5, 0);
+
+                if last_updated.date() < now.date() && now_time > refresh_time {
+                    log::debug!("Message::RefreshCatalog: catalog needs to be refreshed");
+
+                    return Ok(Command::perform(
+                        catalog::get_catalog(),
+                        Message::CatalogDownloaded,
+                    ));
+                }
             }
         }
         Message::Error(error)
