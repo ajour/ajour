@@ -433,6 +433,15 @@ impl Application for Ajour {
                     .query
                     .as_deref()
                     .unwrap_or_default();
+                let url = query.parse::<Uri>().ok();
+                let is_valid_url = url
+                    .map(|url| {
+                        let host = url.host().map(|h| h.to_lowercase());
+
+                        host.as_deref() == Some("gitlab.com")
+                            || host.as_deref() == Some("github.com")
+                    })
+                    .unwrap_or_default();
 
                 let default = vec![];
                 let addons = self.addons.get(&flavor).unwrap_or(&default);
@@ -489,7 +498,7 @@ impl Application for Ajour {
                 )
                 .style(style::DefaultBoxedButton(color_palette));
 
-                if matches!(install_status, None) && !installed {
+                if matches!(install_status, None) && !installed && is_valid_url {
                     install_button = install_button.on_press(Interaction::InstallSCMURL);
                 }
 
@@ -506,7 +515,10 @@ impl Application for Ajour {
                 .width(Length::Units(350))
                 .style(style::CatalogQueryInput(color_palette));
 
-                if !installed && !matches!(install_status, Some(InstallStatus::Error(_))) {
+                if !installed
+                    && !matches!(install_status, Some(InstallStatus::Error(_)))
+                    && is_valid_url
+                {
                     install_scm_query = install_scm_query.on_submit(Interaction::InstallSCMURL);
                 }
 
