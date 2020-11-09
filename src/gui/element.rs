@@ -2,10 +2,11 @@
 
 use {
     super::{
-        style, AddonVersionKey, BackupState, CatalogColumnKey, CatalogColumnSettings,
-        CatalogColumnState, CatalogInstallAddon, CatalogInstallStatus, CatalogRow, Changelog,
-        ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType, Interaction, Message,
-        Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
+        style, AddonVersionKey, BackupFolderKind, BackupState, CatalogColumnKey,
+        CatalogColumnSettings, CatalogColumnState, CatalogInstallAddon, CatalogInstallStatus,
+        CatalogRow, Changelog, ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType,
+        Interaction, Message, Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection,
+        State, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -152,6 +153,28 @@ pub fn settings_container<'a, 'b>(
         let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
         let backup_title_row = Row::new().push(backup_title_text);
 
+        let addon_folder_checkbox: Element<_> = Container::new(
+            Checkbox::new(config.backup_addons, "AddOns", move |is_checked| {
+                Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::AddOns)
+            })
+            .text_size(DEFAULT_FONT_SIZE)
+            .spacing(5)
+            .style(style::DefaultCheckbox(color_palette)),
+        )
+        .padding(5)
+        .into();
+
+        let wtf_folder_checkbox: Element<_> = Container::new(
+            Checkbox::new(config.backup_wtf, "WTF", move |is_checked| {
+                Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::WTF)
+            })
+            .text_size(DEFAULT_FONT_SIZE)
+            .spacing(5)
+            .style(style::DefaultCheckbox(color_palette)),
+        )
+        .padding(5)
+        .into();
+
         // Directory button for Backup directory selection.
         let directory_button_title_container =
             Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
@@ -184,6 +207,11 @@ pub fn settings_container<'a, 'b>(
 
         // Data row for the Backup directory selection.
         let backup_directory_row = Row::new()
+            .align_items(Align::Center)
+            .height(Length::Units(26))
+            .push(addon_folder_checkbox.map(Message::Interaction))
+            .push(wtf_folder_checkbox.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_button.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_data_text_container);
@@ -209,8 +237,12 @@ pub fn settings_container<'a, 'b>(
             .style(style::DefaultBoxedButton(color_palette));
 
             // Only show button as clickable if it's not currently backing up and
-            // the wow folder is chosen
-            if !backup_state.backing_up && config.wow.directory.is_some() {
+            // the wow folder is chosen and at least one of the folders is selected
+            // for backup
+            if !backup_state.backing_up
+                && config.wow.directory.is_some()
+                && (config.backup_addons || config.backup_wtf)
+            {
                 backup_button = backup_button.on_press(Interaction::Backup);
             }
 

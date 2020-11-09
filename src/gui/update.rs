@@ -1,9 +1,9 @@
 use {
     super::{
-        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogInstallAddon,
-        CatalogInstallStatus, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
-        DirectoryType, DownloadReason, ExpandType, Interaction, Message, Mode, SelfUpdateStatus,
-        SortDirection, State,
+        AddonVersionKey, Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey,
+        CatalogInstallAddon, CatalogInstallStatus, CatalogRow, CatalogSource, Changelog,
+        ChangelogPayload, ColumnKey, DirectoryType, DownloadReason, ExpandType, Interaction,
+        Message, Mode, SelfUpdateStatus, SortDirection, State,
     },
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
@@ -1012,15 +1012,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Backup WTF & AddOn directories for both flavors if they exist
             for flavor in Flavor::ALL.iter() {
-                let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
-                let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
+                if ajour.config.backup_addons {
+                    let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
 
-                if addon_dir.exists() {
-                    src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
+                    if addon_dir.exists() {
+                        src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
+                    }
                 }
 
-                if wtf_dir.exists() {
-                    src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
+                if ajour.config.backup_wtf {
+                    let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
+
+                    if wtf_dir.exists() {
+                        src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
+                    }
                 }
             }
 
@@ -1028,6 +1033,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 backup_folders(src_folders, dest.to_owned()),
                 Message::BackupFinished,
             ));
+        }
+        Message::Interaction(Interaction::ToggleBackupFolder(is_checked, folder)) => {
+            log::debug!(
+                "Interaction::ToggleBackupFolder({:?}, checked: {})",
+                folder,
+                is_checked
+            );
+
+            match folder {
+                BackupFolderKind::AddOns => {
+                    ajour.config.backup_addons = is_checked;
+                }
+                BackupFolderKind::WTF => {
+                    ajour.config.backup_wtf = is_checked;
+                }
+            }
+
+            let _ = ajour.config.save();
         }
         Message::LatestBackup(as_of) => {
             log::debug!("Message::LatestBackup({:?})", &as_of);
