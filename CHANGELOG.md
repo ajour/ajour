@@ -11,6 +11,9 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ### Added
 - WoWInterface addons has been added to the Catalog.
+- Catalog will automatically refresh if Ajour is kept open.
+  - Underlying catalog data refreshes every night at 00:00 UTC, this refresh triggers at 00:05 UTC
+- Added ability to toggle which folders get included in Backup (AddOns & WTF)
 
 ### Fixed
 - If we don't get Game Version from API we fallback to the one in the TOC file if present.

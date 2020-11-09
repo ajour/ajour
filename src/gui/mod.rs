@@ -19,7 +19,7 @@ use ajour_core::{
     Result,
 };
 use async_std::sync::{Arc, Mutex};
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::{
     button, pick_list, scrollable, text_input, Align, Application, Button, Column, Command,
     Container, Element, HorizontalAlignment, Length, PickList, Row, Settings, Space, Subscription,
@@ -33,6 +33,7 @@ use isahc::{
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 use widgets::header;
 
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
@@ -107,6 +108,7 @@ pub enum Interaction {
     CatalogResultSizeSelected(CatalogResultSize),
     CatalogSourceSelected(CatalogSource),
     UpdateAjour,
+    ToggleBackupFolder(bool, BackupFolderKind),
 }
 
 #[derive(Debug)]
@@ -136,6 +138,7 @@ pub enum Message {
     AjourUpdateDownloaded(Result<(String, PathBuf)>),
     AddonCacheUpdated(Result<AddonCacheEntry>),
     AddonCacheEntryRemoved(Option<AddonCacheEntry>),
+    RefreshCatalog(Instant),
 }
 
 pub struct Ajour {
@@ -173,6 +176,7 @@ pub struct Ajour {
     onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
     install_addons: HashMap<Flavor, Vec<InstallAddon>>,
+    catalog_last_updated: Option<DateTime<Utc>>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
     website_btn_state: button::State,
@@ -222,6 +226,7 @@ impl Default for Ajour {
             onboarding_directory_btn_state: Default::default(),
             catalog: None,
             install_addons: Default::default(),
+            catalog_last_updated: None,
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
             website_btn_state: Default::default(),
@@ -259,7 +264,11 @@ impl Application for Ajour {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        iced_native::subscription::events().map(Message::RuntimeEvent)
+        let runtime_subscription = iced_native::subscription::events().map(Message::RuntimeEvent);
+        let catalog_subscription =
+            iced_futures::time::every(Duration::from_secs(60 * 5)).map(Message::RefreshCatalog);
+
+        iced::Subscription::batch(vec![runtime_subscription, catalog_subscription])
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -1571,6 +1580,12 @@ impl Default for ScaleState {
             down_btn_state: Default::default(),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum BackupFolderKind {
+    AddOns,
+    WTF,
 }
 
 #[derive(Default)]

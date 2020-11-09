@@ -1,9 +1,9 @@
 use {
     super::{
-        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
-        Changelog, ChangelogPayload, ColumnKey, DirectoryType, DownloadReason, ExpandType,
-        InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, SelfUpdateStatus,
-        SortDirection, State,
+        AddonVersionKey, Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
+        CatalogSource, Changelog, ChangelogPayload, ColumnKey, DirectoryType, DownloadReason,
+        ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
+        SelfUpdateStatus, SortDirection, State,
     },
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
@@ -24,6 +24,7 @@ use {
         Result,
     },
     async_std::sync::{Arc, Mutex},
+    chrono::{NaiveTime, Utc},
     iced::{Command, Length},
     isahc::{http::Uri, HttpClient},
     native_dialog::*,
@@ -968,15 +969,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Backup WTF & AddOn directories for both flavors if they exist
             for flavor in Flavor::ALL.iter() {
-                let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
-                let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
+                if ajour.config.backup_addons {
+                    let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
 
-                if addon_dir.exists() {
-                    src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
+                    if addon_dir.exists() {
+                        src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
+                    }
                 }
 
-                if wtf_dir.exists() {
-                    src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
+                if ajour.config.backup_wtf {
+                    let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
+
+                    if wtf_dir.exists() {
+                        src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
+                    }
                 }
             }
 
@@ -984,6 +990,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 backup_folders(src_folders, dest.to_owned()),
                 Message::BackupFinished,
             ));
+        }
+        Message::Interaction(Interaction::ToggleBackupFolder(is_checked, folder)) => {
+            log::debug!(
+                "Interaction::ToggleBackupFolder({:?}, checked: {})",
+                folder,
+                is_checked
+            );
+
+            match folder {
+                BackupFolderKind::AddOns => {
+                    ajour.config.backup_addons = is_checked;
+                }
+                BackupFolderKind::WTF => {
+                    ajour.config.backup_wtf = is_checked;
+                }
+            }
+
+            let _ = ajour.config.save();
         }
         Message::LatestBackup(as_of) => {
             log::debug!("Message::LatestBackup({:?})", &as_of);
@@ -1183,6 +1207,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 "Message::CatalogDownloaded({} addons in catalog)",
                 catalog.addons.len()
             );
+
+            ajour.catalog_last_updated = Some(Utc::now());
 
             let mut categories = HashSet::new();
             catalog.addons.iter().for_each(|a| {
@@ -1424,6 +1450,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             InstallKind::Source,
                         )),
                     );
+                }
+            }
+        }
+        Message::RefreshCatalog(_) => {
+            if let Some(last_updated) = &ajour.catalog_last_updated {
+                let now = Utc::now();
+                let now_time = now.time();
+                let refresh_time = NaiveTime::from_hms(0, 5, 0);
+
+                if last_updated.date() < now.date() && now_time > refresh_time {
+                    log::debug!("Message::RefreshCatalog: catalog needs to be refreshed");
+
+                    return Ok(Command::perform(
+                        catalog::get_catalog(),
+                        Message::CatalogDownloaded,
+                    ));
                 }
             }
         }
