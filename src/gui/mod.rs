@@ -472,7 +472,7 @@ impl Application for Ajour {
                 )
                 .size(DEFAULT_FONT_SIZE)
                 .padding(10)
-                .width(Length::FillPortion(3))
+                .width(Length::Units(400))
                 .style(style::CatalogQueryInput(color_palette));
 
                 if !installed && !matches!(install_status, Some(InstallStatus::Error(_))) {
@@ -481,15 +481,7 @@ impl Application for Ajour {
 
                 let install_scm_query: Element<Interaction> = install_scm_query.into();
 
-                let title = Text::new("Something")
-                    .size(DEFAULT_FONT_SIZE)
-                    .width(Length::Fill)
-                    .horizontal_alignment(HorizontalAlignment::Center);
-                let title_container = Container::new(title)
-                    .width(Length::Fill)
-                    .style(style::BrightBackgroundContainer(color_palette));
-
-                let description = Text::new("Some more...")
+                let description = Text::new("Install an addon directly from a URL.\nCurrently GitHub and GitLab is supported.")
                     .size(DEFAULT_FONT_SIZE)
                     .width(Length::Fill)
                     .horizontal_alignment(HorizontalAlignment::Center);
@@ -500,6 +492,7 @@ impl Application for Ajour {
                 let query_row = Row::new()
                     .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                     .push(install_scm_query.map(Message::Interaction))
+                    .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                     .spacing(1);
 
                 let install_text = Text::new(if installed {
@@ -515,17 +508,13 @@ impl Application for Ajour {
                 })
                 .size(DEFAULT_FONT_SIZE);
 
-                let install_button_title_container = Container::new(install_text)
-                    .width(Length::Units(100))
-                    .center_x()
-                    .align_x(Align::Center);
+                let install_button_title_container = Container::new(install_text);
 
                 let mut install_button = Button::new(
                     &mut self.install_from_scm_state.install_button_state,
                     install_button_title_container,
                 )
-                .width(Length::Units(120))
-                .style(style::DefaultButton(color_palette));
+                .style(style::DefaultBoxedButton(color_palette));
 
                 if !installed && !matches!(install_status, Some(InstallStatus::Error(_))) {
                     install_button = install_button.on_press(Interaction::InstallSCMURL);
@@ -534,13 +523,12 @@ impl Application for Ajour {
                 let install_button: Element<Interaction> = install_button.into();
 
                 let mut column = Column::new()
+                    .push(description_container)
+                    .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
                     .push(query_row)
                     .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
                     .push(install_button.map(Message::Interaction))
-                    .align_items(Align::Center)
-                    .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-                    .push(title_container)
-                    .push(description_container);
+                    .align_items(Align::Center);
 
                 if let Some(InstallStatus::Error(error)) = install_status {
                     column = column
@@ -555,6 +543,8 @@ impl Application for Ajour {
 
                 let container = Container::new(column)
                     .width(Length::Fill)
+                    .center_y()
+                    .center_x()
                     .height(Length::Fill);
 
                 content = content.push(container);
