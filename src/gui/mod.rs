@@ -101,6 +101,7 @@ pub enum Interaction {
     CatalogResultSizeSelected(CatalogResultSize),
     CatalogSourceSelected(CatalogSource),
     UpdateAjour,
+    ToggleBackupFolder(bool, BackupFolderKind),
 }
 
 #[derive(Debug)]
@@ -1401,6 +1402,12 @@ impl Default for ScaleState {
             down_btn_state: Default::default(),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum BackupFolderKind {
+    AddOns,
+    WTF,
 }
 
 #[derive(Default)]
