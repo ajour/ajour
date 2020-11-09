@@ -2,10 +2,10 @@
 
 use {
     super::{
-        style, AddonVersionKey, BackupState, CatalogColumnKey, CatalogColumnSettings,
-        CatalogColumnState, CatalogInstallAddon, CatalogInstallStatus, CatalogRow, Changelog,
-        ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType, Interaction, Message,
-        Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
+        style, AddonVersionKey, CatalogColumnKey, CatalogColumnState, CatalogInstallAddon,
+        CatalogInstallStatus, CatalogRow, Changelog, ColumnKey, ColumnState, DirectoryType,
+        ExpandType, Interaction, Message, Mode, ReleaseChannel, SelfUpdateState, SortDirection,
+        State,
     },
     crate::VERSION,
     ajour_core::{
@@ -16,8 +16,8 @@ use {
     },
     chrono::prelude::*,
     iced::{
-        button, scrollable, Align, Button, Checkbox, Column, Container, Element,
-        HorizontalAlignment, Length, PickList, Row, Scrollable, Space, Text, VerticalAlignment,
+        button, scrollable, Align, Button, Column, Container, Element, HorizontalAlignment, Length,
+        PickList, Row, Scrollable, Space, Text,
     },
     num_format::{Locale, ToFormattedString},
     std::collections::HashMap,

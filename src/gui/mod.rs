@@ -85,15 +85,6 @@ pub enum Interaction {
     SortCatalogColumn(CatalogColumnKey),
     FlavorSelected(Flavor),
     ResizeColumn(Mode, header::ResizeEvent),
-    ScaleUp,
-    ScaleDown,
-    Backup,
-    ToggleColumn(bool, ColumnKey),
-    ToggleCatalogColumn(bool, CatalogColumnKey),
-    MoveColumnLeft(ColumnKey),
-    MoveColumnRight(ColumnKey),
-    MoveCatalogColumnLeft(CatalogColumnKey),
-    MoveCatalogColumnRight(CatalogColumnKey),
     ModeSelected(Mode),
     CatalogQuery(String),
     CatalogInstall(catalog::Source, Flavor, i32),
@@ -106,6 +97,7 @@ pub enum Interaction {
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum Message {
+    Component(Component),
     CachesLoaded(Result<(FingerprintCache, AddonCache)>),
     DownloadedAddon((DownloadReason, Flavor, String, Result<()>)),
     Error(ClientError),
@@ -115,7 +107,6 @@ pub enum Message {
     Parse(()),
     ParsedAddons((Flavor, Result<Vec<Addon>>)),
     UpdateFingerprint((Flavor, String, Result<()>)),
-    ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
     UnpackedAddon((DownloadReason, Flavor, String, Result<Vec<AddonFolder>>)),
@@ -130,6 +121,11 @@ pub enum Message {
     AjourUpdateDownloaded(Result<(String, PathBuf)>),
     AddonCacheUpdated(Result<AddonCacheEntry>),
     AddonCacheEntryRemoved(Option<AddonCacheEntry>),
+}
+
+#[derive(Debug)]
+pub enum Component {
+    Settings(component::settings::Message),
 }
 
 pub struct Ajour {

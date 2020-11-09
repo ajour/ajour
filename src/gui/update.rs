@@ -1,13 +1,13 @@
 use {
     super::{
-        AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogInstallAddon,
+        component, AddonVersionKey, Ajour, CatalogCategory, CatalogColumnKey, CatalogInstallAddon,
         CatalogInstallStatus, CatalogRow, CatalogSource, Changelog, ChangelogPayload, ColumnKey,
-        DirectoryType, DownloadReason, ExpandType, Interaction, Message, Mode, SelfUpdateStatus,
-        SortDirection, State,
+        Component, DirectoryType, DownloadReason, ExpandType, Interaction, Message, Mode,
+        SelfUpdateStatus, SortDirection, State,
     },
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState, Repository},
-        backup::{backup_folders, latest_backup, BackupFolder},
+        backup::latest_backup,
         cache::{
             remove_addon_cache_entry, update_addon_cache, AddonCache, AddonCacheEntry,
             FingerprintCache,
@@ -35,6 +35,9 @@ use {
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
+        Message::Component(component) => match component {
+            Component::Settings(message) => return component::settings::update(ajour, message),
+        },
         Message::CachesLoaded(result) => {
             log::debug!("Message::CachesLoaded(error: {})", result.is_err());
 
@@ -878,14 +881,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::ThemeSelected(theme_name) => {
-            log::debug!("Message::ThemeSelected({:?})", &theme_name);
-
-            ajour.theme_state.current_theme_name = theme_name.clone();
-
-            ajour.config.theme = Some(theme_name);
-            let _ = ajour.config.save();
-        }
         Message::ThemesLoaded(mut themes) => {
             log::debug!("Message::ThemesLoaded({} themes)", themes.len());
 
@@ -952,34 +947,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 save_column_configs(ajour);
             }
         },
-        Message::Interaction(Interaction::ScaleUp) => {
-            let prev_scale = ajour.scale_state.scale;
-
-            ajour.scale_state.scale = ((prev_scale + 0.1).min(2.0) * 10.0).round() / 10.0;
-
-            ajour.config.scale = Some(ajour.scale_state.scale);
-            let _ = ajour.config.save();
-
-            log::debug!(
-                "Interaction::ScaleUp({} -> {})",
-                prev_scale,
-                ajour.scale_state.scale
-            );
-        }
-        Message::Interaction(Interaction::ScaleDown) => {
-            let prev_scale = ajour.scale_state.scale;
-
-            ajour.scale_state.scale = ((prev_scale - 0.1).max(0.5) * 10.0).round() / 10.0;
-
-            ajour.config.scale = Some(ajour.scale_state.scale);
-            let _ = ajour.config.save();
-
-            log::debug!(
-                "Interaction::ScaleDown({} -> {})",
-                prev_scale,
-                ajour.scale_state.scale
-            );
-        }
         Message::UpdateBackupDirectory(path) => {
             log::debug!("Message::UpdateBackupDirectory({:?})", &path);
 
@@ -992,41 +959,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Check if a latest backup exists in path
                 return Ok(Command::perform(latest_backup(path), Message::LatestBackup));
             }
-        }
-
-        Message::Interaction(Interaction::Backup) => {
-            log::debug!("Interaction::Backup");
-
-            // This will disable our backup button and show a message that the
-            // app is processing the backup. We will unflag this on completion.
-            ajour.backup_state.backing_up = true;
-
-            let mut src_folders = vec![];
-
-            // Shouldn't panic since button is only clickable if wow directory is chosen
-            let wow_dir = ajour.config.wow.directory.as_ref().unwrap();
-
-            // Shouldn't panic since button is only shown if backup directory is chosen
-            let dest = ajour.config.backup_directory.as_ref().unwrap();
-
-            // Backup WTF & AddOn directories for both flavors if they exist
-            for flavor in Flavor::ALL.iter() {
-                let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
-                let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
-
-                if addon_dir.exists() {
-                    src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
-                }
-
-                if wtf_dir.exists() {
-                    src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
-                }
-            }
-
-            return Ok(Command::perform(
-                backup_folders(src_folders, dest.to_owned()),
-                Message::BackupFinished,
-            ));
         }
         Message::LatestBackup(as_of) => {
             log::debug!("Message::LatestBackup({:?})", &as_of);
@@ -1044,182 +976,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.backup_state.backing_up = false;
             ajour.error = Some(error.to_string())
-        }
-        Message::Interaction(Interaction::ToggleColumn(is_checked, key)) => {
-            // We can't untoggle the addon title column
-            if key == ColumnKey::Title {
-                return Ok(Command::none());
-            }
-
-            log::debug!("Interaction::ToggleColumn({}, {:?})", is_checked, key);
-
-            if is_checked {
-                if let Some(column) = ajour.header_state.columns.iter_mut().find(|c| c.key == key) {
-                    column.hidden = false;
-                }
-            } else if let Some(column) =
-                ajour.header_state.columns.iter_mut().find(|c| c.key == key)
-            {
-                column.hidden = true;
-            }
-
-            // Persist changes to config
-            save_column_configs(ajour);
-        }
-        Message::Interaction(Interaction::MoveColumnLeft(key)) => {
-            log::debug!("Interaction::MoveColumnLeft({:?})", key);
-
-            // Update header state ordering and save to config
-            if let Some(idx) = ajour.header_state.columns.iter().position(|c| c.key == key) {
-                ajour.header_state.columns.swap(idx, idx - 1);
-
-                ajour
-                    .header_state
-                    .columns
-                    .iter_mut()
-                    .enumerate()
-                    .for_each(|(idx, column)| column.order = idx);
-
-                // Persist changes to config
-                save_column_configs(ajour);
-            }
-
-            // Update column ordering in settings
-            if let Some(idx) = ajour
-                .column_settings
-                .columns
-                .iter()
-                .position(|c| c.key == key)
-            {
-                ajour.column_settings.columns.swap(idx, idx - 1);
-            }
-        }
-        Message::Interaction(Interaction::MoveColumnRight(key)) => {
-            log::debug!("Interaction::MoveColumnRight({:?})", key);
-
-            // Update header state ordering and save to config
-            if let Some(idx) = ajour.header_state.columns.iter().position(|c| c.key == key) {
-                ajour.header_state.columns.swap(idx, idx + 1);
-
-                ajour
-                    .header_state
-                    .columns
-                    .iter_mut()
-                    .enumerate()
-                    .for_each(|(idx, column)| column.order = idx);
-
-                // Persist changes to config
-                save_column_configs(ajour);
-            }
-
-            // Update column ordering in settings
-            if let Some(idx) = ajour
-                .column_settings
-                .columns
-                .iter()
-                .position(|c| c.key == key)
-            {
-                ajour.column_settings.columns.swap(idx, idx + 1);
-            }
-        }
-        Message::Interaction(Interaction::ToggleCatalogColumn(is_checked, key)) => {
-            // We can't untoggle the addon title column
-            if key == CatalogColumnKey::Title {
-                return Ok(Command::none());
-            }
-
-            log::debug!(
-                "Interaction::ToggleCatalogColumn({}, {:?})",
-                is_checked,
-                key
-            );
-
-            if is_checked {
-                if let Some(column) = ajour
-                    .catalog_header_state
-                    .columns
-                    .iter_mut()
-                    .find(|c| c.key == key)
-                {
-                    column.hidden = false;
-                }
-            } else if let Some(column) = ajour
-                .catalog_header_state
-                .columns
-                .iter_mut()
-                .find(|c| c.key == key)
-            {
-                column.hidden = true;
-            }
-
-            // Persist changes to config
-            save_column_configs(ajour);
-        }
-        Message::Interaction(Interaction::MoveCatalogColumnLeft(key)) => {
-            log::debug!("Interaction::MoveCatalogColumnLeft({:?})", key);
-
-            // Update header state ordering and save to config
-            if let Some(idx) = ajour
-                .catalog_header_state
-                .columns
-                .iter()
-                .position(|c| c.key == key)
-            {
-                ajour.catalog_header_state.columns.swap(idx, idx - 1);
-
-                ajour
-                    .catalog_header_state
-                    .columns
-                    .iter_mut()
-                    .enumerate()
-                    .for_each(|(idx, column)| column.order = idx);
-
-                // Persist changes to config
-                save_column_configs(ajour);
-            }
-
-            // Update column ordering in settings
-            if let Some(idx) = ajour
-                .catalog_column_settings
-                .columns
-                .iter()
-                .position(|c| c.key == key)
-            {
-                ajour.catalog_column_settings.columns.swap(idx, idx - 1);
-            }
-        }
-        Message::Interaction(Interaction::MoveCatalogColumnRight(key)) => {
-            log::debug!("Interaction::MoveCatalogColumnRight({:?})", key);
-
-            // Update header state ordering and save to config
-            if let Some(idx) = ajour
-                .catalog_header_state
-                .columns
-                .iter()
-                .position(|c| c.key == key)
-            {
-                ajour.catalog_header_state.columns.swap(idx, idx + 1);
-
-                ajour
-                    .catalog_header_state
-                    .columns
-                    .iter_mut()
-                    .enumerate()
-                    .for_each(|(idx, column)| column.order = idx);
-
-                // Persist changes to config
-                save_column_configs(ajour);
-            }
-
-            // Update column ordering in settings
-            if let Some(idx) = ajour
-                .catalog_column_settings
-                .columns
-                .iter()
-                .position(|c| c.key == key)
-            {
-                ajour.catalog_column_settings.columns.swap(idx, idx + 1);
-            }
         }
         Message::CatalogDownloaded(Ok(catalog)) => {
             log::debug!(
@@ -1793,7 +1549,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
     }
 }
 
-fn save_column_configs(ajour: &mut Ajour) {
+pub fn save_column_configs(ajour: &mut Ajour) {
     let my_addons_columns: Vec<_> = ajour
         .header_state
         .columns
