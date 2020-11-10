@@ -534,7 +534,7 @@ impl Application for Ajour {
 
                 let install_scm_query: Element<Interaction> = install_scm_query.into();
 
-                let description = Text::new("Install an addon directly from a Git repository\nCurrently GitHub and GitLab URLs are supported")
+                let description = Text::new("Install an addon directly from either GitHub or GitLab\nThe addon must be published as a release asset.")
                     .size(DEFAULT_FONT_SIZE)
                     .width(Length::Fill)
                     .horizontal_alignment(HorizontalAlignment::Center);
