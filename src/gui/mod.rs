@@ -482,6 +482,7 @@ impl Application for Ajour {
                     .find(|a| a.kind == InstallKind::Source)
                     .map(|a| a.status.clone());
 
+                let install_for_flavor = format!("Install for {}", self.config.wow.flavor);
                 let install_text = Text::new(if installed {
                     "Installed"
                 } else {
@@ -489,8 +490,8 @@ impl Application for Ajour {
                         Some(InstallStatus::Downloading) => "Downloading",
                         Some(InstallStatus::Unpacking) => "Unpacking",
                         Some(InstallStatus::Retry) => "Retry",
-                        Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => "Error",
-                        None => "Install",
+                        Some(InstallStatus::Unavilable) => "Unavilable",
+                        Some(InstallStatus::Error(_)) | None => &install_for_flavor,
                     }
                 })
                 .size(DEFAULT_FONT_SIZE);
@@ -498,7 +499,7 @@ impl Application for Ajour {
                 let install_button_title_container = Container::new(install_text)
                     .center_x()
                     .center_y()
-                    .width(Length::Units(100))
+                    .width(Length::Units(150))
                     .height(Length::Units(24));
 
                 let mut install_button = Button::new(
