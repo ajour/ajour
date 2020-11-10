@@ -60,6 +60,21 @@ impl container::StyleSheet for BrightBackgroundContainer {
     }
 }
 
+pub struct SegmentedContainer(pub ColorPalette);
+impl container::StyleSheet for SegmentedContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            border_radius: 2,
+            border_width: 1,
+            border_color: Color {
+                a: 0.5,
+                ..self.0.normal.primary
+            },
+            ..container::Style::default()
+        }
+    }
+}
+
 pub struct NormalErrorBackgroundContainer(pub ColorPalette);
 impl container::StyleSheet for NormalErrorBackgroundContainer {
     fn style(&self) -> container::Style {
