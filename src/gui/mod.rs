@@ -536,7 +536,7 @@ impl Application for Ajour {
                     let install_addons = self.catalog_install_addons.entry(flavor).or_default();
 
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
-                        // TODO: We should make this prettier with new sources coming in.
+                        // TODO (tarkah): We should make this prettier with new sources coming in.
                         let installed_for_flavor = addons.iter().any(|a| {
                             a.curse_id() == Some(addon.addon.id)
                                 || a.tukui_id() == Some(&addon.addon.id.to_string())

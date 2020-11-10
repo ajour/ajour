@@ -102,7 +102,6 @@ mod date_parser {
     where
         D: Deserializer<'de>,
     {
-        // TODO: Theres room for improvements here.
         let s = String::deserialize(deserializer)?;
 
         // Curse format
