@@ -46,10 +46,48 @@ mod github {
             let mut resp = request_async(&client, &url, vec![], None).await?;
 
             let release: Release = resp.json()?;
+
+            let num_non_classic = release
+                .assets
+                .iter()
+                .filter(|a| a.name.ends_with("zip"))
+                .filter(|a| !a.name.to_lowercase().contains("classic"))
+                .count();
+            let num_classic = release
+                .assets
+                .iter()
+                .filter(|a| a.name.ends_with("zip"))
+                .filter(|a| a.name.to_lowercase().contains("classic"))
+                .count();
+
+            if self.flavor.base_flavor() == Flavor::Retail && num_non_classic > 1
+                || self.flavor.base_flavor() == Flavor::Classic
+                    && num_classic == 0
+                    && num_non_classic > 1
+            {
+                return Err(error!(
+                    "{} zip files on release, can't determine which to download",
+                    num_non_classic
+                ));
+            } else if self.flavor.base_flavor() == Flavor::Classic && num_classic > 1 {
+                return Err(error!(
+                    "{} classic zip files on release, can't determine which to download",
+                    num_classic
+                ));
+            }
+
             let asset = release
                 .assets
                 .iter()
-                .find(|f| f.name.ends_with(".zip"))
+                .find(|a| {
+                    if self.flavor.base_flavor() == Flavor::Retail {
+                        a.name.ends_with("zip") && !a.name.to_lowercase().contains("classic")
+                    } else if num_classic > 0 {
+                        a.name.ends_with("zip") && a.name.to_lowercase().contains("classic")
+                    } else {
+                        a.name.ends_with("zip")
+                    }
+                })
                 .ok_or_else(|| error!("No zip asset for {}", &url))?;
 
             let version = release.tag_name.clone();
@@ -178,11 +216,51 @@ mod gitlab {
                 .ok_or_else(|| error!("No release found for {}", &url))?;
 
             let version = release.tag_name.clone();
+
+            let num_non_classic = release
+                .assets
+                .links
+                .iter()
+                .filter(|a| a.name.ends_with("zip"))
+                .filter(|a| !a.name.to_lowercase().contains("classic"))
+                .count();
+            let num_classic = release
+                .assets
+                .links
+                .iter()
+                .filter(|a| a.name.ends_with("zip"))
+                .filter(|a| a.name.to_lowercase().contains("classic"))
+                .count();
+
+            if self.flavor.base_flavor() == Flavor::Retail && num_non_classic > 1
+                || self.flavor.base_flavor() == Flavor::Classic
+                    && num_classic == 0
+                    && num_non_classic > 1
+            {
+                return Err(error!(
+                    "{} zip files on release, can't determine which to download",
+                    num_non_classic
+                ));
+            } else if self.flavor.base_flavor() == Flavor::Classic && num_classic > 1 {
+                return Err(error!(
+                    "{} classic zip files on release, can't determine which to download",
+                    num_classic
+                ));
+            }
+
             let asset = release
                 .assets
                 .links
                 .iter()
-                .find(|a| a.name.ends_with("zip"))
+                .find(|a| {
+                    if self.flavor.base_flavor() == Flavor::Retail {
+                        a.name.ends_with("zip") && !a.name.to_lowercase().contains("classic")
+                    } else if num_classic > 0 {
+                        a.name.ends_with("zip") && a.name.to_lowercase().contains("classic")
+                    } else {
+                        a.name.ends_with("zip")
+                    }
+                })
                 .ok_or_else(|| error!("No zip asset for {}", &url))?;
 
             let download_url = asset.url.clone();
