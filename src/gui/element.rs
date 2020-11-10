@@ -1373,9 +1373,6 @@ pub fn menu_addons_container<'a>(
         .iter()
         .any(|a| matches!(a.state, AddonState::Downloading | AddonState::Unpacking));
 
-    // TODO: Fix
-    let ajour_performing_actions = matches!(state, State::Loading);
-
     // Is any addon updtable.
     let any_addon_updatable = addons
         .iter()
@@ -1391,8 +1388,8 @@ pub fn menu_addons_container<'a>(
 
     // Enable refresh_button if:
     //   - No addon is performing any task.
-    //   - Ajour isn't loading
-    if !addons_performing_actions && !ajour_performing_actions && !matches!(state, State::Start) {
+    //   - Mode state isn't start or loading
+    if !addons_performing_actions && !matches!(state, State::Start | State::Loading) {
         refresh_button = refresh_button.on_press(Interaction::Refresh);
     }
 
