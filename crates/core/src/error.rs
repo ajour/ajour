@@ -1,5 +1,13 @@
 use std::{fmt, path::PathBuf};
 
+#[macro_export]
+macro_rules! error {
+    ($($arg:tt)*) => {{
+        let res = std::fmt::format(std::format_args!($($arg)*));
+        $crate::error::ClientError::Custom(res)
+    }}
+}
+
 #[derive(Debug)]
 pub enum ClientError {
     Custom(String),

@@ -1,12 +1,12 @@
 use {
     super::{
-        AddonVersionKey, Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey,
-        CatalogInstallAddon, CatalogInstallStatus, CatalogRow, CatalogSource, Changelog,
-        ChangelogPayload, ColumnKey, DirectoryType, DownloadReason, ExpandType, Interaction,
-        Message, Mode, SelfUpdateStatus, SortDirection, State,
+        AddonVersionKey, Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
+        CatalogSource, Changelog, ChangelogPayload, ColumnKey, DirectoryType, DownloadReason,
+        ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
+        SelfUpdateStatus, SortDirection, State,
     },
     ajour_core::{
-        addon::{Addon, AddonFolder, AddonState, Repository},
+        addon::{Addon, AddonFolder, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
         cache::{
             remove_addon_cache_entry, update_addon_cache, AddonCache, AddonCacheEntry,
@@ -14,22 +14,23 @@ use {
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
-        curse_api,
+        error,
         error::ClientError,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
-        tukui_api,
+        repository::{RepositoryKind, RepositoryPackage},
         utility::{download_update_to_temp_file, wow_path_resolution},
-        wowi_api, Result,
+        Result,
     },
     async_std::sync::{Arc, Mutex},
     chrono::{NaiveTime, Utc},
     iced::{Command, Length},
-    isahc::HttpClient,
+    isahc::{http::Uri, HttpClient},
     native_dialog::*,
-    std::collections::{HashMap, HashSet},
+    std::collections::{hash_map::DefaultHasher, HashMap, HashSet},
     std::convert::TryFrom,
+    std::hash::Hasher,
     std::path::{Path, PathBuf},
     widgets::header::ResizeEvent,
 };
@@ -176,7 +177,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 // Check if addon is updatable.
                 if let Some(package) = addon.relevant_release_package() {
-                    if addon.is_updatable(package) {
+                    if addon.is_updatable(&package) {
                         addon.state = AddonState::Updatable;
                     } else {
                         addon.state = AddonState::Ajour(None);
@@ -300,59 +301,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             }
                         }
 
-                        // If we have a curse addon.
-                        if addon.active_repository == Some(Repository::Curse) {
-                            let file_id = match key {
-                                AddonVersionKey::Local => addon.file_id(),
-                                AddonVersionKey::Remote => {
-                                    if let Some(package) = addon.relevant_release_package() {
-                                        package.file_id
-                                    } else {
-                                        None
-                                    }
-                                }
-                            };
-
-                            if let (Some(id), Some(file_id)) = (addon.repository_id(), file_id) {
-                                let id = id.parse::<u32>().unwrap();
-
-                                ajour.expanded_type =
-                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                                return Ok(Command::perform(
-                                    perform_fetch_curse_changelog(addon.clone(), *key, id, file_id),
-                                    Message::FetchedChangelog,
-                                ));
-                            }
-                        }
-
-                        // If we have a Tukui addon.
-                        if addon.active_repository == Some(Repository::Tukui) {
-                            if let Some(id) = addon.repository_id() {
-                                ajour.expanded_type =
-                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                                return Ok(Command::perform(
-                                    perform_fetch_tukui_changelog(
-                                        addon.clone(),
-                                        id,
-                                        ajour.config.wow.flavor,
-                                        *key,
-                                    ),
-                                    Message::FetchedChangelog,
-                                ));
-                            }
-                        }
-
-                        // If we have a Wowi addon.
-                        if addon.active_repository == Some(Repository::WowI) {
-                            if let Some(id) = addon.repository_id() {
-                                ajour.expanded_type =
-                                    ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                                return Ok(Command::perform(
-                                    perform_fetch_wowi_changelog(addon.clone(), id, *key),
-                                    Message::FetchedChangelog,
-                                ));
-                            }
-                        }
+                        ajour.expanded_type =
+                            ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                        return Ok(Command::perform(
+                            perform_fetch_changelog(addon.clone(), *key),
+                            Message::FetchedChangelog,
+                        ));
                     }
                     Changelog::Loading(a, _) => {
                         log::debug!(
@@ -394,9 +348,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Remove addon from cache
                 if let Some(addon_cache) = &ajour.addon_cache {
                     if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
-                        match addon.active_repository {
+                        match addon.repository_kind() {
                             // Delete the entry for this cached addon
-                            Some(Repository::Tukui) | Some(Repository::WowI) => {
+                            Some(RepositoryKind::Tukui)
+                            | Some(RepositoryKind::WowI)
+                            | Some(RepositoryKind::Git(_)) => {
                                 return Ok(Command::perform(
                                     remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheEntryRemoved,
@@ -515,7 +471,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         // Check if addon is updatable based on release channel.
                         if let Some(package) = a.relevant_release_package() {
-                            if a.is_updatable(package) && a.state != AddonState::Corrupted {
+                            if a.is_updatable(&package) && a.state != AddonState::Corrupted {
                                 a.state = AddonState::Updatable;
                             }
                         }
@@ -555,7 +511,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             let addons = ajour.addons.entry(flavor).or_default();
-            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+            let install_addons = ajour.install_addons.entry(flavor).or_default();
 
             let mut addon = None;
 
@@ -572,7 +528,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             .iter_mut()
                             .find(|a| a.addon.as_ref().map(|a| &a.primary_folder_id) == Some(&id))
                         {
-                            install_addon.status = CatalogInstallStatus::Unpacking;
+                            install_addon.status = InstallStatus::Unpacking;
 
                             if let Some(_addon) = install_addon.addon.as_mut() {
                                 addon = Some(_addon);
@@ -585,10 +541,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.error = Some(error.to_string());
 
                     if reason == DownloadReason::Install {
-                        if let Some(install_addon) =
-                            install_addons.iter_mut().find(|a| a.id.to_string() == id)
+                        if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
                         {
-                            install_addon.status = CatalogInstallStatus::Retry;
+                            install_addon.status = InstallStatus::Retry;
                         }
                     }
                 }
@@ -628,7 +583,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             let addons = ajour.addons.entry(flavor).or_default();
-            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+            let install_addons = ajour.install_addons.entry(flavor).or_default();
 
             let mut addon = None;
             let mut folders = None;
@@ -670,10 +625,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.error = Some(error.to_string());
 
                     if reason == DownloadReason::Install {
-                        if let Some(install_addon) =
-                            install_addons.iter_mut().find(|a| a.id.to_string() == id)
+                        if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
                         {
-                            install_addon.status = CatalogInstallStatus::Retry;
+                            install_addon.status = InstallStatus::Retry;
                         }
                     }
                 }
@@ -682,13 +636,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let mut commands = vec![];
 
             if let (Some(addon), Some(folders)) = (addon, folders) {
-                addon.update_addon_folders(&folders);
+                addon.update_addon_folders(folders);
 
                 addon.state = AddonState::Fingerprint;
 
                 let mut version = None;
                 if let Some(package) = addon.relevant_release_package() {
-                    version = Some(package.version.clone());
+                    version = Some(package.version);
                 }
                 if let Some(version) = version {
                     addon.set_version(version);
@@ -699,16 +653,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // addon, we want to make sure cache entry exists for those folders
                 if let Some(addon_cache) = &ajour.addon_cache {
                     if let Ok(entry) = AddonCacheEntry::try_from(addon as &_) {
-                        match addon.active_repository {
+                        match addon.repository_kind() {
                             // Remove any entry related to this cached addon
-                            Some(Repository::Curse) => {
+                            Some(RepositoryKind::Curse) => {
                                 commands.push(Command::perform(
                                     remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheEntryRemoved,
                                 ));
                             }
                             // Update the entry for this cached addon
-                            Some(Repository::Tukui) | Some(Repository::WowI) => {
+                            Some(RepositoryKind::Tukui)
+                            | Some(RepositoryKind::WowI)
+                            | Some(RepositoryKind::Git(_)) => {
                                 commands.push(Command::perform(
                                     update_addon_cache(addon_cache.clone(), entry, flavor),
                                     Message::AddonCacheUpdated,
@@ -858,7 +814,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     // Check if addon is updatable.
                     if let Some(package) = addon.relevant_release_package() {
-                        if addon.is_updatable(package) {
+                        if addon.is_updatable(&package) {
                             addon.state = AddonState::Updatable;
                         } else {
                             addon.state = AddonState::Ajour(None);
@@ -925,6 +881,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         column.width = Length::Units(right_width);
                     }
                 }
+                Mode::Install => {}
                 Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
@@ -1287,33 +1244,33 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::Interaction(Interaction::CatalogInstall(source, flavor, id)) => {
-            log::debug!(
-                "Interaction::CatalogInstall({}, {}, {})",
-                source,
-                flavor,
-                &id
-            );
+        Message::Interaction(Interaction::InstallAddon(flavor, id, kind)) => {
+            log::debug!("Interaction::InstallAddon({}, {:?})", flavor, &kind);
 
             // Close settings if shown.
             ajour.is_showing_settings = false;
 
-            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+            let install_addons = ajour.install_addons.entry(flavor).or_default();
 
             // Remove any existing status for this addon since we are going
-            // to try and download it again
-            install_addons.retain(|a| id != a.id);
+            // to try and download it again. For InstallKind::Source, we should only
+            // ever have one entry here so we just remove it
+            install_addons.retain(|a| match kind {
+                InstallKind::Catalog { .. } => !(id == a.id && a.kind == kind),
+                InstallKind::Source => a.kind != kind,
+            });
 
             // Add new status for this addon as Downloading
-            install_addons.push(CatalogInstallAddon {
-                id,
-                status: CatalogInstallStatus::Downloading,
+            install_addons.push(InstallAddon {
+                id: id.clone(),
+                kind,
+                status: InstallStatus::Downloading,
                 addon: None,
             });
 
             return Ok(Command::perform(
-                perform_fetch_latest_addon(source, id, flavor),
-                Message::CatalogInstallAddonFetched,
+                perform_fetch_latest_addon(kind, id, flavor),
+                Message::InstallAddonFetched,
             ));
         }
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
@@ -1346,8 +1303,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
-        Message::CatalogInstallAddonFetched((flavor, id, result)) => {
-            let install_addons = ajour.catalog_install_addons.entry(flavor).or_default();
+        Message::InstallAddonFetched((flavor, id, result)) => {
+            let install_addons = ajour.install_addons.entry(flavor).or_default();
 
             if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id) {
                 match result {
@@ -1380,7 +1337,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     Err(error) => {
                         log::error!("{}", error);
 
-                        install_addon.status = CatalogInstallStatus::Unavilable;
+                        match install_addon.kind {
+                            InstallKind::Catalog { .. } => {
+                                install_addon.status = InstallStatus::Unavilable;
+                            }
+                            InstallKind::Source => {
+                                install_addon.status = InstallStatus::Error(error.to_string());
+                            }
+                        }
                     }
                 }
             }
@@ -1452,6 +1416,43 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 log::debug!("Message::AddonCacheEntryRemoved({})", entry.title);
             }
         }
+        Message::Interaction(Interaction::InstallSCMQuery(query)) => {
+            // install from scm search query
+            ajour.install_from_scm_state.query = Some(query);
+
+            // Remove the status if it's an error and user typed into
+            // text input
+            {
+                let install_addons = ajour
+                    .install_addons
+                    .entry(ajour.config.wow.flavor)
+                    .or_default();
+
+                if let Some((idx, install_addon)) = install_addons
+                    .iter()
+                    .enumerate()
+                    .find(|(_, a)| a.kind == InstallKind::Source)
+                {
+                    if matches!(install_addon.status, InstallStatus::Error(_)) {
+                        install_addons.remove(idx);
+                    }
+                }
+            }
+        }
+        Message::Interaction(Interaction::InstallSCMURL) => {
+            if let Some(url) = ajour.install_from_scm_state.query.clone() {
+                if !url.is_empty() {
+                    return handle_message(
+                        ajour,
+                        Message::Interaction(Interaction::InstallAddon(
+                            ajour.config.wow.flavor,
+                            url,
+                            InstallKind::Source,
+                        )),
+                    );
+                }
+            }
+        }
         Message::RefreshCatalog(_) => {
             if let Some(last_updated) = &ajour.catalog_last_updated {
                 let now = Utc::now();
@@ -1511,42 +1512,15 @@ async fn perform_read_addon_directory(
     )
 }
 
-async fn perform_fetch_tukui_changelog(
+async fn perform_fetch_changelog(
     addon: Addon,
-    tukui_id: String,
-    flavor: Flavor,
     key: AddonVersionKey,
 ) -> (Addon, AddonVersionKey, Result<(String, String)>) {
-    (
-        addon,
-        key,
-        tukui_api::fetch_changelog(&tukui_id, &flavor).await,
-    )
-}
+    let is_remote = key == AddonVersionKey::Remote;
 
-async fn perform_fetch_curse_changelog(
-    addon: Addon,
-    key: AddonVersionKey,
-    id: u32,
-    file_id: i64,
-) -> (Addon, AddonVersionKey, Result<(String, String)>) {
-    (addon, key, curse_api::fetch_changelog(id, file_id).await)
-}
+    let result = addon.get_changelog(is_remote).await;
 
-async fn perform_fetch_wowi_changelog(
-    addon: Addon,
-    id: String,
-    key: AddonVersionKey,
-) -> (Addon, AddonVersionKey, Result<(String, String)>) {
-    (
-        addon,
-        key,
-        Ok((
-            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
-                .to_owned(),
-            wowi_api::changelog_url(id),
-        )),
-    )
+    (addon, key, result)
 }
 
 /// Downloads the newest version of the addon.
@@ -1596,19 +1570,54 @@ async fn perform_unpack_addon(
     )
 }
 
-/// Unzips `Addon` at given `from_directory` and moves it `to_directory`.
 async fn perform_fetch_latest_addon(
-    source: catalog::Source,
-    source_id: i32,
+    install_kind: InstallKind,
+    id: String,
     flavor: Flavor,
-) -> (Flavor, i32, Result<Addon>) {
-    let result = match source {
-        catalog::Source::Curse => curse_api::latest_addon(source_id, flavor).await,
-        catalog::Source::Tukui => tukui_api::latest_addon(source_id, flavor).await,
-        catalog::Source::WowI => wowi_api::latest_addon(source_id, flavor).await,
-    };
+) -> (Flavor, String, Result<Addon>) {
+    async fn fetch_latest_addon(
+        flavor: Flavor,
+        install_kind: InstallKind,
+        id: String,
+    ) -> Result<Addon> {
+        // Needed since id for source install is a URL and this id needs to be safe
+        // when using as the temp path of the downloaded zip
+        let mut hasher = DefaultHasher::new();
+        hasher.write(format!("{:?}{}", install_kind, &id).as_bytes());
+        let temp_id = hasher.finish();
 
-    (flavor, source_id, result)
+        let mut addon = Addon::empty(&temp_id.to_string());
+
+        let mut repo_package = match install_kind {
+            InstallKind::Catalog { source } => {
+                let kind = match source {
+                    catalog::Source::Curse => RepositoryKind::Curse,
+                    catalog::Source::Tukui => RepositoryKind::Tukui,
+                    catalog::Source::WowI => RepositoryKind::WowI,
+                };
+
+                RepositoryPackage::from_repo_id(flavor, kind, id)?
+            }
+            InstallKind::Source => {
+                let url = id
+                    .parse::<Uri>()
+                    .map_err(|_| error!("invalid url: {}", id))?;
+
+                RepositoryPackage::from_source_url(flavor, url)?
+            }
+        };
+        repo_package.resolve_metadata().await?;
+
+        addon.set_repository(repo_package);
+
+        Ok(addon)
+    }
+
+    (
+        flavor,
+        id.clone(),
+        fetch_latest_addon(flavor, install_kind, id).await,
+    )
 }
 
 fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {
@@ -1703,10 +1712,10 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
             });
         }
         (ColumnKey::Source, SortDirection::Asc) => {
-            addons.sort_by(|a, b| a.active_repository.cmp(&b.active_repository))
+            addons.sort_by(|a, b| a.repository_kind().cmp(&b.repository_kind()))
         }
         (ColumnKey::Source, SortDirection::Desc) => {
-            addons.sort_by(|a, b| a.active_repository.cmp(&b.active_repository).reverse())
+            addons.sort_by(|a, b| a.repository_kind().cmp(&b.repository_kind()).reverse())
         }
     }
 }

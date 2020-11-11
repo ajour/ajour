@@ -1,8 +1,9 @@
-use crate::addon::{Addon, AddonFolder, Repository};
+use crate::addon::Addon;
 use crate::config::Flavor;
 use crate::error::ClientError;
 use crate::fs::{config_dir, PersistentData};
 use crate::parse::Fingerprint;
+use crate::repository::RepositoryKind;
 use crate::Result;
 
 use async_std::fs::rename;
@@ -87,8 +88,8 @@ pub async fn update_addon_cache(
     // Get entries for flavor
     let entries = addon_cache.get_mut_for_flavor(flavor);
 
-    // Remove old entry, if it exists
-    entries.retain(|e| e.folder_names != entry.folder_names);
+    // Remove old entry, if it exists. Will remove entry if either folder names or title match
+    entries.retain(|e| !(e.folder_names == entry.folder_names || e.title == entry.title));
 
     // Add new entry
     entries.push(entry.clone());
@@ -112,10 +113,10 @@ pub async fn remove_addon_cache_entry(
     // Get entries for flavor
     let entries = addon_cache.get_mut_for_flavor(flavor);
 
-    // Remove old entry, if it exists
+    // Remove old entry, if it exists. Will remove entry if either folder names or title match
     if let Some(idx) = entries
         .iter()
-        .position(|e| e.folder_names == entry.folder_names)
+        .position(|e| e.folder_names == entry.folder_names || e.title == entry.title)
     {
         let entry = entries.remove(idx);
 
@@ -131,7 +132,7 @@ pub async fn remove_addon_cache_entry(
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AddonCacheEntry {
     pub title: String,
-    pub repository: Repository,
+    pub repository: RepositoryKind,
     pub repository_id: String,
     pub primary_folder_id: String,
     pub folder_names: Vec<String>,
@@ -143,7 +144,7 @@ impl TryFrom<&Addon> for AddonCacheEntry {
 
     fn try_from(addon: &Addon) -> Result<Self> {
         if let (Some(repository), Some(repository_id)) =
-            (addon.active_repository, addon.repository_id())
+            (addon.repository_kind(), addon.repository_id())
         {
             let mut folder_names: Vec<_> = addon.folders.iter().map(|a| a.id.clone()).collect();
             folder_names.sort();
@@ -151,7 +152,7 @@ impl TryFrom<&Addon> for AddonCacheEntry {
             Ok(AddonCacheEntry {
                 title: addon.title().to_owned(),
                 repository,
-                repository_id,
+                repository_id: repository_id.to_owned(),
                 primary_folder_id: addon.primary_folder_id.clone(),
                 folder_names,
                 modified: Utc::now(),
@@ -163,38 +164,4 @@ impl TryFrom<&Addon> for AddonCacheEntry {
             )))
         }
     }
-}
-
-pub fn addon_from_cache(
-    flavor: Flavor,
-    entry: &AddonCacheEntry,
-    addon_folders: &[AddonFolder],
-) -> Option<Addon> {
-    let mut addon = Addon::empty(&entry.primary_folder_id);
-    addon.active_repository = Some(entry.repository);
-    addon.set_title(entry.title.clone());
-
-    match entry.repository {
-        Repository::Tukui => addon.repository_identifiers.tukui = Some(entry.repository_id.clone()),
-        Repository::WowI => addon.repository_identifiers.wowi = Some(entry.repository_id.clone()),
-        _ => return None,
-    }
-
-    addon.folders = addon_folders
-        .iter()
-        .filter(|folder| entry.folder_names.iter().any(|name| &folder.id == name))
-        .cloned()
-        .collect();
-
-    if addon.folders.len() != entry.folder_names.len() {
-        log::error!(
-            "{} - missing addon folders while rebuilding from cache\n{:?}",
-            flavor,
-            entry
-        );
-
-        return None;
-    }
-
-    Some(addon)
 }

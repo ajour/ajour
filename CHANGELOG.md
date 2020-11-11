@@ -14,6 +14,8 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Catalog will automatically refresh if Ajour is kept open.
   - Underlying catalog data refreshes every night at 00:00 UTC, this refresh triggers at 00:05 UTC
 - Added ability to toggle which folders get included in Backup (AddOns & WTF)
+- Addons can be installed from GitHub and GitLab via the GUI or command line
+  - To install via the command line, check out `ajour install --help`
 
 ### Fixed
 - If we don't get Game Version from API we fallback to the one in the TOC file if present.

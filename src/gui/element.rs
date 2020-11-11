@@ -3,16 +3,17 @@
 use {
     super::{
         style, AddonVersionKey, BackupFolderKind, BackupState, CatalogColumnKey,
-        CatalogColumnSettings, CatalogColumnState, CatalogInstallAddon, CatalogInstallStatus,
-        CatalogRow, Changelog, ColumnKey, ColumnSettings, ColumnState, DirectoryType, ExpandType,
-        Interaction, Message, Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection,
-        State, ThemeState,
+        CatalogColumnSettings, CatalogColumnState, CatalogRow, Changelog, ColumnKey,
+        ColumnSettings, ColumnState, DirectoryType, ExpandType, InstallAddon, InstallKind,
+        InstallStatus, Interaction, Message, Mode, ReleaseChannel, ScaleState, SelfUpdateState,
+        SortDirection, State, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
-        addon::{Addon, AddonState, Repository},
+        addon::{Addon, AddonState},
         catalog::Catalog,
         config::{Config, Flavor},
+        repository::RepositoryKind,
         theme::ColorPalette,
     },
     chrono::prelude::*,
@@ -547,6 +548,13 @@ pub fn settings_container<'a, 'b>(
         .height(Length::Units(280))
         .style(style::BrightForegroundContainer(color_palette));
 
+    let install_columns_column =
+        Column::new().push(Text::new("Install Columns").size(DEFAULT_FONT_SIZE));
+    let install_columns_container = Container::new(install_columns_column)
+        .width(Length::Units(200))
+        .height(Length::Units(200))
+        .style(style::BrightForegroundContainer(color_palette));
+
     let catalog_columns_column = Column::new()
         .push(catalog_columns_title_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
@@ -554,7 +562,7 @@ pub fn settings_container<'a, 'b>(
         .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
     let catalog_columns_container = Container::new(catalog_columns_column)
         .width(Length::Units(200))
-        .height(Length::Units(260))
+        .height(Length::Units(230))
         .style(style::BrightForegroundContainer(color_palette));
 
     // Row to wrap each section.
@@ -564,6 +572,9 @@ pub fn settings_container<'a, 'b>(
     match mode {
         Mode::MyAddons(_) => {
             row = row.push(my_addons_columns_container);
+        }
+        Mode::Install => {
+            row = row.push(install_columns_container);
         }
         Mode::Catalog => {
             row = row.push(catalog_columns_container);
@@ -600,6 +611,7 @@ pub fn addon_data_cell<'a, 'b>(
     let game_version = addon.game_version().map(str::to_string);
     let notes = addon.notes().map(str::to_string);
     let website_url = addon.website_url().map(str::to_string);
+    let repository_kind = addon.repository_kind();
 
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
@@ -608,7 +620,7 @@ pub fn addon_data_cell<'a, 'b>(
         .map(str::to_string)
         .unwrap_or_else(|| "-".to_string());
     let release_package = addon_cloned.relevant_release_package();
-    let remote_version = if let Some(package) = release_package.as_deref() {
+    let remote_version = if let Some(package) = &release_package {
         package.version.clone()
     } else {
         String::from("-")
@@ -632,7 +644,7 @@ pub fn addon_data_cell<'a, 'b>(
             Interaction::Expand(ExpandType::Details(addon_cloned.clone())),
         );
 
-        if release_package.as_deref().is_some() {}
+        if release_package.is_some() {}
 
         if is_addon_expanded && matches!(expand_type, ExpandType::Details(_)) {
             title_button = title_button.style(style::SelectedBrightTextButton(color_palette));
@@ -681,7 +693,7 @@ pub fn addon_data_cell<'a, 'b>(
         let mut local_version_button = Button::new(&mut addon.local_btn_state, installed_version)
             .style(style::BrightTextButton(color_palette));
 
-        if addon_cloned.active_repository == Some(Repository::Curse)
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Curse)
             && addon_cloned.file_id().is_some()
         {
             local_version_button =
@@ -690,7 +702,7 @@ pub fn addon_data_cell<'a, 'b>(
                 )));
         }
 
-        if addon_cloned.active_repository == Some(Repository::Tukui)
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Tukui)
             && addon_cloned.repository_id().is_some()
         {
             local_version_button =
@@ -699,7 +711,7 @@ pub fn addon_data_cell<'a, 'b>(
                 )));
         }
 
-        if addon_cloned.active_repository == Some(Repository::WowI) {
+        if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
             local_version_button =
                 local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
                     Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
@@ -750,7 +762,7 @@ pub fn addon_data_cell<'a, 'b>(
         let mut remote_version_button = Button::new(&mut addon.remote_btn_state, remote_version)
             .style(style::BrightTextButton(color_palette));
 
-        if addon_cloned.active_repository == Some(Repository::Curse) {
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Curse) {
             if let Some(package) = addon_cloned.relevant_release_package() {
                 if package.file_id.is_some() {
                     remote_version_button =
@@ -761,7 +773,7 @@ pub fn addon_data_cell<'a, 'b>(
             }
         }
 
-        if addon_cloned.active_repository == Some(Repository::Tukui)
+        if addon_cloned.repository_kind() == Some(RepositoryKind::Tukui)
             && addon_cloned.repository_id().is_some()
         {
             remote_version_button =
@@ -770,11 +782,17 @@ pub fn addon_data_cell<'a, 'b>(
                 )));
         }
 
-        if addon_cloned.active_repository == Some(Repository::WowI) {
+        if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
             remote_version_button =
                 remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
                     Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
                 )));
+        }
+
+        if matches!(addon_cloned.repository_kind(), Some(RepositoryKind::Git(_))) {
+            remote_version_button = remote_version_button.on_press(Interaction::Expand(
+                ExpandType::Changelog(Changelog::Request(addon_cloned, AddonVersionKey::Remote)),
+            ));
         }
 
         // Lets check if addon is expanded, in changelog mode and remote is shown.
@@ -887,7 +905,7 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let release_date_text: String = if let Some(package) = release_package {
+        let release_date_text: String = if let Some(package) = &release_package {
             let f = timeago::Formatter::new();
             let now = Local::now();
 
@@ -922,9 +940,8 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let source_text = addon
-            .active_repository
-            .map_or_else(|| String::from("Unknown"), |a| a.to_string());
+        let source_text =
+            repository_kind.map_or_else(|| String::from("Unknown"), |a| a.to_string());
         let source = Text::new(source_text).size(DEFAULT_FONT_SIZE);
         let source_container = Container::new(source)
             .height(default_height)
@@ -1112,7 +1129,7 @@ pub fn addon_data_cell<'a, 'b>(
                 let notes_title_container = Container::new(notes_title_text)
                     .style(style::BrightForegroundContainer(color_palette));
 
-                let release_date_text: String = if let Some(package) = release_package {
+                let release_date_text: String = if let Some(package) = &release_package {
                     let f = timeago::Formatter::new();
                     let now = Local::now();
 
@@ -1449,6 +1466,7 @@ pub fn menu_container<'a>(
     settings_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
+    install_mode_btn_state: &'a mut button::State,
     retail_btn_state: &'a mut button::State,
     retail_ptr_btn_state: &'a mut button::State,
     retail_beta_btn_state: &'a mut button::State,
@@ -1481,16 +1499,30 @@ pub fn menu_container<'a>(
     )
     .style(style::DisabledDefaultButton(color_palette));
 
+    let mut install_mode_button = Button::new(
+        install_mode_btn_state,
+        Text::new("Install From URL").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette));
+
     match mode {
         Mode::MyAddons(_) => {
             addons_mode_button =
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+        }
+        Mode::Install => {
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button =
+                install_mode_button.style(style::SelectedDefaultButton(color_palette));
         }
         Mode::Catalog => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
         }
     }
 
@@ -1498,20 +1530,30 @@ pub fn menu_container<'a>(
         addons_mode_button = addons_mode_button.style(style::DisabledDefaultButton(color_palette));
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
+        install_mode_button =
+            install_mode_button.style(style::DisabledDefaultButton(color_palette));
     } else {
         addons_mode_button =
             addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons(flavor)));
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(Mode::Catalog));
+        install_mode_button =
+            install_mode_button.on_press(Interaction::ModeSelected(Mode::Install));
     }
 
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
     let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
+    let install_mode_button: Element<Interaction> = install_mode_button.into();
 
-    let segmented_mode_control_container = Row::new()
+    let segmented_mode_control_row = Row::new()
         .push(addons_mode_button.map(Message::Interaction))
         .push(catalog_mode_button.map(Message::Interaction))
+        .push(install_mode_button.map(Message::Interaction))
         .spacing(1);
+
+    let segmented_mode_control_container = Container::new(segmented_mode_control_row)
+        .padding(2)
+        .style(style::SegmentedContainer(color_palette));
 
     let mut retail_button = Button::new(
         retail_btn_state,
@@ -1595,36 +1637,40 @@ pub fn menu_container<'a>(
     let classic_button: Element<Interaction> = classic_button.into();
     let classic_ptr_button: Element<Interaction> = classic_ptr_button.into();
 
-    let mut segmented_flavor_control_container = Row::new();
+    let mut segmented_flavor_control_row = Row::new();
 
     if valid_flavors.len() > 1 {
         if valid_flavors.iter().any(|f| *f == Flavor::Retail) {
-            segmented_flavor_control_container =
-                segmented_flavor_control_container.push(retail_button.map(Message::Interaction))
+            segmented_flavor_control_row =
+                segmented_flavor_control_row.push(retail_button.map(Message::Interaction))
         }
 
         if valid_flavors.iter().any(|f| *f == Flavor::RetailPTR) {
-            segmented_flavor_control_container =
-                segmented_flavor_control_container.push(retail_ptr_button.map(Message::Interaction))
+            segmented_flavor_control_row =
+                segmented_flavor_control_row.push(retail_ptr_button.map(Message::Interaction))
         }
 
         if valid_flavors.iter().any(|f| *f == Flavor::RetailBeta) {
-            segmented_flavor_control_container = segmented_flavor_control_container
-                .push(retail_beta_button.map(Message::Interaction))
+            segmented_flavor_control_row =
+                segmented_flavor_control_row.push(retail_beta_button.map(Message::Interaction))
         }
 
         if valid_flavors.iter().any(|f| *f == Flavor::Classic) {
-            segmented_flavor_control_container =
-                segmented_flavor_control_container.push(classic_button.map(Message::Interaction))
+            segmented_flavor_control_row =
+                segmented_flavor_control_row.push(classic_button.map(Message::Interaction))
         }
 
         if valid_flavors.iter().any(|f| *f == Flavor::ClassicPTR) {
-            segmented_flavor_control_container = segmented_flavor_control_container
-                .push(classic_ptr_button.map(Message::Interaction))
+            segmented_flavor_control_row =
+                segmented_flavor_control_row.push(classic_ptr_button.map(Message::Interaction))
         }
 
-        segmented_flavor_control_container = segmented_flavor_control_container.spacing(1);
+        segmented_flavor_control_row = segmented_flavor_control_row.spacing(1);
     }
+
+    let segmented_flavor_control_container = Container::new(segmented_flavor_control_row)
+        .padding(2)
+        .style(style::SegmentedContainer(color_palette));
 
     // Displays an error, if any has occured.
     let error_text = if let Some(error) = error {
@@ -1847,7 +1893,7 @@ pub fn catalog_data_cell<'a, 'b>(
     addon: &'a mut CatalogRow,
     column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
-    install_addon: Option<&CatalogInstallAddon>,
+    install_addon: Option<&InstallAddon>,
 ) -> Container<'a, Message> {
     let default_height = Length::Units(26);
 
@@ -1874,16 +1920,16 @@ pub fn catalog_data_cell<'a, 'b>(
         })
         .next()
     {
-        let status = install_addon.map(|a| a.status);
+        let status = install_addon.map(|a| a.status.clone());
 
         let install_text = Text::new(if !flavor_exists_for_addon {
             "N/A"
         } else {
             match status {
-                Some(CatalogInstallStatus::Downloading) => "Downloading",
-                Some(CatalogInstallStatus::Unpacking) => "Unpacking",
-                Some(CatalogInstallStatus::Retry) => "Retry",
-                Some(CatalogInstallStatus::Unavilable) => "Unavailable",
+                Some(InstallStatus::Downloading) => "Downloading",
+                Some(InstallStatus::Unpacking) => "Unpacking",
+                Some(InstallStatus::Retry) => "Retry",
+                Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => "Unavailable",
                 None => {
                     if installed_for_flavor {
                         "Installed"
@@ -1905,13 +1951,14 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width);
 
         if flavor_exists_for_addon
-            && (status == Some(CatalogInstallStatus::Retry)
-                || (status == None && !installed_for_flavor))
+            && (status == Some(InstallStatus::Retry) || (status == None && !installed_for_flavor))
         {
-            install_button = install_button.on_press(Interaction::CatalogInstall(
-                addon_data.source,
+            install_button = install_button.on_press(Interaction::InstallAddon(
                 config.wow.flavor,
-                addon_data.id,
+                addon_data.id.to_string(),
+                InstallKind::Catalog {
+                    source: addon_data.source,
+                },
             ));
         }
 

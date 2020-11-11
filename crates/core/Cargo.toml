@@ -12,9 +12,6 @@ edition = "2018"
 gui = ['iced_native']
 
 [[bin]]
-name = "file_parsing_regex"
-
-[[bin]]
 name = "fingerprint_addon"
 
 [[bin]]
@@ -36,12 +33,14 @@ zip = "0.5.6"
 glob = "0.3.0"
 rayon = "1.5.0"
 lazy_static = "1.4.0"
-chrono = "0.4"
+chrono = { version = "0.4", features = ['serde'] }
 log = "0.4"
 fern = "0.6"
 walkdir = "2.3"
 retry = "1.1"
 futures = "0.3"
+async-trait = "0.1.41"
+dyn-clone = "1.0.3"
 
 iced_native = { git = "https://github.com/hecrj/iced.git", rev = "d3b04bf892ce63d3129686968039c258945c5b02", optional = true }
 
