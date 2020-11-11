@@ -57,7 +57,7 @@ pub fn settings_container<'a, 'b>(
 
     let directory_button: Element<Interaction> =
         Button::new(directory_button_state, directory_button_title_container)
-            .width(Length::Units(100))
+            .width(Length::Units(120))
             .style(style::DefaultBoxedButton(color_palette))
             .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
             .into();
@@ -101,7 +101,7 @@ pub fn settings_container<'a, 'b>(
         Message::ThemeSelected,
     )
     .text_size(14)
-    .width(Length::Units(100))
+    .width(Length::Units(120))
     .style(style::PickList(color_palette));
 
     // Data row for theme picker list.
@@ -185,7 +185,7 @@ pub fn settings_container<'a, 'b>(
             &mut backup_state.directory_btn_state,
             directory_button_title_container,
         )
-        .width(Length::Units(100))
+        .width(Length::Units(120))
         .style(style::DefaultBoxedButton(color_palette))
         .on_press(Interaction::OpenDirectory(DirectoryType::Backup))
         .into();
@@ -233,7 +233,7 @@ pub fn settings_container<'a, 'b>(
                 &mut backup_state.backup_now_btn_state,
                 backup_button_title_container,
             )
-            .width(Length::Units(100))
+            .width(Length::Units(120))
             .style(style::DefaultBoxedButton(color_palette));
 
             // Only show button as clickable if it's not currently backing up and
@@ -1752,12 +1752,12 @@ pub fn status_container<'a>(
     if let (_, Some(btn_state)) = (State::Start, onboarding_directory_btn_state) {
         let onboarding_button_title_container =
             Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
-                .width(Length::Units(100))
+                .width(Length::Units(120))
                 .center_x()
                 .align_x(Align::Center);
         let onboarding_button: Element<Interaction> =
             Button::new(btn_state, onboarding_button_title_container)
-                .width(Length::Units(100))
+                .width(Length::Units(120))
                 .style(style::DefaultButton(color_palette))
                 .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
                 .into();

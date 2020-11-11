@@ -17,6 +17,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ### Fixed
 - If we don't get Game Version from API we fallback to the one in the TOC file if present.
+- Increased width on certain buttons to avoid line breaks.
 
 ## [0.5.0] - 2020-11-03
 
