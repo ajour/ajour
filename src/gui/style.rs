@@ -64,7 +64,7 @@ pub struct SegmentedContainer(pub ColorPalette);
 impl container::StyleSheet for SegmentedContainer {
     fn style(&self) -> container::Style {
         container::Style {
-            border_radius: 2,
+            border_radius: 4,
             border_width: 1,
             border_color: Color {
                 a: 0.5,
