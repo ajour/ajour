@@ -548,9 +548,14 @@ pub fn settings_container<'a, 'b>(
         .height(Length::Units(280))
         .style(style::BrightForegroundContainer(color_palette));
 
-    let install_columns_column =
-        Column::new().push(Text::new("Install Columns").size(DEFAULT_FONT_SIZE));
-    let install_columns_container = Container::new(install_columns_column)
+    let install_from_url_option_column = Column::new()
+        .push(Text::new("Install From URL Options").size(DEFAULT_FONT_SIZE))
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(
+            Container::new(Text::new("No options").size(DEFAULT_FONT_SIZE))
+                .style(style::NormalForegroundContainer(color_palette)),
+        );
+    let install_from_url_option_column = Container::new(install_from_url_option_column)
         .width(Length::Units(200))
         .height(Length::Units(200))
         .style(style::BrightForegroundContainer(color_palette));
@@ -574,7 +579,7 @@ pub fn settings_container<'a, 'b>(
             row = row.push(my_addons_columns_container);
         }
         Mode::Install => {
-            row = row.push(install_columns_container);
+            row = row.push(install_from_url_option_column);
         }
         Mode::Catalog => {
             row = row.push(catalog_columns_container);

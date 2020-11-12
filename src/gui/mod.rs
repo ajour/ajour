@@ -1529,7 +1529,7 @@ impl std::fmt::Display for CatalogSource {
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
-                catalog::Source::WowI => "WowI",
+                catalog::Source::WowI => "WowInterface",
             },
         };
         write!(f, "{}", s)
