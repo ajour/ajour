@@ -4,7 +4,7 @@ mod update;
 
 use crate::cli::Opts;
 use ajour_core::{
-    addon::{Addon, AddonFolder, AddonVersionKey, ReleaseChannel},
+    addon::{Addon, AddonFolder, AddonVersionKey},
     cache::{
         load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
     },
@@ -13,23 +13,27 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor},
     error::ClientError,
     fs::PersistentData,
+    repository::ReleaseChannel,
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
     Result,
 };
 use async_std::sync::{Arc, Mutex};
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::{
-    button, pick_list, scrollable, text_input, Application, Column, Command, Container, Element,
-    Length, PickList, Row, Settings, Space, Subscription, TextInput,
+    button, pick_list, scrollable, text_input, Align, Application, Button, Column, Command,
+    Container, Element, HorizontalAlignment, Length, PickList, Row, Settings, Space, Subscription,
+    Text, TextInput,
 };
 use image::ImageFormat;
 use isahc::{
     config::{Configurable, RedirectPolicy},
+    http::Uri,
     HttpClient,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 use widgets::header;
 
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
@@ -51,6 +55,7 @@ impl Default for State {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Mode {
     MyAddons(Flavor),
+    Install,
     Catalog,
 }
 
@@ -61,6 +66,7 @@ impl std::fmt::Display for Mode {
             "{}",
             match self {
                 Mode::MyAddons(_) => "My Addons",
+                Mode::Install => "Install",
                 Mode::Catalog => "Catalog",
             }
         )
@@ -95,11 +101,14 @@ pub enum Interaction {
     MoveCatalogColumnRight(CatalogColumnKey),
     ModeSelected(Mode),
     CatalogQuery(String),
-    CatalogInstall(catalog::Source, Flavor, i32),
+    InstallSCMQuery(String),
+    InstallSCMURL,
+    InstallAddon(Flavor, String, InstallKind),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
     CatalogSourceSelected(CatalogSource),
     UpdateAjour,
+    ToggleBackupFolder(bool, BackupFolderKind),
 }
 
 #[derive(Debug)]
@@ -124,11 +133,12 @@ pub enum Message {
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime>),
     CatalogDownloaded(Result<Catalog>),
-    CatalogInstallAddonFetched((Flavor, i32, Result<Addon>)),
+    InstallAddonFetched((Flavor, String, Result<Addon>)),
     FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
     AjourUpdateDownloaded(Result<(String, PathBuf)>),
     AddonCacheUpdated(Result<AddonCacheEntry>),
     AddonCacheEntryRemoved(Option<AddonCacheEntry>),
+    RefreshCatalog(Instant),
 }
 
 pub struct Ajour {
@@ -158,16 +168,19 @@ pub struct Ajour {
     classic_ptr_btn_state: button::State,
     addon_mode_btn_state: button::State,
     catalog_mode_btn_state: button::State,
+    install_mode_btn_state: button::State,
     scale_state: ScaleState,
     backup_state: BackupState,
     column_settings: ColumnSettings,
     catalog_column_settings: CatalogColumnSettings,
     onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
-    catalog_install_addons: HashMap<Flavor, Vec<CatalogInstallAddon>>,
+    install_addons: HashMap<Flavor, Vec<InstallAddon>>,
+    catalog_last_updated: Option<DateTime<Utc>>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
     website_btn_state: button::State,
+    install_from_scm_state: InstallFromSCMState,
 }
 
 impl Default for Ajour {
@@ -205,16 +218,19 @@ impl Default for Ajour {
             classic_ptr_btn_state: Default::default(),
             addon_mode_btn_state: Default::default(),
             catalog_mode_btn_state: Default::default(),
+            install_mode_btn_state: Default::default(),
             scale_state: Default::default(),
             backup_state: Default::default(),
             column_settings: Default::default(),
             catalog_column_settings: Default::default(),
             onboarding_directory_btn_state: Default::default(),
             catalog: None,
-            catalog_install_addons: Default::default(),
+            install_addons: Default::default(),
+            catalog_last_updated: None,
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
             website_btn_state: Default::default(),
+            install_from_scm_state: Default::default(),
         }
     }
 }
@@ -248,7 +264,11 @@ impl Application for Ajour {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        iced_native::subscription::events().map(Message::RuntimeEvent)
+        let runtime_subscription = iced_native::subscription::events().map(Message::RuntimeEvent);
+        let catalog_subscription =
+            iced_futures::time::every(Duration::from_secs(60 * 5)).map(Message::RefreshCatalog);
+
+        iced::Subscription::batch(vec![runtime_subscription, catalog_subscription])
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -291,6 +311,7 @@ impl Application for Ajour {
             &mut self.settings_btn_state,
             &mut self.addon_mode_btn_state,
             &mut self.catalog_mode_btn_state,
+            &mut self.install_mode_btn_state,
             &mut self.retail_btn_state,
             &mut self.retail_ptr_btn_state,
             &mut self.retail_beta_btn_state,
@@ -415,6 +436,145 @@ impl Application for Ajour {
                         .push(bottom_space)
                 }
             }
+            Mode::Install => {
+                let query = self
+                    .install_from_scm_state
+                    .query
+                    .as_deref()
+                    .unwrap_or_default();
+                let url = query.parse::<Uri>().ok();
+                let is_valid_url = url
+                    .map(|url| {
+                        let host = url.host().map(|h| h.to_lowercase());
+
+                        host.as_deref() == Some("gitlab.com")
+                            || host.as_deref() == Some("github.com")
+                    })
+                    .unwrap_or_default();
+
+                let default = vec![];
+                let addons = self.addons.get(&flavor).unwrap_or(&default);
+
+                let installed = addons
+                    .iter()
+                    .filter_map(|a| {
+                        let id = a.repository_id()?;
+
+                        let a = id.parse::<Uri>().ok()?;
+                        let b = query.parse::<Uri>().ok()?;
+
+                        if a.host().map(|s| s.to_lowercase()) == b.host().map(|s| s.to_lowercase())
+                            && a.path().to_lowercase() == b.path().to_lowercase()
+                        {
+                            Some(a)
+                        } else {
+                            None
+                        }
+                    })
+                    .count()
+                    > 0;
+
+                let install_status = self
+                    .install_addons
+                    .entry(flavor)
+                    .or_default()
+                    .iter()
+                    .find(|a| a.kind == InstallKind::Source)
+                    .map(|a| a.status.clone());
+
+                let install_for_flavor = format!("Install for {}", self.config.wow.flavor);
+                let install_text = Text::new(if installed {
+                    "Installed"
+                } else {
+                    match install_status {
+                        Some(InstallStatus::Downloading) => "Downloading",
+                        Some(InstallStatus::Unpacking) => "Unpacking",
+                        Some(InstallStatus::Retry) => "Retry",
+                        Some(InstallStatus::Unavilable) => "Unavilable",
+                        Some(InstallStatus::Error(_)) | None => &install_for_flavor,
+                    }
+                })
+                .size(DEFAULT_FONT_SIZE);
+
+                let install_button_title_container = Container::new(install_text)
+                    .center_x()
+                    .center_y()
+                    .width(Length::Units(150))
+                    .height(Length::Units(24));
+
+                let mut install_button = Button::new(
+                    &mut self.install_from_scm_state.install_button_state,
+                    install_button_title_container,
+                )
+                .style(style::DefaultBoxedButton(color_palette));
+
+                if matches!(install_status, None) && !installed && is_valid_url {
+                    install_button = install_button.on_press(Interaction::InstallSCMURL);
+                }
+
+                let install_button: Element<Interaction> = install_button.into();
+
+                let mut install_scm_query = TextInput::new(
+                    &mut self.install_from_scm_state.query_state,
+                    "E.g.: https://github.com/author/repository",
+                    query,
+                    Interaction::InstallSCMQuery,
+                )
+                .size(DEFAULT_FONT_SIZE)
+                .padding(10)
+                .width(Length::Units(350))
+                .style(style::CatalogQueryInput(color_palette));
+
+                if !installed
+                    && !matches!(install_status, Some(InstallStatus::Error(_)))
+                    && is_valid_url
+                {
+                    install_scm_query = install_scm_query.on_submit(Interaction::InstallSCMURL);
+                }
+
+                let install_scm_query: Element<Interaction> = install_scm_query.into();
+
+                let description = Text::new("Install an addon directly from either GitHub or GitLab\nThe addon must be published as a release asset")
+                    .size(DEFAULT_FONT_SIZE)
+                    .width(Length::Fill)
+                    .horizontal_alignment(HorizontalAlignment::Center);
+                let description_container = Container::new(description)
+                    .width(Length::Fill)
+                    .style(style::NormalBackgroundContainer(color_palette));
+
+                let query_row = Row::new()
+                    .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                    .push(install_scm_query.map(Message::Interaction))
+                    .push(install_button.map(Message::Interaction))
+                    .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                    .align_items(Align::Center)
+                    .spacing(1);
+
+                // Empty error initially to keep design aligned.
+                let mut error_text: String = String::from(" ");
+                if let Some(InstallStatus::Error(error)) = install_status {
+                    error_text = error;
+                }
+
+                let column = Column::new()
+                    .push(description_container)
+                    .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+                    .push(query_row)
+                    .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+                    .push(
+                        Container::new(Text::new(error_text).size(DEFAULT_FONT_SIZE))
+                            .style(style::NormalErrorBackgroundContainer(color_palette)),
+                    )
+                    .align_items(Align::Center);
+
+                let container = Container::new(column)
+                    .width(Length::Fill)
+                    .center_y()
+                    .center_x()
+                    .height(Length::Fill);
+
+                content = content.push(container);
+            }
             Mode::Catalog => {
                 if let Some(catalog) = &self.catalog {
                     let default = vec![];
@@ -524,16 +684,20 @@ impl Application for Ajour {
                         &mut self.catalog_search_state.scrollable_state,
                     );
 
-                    let install_addons = self.catalog_install_addons.entry(flavor).or_default();
+                    let install_addons = self.install_addons.entry(flavor).or_default();
 
                     for addon in self.catalog_search_state.catalog_rows.iter_mut() {
-                        // TODO: We should make this prettier with new sources coming in.
+                        // TODO (tarkah): We should make this prettier with new sources coming in.
                         let installed_for_flavor = addons.iter().any(|a| {
                             a.curse_id() == Some(addon.addon.id)
                                 || a.tukui_id() == Some(&addon.addon.id.to_string())
+                                || a.wowi_id() == Some(&addon.addon.id.to_string())
                         });
 
-                        let install_addon = install_addons.iter().find(|a| addon.addon.id == a.id);
+                        let install_addon = install_addons.iter().find(|a| {
+                            addon.addon.id.to_string() == a.id
+                                && matches!(a.kind, InstallKind::Catalog {..})
+                        });
 
                         let catalog_data_cell = element::catalog_data_cell(
                             color_palette,
@@ -598,6 +762,7 @@ impl Application for Ajour {
                     }
                 }
             }
+            Mode::Install => None,
             Mode::Catalog => {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
@@ -662,6 +827,22 @@ pub fn run(opts: Opts) {
 
     // Runs the GUI.
     Ajour::run(settings).expect("running Ajour gui");
+}
+
+pub struct InstallFromSCMState {
+    pub query: Option<String>,
+    pub query_state: text_input::State,
+    pub install_button_state: button::State,
+}
+
+impl Default for InstallFromSCMState {
+    fn default() -> Self {
+        InstallFromSCMState {
+            query: None,
+            query_state: Default::default(),
+            install_button_state: Default::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1065,8 +1246,8 @@ impl Default for CatalogHeaderState {
                 CatalogColumnState {
                     key: CatalogColumnKey::Source,
                     btn_state: Default::default(),
-                    width: Length::Units(85),
-                    hidden: false,
+                    width: Length::Units(110),
+                    hidden: true,
                     order: 2,
                 },
                 CatalogColumnState {
@@ -1244,18 +1425,26 @@ impl From<CatalogAddon> for CatalogRow {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct CatalogInstallAddon {
-    id: i32,
-    status: CatalogInstallStatus,
+pub struct InstallAddon {
+    id: String,
+    kind: InstallKind,
+    status: InstallStatus,
     addon: Option<Addon>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum CatalogInstallStatus {
+#[derive(Debug, Clone, PartialEq)]
+pub enum InstallStatus {
     Downloading,
     Unpacking,
     Retry,
     Unavilable,
+    Error(String),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum InstallKind {
+    Catalog { source: catalog::Source },
+    Source,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -1329,6 +1518,7 @@ impl CatalogSource {
         vec![
             CatalogSource::Choice(catalog::Source::Curse),
             CatalogSource::Choice(catalog::Source::Tukui),
+            CatalogSource::Choice(catalog::Source::WowI),
         ]
     }
 }
@@ -1339,6 +1529,7 @@ impl std::fmt::Display for CatalogSource {
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
+                catalog::Source::WowI => "WowInterface",
             },
         };
         write!(f, "{}", s)
@@ -1390,6 +1581,12 @@ impl Default for ScaleState {
             down_btn_state: Default::default(),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum BackupFolderKind {
+    AddOns,
+    WTF,
 }
 
 #[derive(Default)]

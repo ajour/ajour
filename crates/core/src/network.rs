@@ -80,7 +80,7 @@ pub async fn download_addon(
             &addon.primary_folder_id
         );
         let resp = request_async(shared_client, package.download_url.clone(), vec![], None).await?;
-        let (parts, body) = resp.into_parts();
+        let (parts, mut body) = resp.into_parts();
 
         // If response length doesn't equal content length, full file wasn't downloaded
         // so error out
@@ -107,9 +107,9 @@ pub async fn download_addon(
         }
 
         let zip_path = to_directory.join(&addon.primary_folder_id);
-        let file = File::create(&zip_path).await?;
+        let mut file = File::create(&zip_path).await?;
 
-        copy(body, file).await?;
+        copy(&mut body, &mut file).await?;
     }
 
     Ok(())
@@ -132,7 +132,7 @@ pub async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<(
         None,
     )
     .await?;
-    let (parts, body) = resp.into_parts();
+    let (parts, mut body) = resp.into_parts();
 
     // If response length doesn't equal content length, full file wasn't downloaded
     // so error out
@@ -154,9 +154,9 @@ pub async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<(
         }
     }
 
-    let file = File::create(&dest_file).await?;
+    let mut file = File::create(&dest_file).await?;
 
-    copy(body, file).await?;
+    copy(&mut body, &mut file).await?;
 
     log::debug!("file saved as {:?}", &dest_file);
 

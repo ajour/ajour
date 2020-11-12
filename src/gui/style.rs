@@ -38,6 +38,16 @@ impl container::StyleSheet for FadedNormalForegroundContainer {
     }
 }
 
+pub struct FadedBrightForegroundContainer(pub ColorPalette);
+impl container::StyleSheet for FadedBrightForegroundContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            text_color: Some(self.0.bright.surface),
+            ..container::Style::default()
+        }
+    }
+}
+
 pub struct NormalBackgroundContainer(pub ColorPalette);
 impl container::StyleSheet for NormalBackgroundContainer {
     fn style(&self) -> container::Style {
@@ -55,6 +65,21 @@ impl container::StyleSheet for BrightBackgroundContainer {
         container::Style {
             background: Some(Background::Color(self.0.base.background)),
             text_color: Some(self.0.bright.surface),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct SegmentedContainer(pub ColorPalette);
+impl container::StyleSheet for SegmentedContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            border_radius: 4,
+            border_width: 1,
+            border_color: Color {
+                a: 0.5,
+                ..self.0.normal.primary
+            },
             ..container::Style::default()
         }
     }

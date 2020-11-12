@@ -1,5 +1,4 @@
 use crate::config::Flavor;
-use crate::error::ClientError;
 use crate::network::request_async;
 use crate::Result;
 use chrono::prelude::*;
@@ -7,8 +6,12 @@ use chrono::prelude::*;
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
 
-const CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/casperstorm/ajour-catalog/master/catalog.json";
+const CURSE_CATALOG_URL: &str =
+    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/curse.json";
+const TUKUI_CATALOG_URL: &str =
+    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/tukui.json";
+const WOWI_CATALOG_URL: &str =
+    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/wowi.json";
 
 pub async fn get_catalog() -> Result<Catalog> {
     let client = HttpClient::builder()
@@ -17,17 +20,27 @@ pub async fn get_catalog() -> Result<Catalog> {
         .build()
         .unwrap();
 
-    let mut resp = request_async(&client, CATALOG_URL, vec![], Some(30)).await?;
+    let mut curse_resp = request_async(&client, CURSE_CATALOG_URL, vec![], Some(30)).await?;
+    let mut tukui_resp = request_async(&client, TUKUI_CATALOG_URL, vec![], Some(30)).await?;
+    let mut wowi_resp = request_async(&client, WOWI_CATALOG_URL, vec![], Some(30)).await?;
 
-    if resp.status().is_success() {
-        let catalog = resp.json()?;
-        Ok(catalog)
-    } else {
-        Err(ClientError::Custom(format!(
-            "Couldn't fetch catalog: {}",
-            resp.text()?
-        )))
+    let mut addons = vec![];
+    if curse_resp.status().is_success() {
+        let mut catalog: Catalog = curse_resp.json()?;
+        addons.append(&mut catalog.addons);
     }
+
+    if tukui_resp.status().is_success() {
+        let mut catalog: Catalog = tukui_resp.json()?;
+        addons.append(&mut catalog.addons);
+    }
+
+    if wowi_resp.status().is_success() {
+        let mut catalog: Catalog = wowi_resp.json()?;
+        addons.append(&mut catalog.addons);
+    }
+
+    Ok(Catalog { addons })
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -36,6 +49,8 @@ pub enum Source {
     Curse,
     #[serde(alias = "tukui")]
     Tukui,
+    #[serde(alias = "wowi")]
+    WowI,
 }
 
 impl std::fmt::Display for Source {
@@ -43,6 +58,7 @@ impl std::fmt::Display for Source {
         let s = match self {
             Source::Curse => "Curse",
             Source::Tukui => "Tukui",
+            Source::WowI => "WowInterface",
         };
         write!(f, "{}", s)
     }
@@ -86,7 +102,6 @@ mod date_parser {
     where
         D: Deserializer<'de>,
     {
-        // TODO: Theres room for improvements here.
         let s = String::deserialize(deserializer)?;
 
         // Curse format
@@ -113,7 +128,17 @@ mod date_parser {
             .map(|d| Utc.from_utc_datetime(&d))
             .ok();
 
-        Ok(date)
+        if date.is_some() {
+            return Ok(date);
+        }
+
+        // Handles WowI.
+        if let Ok(ts) = &s.parse::<i64>() {
+            let date = Utc.timestamp(ts / 1000, 0);
+            return Ok(Some(date));
+        }
+
+        Ok(None)
     }
 }
 

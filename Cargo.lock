@@ -48,7 +48,7 @@ dependencies = [
 
 [[package]]
 name = "ajour"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ajour-core",
  "async-std",
@@ -75,11 +75,13 @@ dependencies = [
 
 [[package]]
 name = "ajour-core"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "async-std",
+ "async-trait",
  "chrono",
  "dirs-next",
+ "dyn-clone",
  "fancy-regex",
  "fern",
  "flate2",
@@ -266,6 +268,17 @@ name = "async-task"
 version = "4.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
+
+[[package]]
+name = "async-trait"
+version = "0.1.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b246867b8b3b6ae56035f1eb1ed557c1d8eae97f0d53696138a50fa0e3a3b8c0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "atomic-waker"
@@ -990,6 +1003,12 @@ dependencies = [
  "winapi 0.3.9",
  "wio",
 ]
+
+[[package]]
+name = "dyn-clone"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d55796afa1b20c2945ca8eabfc421839f2b766619209f1ede813cf2484f31804"
 
 [[package]]
 name = "either"

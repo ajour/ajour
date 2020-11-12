@@ -30,6 +30,12 @@ pub struct Config {
     pub scale: Option<f64>,
 
     pub backup_directory: Option<PathBuf>,
+
+    #[serde(default)]
+    pub backup_addons: bool,
+
+    #[serde(default)]
+    pub backup_wtf: bool,
 }
 
 impl Config {

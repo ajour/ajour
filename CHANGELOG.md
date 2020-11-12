@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+## [0.5.1] - 2020-11-12
+
+### Added
+- WoWInterface addons has been added to the Catalog.
+- Catalog will automatically refresh if Ajour is kept open.
+  - Underlying catalog data refreshes every night at 00:00 UTC, this refresh triggers at 00:05 UTC
+- Added ability to toggle which folders get included in Backup (AddOns & WTF)
+- Addons can be installed from GitHub and GitLab via the GUI or command line
+  - To install via the command line, check out `ajour install --help`
+
+### Fixed
+- If we don't get Game Version from API we fallback to the one in the TOC file if present.
+- Increased width on certain buttons to avoid line breaks.
 
 ## [0.5.0] - 2020-11-03
 
