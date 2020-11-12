@@ -1125,9 +1125,9 @@ pub fn addon_data_cell<'a, 'b>(
                 let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
                 let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
                 let author_title_container = Container::new(author_title_text)
-                    .style(style::BrightForegroundContainer(color_palette));
+                    .style(style::FadedBrightForegroundContainer(color_palette));
                 let notes_title_container = Container::new(notes_title_text)
-                    .style(style::BrightForegroundContainer(color_palette));
+                    .style(style::FadedBrightForegroundContainer(color_palette));
 
                 let release_date_text: String = if let Some(package) = &release_package {
                     let f = timeago::Formatter::new();
@@ -1145,12 +1145,12 @@ pub fn addon_data_cell<'a, 'b>(
                 let release_date_text_container = Container::new(release_date_text)
                     .center_y()
                     .padding(5)
-                    .style(style::NormalForegroundContainer(color_palette));
+                    .style(style::FadedBrightForegroundContainer(color_palette));
 
                 let release_channel_title =
                     Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
                 let release_channel_title_container = Container::new(release_channel_title)
-                    .style(style::BrightForegroundContainer(color_palette));
+                    .style(style::FadedBrightForegroundContainer(color_palette));
                 let release_channel_list = PickList::new(
                     &mut addon.pick_release_channel_state,
                     &ReleaseChannel::ALL[..],
