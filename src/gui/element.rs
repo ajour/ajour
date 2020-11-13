@@ -473,6 +473,26 @@ pub fn settings_container<'a, 'b>(
         (columns_title_row, columns_scrollable)
     };
 
+    let (addons_column, addons_title) = {
+        let addons_title = Text::new("Addons").size(14);
+        let addons_title_row = Row::new().push(addons_title);
+
+        let mut column = Column::new();
+
+        let hide_ignored_addons = config.hide_ignored_addons;
+        let title = "Hide ignored Addons".to_owned();
+        let checkbox = Checkbox::new(hide_ignored_addons, title.clone(), move |is_checked| {
+            Message::Interaction(Interaction::ToggleHideIgnoredAddons(is_checked))
+        })
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        column = column.push(checkbox);
+
+        (column, addons_title_row)
+    };
+
     let (website_button, website_title) = {
         let website_info = Text::new("About").size(14);
         let website_info_row = Row::new().push(website_info);
@@ -506,6 +526,10 @@ pub fn settings_container<'a, 'b>(
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(backup_directory_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(addons_title)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(addons_column)
         .push(bottom_space);
 
     let middle_column = Column::new()

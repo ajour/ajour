@@ -4,7 +4,7 @@ mod update;
 
 use crate::cli::Opts;
 use ajour_core::{
-    addon::{Addon, AddonFolder, AddonVersionKey},
+    addon::{Addon, AddonFolder, AddonState, AddonVersionKey},
     cache::{
         load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
     },
@@ -95,6 +95,7 @@ pub enum Interaction {
     Backup,
     ToggleColumn(bool, ColumnKey),
     ToggleCatalogColumn(bool, CatalogColumnKey),
+    ToggleHideIgnoredAddons(bool),
     MoveColumnLeft(ColumnKey),
     MoveColumnRight(ColumnKey),
     MoveCatalogColumnLeft(CatalogColumnKey),
@@ -393,6 +394,10 @@ impl Application for Ajour {
 
                 // Loops though the addons.
                 for addon in addons {
+                    if addon.state == AddonState::Ignored {
+                        // println!("we have ignored: {:?}", addon.title());
+                    }
+
                     // Checks if the current addon is expanded.
                     let is_addon_expanded = match &self.expanded_type {
                         ExpandType::Details(a) => a.primary_folder_id == addon.primary_folder_id,
