@@ -573,7 +573,7 @@ pub fn settings_container<'a, 'b>(
         .style(style::BrightForegroundContainer(color_palette));
 
     let install_from_url_option_column = Column::new()
-        .push(Text::new("Install From URL Options").size(DEFAULT_FONT_SIZE))
+        .push(Text::new("Install from URL Options").size(DEFAULT_FONT_SIZE))
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(
             Container::new(Text::new("No options").size(DEFAULT_FONT_SIZE))
@@ -1530,7 +1530,7 @@ pub fn menu_container<'a>(
 
     let mut install_mode_button = Button::new(
         install_mode_btn_state,
-        Text::new("Install From URL").size(DEFAULT_FONT_SIZE),
+        Text::new("Install from URL").size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 

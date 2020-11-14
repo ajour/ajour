@@ -394,8 +394,9 @@ impl Application for Ajour {
 
                 // Loops though the addons.
                 for addon in addons {
-                    if addon.state == AddonState::Ignored {
-                        // println!("we have ignored: {:?}", addon.title());
+                    // If hiding ignored addons, we will skip it.
+                    if addon.state == AddonState::Ignored && self.config.hide_ignored_addons {
+                        break;
                     }
 
                     // Checks if the current addon is expanded.
