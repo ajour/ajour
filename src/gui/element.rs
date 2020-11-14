@@ -481,7 +481,7 @@ pub fn settings_container<'a, 'b>(
 
         let hide_ignored_addons = config.hide_ignored_addons;
         let title = "Hide ignored Addons".to_owned();
-        let checkbox = Checkbox::new(hide_ignored_addons, title.clone(), move |is_checked| {
+        let checkbox = Checkbox::new(hide_ignored_addons, title, move |is_checked| {
             Message::Interaction(Interaction::ToggleHideIgnoredAddons(is_checked))
         })
         .style(style::DefaultCheckbox(color_palette))
