@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` and `Removed`.
 
 ## [Unreleased]
+
+### Added
+- Option to hide ignored addons.
+
 ## [0.5.1] - 2020-11-12
 
 ### Added
