@@ -178,7 +178,6 @@ pub fn settings_container<'a, 'b>(
             .spacing(5)
             .style(style::DefaultCheckbox(color_palette)),
         )
-        .padding(5)
         .into();
 
         let wtf_folder_checkbox: Element<_> = Container::new(
@@ -189,7 +188,6 @@ pub fn settings_container<'a, 'b>(
             .spacing(5)
             .style(style::DefaultCheckbox(color_palette)),
         )
-        .padding(5)
         .into();
 
         // Directory button for Backup directory selection.
@@ -227,6 +225,7 @@ pub fn settings_container<'a, 'b>(
             .align_items(Align::Center)
             .height(Length::Units(26))
             .push(addon_folder_checkbox.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(wtf_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_button.map(Message::Interaction))
@@ -306,7 +305,21 @@ pub fn settings_container<'a, 'b>(
         (backup_title_row, backup_directory_row, backup_now_row)
     };
 
+    let hide_addons_column = {
+        let hide_ignored_addons = config.hide_ignored_addons;
+        let title = "Hide ignored Addons".to_owned();
+        let checkbox = Checkbox::new(hide_ignored_addons, title, move |is_checked| {
+            Message::Interaction(Interaction::ToggleHideIgnoredAddons(is_checked))
+        })
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        Column::new().push(checkbox)
+    };
+
     let ui_title = Text::new("UI").size(DEFAULT_FONT_SIZE);
+    let addon_title = Text::new("Addons").size(DEFAULT_FONT_SIZE);
 
     let ui_row = Row::new()
         .push(theme_column)
@@ -320,6 +333,10 @@ pub fn settings_container<'a, 'b>(
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row)
+        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(addon_title)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(ui_title)
         .push(Space::new(Length::Units(0), Length::Units(5)))
@@ -400,12 +417,11 @@ pub fn settings_container<'a, 'b>(
                 checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
             }
 
-            let checkbox_container = Container::new(checkbox).padding(5);
+            let checkbox_container = Container::new(checkbox);
 
             let row = Row::new()
                 .align_items(Align::Center)
                 .height(Length::Units(26))
-                .push(Space::new(Length::Units(5), Length::Units(0)))
                 .push(left_button_container)
                 .push(right_button_container)
                 .push(checkbox_container);
@@ -494,7 +510,6 @@ pub fn settings_container<'a, 'b>(
             let row = Row::new()
                 .align_items(Align::Center)
                 .height(Length::Units(26))
-                .push(Space::new(Length::Units(5), Length::Units(0)))
                 .push(left_button_container)
                 .push(right_button_container)
                 .push(checkbox_container);
