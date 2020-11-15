@@ -621,8 +621,8 @@ impl checkbox::StyleSheet for DefaultCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.foreground),
             checkmark_color: self.0.bright.primary,
-            border_radius: 3,
-            border_width: 2,
+            border_radius: 2,
+            border_width: 1,
             border_color: self.0.normal.primary,
         }
     }
@@ -631,7 +631,7 @@ impl checkbox::StyleSheet for DefaultCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.foreground),
             checkmark_color: self.0.bright.primary,
-            border_radius: 3,
+            border_radius: 2,
             border_width: 2,
             border_color: self.0.bright.primary,
         }
@@ -644,8 +644,8 @@ impl checkbox::StyleSheet for AlwaysCheckedCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.foreground),
             checkmark_color: self.0.normal.primary,
-            border_radius: 3,
-            border_width: 2,
+            border_radius: 2,
+            border_width: 1,
             border_color: self.0.normal.primary,
         }
     }

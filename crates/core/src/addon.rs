@@ -308,6 +308,7 @@ impl Addon {
             .metadata()
             .map(|m| m.game_version.as_deref())
             .flatten()
+            .filter(|s| !s.is_empty())
             .is_some()
         {
             self.metadata().map(|m| m.game_version.as_deref()).flatten()
