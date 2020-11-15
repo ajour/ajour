@@ -1618,9 +1618,14 @@ pub fn menu_container<'a>(
         segmented_flavor_control_row = segmented_flavor_control_row.spacing(1);
     }
 
-    let segmented_flavor_control_container = Container::new(segmented_flavor_control_row)
-        .padding(2)
-        .style(style::SegmentedContainer(color_palette));
+    let mut segmented_flavor_control_container =
+        Container::new(segmented_flavor_control_row).padding(2);
+
+    // Only add style if we show container.
+    if valid_flavors.len() > 1 {
+        segmented_flavor_control_container =
+            segmented_flavor_control_container.style(style::SegmentedContainer(color_palette));
+    }
 
     // Displays an error, if any has occured.
     let error_text = if let Some(error) = error {
