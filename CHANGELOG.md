@@ -14,6 +14,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ### Fixed
 - Game Version fallback to TOC could in some cases fail
+- Visual glitch when only having 1 flavor
 
 ## [0.5.1] - 2020-11-12
 
