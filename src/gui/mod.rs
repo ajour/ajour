@@ -147,6 +147,7 @@ pub struct Ajour {
     mode: Mode,
     addons: HashMap<Flavor, Vec<Addon>>,
     addons_scrollable_state: scrollable::State,
+    settings_scrollable_state: scrollable::State,
     config: Config,
     valid_flavors: Vec<Flavor>,
     directory_btn_state: button::State,
@@ -191,6 +192,7 @@ impl Default for Ajour {
             mode: Mode::MyAddons(Flavor::Retail),
             addons: HashMap::new(),
             addons_scrollable_state: Default::default(),
+            settings_scrollable_state: Default::default(),
             config: Config::default(),
             valid_flavors: Vec::new(),
             directory_btn_state: Default::default(),
@@ -331,9 +333,9 @@ impl Application for Ajour {
             // Settings container, containing all data releated to settings.
             let settings_container = element::settings_container(
                 color_palette,
+                &mut self.settings_scrollable_state,
                 &mut self.directory_btn_state,
                 &self.config,
-                &self.mode,
                 &mut self.theme_state,
                 &mut self.scale_state,
                 &mut self.backup_state,
@@ -341,7 +343,6 @@ impl Application for Ajour {
                 &column_config,
                 &mut self.catalog_column_settings,
                 &catalog_column_config,
-                &mut self.website_btn_state,
             );
 
             // Space below settings.
