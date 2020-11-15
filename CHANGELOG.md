@@ -9,7 +9,10 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
-## Fixed
+## Added
+- Option to hide ignored addons.
+
+### Fixed
 - Game Version fallback to TOC could in some cases fail
 
 ## [0.5.1] - 2020-11-12

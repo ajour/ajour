@@ -1469,6 +1469,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
+        Message::Interaction(Interaction::ToggleHideIgnoredAddons(is_checked)) => {
+            log::debug!("Interaction::ToggleHideIgnoredAddons({})", is_checked);
+
+            ajour.config.hide_ignored_addons = is_checked;
+            let _ = ajour.config.save();
+        }
         Message::Error(error)
         | Message::CatalogDownloaded(Err(error))
         | Message::AddonCacheUpdated(Err(error)) => {
