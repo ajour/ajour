@@ -52,6 +52,8 @@ pub fn settings_container<'a, 'b>(
 
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(DEFAULT_FONT_SIZE);
+    let direction_info_text_container =
+        Container::new(directory_info_text).style(style::BrightBackgroundContainer(color_palette));
 
     // Directory button for World of Warcraft directory selection.
     let directory_button_title_container =
@@ -81,7 +83,7 @@ pub fn settings_container<'a, 'b>(
     let directory_data_text_container = Container::new(directory_data_text)
         .height(Length::Units(25))
         .center_y()
-        .style(style::NormalForegroundContainer(color_palette));
+        .style(style::NormalBackgroundContainer(color_palette));
 
     // Data row for the World of Warcraft directory selection.
     let directory_data_row = Row::new()
@@ -90,13 +92,13 @@ pub fn settings_container<'a, 'b>(
         .push(directory_data_text_container);
 
     scrollable = scrollable
-        .push(directory_info_text)
+        .push(direction_info_text_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(directory_data_row);
 
     let theme_column = {
         let title_container = Container::new(Text::new("Theme").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
 
         let theme_names = theme_state
             .themes
@@ -126,7 +128,7 @@ pub fn settings_container<'a, 'b>(
     // Scale buttons for application scale factoring.
     let scale_column = {
         let title_container = Container::new(Text::new("Scale").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
         let scale_title_row = Row::new().push(title_container);
 
         let scale_down_button: Element<Interaction> = Button::new(
@@ -168,7 +170,8 @@ pub fn settings_container<'a, 'b>(
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
         let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
-        let backup_title_row = Row::new().push(backup_title_text);
+        let backup_title_text_container = Container::new(backup_title_text)
+            .style(style::BrightBackgroundContainer(color_palette));
 
         let addon_folder_checkbox: Element<_> = Container::new(
             Checkbox::new(config.backup_addons, "AddOns", move |is_checked| {
@@ -178,6 +181,7 @@ pub fn settings_container<'a, 'b>(
             .spacing(5)
             .style(style::DefaultCheckbox(color_palette)),
         )
+        .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
         let wtf_folder_checkbox: Element<_> = Container::new(
@@ -188,6 +192,7 @@ pub fn settings_container<'a, 'b>(
             .spacing(5)
             .style(style::DefaultCheckbox(color_palette)),
         )
+        .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
         // Directory button for Backup directory selection.
@@ -218,7 +223,7 @@ pub fn settings_container<'a, 'b>(
         let directory_data_text_container = Container::new(directory_data_text)
             .height(Length::Units(25))
             .center_y()
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
 
         // Data row for the Backup directory selection.
         let backup_directory_row = Row::new()
@@ -280,7 +285,7 @@ pub fn settings_container<'a, 'b>(
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::NormalForegroundContainer(color_palette));
+                .style(style::NormalBackgroundContainer(color_palette));
 
             let backup_button: Element<Interaction> = backup_button.into();
 
@@ -297,12 +302,16 @@ pub fn settings_container<'a, 'b>(
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::NormalForegroundContainer(color_palette));
+                .style(style::NormalBackgroundContainer(color_palette));
 
             backup_now_row = backup_now_row.push(backup_status_text_container);
         }
 
-        (backup_title_row, backup_directory_row, backup_now_row)
+        (
+            backup_title_text_container,
+            backup_directory_row,
+            backup_now_row,
+        )
     };
 
     let hide_addons_column = {
@@ -314,12 +323,18 @@ pub fn settings_container<'a, 'b>(
         .style(style::DefaultCheckbox(color_palette))
         .text_size(DEFAULT_FONT_SIZE)
         .spacing(5);
-
-        Column::new().push(checkbox)
+        let checkbox_container =
+            Container::new(checkbox).style(style::BrightBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
     };
 
     let ui_title = Text::new("UI").size(DEFAULT_FONT_SIZE);
+    let ui_title_container =
+        Container::new(ui_title).style(style::BrightBackgroundContainer(color_palette));
+
     let addon_title = Text::new("Addons").size(DEFAULT_FONT_SIZE);
+    let addon_title_container =
+        Container::new(addon_title).style(style::BrightBackgroundContainer(color_palette));
 
     let ui_row = Row::new()
         .push(theme_column)
@@ -334,22 +349,24 @@ pub fn settings_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row)
         .push(Space::new(Length::Units(0), Length::Units(20)))
-        .push(addon_title)
+        .push(addon_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(20)))
-        .push(ui_title)
+        .push(ui_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(ui_row);
 
     let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
+    let columns_title_text_container =
+        Container::new(columns_title_text).style(style::BrightBackgroundContainer(color_palette));
     scrollable = scrollable
         .push(Space::new(Length::Units(0), Length::Units(20)))
-        .push(columns_title_text);
+        .push(columns_title_text_container);
 
     let my_addons_columns_container = {
         let title_container = Container::new(Text::new("My Addons").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
         let mut my_addons_column = Column::new()
             .push(title_container)
             .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
@@ -417,7 +434,8 @@ pub fn settings_container<'a, 'b>(
                 checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
             }
 
-            let checkbox_container = Container::new(checkbox);
+            let checkbox_container =
+                Container::new(checkbox).style(style::BrightBackgroundContainer(color_palette));
 
             let row = Row::new()
                 .align_items(Align::Center)
@@ -436,7 +454,7 @@ pub fn settings_container<'a, 'b>(
         // Title for the Columns section.
 
         let title_container = Container::new(Text::new("Catalog").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
         let mut catalog_column = Column::new()
             .push(title_container)
             .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
@@ -505,7 +523,8 @@ pub fn settings_container<'a, 'b>(
                 checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
             }
 
-            let checkbox_container = Container::new(checkbox).padding(5);
+            let checkbox_container =
+                Container::new(checkbox).style(style::BrightBackgroundContainer(color_palette));
 
             let row = Row::new()
                 .align_items(Align::Center)
@@ -542,7 +561,7 @@ pub fn settings_container<'a, 'b>(
         .center_x()
         .width(Length::Fill)
         .height(Length::Shrink)
-        .style(style::BrightForegroundContainer(color_palette))
+        .style(style::NormalBackgroundContainer(color_palette))
         .padding(20)
 }
 
@@ -1455,25 +1474,44 @@ pub fn menu_container<'a>(
     )
     .style(style::DisabledDefaultButton(color_palette));
 
+    let mut settings_mode_button = Button::new(
+        settings_button_state,
+        Text::new("Settings")
+            .horizontal_alignment(HorizontalAlignment::Center)
+            .size(DEFAULT_FONT_SIZE),
+    )
+    .on_press(Interaction::Settings);
+
     match mode {
         Mode::MyAddons(_) => {
             addons_mode_button =
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
         Mode::Install => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button =
                 install_mode_button.style(style::SelectedDefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
         Mode::Catalog => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
+        Mode::Settings => {
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            catalog_mode_button =
+                catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::SelectedDefaultButton(color_palette));
+        }
+        Mode::About => {}
     }
 
     if matches!(myaddons_state, State::Start) {
@@ -1494,6 +1532,7 @@ pub fn menu_container<'a>(
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
     let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
     let install_mode_button: Element<Interaction> = install_mode_button.into();
+    let settings_mode_button: Element<Interaction> = settings_mode_button.into();
 
     let segmented_mode_control_row = Row::new()
         .push(addons_mode_button.map(Message::Interaction))
@@ -1664,16 +1703,6 @@ pub fn menu_container<'a>(
         .padding(5)
         .style(style::NormalForegroundContainer(color_palette));
 
-    let settings_button: Element<Interaction> = Button::new(
-        settings_button_state,
-        Text::new("Settings")
-            .horizontal_alignment(HorizontalAlignment::Center)
-            .size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DefaultButton(color_palette))
-    .on_press(Interaction::Settings)
-    .into();
-
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
@@ -1709,7 +1738,7 @@ pub fn menu_container<'a>(
     }
 
     settings_row = settings_row
-        .push(settings_button.map(Message::Interaction))
+        .push(settings_mode_button.map(Message::Interaction))
         .push(Space::new(
             Length::Units(DEFAULT_PADDING + 5),
             Length::Units(0),

@@ -135,7 +135,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Settings) => {
             log::debug!("Interaction::Settings");
 
-            ajour.is_showing_settings = !ajour.is_showing_settings;
+            // ajour.is_showing_settings = !ajour.is_showing_settings;
+            ajour.mode = Mode::Settings;
 
             // Remove the expanded addon.
             ajour.expanded_type = ExpandType::None;
@@ -882,6 +883,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                 }
                 Mode::Install => {}
+                Mode::Settings => {}
+                Mode::About => {}
                 Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());

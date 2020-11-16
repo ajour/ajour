@@ -57,6 +57,8 @@ pub enum Mode {
     MyAddons(Flavor),
     Install,
     Catalog,
+    Settings,
+    About,
 }
 
 impl std::fmt::Display for Mode {
@@ -68,6 +70,8 @@ impl std::fmt::Display for Mode {
                 Mode::MyAddons(_) => "My Addons",
                 Mode::Install => "Install",
                 Mode::Catalog => "Catalog",
+                Mode::Settings => "Settings",
+                Mode::About => "About",
             }
         )
     }
@@ -328,30 +332,6 @@ impl Application for Ajour {
 
         // This column gathers all the other elements together.
         let mut content = Column::new().push(menu_container);
-
-        // This ensure we only draw settings, when we need to.
-        if self.is_showing_settings {
-            // Settings container, containing all data releated to settings.
-            let settings_container = element::settings_container(
-                color_palette,
-                &mut self.settings_scrollable_state,
-                &mut self.directory_btn_state,
-                &self.config,
-                &mut self.theme_state,
-                &mut self.scale_state,
-                &mut self.backup_state,
-                &mut self.column_settings,
-                &column_config,
-                &mut self.catalog_column_settings,
-                &catalog_column_config,
-            );
-
-            // Space below settings.
-            let space = Space::new(Length::Fill, Length::Units(DEFAULT_PADDING));
-
-            // Adds the settings container.
-            content = content.push(settings_container).push(space);
-        }
 
         // Spacer between menu and content.
         content = content.push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
@@ -730,6 +710,24 @@ impl Application for Ajour {
                         .push(bottom_space)
                 }
             }
+            Mode::Settings => {
+                let settings_container = element::settings_container(
+                    color_palette,
+                    &mut self.settings_scrollable_state,
+                    &mut self.directory_btn_state,
+                    &self.config,
+                    &mut self.theme_state,
+                    &mut self.scale_state,
+                    &mut self.backup_state,
+                    &mut self.column_settings,
+                    &column_config,
+                    &mut self.catalog_column_settings,
+                    &catalog_column_config,
+                );
+
+                content = content.push(settings_container)
+            }
+            Mode::About => {}
         }
 
         let container: Option<Container<Message>> = match self.mode {
@@ -769,6 +767,8 @@ impl Application for Ajour {
                     }
                 }
             }
+            Mode::Settings => None,
+            Mode::About => None,
             Mode::Install => None,
             Mode::Catalog => {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
