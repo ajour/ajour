@@ -118,8 +118,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Refresh) => {
             log::debug!("Interaction::Refresh");
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -135,7 +133,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Settings) => {
             log::debug!("Interaction::Settings");
 
-            // ajour.is_showing_settings = !ajour.is_showing_settings;
             ajour.mode = Mode::Settings;
 
             // Remove the expanded addon.
@@ -144,8 +141,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Ignore(id)) => {
             log::debug!("Interaction::Ignore({})", &id);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -238,8 +233,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
             log::debug!("Interaction::FlavorSelected({})", flavor);
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
             // Update the game flavor
@@ -256,17 +249,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ModeSelected(mode)) => {
             log::debug!("Interaction::ModeSelected({:?})", mode);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-
             // Sets mode.
             ajour.mode = mode;
         }
 
         Message::Interaction(Interaction::Expand(expand_type)) => {
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-
             // An addon can be exanded in two ways.
             match &expand_type {
                 ExpandType::Details(a) => {
@@ -330,9 +317,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             log::debug!("Interaction::Delete({})", &id);
-
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -368,8 +352,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Update(id)) => {
             log::debug!("Interaction::Update({})", &id);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -398,8 +380,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::UpdateAll) => {
             log::debug!("Interaction::UpdateAll");
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -725,8 +705,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.self_update_state.latest_release = release;
         }
         Message::Interaction(Interaction::SortColumn(column_key)) => {
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -765,9 +743,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.header_state.previous_column_key = Some(column_key);
         }
         Message::Interaction(Interaction::SortCatalogColumn(column_key)) => {
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-
             // First time clicking a column should sort it in Ascending order, otherwise
             // flip the sort direction.
             let mut sort_direction = SortDirection::Asc;
@@ -1239,9 +1214,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             query_and_sort_catalog(ajour);
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-
             // Catalog search query
             ajour.catalog_search_state.query = Some(query);
 
@@ -1249,9 +1221,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::InstallAddon(flavor, id, kind)) => {
             log::debug!("Interaction::InstallAddon({}, {:?})", flavor, &kind);
-
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
 
             let install_addons = ajour.install_addons.entry(flavor).or_default();
 
@@ -1278,8 +1247,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
             log::debug!("Interaction::CatalogCategorySelected({})", &category);
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
 
             // Select category
             ajour.catalog_search_state.category = category;
@@ -1289,8 +1256,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogResultSizeSelected(size)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", &size);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Catalog result size
             ajour.catalog_search_state.result_size = size;
 
@@ -1299,8 +1264,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogSourceSelected(source)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Catalog source
             ajour.catalog_search_state.source = source;
 
