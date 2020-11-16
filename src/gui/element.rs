@@ -31,6 +31,30 @@ use {
 pub static DEFAULT_FONT_SIZE: u16 = 14;
 pub static DEFAULT_PADDING: u16 = 10;
 
+pub fn about_container<'a, 'b>(
+    color_palette: ColorPalette,
+    scrollable_state: &'a mut scrollable::State,
+    website_button_state: &'a mut button::State,
+) -> Container<'a, Message> {
+    let mut scrollable = Scrollable::new(scrollable_state)
+        .spacing(1)
+        .height(Length::FillPortion(1))
+        .style(style::Scrollable(color_palette));
+
+    let col = Column::new().push(scrollable);
+    let row = Row::new()
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(col);
+
+    // Returns the final container.
+    Container::new(row)
+        .center_x()
+        .width(Length::Fill)
+        .height(Length::Shrink)
+        .style(style::NormalBackgroundContainer(color_palette))
+        .padding(20)
+}
+
 /// Container for settings.
 pub fn settings_container<'a, 'b>(
     color_palette: ColorPalette,
@@ -48,7 +72,7 @@ pub fn settings_container<'a, 'b>(
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
         .height(Length::FillPortion(1))
-        .style(style::ForegroundScrollable(color_palette));
+        .style(style::Scrollable(color_palette));
 
     // Title for the World of Warcraft directory selection.
     let directory_info_text = Text::new("World of Warcraft directory").size(DEFAULT_FONT_SIZE);
@@ -1433,6 +1457,7 @@ pub fn menu_container<'a>(
     config: &Config,
     valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,
+    about_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
     install_mode_btn_state: &'a mut button::State,
@@ -1480,7 +1505,15 @@ pub fn menu_container<'a>(
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
-    .on_press(Interaction::Settings);
+    .on_press(Interaction::ModeSelected(Mode::Settings));
+
+    let mut about_mode_button = Button::new(
+        about_button_state,
+        Text::new("About")
+            .horizontal_alignment(HorizontalAlignment::Center)
+            .size(DEFAULT_FONT_SIZE),
+    )
+    .on_press(Interaction::ModeSelected(Mode::About));
 
     match mode {
         Mode::MyAddons(_) => {
@@ -1488,6 +1521,7 @@ pub fn menu_container<'a>(
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
         Mode::Install => {
@@ -1495,6 +1529,7 @@ pub fn menu_container<'a>(
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button =
                 install_mode_button.style(style::SelectedDefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
         Mode::Catalog => {
@@ -1502,16 +1537,25 @@ pub fn menu_container<'a>(
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
         Mode::Settings => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
-            catalog_mode_button =
-                catalog_mode_button.style(style::DefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
-            settings_mode_button = settings_mode_button.style(style::SelectedDefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button =
+                settings_mode_button.style(style::SelectedDefaultButton(color_palette));
         }
-        Mode::About => {}
+        Mode::About => {
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            about_mode_button =
+                about_mode_button.style(style::SelectedDefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
+        }
     }
 
     if matches!(myaddons_state, State::Start) {
@@ -1533,6 +1577,7 @@ pub fn menu_container<'a>(
     let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
     let install_mode_button: Element<Interaction> = install_mode_button.into();
     let settings_mode_button: Element<Interaction> = settings_mode_button.into();
+    let about_mode_button: Element<Interaction> = about_mode_button.into();
 
     let segmented_mode_control_row = Row::new()
         .push(addons_mode_button.map(Message::Interaction))
@@ -1737,8 +1782,17 @@ pub fn menu_container<'a>(
         settings_row = settings_row.push(spacer);
     }
 
-    settings_row = settings_row
+    let segmented_mode_control_row = Row::new()
+        .push(about_mode_button.map(Message::Interaction))
         .push(settings_mode_button.map(Message::Interaction))
+        .spacing(1);
+
+    let segmented_mode_control_container = Container::new(segmented_mode_control_row)
+        .padding(2)
+        .style(style::SegmentedContainer(color_palette));
+
+    settings_row = settings_row
+        .push(segmented_mode_control_container)
         .push(Space::new(
             Length::Units(DEFAULT_PADDING + 5),
             Length::Units(0),

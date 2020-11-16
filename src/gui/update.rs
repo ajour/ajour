@@ -130,14 +130,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             return Ok(Command::perform(async {}, Message::Parse));
         }
-        Message::Interaction(Interaction::Settings) => {
-            log::debug!("Interaction::Settings");
-
-            ajour.mode = Mode::Settings;
-
-            // Remove the expanded addon.
-            ajour.expanded_type = ExpandType::None;
-        }
         Message::Interaction(Interaction::Ignore(id)) => {
             log::debug!("Interaction::Ignore({})", &id);
 

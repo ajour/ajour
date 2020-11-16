@@ -86,7 +86,6 @@ pub enum Interaction {
     OpenDirectory(DirectoryType),
     OpenLink(String),
     Refresh,
-    Settings,
     Unignore(String),
     Update(String),
     UpdateAll,
@@ -153,6 +152,7 @@ pub struct Ajour {
     addons: HashMap<Flavor, Vec<Addon>>,
     addons_scrollable_state: scrollable::State,
     settings_scrollable_state: scrollable::State,
+    about_scrollable_state: scrollable::State,
     config: Config,
     valid_flavors: Vec<Flavor>,
     directory_btn_state: button::State,
@@ -160,6 +160,7 @@ pub struct Ajour {
     self_update_state: SelfUpdateState,
     refresh_btn_state: button::State,
     settings_btn_state: button::State,
+    about_btn_state: button::State,
     shared_client: Arc<HttpClient>,
     update_all_btn_state: button::State,
     header_state: HeaderState,
@@ -184,7 +185,7 @@ pub struct Ajour {
     catalog_last_updated: Option<DateTime<Utc>>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
-    _website_btn_state: button::State,
+    website_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
 }
 
@@ -197,6 +198,7 @@ impl Default for Ajour {
             addons: HashMap::new(),
             addons_scrollable_state: Default::default(),
             settings_scrollable_state: Default::default(),
+            about_scrollable_state: Default::default(),
             config: Config::default(),
             valid_flavors: Vec::new(),
             directory_btn_state: Default::default(),
@@ -204,6 +206,7 @@ impl Default for Ajour {
             self_update_state: Default::default(),
             refresh_btn_state: Default::default(),
             settings_btn_state: Default::default(),
+            about_btn_state: Default::default(),
             shared_client: Arc::new(
                 HttpClient::builder()
                     .redirect_policy(RedirectPolicy::Follow)
@@ -234,7 +237,7 @@ impl Default for Ajour {
             catalog_last_updated: None,
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
-            _website_btn_state: Default::default(),
+            website_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
         }
     }
@@ -314,6 +317,7 @@ impl Application for Ajour {
             &self.config,
             &self.valid_flavors,
             &mut self.settings_btn_state,
+            &mut self.about_btn_state,
             &mut self.addon_mode_btn_state,
             &mut self.catalog_mode_btn_state,
             &mut self.install_mode_btn_state,
@@ -725,7 +729,15 @@ impl Application for Ajour {
 
                 content = content.push(settings_container)
             }
-            Mode::About => {}
+            Mode::About => {
+                let about_container = element::about_container(
+                    color_palette,
+                    &mut self.about_scrollable_state,
+                    &mut self.website_btn_state,
+                );
+
+                content = content.push(about_container)
+            }
         }
 
         let container: Option<Container<Message>> = match self.mode {
