@@ -11,6 +11,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## Added
 - Option to hide ignored addons.
+- Load API catalogs asynchronously.
 
 ### Fixed
 - Game Version fallback to TOC could in some cases fail
