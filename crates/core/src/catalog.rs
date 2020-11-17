@@ -32,7 +32,7 @@ pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
     let request = client.get_async(url.to_string());
     if let Ok(mut response) = request.await {
         log::debug!("Fetched {}, beginning parsing", url);
-        if let Ok(json) = response.json() {
+        if let Ok(json) = task::spawn_blocking(move || response.json()).await {
             log::debug!("Successfully fetched and parsed {}", url);
             Ok(json)
         } else {
@@ -48,9 +48,8 @@ pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
 pub async fn get_catalog() -> Result<Catalog> {
     let mut handles = vec![];
     for url in CATALOG_URLS.iter() {
-        handles.push(task::spawn_blocking(move || {
-            task::block_on(get_one_catalog(url))
-        }));
+        // handles.push(task::spawn_blocking(move || { task::block_on(get_one_catalog(url)) }));
+        handles.push(get_one_catalog(url));
     }
 
     let mut addons = vec![];
