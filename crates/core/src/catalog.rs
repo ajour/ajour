@@ -31,11 +31,14 @@ pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
     let request = client.get_async(url.to_string());
     if let Ok(mut response) = request.await {
         if let Ok(json) = response.json() {
+            log::debug!("Successfully fetched and parsed {}", url);
             Ok(json)
         } else {
+            log::debug!("Could not parse {}", url);
             Err(error!("Could not parse catalog"))
         }
     } else {
+        log::debug!("Could not fetch {}", url);
         Err(error!("Could not fetch catalog"))
     }
 }
@@ -53,7 +56,7 @@ pub async fn get_catalog() -> Result<Catalog> {
         let r = api_results.await;
         match r {
             Ok(c) => addons.append(&mut c.clone()),
-            Err(_) => log::debug!("Could not get one catalog"),
+            Err(e) => log::debug!("{}", e),
         };
     }
 
