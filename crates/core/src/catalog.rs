@@ -18,7 +18,8 @@ const TUKUI_CATALOG_URL: &str =
 const WOWI_CATALOG_URL: &str =
     "https://github.com/casperstorm/ajour-catalog/releases/latest/download/wowi.json";
 
-const CATALOG_URLS: [&str; 3] = [CURSE_CATALOG_URL, TUKUI_CATALOG_URL, WOWI_CATALOG_URL];
+const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
+// const CATALOG_URLS: [&str; 3] = [CURSE_CATALOG_URL, TUKUI_CATALOG_URL, WOWI_CATALOG_URL];
 
 pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
     let client = HttpClient::builder()
@@ -30,6 +31,7 @@ pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
 
     let request = client.get_async(url.to_string());
     if let Ok(mut response) = request.await {
+        log::debug!("Fetched {}, beginning parsing", url);
         if let Ok(json) = response.json() {
             log::debug!("Successfully fetched and parsed {}", url);
             Ok(json)
@@ -46,14 +48,15 @@ pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
 pub async fn get_catalog() -> Result<Catalog> {
     let mut handles = vec![];
     for url in CATALOG_URLS.iter() {
-        handles.push(task::spawn(async move { get_one_catalog(url) }));
+        handles.push(task::spawn_blocking(move || {
+            task::block_on(get_one_catalog(url))
+        }));
     }
 
     let mut addons = vec![];
     let results = join_all(handles).await;
-    for api_results in results {
-        let r = api_results.await;
-        match r {
+    for api_result in results {
+        match api_result {
             Ok(c) => addons.append(&mut c.clone()),
             Err(e) => log::debug!("{}", e),
         };
