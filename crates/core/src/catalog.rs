@@ -20,7 +20,7 @@ const WOWI_CATALOG_URL: &str =
 
 const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
 
-pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
+pub async fn get_catalog_addons_from(url: &str) -> Result<Vec<CatalogAddon>> {
     let client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
         .max_connections_per_host(6)
@@ -47,7 +47,7 @@ pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
 pub async fn get_catalog() -> Result<Catalog> {
     let mut futures = vec![];
     for url in CATALOG_URLS.iter() {
-        futures.push(get_one_catalog(url));
+        futures.push(get_catalog_addons_from(url));
     }
 
     let mut addons = vec![];
