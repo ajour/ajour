@@ -626,7 +626,9 @@ pub fn settings_container<'a, 'b>(
     // Colum wrapping all the settings content.
     scrollable = scrollable.height(Length::Fill).width(Length::Fill);
 
-    let col = Column::new().push(scrollable);
+    let col = Column::new()
+        .push(scrollable)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
     let row = Row::new()
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(col);
@@ -637,7 +639,6 @@ pub fn settings_container<'a, 'b>(
         .width(Length::Fill)
         .height(Length::Shrink)
         .style(style::NormalBackgroundContainer(color_palette))
-        .padding(20)
 }
 
 pub fn addon_data_cell<'a, 'b>(
