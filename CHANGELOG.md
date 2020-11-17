@@ -11,10 +11,10 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## Added
 - Option to hide ignored addons.
-- Load API catalogs asynchronously.
 
 ### Fixed
 - Game Version fallback to TOC could in some cases fail
+- Load API catalogs asynchronously.
 
 ## [0.5.1] - 2020-11-12
 
