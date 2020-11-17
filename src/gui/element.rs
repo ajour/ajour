@@ -1809,6 +1809,8 @@ pub fn menu_container<'a>(
         .push(error_container)
         .push(version_container);
 
+    let mut segmented_mode_control_row = Row::new().spacing(1);
+
     // Add download button to latest github release page if Ajour update is available.
     if needs_update {
         let text = self_update_state
@@ -1827,16 +1829,15 @@ pub fn menu_container<'a>(
 
         let new_release_button: Element<Interaction> = new_release_button.into();
 
-        let spacer = Space::new(Length::Units(3), Length::Units(0));
-
-        settings_row = settings_row.push(new_release_button.map(Message::Interaction));
-        settings_row = settings_row.push(spacer);
+        segmented_mode_control_row =
+            segmented_mode_control_row.push(new_release_button.map(Message::Interaction));
+    } else {
+        segmented_mode_control_row =
+            segmented_mode_control_row.push(about_mode_button.map(Message::Interaction));
     }
 
-    let segmented_mode_control_row = Row::new()
-        .push(about_mode_button.map(Message::Interaction))
-        .push(settings_mode_button.map(Message::Interaction))
-        .spacing(1);
+    segmented_mode_control_row =
+        segmented_mode_control_row.push(settings_mode_button.map(Message::Interaction));
 
     let segmented_mode_control_container = Container::new(segmented_mode_control_row)
         .padding(2)
