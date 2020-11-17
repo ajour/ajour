@@ -1448,6 +1448,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.window_size = Some((width, height));
             let _ = ajour.config.save();
         }
+        Message::RuntimeEvent(iced_native::Event::Keyboard(
+            iced_native::keyboard::Event::KeyReleased { key_code, .. },
+        )) => {
+            if key_code == iced_native::keyboard::KeyCode::Escape
+                && (ajour.mode == Mode::Settings || ajour.mode == Mode::About)
+            {
+                ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+            }
+        }
         Message::RuntimeEvent(_) => {}
         Message::None(_) => {}
     }
