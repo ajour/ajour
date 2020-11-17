@@ -1,12 +1,13 @@
 use crate::config::Flavor;
+#[macro_use]
+use crate::error;
 use crate::Result;
+use async_std::{fs::File, io, prelude::*, task};
 use chrono::prelude::*;
-use std::sync::mpsc::channel;
 use std::time::Duration;
 
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
-use threadpool::ThreadPool;
 
 const DEFAULT_TIMEOUT: u64 = 30;
 
@@ -19,9 +20,7 @@ const WOWI_CATALOG_URL: &str =
 
 const CATALOG_URLS: [&str; 3] = [CURSE_CATALOG_URL, TUKUI_CATALOG_URL, WOWI_CATALOG_URL];
 
-pub async fn get_catalog() -> Result<Catalog> {
-    let pool = ThreadPool::new(4);
-    let (tx, rx) = channel();
+pub async fn get_one_catalog(url: &str) -> Result<Catalog> {
     let client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
         .max_connections_per_host(6)
@@ -29,22 +28,31 @@ pub async fn get_catalog() -> Result<Catalog> {
         .build()
         .unwrap();
 
+    let request = client.get_async(url.to_string());
+    if let Ok(mut response) = request.await {
+        if let Ok(json) = response.json() {
+            Ok(json)
+        } else {
+            Err(error!("Could not parse catalog"))
+        }
+    } else {
+        Err(error!("Could not fetch catalog"))
+    }
+}
+
+pub async fn get_catalog() -> Result<Catalog> {
+    let mut handles = vec![];
     for url in CATALOG_URLS.iter() {
-        let tx = tx.clone();
-        let response = client.get_async(url.to_string()).await;
-        pool.execute(move || {
-            if let Ok(mut body) = response {
-                tx.send(body.json::<Catalog>())
-                    .expect("Could not send JSON back to main thread");
-            }
-        })
+        handles.push(task::spawn(async { get_one_catalog(url) }));
     }
 
     let mut addons = vec![];
-    for _ in 0..3 {
-        if let Ok(Ok(mut catalog)) = rx.recv() {
-            addons.append(&mut catalog.addons)
-        }
+    for h in handles {
+        let catalog = h.await;
+        match catalog {
+            Ok(mut c) => addons.append(&mut c.addons),
+            Err(e) => println!("TODO"),
+        };
     }
 
     Ok(Catalog { addons })
