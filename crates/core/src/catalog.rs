@@ -1,9 +1,9 @@
 use crate::config::Flavor;
-#[macro_use]
 use crate::error;
 use crate::Result;
-use async_std::{fs::File, io, prelude::*, task};
+use async_std::task;
 use chrono::prelude::*;
+use futures::future::join_all;
 use std::time::Duration;
 
 use isahc::{config::RedirectPolicy, prelude::*};
@@ -43,15 +43,17 @@ pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
 pub async fn get_catalog() -> Result<Catalog> {
     let mut handles = vec![];
     for url in CATALOG_URLS.iter() {
-        handles.push(task::spawn(async { get_one_catalog(url) }));
+        let url = url.clone();
+        handles.push(task::spawn(async move { get_one_catalog(url) }));
     }
 
     let mut addons = vec![];
-    for h in handles {
-        let catalog = h.await;
-        match catalog {
-            Ok(mut c) => addons.append(&mut c.addons),
-            Err(e) => println!("TODO"),
+    let results = join_all(handles).await;
+    for api_results in results {
+        let r = api_results.await;
+        match r {
+            Ok(c) => addons.append(&mut c.clone()),
+            Err(_) => log::debug!("Could not get one catalog"),
         };
     }
 
