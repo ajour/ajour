@@ -20,7 +20,7 @@ const WOWI_CATALOG_URL: &str =
 
 const CATALOG_URLS: [&str; 3] = [CURSE_CATALOG_URL, TUKUI_CATALOG_URL, WOWI_CATALOG_URL];
 
-pub async fn get_one_catalog(url: &str) -> Result<Catalog> {
+pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
     let client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
         .max_connections_per_host(6)
