@@ -46,7 +46,6 @@ pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
 pub async fn get_catalog() -> Result<Catalog> {
     let mut handles = vec![];
     for url in CATALOG_URLS.iter() {
-        let url = url.clone();
         handles.push(task::spawn(async move { get_one_catalog(url) }));
     }
 
