@@ -186,6 +186,7 @@ pub struct Ajour {
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
     website_btn_state: button::State,
+    patreon_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
 }
 
@@ -238,6 +239,7 @@ impl Default for Ajour {
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
             website_btn_state: Default::default(),
+            patreon_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
         }
     }
@@ -307,8 +309,14 @@ impl Application for Ajour {
             !&addons.is_empty()
         };
 
+        // Used to display changelog later in the About screen.
+        let release_copy = if let Some(release) = &self.self_update_state.latest_release {
+            Some(release.clone())
+        } else {
+            None
+        };
+
         // Menu container at the top of the applications.
-        // This has all global buttons, such as Settings, Update All, etc.
         let menu_container = element::menu_container(
             color_palette,
             &self.mode,
@@ -732,8 +740,10 @@ impl Application for Ajour {
             Mode::About => {
                 let about_container = element::about_container(
                     color_palette,
+                    &release_copy,
                     &mut self.about_scrollable_state,
                     &mut self.website_btn_state,
+                    &mut self.patreon_btn_state,
                 );
 
                 content = content.push(about_container)

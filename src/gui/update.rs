@@ -693,6 +693,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 "Message::LatestRelease({:?})",
                 release.as_ref().map(|r| &r.tag_name)
             );
+            println!("RELEASE : {:?}", release);
 
             ajour.self_update_state.latest_release = release;
         }
