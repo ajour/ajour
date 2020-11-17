@@ -19,7 +19,6 @@ const WOWI_CATALOG_URL: &str =
     "https://github.com/casperstorm/ajour-catalog/releases/latest/download/wowi.json";
 
 const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
-// const CATALOG_URLS: [&str; 3] = [CURSE_CATALOG_URL, TUKUI_CATALOG_URL, WOWI_CATALOG_URL];
 
 pub async fn get_one_catalog(url: &str) -> Result<Vec<CatalogAddon>> {
     let client = HttpClient::builder()
