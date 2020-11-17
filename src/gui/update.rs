@@ -241,8 +241,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ModeSelected(mode)) => {
             log::debug!("Interaction::ModeSelected({:?})", mode);
 
-            // Sets mode.
-            ajour.mode = mode;
+            // Toggle off About or Settings if button is clicked again
+            if ajour.mode == mode && (mode == Mode::About || mode == Mode::Settings) {
+                ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+            }
+            // Set mode
+            else {
+                ajour.mode = mode;
+            }
         }
 
         Message::Interaction(Interaction::Expand(expand_type)) => {
