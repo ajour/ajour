@@ -50,15 +50,23 @@ pub async fn get_catalog() -> Result<Catalog> {
     }
 
     let mut addons = vec![];
+    let mut any_ok = false;
     let results = join_all(futures).await;
     for api_result in results {
         match api_result {
-            Ok(c) => addons.append(&mut c.clone()),
-            Err(e) => log::debug!("{}", e),
+            Ok(c) => {
+                addons.append(&mut c.clone());
+                any_ok = true
+            }
+            Err(_) => (),
         };
     }
 
-    Ok(Catalog { addons })
+    if any_ok {
+        Ok(Catalog { addons })
+    } else {
+        Err(error!("No sources could be downloaded successfully"))
+    }
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
