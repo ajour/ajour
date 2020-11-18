@@ -1211,6 +1211,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.catalog_last_updated = Some(Utc::now());
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 997ca48 (Create categories after catalog is loaded to reuse in picklist)
             let mut categories_per_source =
                 catalog
                     .addons
@@ -1232,6 +1235,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 s.1.sort();
                 s.1.dedup();
                 s.1.push(CatalogCategory::All);
+<<<<<<< HEAD
 =======
             let mut categories = HashSet::new();
             catalog.addons.iter().for_each(|a| {
@@ -1241,6 +1245,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                 };
 >>>>>>> 56b48b9 (Filter out categories not from the source)
+=======
+>>>>>>> 997ca48 (Create categories after catalog is loaded to reuse in picklist)
             });
 
             ajour.catalog_categories_per_source_cache = categories_per_source;
@@ -1324,11 +1330,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.catalog_search_state.source = source;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 997ca48 (Create categories after catalog is loaded to reuse in picklist)
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
                 .get(&source.to_string())
                 .unwrap()
                 .to_vec();
+<<<<<<< HEAD
 
 =======
             let mut categories = HashSet::new();
@@ -1352,6 +1362,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.catalog_search_state.categories = categories;
 >>>>>>> 56b48b9 (Filter out categories not from the source)
+=======
+
+>>>>>>> 997ca48 (Create categories after catalog is loaded to reuse in picklist)
             ajour.catalog_search_state.category = CatalogCategory::All;
 
             query_and_sort_catalog(ajour);
