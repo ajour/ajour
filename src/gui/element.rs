@@ -39,6 +39,9 @@ pub fn about_container<'a>(
     website_button_state: &'a mut button::State,
     patreon_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
+    let ajour_title = Text::new("Ajour").size(50);
+    let ajour_title_container = Container::new(ajour_title).align_x(Align::Center);
+
     let changelog_title_text = Text::new(if let Some(release) = release {
         format!("Changelog for {}", release.tag_name)
     } else {
@@ -72,7 +75,7 @@ pub fn about_container<'a>(
     .into();
 
     let button_row = Row::new()
-        .spacing(1)
+        .spacing(DEFAULT_PADDING)
         .push(website_button.map(Message::Interaction))
         .push(patreon_button.map(Message::Interaction));
 
@@ -87,10 +90,12 @@ pub fn about_container<'a>(
         Container::new(changelog_title_text).style(style::BrightBackgroundContainer(color_palette));
 
     scrollable = scrollable
-        .push(changelog_title_container)
-        .push(changelog_text_container)
+        .push(ajour_title_container)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(button_row);
+        .push(button_row)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(changelog_title_container)
+        .push(changelog_text_container);
 
     let col = Column::new().push(scrollable);
     let row = Row::new()
