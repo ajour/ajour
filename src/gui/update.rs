@@ -1210,6 +1210,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.catalog_last_updated = Some(Utc::now());
 
+<<<<<<< HEAD
             let mut categories_per_source =
                 catalog
                     .addons
@@ -1231,6 +1232,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 s.1.sort();
                 s.1.dedup();
                 s.1.push(CatalogCategory::All);
+=======
+            let mut categories = HashSet::new();
+            catalog.addons.iter().for_each(|a| {
+                if a.source.to_string() == ajour.catalog_search_state.source.to_string() {
+                    for category in &a.categories {
+                        categories.insert(category.clone());
+                    }
+                };
+>>>>>>> 56b48b9 (Filter out categories not from the source)
             });
 
             ajour.catalog_categories_per_source_cache = categories_per_source;
@@ -1313,12 +1323,35 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Catalog source
             ajour.catalog_search_state.source = source;
 
+<<<<<<< HEAD
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
                 .get(&source.to_string())
                 .unwrap()
                 .to_vec();
 
+=======
+            let mut categories = HashSet::new();
+            ajour.catalog.as_ref().unwrap().addons.iter().for_each(|a| {
+                if a.source.to_string() == source.to_string() {
+                    for category in &a.categories {
+                        categories.insert(category.clone());
+                    }
+                };
+            });
+
+            // Map category strings to Category enum
+            let mut categories: Vec<_> = categories
+                .into_iter()
+                .map(CatalogCategory::Choice)
+                .collect();
+            categories.sort();
+
+            // Unshift the All Categories option into the vec
+            categories.insert(0, CatalogCategory::All);
+
+            ajour.catalog_search_state.categories = categories;
+>>>>>>> 56b48b9 (Filter out categories not from the source)
             ajour.catalog_search_state.category = CatalogCategory::All;
 
             query_and_sort_catalog(ajour);
