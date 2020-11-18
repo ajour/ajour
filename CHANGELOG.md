@@ -9,11 +9,11 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
-## Added
+### Added
 - Option to hide ignored addons
 - About view
 
-## Changed
+### Changed
 - Settings now use the whole view
 
 ### Fixed
