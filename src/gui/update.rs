@@ -28,7 +28,7 @@ use {
     iced::{Command, Length},
     isahc::{http::Uri, HttpClient},
     native_dialog::*,
-    std::collections::{hash_map::DefaultHasher, HashMap, HashSet},
+    std::collections::{hash_map::DefaultHasher, HashMap},
     std::convert::TryFrom,
     std::hash::Hasher,
     std::path::{Path, PathBuf},
@@ -1210,26 +1210,36 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.catalog_last_updated = Some(Utc::now());
 
-            let mut categories = HashSet::new();
-            catalog.addons.iter().for_each(|a| {
-                if a.source.to_string() == ajour.catalog_search_state.source.to_string() {
-                    for category in &a.categories {
-                        categories.insert(category.clone());
-                    }
-                };
+            let mut categories_per_source =
+                catalog
+                    .addons
+                    .iter()
+                    .fold(HashMap::new(), |mut map, addon| {
+                        map.entry(addon.source.to_string())
+                            .or_insert_with(Vec::new)
+                            .append(
+                                &mut addon
+                                    .categories
+                                    .clone()
+                                    .iter()
+                                    .map(|c| CatalogCategory::Choice(c.to_string()))
+                                    .collect(),
+                            );
+                        map
+                    });
+            categories_per_source.iter_mut().for_each(move |s| {
+                s.1.sort();
+                s.1.dedup();
+                s.1.push(CatalogCategory::All);
             });
 
-            // Map category strings to Category enum
-            let mut categories: Vec<_> = categories
-                .into_iter()
-                .map(CatalogCategory::Choice)
-                .collect();
-            categories.sort();
+            ajour.catalog_categories_per_source_cache = categories_per_source;
 
-            // Unshift the All Categories option into the vec
-            categories.insert(0, CatalogCategory::All);
-
-            ajour.catalog_search_state.categories = categories;
+            ajour.catalog_search_state.categories = ajour
+                .catalog_categories_per_source_cache
+                .get(&ajour.catalog_search_state.source.to_string())
+                .unwrap()
+                .to_vec();
 
             ajour.catalog = Some(catalog);
 
@@ -1303,26 +1313,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Catalog source
             ajour.catalog_search_state.source = source;
 
-            let mut categories = HashSet::new();
-            ajour.catalog.as_ref().unwrap().addons.iter().for_each(|a| {
-                if a.source.to_string() == source.to_string() {
-                    for category in &a.categories {
-                        categories.insert(category.clone());
-                    }
-                };
-            });
+            ajour.catalog_search_state.categories = ajour
+                .catalog_categories_per_source_cache
+                .get(&source.to_string())
+                .unwrap()
+                .to_vec();
 
-            // Map category strings to Category enum
-            let mut categories: Vec<_> = categories
-                .into_iter()
-                .map(CatalogCategory::Choice)
-                .collect();
-            categories.sort();
-
-            // Unshift the All Categories option into the vec
-            categories.insert(0, CatalogCategory::All);
-
-            ajour.catalog_search_state.categories = categories;
             ajour.catalog_search_state.category = CatalogCategory::All;
 
             query_and_sort_catalog(ajour);
