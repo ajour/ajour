@@ -10,10 +10,10 @@ mod save;
 #[cfg(feature = "gui")]
 mod theme;
 
-pub use addon::{delete_addons, install_addon};
+pub(crate) use addon::{delete_addons, install_addon};
 pub use save::PersistentData;
 #[cfg(feature = "gui")]
-pub use theme::load_user_themes;
+pub(crate) use theme::load_user_themes;
 
 lazy_static! {
     pub static ref CONFIG_DIR: Arc<Mutex<PathBuf>> = {
@@ -56,6 +56,6 @@ lazy_static! {
     };
 }
 
-pub fn config_dir() -> PathBuf {
+pub(crate) fn config_dir() -> PathBuf {
     CONFIG_DIR.lock().unwrap().clone()
 }

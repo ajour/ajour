@@ -79,7 +79,7 @@ impl Backend for Tukui {
     }
 }
 
-pub fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMetadata {
+pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMetadata {
     let mut remote_packages = HashMap::new();
 
     {
@@ -152,7 +152,7 @@ fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
-pub async fn fetch_remote_package(
+pub(crate) async fn fetch_remote_package(
     shared_client: Arc<HttpClient>,
     id: &str,
     flavor: &Flavor,

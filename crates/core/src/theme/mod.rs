@@ -3,7 +3,7 @@ use de::deserialize_color_hex_string;
 use serde::Deserialize;
 use std::cmp::Ordering;
 
-pub async fn load_user_themes() -> Vec<Theme> {
+pub(crate) async fn load_user_themes() -> Vec<Theme> {
     log::debug!("loading user themes");
 
     fs::load_user_themes().await
@@ -55,7 +55,7 @@ pub struct ColorPalette {
 }
 
 impl Theme {
-    pub fn dark() -> Theme {
+    pub(crate) fn dark() -> Theme {
         Theme {
             name: "Dark".to_string(),
             palette: ColorPalette {
@@ -79,7 +79,7 @@ impl Theme {
         }
     }
 
-    pub fn light() -> Theme {
+    pub(crate) fn light() -> Theme {
         Theme {
             name: "Light".to_string(),
             palette: ColorPalette {
@@ -103,7 +103,7 @@ impl Theme {
         }
     }
 
-    pub fn alliance() -> Theme {
+    pub(crate) fn alliance() -> Theme {
         Theme {
             name: "Alliance".to_string(),
             palette: ColorPalette {
@@ -127,7 +127,7 @@ impl Theme {
         }
     }
 
-    pub fn horde() -> Theme {
+    pub(crate) fn horde() -> Theme {
         Theme {
             name: "Horde".to_string(),
             palette: ColorPalette {
@@ -151,7 +151,7 @@ impl Theme {
         }
     }
 
-    pub fn ayu() -> Theme {
+    pub(crate) fn ayu() -> Theme {
         Theme {
             name: "Ayu".to_string(),
             palette: ColorPalette {
@@ -175,7 +175,7 @@ impl Theme {
         }
     }
 
-    pub fn dracula() -> Theme {
+    pub(crate) fn dracula() -> Theme {
         Theme {
             name: "Dracula".to_string(),
             palette: ColorPalette {
@@ -199,7 +199,7 @@ impl Theme {
         }
     }
 
-    pub fn forest_night() -> Theme {
+    pub(crate) fn forest_night() -> Theme {
         Theme {
             name: "Forest Night".to_string(),
             palette: ColorPalette {
@@ -223,7 +223,7 @@ impl Theme {
         }
     }
 
-    pub fn gruvbox() -> Theme {
+    pub(crate) fn gruvbox() -> Theme {
         Theme {
             name: "Gruvbox".to_string(),
             palette: ColorPalette {
@@ -247,7 +247,7 @@ impl Theme {
         }
     }
 
-    pub fn nord() -> Theme {
+    pub(crate) fn nord() -> Theme {
         Theme {
             name: "Nord".to_string(),
             palette: ColorPalette {
@@ -271,7 +271,7 @@ impl Theme {
         }
     }
 
-    pub fn outrun() -> Theme {
+    pub(crate) fn outrun() -> Theme {
         Theme {
             name: "Outrun".to_string(),
             palette: ColorPalette {
@@ -295,7 +295,7 @@ impl Theme {
         }
     }
 
-    pub fn solarized_dark() -> Theme {
+    pub(crate) fn solarized_dark() -> Theme {
         Theme {
             name: "Solarized Dark".to_string(),
             palette: ColorPalette {
@@ -319,7 +319,7 @@ impl Theme {
         }
     }
 
-    pub fn solarized_light() -> Theme {
+    pub(crate) fn solarized_light() -> Theme {
         Theme {
             name: "Solarized Light".to_string(),
             palette: ColorPalette {
@@ -343,7 +343,7 @@ impl Theme {
         }
     }
 
-    pub fn sort() -> Theme {
+    pub(crate) fn sort() -> Theme {
         Theme {
             name: "Sort".to_string(),
             palette: ColorPalette {
@@ -417,7 +417,7 @@ mod de {
     use serde::de::{self, Error, Unexpected, Visitor};
     use std::fmt;
 
-    pub fn deserialize_color_hex_string<'de, D>(
+    pub(crate) fn deserialize_color_hex_string<'de, D>(
         deserializer: D,
     ) -> Result<iced_native::Color, D::Error>
     where

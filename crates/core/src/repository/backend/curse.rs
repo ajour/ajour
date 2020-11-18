@@ -72,7 +72,7 @@ impl Backend for Curse {
     }
 }
 
-pub fn metadata_from_curse_package(flavor: Flavor, package: Package) -> RepositoryMetadata {
+pub(crate) fn metadata_from_curse_package(flavor: Flavor, package: Package) -> RepositoryMetadata {
     let mut remote_packages = HashMap::new();
 
     for file in package.latest_files.iter() {
@@ -116,7 +116,7 @@ pub fn metadata_from_curse_package(flavor: Flavor, package: Package) -> Reposito
     metadata
 }
 
-pub fn metadata_from_fingerprint_info(
+pub(crate) fn metadata_from_fingerprint_info(
     flavor: Flavor,
     info: &AddonFingerprintInfo,
 ) -> RepositoryMetadata {
@@ -168,7 +168,9 @@ pub fn metadata_from_fingerprint_info(
     metadata
 }
 
-pub async fn fetch_remote_packages_by_fingerprint(fingerprints: &[u32]) -> Result<FingerprintInfo> {
+pub(crate) async fn fetch_remote_packages_by_fingerprint(
+    fingerprints: &[u32],
+) -> Result<FingerprintInfo> {
     let mut resp = post_json_async(
         FINGERPRINT_API_ENDPOINT,
         FingerprintData {
@@ -189,7 +191,7 @@ pub async fn fetch_remote_packages_by_fingerprint(fingerprints: &[u32]) -> Resul
     }
 }
 
-pub async fn fetch_remote_packages_by_ids(curse_ids: &[i32]) -> Result<Vec<Package>> {
+pub(crate) async fn fetch_remote_packages_by_ids(curse_ids: &[i32]) -> Result<Vec<Package>> {
     let url = format!("{}/addon", API_ENDPOINT);
     let mut resp = post_json_async(url, curse_ids, vec![], None).await?;
     if resp.status().is_success() {

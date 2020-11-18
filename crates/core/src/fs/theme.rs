@@ -7,7 +7,7 @@ use async_std::stream::StreamExt;
 /// Loads all user defined `.yml` files from the themes
 /// folder. Will only return themes that succesfully deserialize
 /// from yaml format to `Theme`.
-pub async fn load_user_themes() -> Vec<Theme> {
+pub(crate) async fn load_user_themes() -> Vec<Theme> {
     let mut themes = vec![];
 
     let theme_dir = config_dir().join("themes");

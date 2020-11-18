@@ -41,7 +41,7 @@ pub struct ParsingPatterns {
     pub file_parsing_regex: HashMap<String, (regex::Regex, Regex)>,
 }
 
-pub async fn read_addon_directory<P: AsRef<Path>>(
+pub(crate) async fn read_addon_directory<P: AsRef<Path>>(
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: P,
@@ -796,7 +796,7 @@ fn build_addons(
     concatenated_addons
 }
 
-pub async fn update_addon_fingerprint(
+pub(crate) async fn update_addon_fingerprint(
     fingerprint_cache: Arc<Mutex<FingerprintCache>>,
     flavor: Flavor,
     addon_dir: impl AsRef<Path>,
@@ -848,7 +848,7 @@ pub async fn update_addon_fingerprint(
     Ok(())
 }
 
-pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
+pub(crate) fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
     let root_dir = addon_dir
@@ -1046,7 +1046,7 @@ lazy_static::lazy_static! {
 ///
 /// TOC format summary:
 /// https://wowwiki.fandom.com/wiki/TOC_format
-pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
+pub(crate) fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
     //direntry
     let file = if let Ok(file) = File::open(toc_path) {
         file

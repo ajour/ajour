@@ -19,7 +19,7 @@ pub struct ZipBackup {
 }
 
 impl ZipBackup {
-    pub fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>) -> ZipBackup {
+    pub(crate) fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>) -> ZipBackup {
         ZipBackup {
             src,
             dest: dest.as_ref().to_owned(),

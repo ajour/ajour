@@ -44,7 +44,7 @@ pub struct Config {
 impl Config {
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
-    pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
+    pub(crate) fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
         match &self.wow.directory {
             Some(dir) => {
                 // The path to the directory containing the addons
@@ -81,7 +81,7 @@ impl Config {
     /// Returns a `Option<PathBuf>` to the directory which will hold the
     /// temporary zip archives.
     /// This will return `None` if no `wow_directory` is set in the config.
-    pub fn get_download_directory_for_flavor(&self, flavor: Flavor) -> Option<PathBuf> {
+    pub(crate) fn get_download_directory_for_flavor(&self, flavor: Flavor) -> Option<PathBuf> {
         match self.get_addon_directory_for_flavor(&flavor) {
             Some(dir) => {
                 // The path to the directory which hold the temporary zip archives
@@ -94,7 +94,7 @@ impl Config {
 
     /// Returns a `Option<PathBuf>` to the WTF directory.
     /// This will return `None` if no `wow_directory` is set in the config.
-    pub fn get_wtf_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
+    pub(crate) fn get_wtf_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
         match &self.wow.directory {
             Some(dir) => {
                 // The path to the WTF directory
@@ -168,7 +168,7 @@ impl Default for ColumnConfig {
 /// Returns a Config.
 ///
 /// This functions handles the initialization of a Config.
-pub async fn load_config() -> Result<Config> {
+pub(crate) async fn load_config() -> Result<Config> {
     log::debug!("loading config");
 
     Ok(Config::load_or_default()?)

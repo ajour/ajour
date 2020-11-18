@@ -20,7 +20,7 @@ use std::path::PathBuf;
 pub struct FingerprintCache(HashMap<Flavor, Vec<Fingerprint>>);
 
 impl FingerprintCache {
-    pub fn get_mut_for_flavor(&mut self, flavor: Flavor) -> &mut Vec<Fingerprint> {
+    pub(crate) fn get_mut_for_flavor(&mut self, flavor: Flavor) -> &mut Vec<Fingerprint> {
         self.0.entry(flavor).or_default()
     }
 }
@@ -31,7 +31,7 @@ impl PersistentData for FingerprintCache {
     }
 }
 
-pub async fn load_fingerprint_cache() -> Result<FingerprintCache> {
+pub(crate) async fn load_fingerprint_cache() -> Result<FingerprintCache> {
     // Migrate from the old location to the new location, if exists
     {
         let old_location = config_dir().join("fingerprints.yml");
@@ -58,7 +58,7 @@ impl Default for AddonCache {
 }
 
 impl AddonCache {
-    pub fn get_mut_for_flavor(&mut self, flavor: Flavor) -> &mut Vec<AddonCacheEntry> {
+    pub(crate) fn get_mut_for_flavor(&mut self, flavor: Flavor) -> &mut Vec<AddonCacheEntry> {
         match self {
             AddonCache::V1(cache) => cache.entry(flavor).or_default(),
         }
@@ -71,14 +71,14 @@ impl PersistentData for AddonCache {
     }
 }
 
-pub async fn load_addon_cache() -> Result<AddonCache> {
+pub(crate) async fn load_addon_cache() -> Result<AddonCache> {
     AddonCache::load_or_default()
 }
 
 /// Update the cache with input entry. If an entry already exists in the cache,
 /// with the same folder names as the input entry, that entry will be deleted
 /// before inserting the input entry.
-pub async fn update_addon_cache(
+pub(crate) async fn update_addon_cache(
     addon_cache: Arc<Mutex<AddonCache>>,
     entry: AddonCacheEntry,
     flavor: Flavor,
@@ -103,7 +103,7 @@ pub async fn update_addon_cache(
 
 /// Remove the cache entry that has the same folder names
 /// as the input entry. Will return the removed entry, if applicable.
-pub async fn remove_addon_cache_entry(
+pub(crate) async fn remove_addon_cache_entry(
     addon_cache: Arc<Mutex<AddonCache>>,
     entry: AddonCacheEntry,
     flavor: Flavor,

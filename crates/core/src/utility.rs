@@ -17,24 +17,24 @@ use std::path::{Path, PathBuf};
 ///
 /// A string looking like 213r323 would return 213323.
 /// A string looking like Rematch_4_10_15.zip would return 41015.
-pub fn strip_non_digits(string: &str) -> Option<String> {
+pub(crate) fn strip_non_digits(string: &str) -> Option<String> {
     let re = Regex::new(r"[\D]").unwrap();
     let stripped = re.replace_all(string, "").to_string();
     Some(stripped)
 }
 
-pub fn truncate(s: &str, max_chars: usize) -> &str {
+pub(crate) fn truncate(s: &str, max_chars: usize) -> &str {
     match s.char_indices().nth(max_chars) {
         None => s,
         Some((idx, _)) => &s[..idx],
     }
 }
 
-pub fn regex_html_tags_to_newline() -> Regex {
+pub(crate) fn regex_html_tags_to_newline() -> Regex {
     regex::Regex::new(r"<br ?/?>|#.\s").unwrap()
 }
 
-pub fn regex_html_tags_to_space() -> Regex {
+pub(crate) fn regex_html_tags_to_space() -> Regex {
     regex::Regex::new(r"<[^>]*>|&#?\w+;|[gl]t;").unwrap()
 }
 
@@ -52,7 +52,7 @@ pub struct ReleaseAsset {
     pub download_url: String,
 }
 
-pub async fn get_latest_release() -> Option<Release> {
+pub(crate) async fn get_latest_release() -> Option<Release> {
     log::debug!("checking for application update");
 
     let client = HttpClient::new().ok()?;
@@ -71,7 +71,7 @@ pub async fn get_latest_release() -> Option<Release> {
 
 /// Downloads the latest release file that matches `bin_name` and saves it as
 /// `tmp_bin_name`. Will return the temp file as pathbuf.
-pub async fn download_update_to_temp_file(
+pub(crate) async fn download_update_to_temp_file(
     bin_name: String,
     release: Release,
 ) -> Result<(String, PathBuf)> {
@@ -186,7 +186,7 @@ fn extract_binary_from_tar(
 }
 
 /// Logic to help pick the right World of Warcraft folder. We want the root folder.
-pub fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
+pub(crate) fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
     if let Some(path) = path {
         // Known folders in World of Warcraft dir
         let known_folders = ["_retail_", "_classic_", "_ptr_"];
@@ -217,7 +217,7 @@ pub fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
 ///
 /// Will retry for ~30 seconds with longer and longer delays between each, to allow for virus scan
 /// and other automated operations to complete.
-pub fn rename<F, T>(from: F, to: T) -> io::Result<()>
+pub(crate) fn rename<F, T>(from: F, to: T) -> io::Result<()>
 where
     F: AsRef<Path>,
     T: AsRef<Path>,

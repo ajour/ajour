@@ -10,7 +10,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Generic request function.
-pub async fn request_async<T: ToString>(
+pub(crate) async fn request_async<T: ToString>(
     shared_client: &HttpClient,
     url: T,
     headers: Vec<(&str, &str)>,
@@ -33,7 +33,7 @@ pub async fn request_async<T: ToString>(
 }
 
 // Generic function for posting Json data
-pub async fn post_json_async<T: ToString, D: Serialize>(
+pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
     url: T,
     data: D,
     headers: Vec<(&str, &str)>,
@@ -60,7 +60,7 @@ pub async fn post_json_async<T: ToString, D: Serialize>(
 
 /// Function to download a zip archive for a `Addon`.
 /// Note: Addon needs to have a `remote_url` to the file.
-pub async fn download_addon(
+pub(crate) async fn download_addon(
     shared_client: &HttpClient,
     addon: &Addon,
     to_directory: &PathBuf,
@@ -114,7 +114,7 @@ pub async fn download_addon(
 }
 
 /// Download a file from the internet
-pub async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<()> {
+pub(crate) async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<()> {
     let url = url.to_string();
 
     log::debug!("downloading file from {}", &url);

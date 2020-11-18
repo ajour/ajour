@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 /// Creates a .zip archive from the list of source folders and
 /// saves it to the dest folder.
-pub async fn backup_folders(
+pub(crate) async fn backup_folders(
     src_folders: Vec<BackupFolder>,
     mut dest: PathBuf,
 ) -> Result<NaiveDateTime> {
@@ -30,7 +30,7 @@ pub async fn backup_folders(
 
 /// Finds the latest archive in the supplied backup folder and returns
 /// the datetime it was saved
-pub async fn latest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
+pub(crate) async fn latest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
     let pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].zip", &backup_dir.display());
 
     let mut backups = vec![];
@@ -56,7 +56,7 @@ pub struct BackupFolder {
 }
 
 impl BackupFolder {
-    pub fn new(path: impl AsRef<Path>, prefix: impl AsRef<Path>) -> BackupFolder {
+    pub(crate) fn new(path: impl AsRef<Path>, prefix: impl AsRef<Path>) -> BackupFolder {
         BackupFolder {
             path: path.as_ref().to_owned(),
             prefix: prefix.as_ref().to_owned(),

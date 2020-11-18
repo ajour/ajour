@@ -49,7 +49,7 @@ impl Backend for WowI {
     }
 }
 
-pub fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMetadata {
+pub(crate) fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMetadata {
     let mut remote_packages = HashMap::new();
 
     {
@@ -85,18 +85,18 @@ fn api_endpoint(ids: &str) -> String {
 }
 
 /// Returns the addon website url.
-pub fn addon_url(id: &str) -> String {
+pub(crate) fn addon_url(id: &str) -> String {
     format!("{}{}", ADDON_URL, id)
 }
 
 /// Returns changelog url for addon.
-pub fn changelog_url(id: &str) -> String {
+pub(crate) fn changelog_url(id: &str) -> String {
     format!("{}{}/#changelog", ADDON_URL, id)
 }
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
-pub async fn fetch_remote_packages(ids: &[String]) -> Result<Vec<WowIPackage>> {
+pub(crate) async fn fetch_remote_packages(ids: &[String]) -> Result<Vec<WowIPackage>> {
     let client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
         .max_connections_per_host(6)

@@ -8,7 +8,7 @@ use std::fs::remove_dir_all;
 use std::path::PathBuf;
 
 /// Deletes an Addon and all dependencies from disk.
-pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
+pub(crate) fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
     for folder in addon_folders {
         let path = &folder.path;
         if path.exists() {
@@ -22,7 +22,7 @@ pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
 /// Unzips an `Addon` archive, and once that is done, it moves the content
 /// to the `to_directory`.
 /// At the end it will cleanup and remove the archive.
-pub async fn install_addon(
+pub(crate) async fn install_addon(
     addon: &Addon,
     from_directory: &PathBuf,
     to_directory: &PathBuf,

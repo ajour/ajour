@@ -42,7 +42,7 @@ impl std::fmt::Display for RepositoryKind {
 }
 
 impl RepositoryKind {
-    pub fn is_git(self) -> bool {
+    pub(crate) fn is_git(self) -> bool {
         matches!(self, RepositoryKind::Git(_))
     }
 }
@@ -72,7 +72,7 @@ impl std::fmt::Debug for RepositoryPackage {
 }
 
 impl RepositoryPackage {
-    pub fn from_source_url(flavor: Flavor, url: Uri) -> Result<Self> {
+    pub(crate) fn from_source_url(flavor: Flavor, url: Uri) -> Result<Self> {
         let host = url
             .host()
             .ok_or_else(|| error!("no host for url: {:?}", url))?;
@@ -108,7 +108,7 @@ impl RepositoryPackage {
         })
     }
 
-    pub fn from_repo_id(flavor: Flavor, kind: RepositoryKind, id: String) -> Result<Self> {
+    pub(crate) fn from_repo_id(flavor: Flavor, kind: RepositoryKind, id: String) -> Result<Self> {
         let backend: Box<dyn Backend> = match kind {
             RepositoryKind::Curse => Box::new(Curse {
                 id: id.clone(),
@@ -135,13 +135,13 @@ impl RepositoryPackage {
         })
     }
 
-    pub fn with_metadata(mut self, metadata: RepositoryMetadata) -> Self {
+    pub(crate) fn with_metadata(mut self, metadata: RepositoryMetadata) -> Self {
         self.metadata = metadata;
 
         self
     }
 
-    pub async fn resolve_metadata(&mut self) -> Result<()> {
+    pub(crate) async fn resolve_metadata(&mut self) -> Result<()> {
         let metadata = self.backend.get_metadata().await?;
 
         self.metadata = metadata;
@@ -153,7 +153,7 @@ impl RepositoryPackage {
     ///
     /// `channel` and `is_remote` are only used for the Curse repository since
     /// we can get unique changelogs for each version
-    pub async fn get_changelog(
+    pub(crate) async fn get_changelog(
         &self,
         channel: ReleaseChannel,
         is_remote: bool,
@@ -208,11 +208,11 @@ pub struct RepositoryMetadata {
 }
 
 impl RepositoryMetadata {
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Default::default()
     }
 
-    pub fn modules(&self) -> Vec<String> {
+    pub(crate) fn modules(&self) -> Vec<String> {
         let mut entries: Vec<_> = self.remote_packages.iter().collect();
         entries.sort_by_key(|(key, _)| *key);
 
