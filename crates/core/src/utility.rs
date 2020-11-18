@@ -1,6 +1,5 @@
-use crate::error::ClientError;
 use crate::network::{download_file, request_async};
-use crate::Result;
+use crate::{error, Result};
 
 use isahc::prelude::*;
 use regex::Regex;
@@ -80,9 +79,10 @@ pub async fn download_update_to_temp_file(
     let current_bin_path = std::env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let current_bin_path = PathBuf::from(std::env::var("APPIMAGE").map_err(|e| {
-        ClientError::Custom(format!("error getting APPIMAGE env variable: {:?}", e))
-    })?);
+    let current_bin_path = PathBuf::from(
+        std::env::var("APPIMAGE")
+            .map_err(|e| error!("error getting APPIMAGE env variable: {:?}", e))?,
+    );
 
     let current_bin_name = current_bin_path
         .file_name()
@@ -108,7 +108,7 @@ pub async fn download_update_to_temp_file(
             .find(|a| a.name == asset_name)
             .cloned()
             .ok_or_else(|| {
-                ClientError::Custom(format!(
+                Error::Custom(format!(
                     "No new release binary available for {}",
                     asset_name
                 ))
@@ -131,9 +131,7 @@ pub async fn download_update_to_temp_file(
             .iter()
             .find(|a| a.name == bin_name)
             .cloned()
-            .ok_or_else(|| {
-                ClientError::Custom(format!("No new release binary available for {}", bin_name))
-            })?;
+            .ok_or_else(|| error!("No new release binary available for {}", bin_name))?;
 
         download_file(&asset.download_url, &new_bin_path).await?;
     }
@@ -182,7 +180,7 @@ fn extract_binary_from_tar(
         }
     }
 
-    Err(ClientError::Custom(String::from(
+    Err(Error::Custom(String::from(
         "Could not file bin name in archive",
     )))
 }

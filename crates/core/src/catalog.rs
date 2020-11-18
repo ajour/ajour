@@ -1,13 +1,14 @@
 use crate::config::Flavor;
 use crate::error;
 use crate::Result;
+
 use async_std::task;
 use chrono::prelude::*;
 use futures::future::join_all;
-use std::time::Duration;
-
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
+
+use std::time::Duration;
 
 const DEFAULT_TIMEOUT: u64 = 30;
 

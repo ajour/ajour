@@ -7,7 +7,7 @@ mod cli;
 mod command;
 mod gui;
 
-use ajour_core::error::ClientError;
+use ajour_core::error::Error;
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::utility::rename;
 use ajour_core::Result;
@@ -81,7 +81,7 @@ pub fn main() {
 }
 
 /// Log any errors
-pub fn log_error(e: &ClientError) {
+pub fn log_error(e: &Error) {
     log::error!("{}", e);
 }
 
@@ -133,9 +133,10 @@ fn handle_self_update_temp(main_bin_name: &str) -> Result<()> {
     let temp_bin = env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let temp_bin = PathBuf::from(std::env::var("APPIMAGE").map_err(|e| {
-        ClientError::Custom(format!("error getting APPIMAGE env variable: {:?}", e))
-    })?);
+    let temp_bin = PathBuf::from(
+        std::env::var("APPIMAGE")
+            .map_err(|e| Error::Custom(format!("error getting APPIMAGE env variable: {:?}", e)))?,
+    );
 
     let parent_dir = temp_bin.parent().unwrap();
 

@@ -1,6 +1,5 @@
 use crate::backup::BackupFolder;
-use crate::error::ClientError;
-use crate::Result;
+use crate::{bail, Result};
 
 use std::fs::File;
 use std::io::{BufWriter, Read, Write};
@@ -70,10 +69,7 @@ fn zip_write(
     options: FileOptions,
 ) -> Result<()> {
     if !path.exists() {
-        return Err(ClientError::Custom(format!(
-            "path doesn't exist while backing up folder: {:?}",
-            path
-        )));
+        bail!("path doesn't exist while backing up folder: {:?}", path);
     }
 
     let name = path.strip_prefix(prefix).unwrap().to_str().unwrap();

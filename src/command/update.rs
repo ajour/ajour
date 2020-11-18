@@ -8,12 +8,11 @@ use ajour_core::cache::{
     FingerprintCache,
 };
 use ajour_core::config::{load_config, Flavor};
-use ajour_core::error::ClientError;
 use ajour_core::fs::install_addon;
 use ajour_core::network::download_addon;
 use ajour_core::parse::{read_addon_directory, update_addon_fingerprint};
 use ajour_core::repository::RepositoryKind;
-use ajour_core::Result;
+use ajour_core::{error, Result};
 
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
@@ -51,7 +50,7 @@ pub fn update_all_addons() -> Result<()> {
         // Update addons for both flavors
         for flavor in Flavor::ALL.iter() {
             // Only returns None if the path isn't set in the config
-            let addon_directory = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| ClientError::Custom("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line.".to_string()))?;
+            let addon_directory = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| error!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
             if let Ok(addons) = read_addon_directory(
                 Some(addon_cache.clone()),

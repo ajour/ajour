@@ -1,4 +1,4 @@
-use crate::{addon::Addon, error::ClientError, Result};
+use crate::{addon::Addon, bail, Result};
 use async_std::{
     fs::{create_dir_all, File},
     io::copy,
@@ -96,9 +96,7 @@ pub async fn download_addon(
             let body_length = body.len().unwrap_or_default();
 
             if body_length != content_length {
-                return Err(ClientError::Custom(
-                    "Download failed, body len doesn't match content len".to_string(),
-                ));
+                bail!("Download failed, body len doesn't match content len");
             }
         }
 
@@ -148,9 +146,7 @@ pub async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<(
         let body_length = body.len().unwrap_or_default();
 
         if body_length != content_length {
-            return Err(ClientError::Custom(
-                "Download failed, body len doesn't match content len".to_string(),
-            ));
+            bail!("Download failed, body len doesn't match content len");
         }
     }
 

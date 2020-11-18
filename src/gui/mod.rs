@@ -11,7 +11,7 @@ use ajour_core::{
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor},
-    error::ClientError,
+    error::Error,
     fs::PersistentData,
     repository::ReleaseChannel,
     theme::{load_user_themes, Theme},
@@ -120,7 +120,7 @@ pub enum Interaction {
 pub enum Message {
     CachesLoaded(Result<(FingerprintCache, AddonCache)>),
     DownloadedAddon((DownloadReason, Flavor, String, Result<()>)),
-    Error(ClientError),
+    Error(Error),
     Interaction(Interaction),
     LatestRelease(Option<utility::Release>),
     None(()),

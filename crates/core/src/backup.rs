@@ -1,7 +1,7 @@
-use crate::error::ClientError;
 use crate::fs::backup::{Backup, ZipBackup};
 use crate::Result;
 
+use anyhow::Context;
 use chrono::{Local, NaiveDateTime};
 use std::convert::TryFrom;
 use std::path::{Path, PathBuf};
@@ -71,7 +71,7 @@ struct Archive {
 }
 
 impl TryFrom<PathBuf> for Archive {
-    type Error = crate::ClientError;
+    type Error = crate::Error;
 
     fn try_from(path: PathBuf) -> Result<Archive> {
         let file_stem = path.file_stem().unwrap().to_str().unwrap();
@@ -83,7 +83,7 @@ impl TryFrom<PathBuf> for Archive {
         );
 
         let as_of = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%d %H-%M-%S")
-            .map_err(|_| ClientError::Custom("Invalid archive file format".to_string()))?;
+            .context("Invalid archive file format")?;
 
         Ok(Archive { as_of })
     }

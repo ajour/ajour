@@ -15,7 +15,7 @@ use {
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
         error,
-        error::ClientError,
+        error::Error,
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
@@ -1386,7 +1386,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         Ok(_) => std::process::exit(0),
                         Err(error) => {
                             log::error!("{}", error);
-                            ajour.error = Some(ClientError::from(error).to_string());
+                            ajour.error = Some(Error::from(error).to_string());
                             ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
                         }
                     }

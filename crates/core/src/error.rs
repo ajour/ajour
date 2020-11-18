@@ -1,97 +1,97 @@
-use std::{fmt, path::PathBuf};
+use thiserror::*;
+
+// Used by macro
+#[doc(hidden)]
+pub use anyhow;
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("{0}")]
+    Other(#[from] anyhow::Error),
+}
 
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {{
-        let res = std::fmt::format(std::format_args!($($arg)*));
-        $crate::error::ClientError::Custom(res)
+        let err = $crate::error::anyhow::anyhow!($($arg)*);
+        $crate::error::Error::Other(err)
+    }}
+}
+#[macro_export]
+macro_rules! bail {
+    ($($arg:tt)*) => {{
+        return Err($crate::error!($($arg)*))
     }}
 }
 
-#[derive(Debug)]
-pub enum ClientError {
-    Custom(String),
-    IoError(std::io::Error),
-    YamlError(serde_yaml::Error),
-    JsonError(serde_json::Error),
-    HttpError(isahc::http::Error),
-    NetworkError(isahc::Error),
-    ZipError(zip::result::ZipError),
-    LoadFileDoesntExist(PathBuf),
-    LogError(String),
-    FingerprintError(String),
-}
-
-impl ClientError {
-    pub fn fingerprint(e: impl fmt::Display) -> ClientError {
-        ClientError::FingerprintError(format!("{}", e))
-    }
-}
-
-impl fmt::Display for ClientError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::IoError(x) => write!(f, "{}", x),
-            Self::Custom(x) => write!(f, "{}", x),
-            Self::YamlError(x) => write!(f, "{}", x),
-            Self::JsonError(x) => write!(f, "{}", x),
-            Self::NetworkError(_) => write!(
-                f,
-                "A network error occurred. Please check your internet connection and try again."
-            ),
-            Self::HttpError(x) => write!(f, "{}", x),
-            Self::ZipError(x) => write!(f, "{}", x),
-            Self::LoadFileDoesntExist(x) => write!(f, "file doesn't exist: {:?}", x),
-            Self::LogError(x) => write!(f, "{}", x),
-            Self::FingerprintError(x) => write!(f, "{}", x),
-        }
-    }
-}
-
-impl From<std::io::Error> for ClientError {
+impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {
-        Self::IoError(error)
+        Self::Other(error.into())
     }
 }
 
-impl From<serde_yaml::Error> for ClientError {
-    fn from(val: serde_yaml::Error) -> Self {
-        Self::YamlError(val)
+impl From<serde_yaml::Error> for Error {
+    fn from(error: serde_yaml::Error) -> Self {
+        Self::Other(error.into())
     }
 }
 
-impl From<serde_json::Error> for ClientError {
-    fn from(val: serde_json::Error) -> Self {
-        Self::JsonError(val)
+impl From<serde_json::Error> for Error {
+    fn from(error: serde_json::Error) -> Self {
+        Self::Other(error.into())
     }
 }
 
-impl From<isahc::Error> for ClientError {
+impl From<isahc::Error> for Error {
     fn from(error: isahc::Error) -> Self {
-        Self::NetworkError(error)
+        Self::Other(error.into())
     }
 }
 
-impl From<isahc::http::Error> for ClientError {
+impl From<isahc::http::Error> for Error {
     fn from(error: isahc::http::Error) -> Self {
-        Self::HttpError(error)
+        Self::Other(error.into())
     }
 }
 
-impl From<zip::result::ZipError> for ClientError {
+impl From<zip::result::ZipError> for Error {
     fn from(error: zip::result::ZipError) -> Self {
-        Self::ZipError(error)
+        Self::Other(error.into())
     }
 }
 
-impl From<fern::InitError> for ClientError {
+impl From<fern::InitError> for Error {
     fn from(error: fern::InitError) -> Self {
-        Self::LogError(format!("{:?}", error))
+        Self::Other(error.into())
     }
 }
 
-impl From<log::SetLoggerError> for ClientError {
+impl From<log::SetLoggerError> for Error {
     fn from(error: log::SetLoggerError) -> Self {
-        Self::LogError(format!("{:?}", error))
+        Self::Other(error.into())
+    }
+}
+
+impl From<glob::PatternError> for Error {
+    fn from(error: glob::PatternError) -> Self {
+        Self::Other(error.into())
+    }
+}
+
+impl From<glob::GlobError> for Error {
+    fn from(error: glob::GlobError) -> Self {
+        Self::Other(error.into())
+    }
+}
+
+impl From<fancy_regex::Error> for Error {
+    fn from(error: fancy_regex::Error) -> Self {
+        Self::Other(error.into())
+    }
+}
+
+impl From<std::path::StripPrefixError> for Error {
+    fn from(error: std::path::StripPrefixError) -> Self {
+        Self::Other(error.into())
     }
 }

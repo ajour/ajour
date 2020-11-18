@@ -13,6 +13,6 @@ pub mod repository;
 pub mod theme;
 pub mod utility;
 
-use crate::error::ClientError;
+use crate::error::Error;
 
-pub type Result<T> = std::result::Result<T, ClientError>;
+pub type Result<T> = std::result::Result<T, Error>;

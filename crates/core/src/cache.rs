@@ -1,6 +1,7 @@
 use crate::addon::Addon;
+use crate::bail;
 use crate::config::Flavor;
-use crate::error::ClientError;
+use crate::error::Error;
 use crate::fs::{config_dir, PersistentData};
 use crate::parse::Fingerprint;
 use crate::repository::RepositoryKind;
@@ -140,7 +141,7 @@ pub struct AddonCacheEntry {
 }
 
 impl TryFrom<&Addon> for AddonCacheEntry {
-    type Error = ClientError;
+    type Error = Error;
 
     fn try_from(addon: &Addon) -> Result<Self> {
         if let (Some(repository), Some(repository_id)) =
@@ -158,10 +159,10 @@ impl TryFrom<&Addon> for AddonCacheEntry {
                 modified: Utc::now(),
             })
         } else {
-            Err(ClientError::Custom(format!(
+            bail!(
                 "No repository information set for cache entry: {}",
                 addon.title()
-            )))
+            );
         }
     }
 }

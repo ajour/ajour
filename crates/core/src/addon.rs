@@ -1,5 +1,5 @@
 use crate::{
-    error,
+    bail,
     repository::{
         ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
         RepositoryPackage,
@@ -186,7 +186,7 @@ impl Addon {
         folders: Vec<AddonFolder>,
     ) -> Result<Self> {
         if folders.is_empty() {
-            return Err(error!("No folders passed to addon"));
+            bail!("No folders passed to addon");
         }
 
         let mut addon = Addon::empty("");
@@ -514,7 +514,7 @@ impl Addon {
                 .await;
         }
 
-        Err(error!("No repository set for addon"))
+        bail!("No repository set for addon");
     }
 }
 
