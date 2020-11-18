@@ -40,7 +40,8 @@ pub fn about_container<'a>(
     patreon_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     let ajour_title = Text::new("Ajour").size(50);
-    let ajour_title_container = Container::new(ajour_title).align_x(Align::Center);
+    let ajour_title_container =
+        Container::new(ajour_title).style(style::BrightBackgroundContainer(color_palette));
 
     let changelog_title_text = Text::new(if let Some(release) = release {
         format!("Changelog for {}", release.tag_name)
@@ -93,7 +94,7 @@ pub fn about_container<'a>(
         .push(ajour_title_container)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(button_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(changelog_title_container)
         .push(changelog_text_container);
 
