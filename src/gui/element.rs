@@ -627,10 +627,11 @@ pub fn settings_container<'a, 'b>(
     scrollable = scrollable.height(Length::Fill).width(Length::Fill);
 
     let col = Column::new()
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(scrollable)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
+        .push(Space::new(Length::Units(0), Length::Units(20)));
     let row = Row::new()
-        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(Space::new(Length::Units(20), Length::Units(0)))
         .push(col);
 
     // Returns the final container.
