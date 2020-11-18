@@ -1212,9 +1212,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let mut categories = HashSet::new();
             catalog.addons.iter().for_each(|a| {
-                for category in &a.categories {
-                    categories.insert(category.clone());
-                }
+                if a.source.to_string() == ajour.catalog_search_state.source.to_string() {
+                    for category in &a.categories {
+                        categories.insert(category.clone());
+                    }
+                };
             });
 
             // Map category strings to Category enum
@@ -1300,6 +1302,28 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.is_showing_settings = false;
             // Catalog source
             ajour.catalog_search_state.source = source;
+
+            let mut categories = HashSet::new();
+            ajour.catalog.as_ref().unwrap().addons.iter().for_each(|a| {
+                if a.source.to_string() == source.to_string() {
+                    for category in &a.categories {
+                        categories.insert(category.clone());
+                    }
+                };
+            });
+
+            // Map category strings to Category enum
+            let mut categories: Vec<_> = categories
+                .into_iter()
+                .map(CatalogCategory::Choice)
+                .collect();
+            categories.sort();
+
+            // Unshift the All Categories option into the vec
+            categories.insert(0, CatalogCategory::All);
+
+            ajour.catalog_search_state.categories = categories;
+            ajour.catalog_search_state.category = CatalogCategory::All;
 
             query_and_sort_catalog(ajour);
         }
