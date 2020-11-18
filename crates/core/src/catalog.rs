@@ -53,12 +53,10 @@ pub async fn get_catalog() -> Result<Catalog> {
     let mut any_ok = false;
     let results = join_all(futures).await;
     for api_result in results {
-        match api_result {
-            Ok(c) => {
-                addons.append(&mut c.clone());
-                any_ok = true
-            }
-        };
+        if let Ok(c) = api_result {
+            addons.append(&mut c.clone());
+            any_ok = true
+        }
     }
 
     if any_ok {
