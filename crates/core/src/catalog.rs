@@ -58,7 +58,6 @@ pub async fn get_catalog() -> Result<Catalog> {
                 addons.append(&mut c.clone());
                 any_ok = true
             }
-            Err(_) => (),
         };
     }
 
