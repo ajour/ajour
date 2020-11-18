@@ -10,11 +10,16 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ## [Unreleased]
 
 ## Added
-- Option to hide ignored addons.
+- Option to hide ignored addons
+- About view
+
+## Changed
+- Settings now use the whole view
 
 ### Fixed
 - Game Version fallback to TOC could in some cases fail
 - Visual glitch when only having 1 flavor
+- Load addons into catalog asynchronously
 
 ## [0.5.1] - 2020-11-12
 

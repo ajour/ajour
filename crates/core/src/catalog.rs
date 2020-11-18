@@ -1,10 +1,15 @@
 use crate::config::Flavor;
-use crate::network::request_async;
+use crate::error;
 use crate::Result;
+use async_std::task;
 use chrono::prelude::*;
+use futures::future::join_all;
+use std::time::Duration;
 
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
+
+const DEFAULT_TIMEOUT: u64 = 30;
 
 const CURSE_CATALOG_URL: &str =
     "https://github.com/casperstorm/ajour-catalog/releases/latest/download/curse.json";
@@ -13,34 +18,50 @@ const TUKUI_CATALOG_URL: &str =
 const WOWI_CATALOG_URL: &str =
     "https://github.com/casperstorm/ajour-catalog/releases/latest/download/wowi.json";
 
-pub async fn get_catalog() -> Result<Catalog> {
+const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
+
+pub async fn get_catalog_addons_from(url: &str) -> Result<Vec<CatalogAddon>> {
     let client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
         .max_connections_per_host(6)
+        .timeout(Duration::from_secs(DEFAULT_TIMEOUT))
         .build()
         .unwrap();
 
-    let mut curse_resp = request_async(&client, CURSE_CATALOG_URL, vec![], Some(30)).await?;
-    let mut tukui_resp = request_async(&client, TUKUI_CATALOG_URL, vec![], Some(30)).await?;
-    let mut wowi_resp = request_async(&client, WOWI_CATALOG_URL, vec![], Some(30)).await?;
+    let request = client.get_async(url.to_string());
+    if let Ok(mut response) = request.await {
+        if let Ok(json) = task::spawn_blocking(move || response.json()).await {
+            log::debug!("Successfully fetched and parsed {}", url);
+            Ok(json)
+        } else {
+            log::debug!("Could not parse {}", url);
+            Err(error!("Could not parse catalog"))
+        }
+    } else {
+        log::debug!("Could not fetch {}", url);
+        Err(error!("Could not fetch catalog"))
+    }
+}
+
+pub async fn get_catalog() -> Result<Catalog> {
+    let mut futures = vec![];
+    for url in CATALOG_URLS.iter() {
+        futures.push(get_catalog_addons_from(url));
+    }
 
     let mut addons = vec![];
-    if curse_resp.status().is_success() {
-        let mut catalog: Catalog = curse_resp.json()?;
-        addons.append(&mut catalog.addons);
+    let results = join_all(futures).await;
+    for api_result in results {
+        if let Ok(c) = api_result {
+            addons.append(&mut c.clone());
+        }
     }
 
-    if tukui_resp.status().is_success() {
-        let mut catalog: Catalog = tukui_resp.json()?;
-        addons.append(&mut catalog.addons);
+    if !addons.is_empty() {
+        Ok(Catalog { addons })
+    } else {
+        Err(error!("No sources could be downloaded successfully"))
     }
-
-    if wowi_resp.status().is_success() {
-        let mut catalog: Catalog = wowi_resp.json()?;
-        addons.append(&mut catalog.addons);
-    }
-
-    Ok(Catalog { addons })
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
