@@ -1230,7 +1230,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             categories_per_source.iter_mut().for_each(move |s| {
                 s.1.sort();
                 s.1.dedup();
-                s.1.push(CatalogCategory::All);
+                s.1.insert(0, CatalogCategory::All);
             });
 
             ajour.catalog_categories_per_source_cache = categories_per_source;
