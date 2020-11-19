@@ -50,8 +50,3 @@ members = [
     "crates/core",
     "crates/widgets"
 ]
-
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = "z"
