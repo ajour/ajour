@@ -1,5 +1,4 @@
-use super::config_dir;
-use crate::{bail, Result};
+use super::{config_dir, FilesystemError, Result};
 use serde::{de::DeserializeOwned, Serialize};
 
 use std::fs;
@@ -33,7 +32,7 @@ pub trait PersistentData: DeserializeOwned + Serialize {
 
             Ok(serde_yaml::from_reader(&file)?)
         } else {
-            bail!("File does not exist: {:?}", path);
+            return Err(FilesystemError::FileDoesntExist { path });
         }
     }
 

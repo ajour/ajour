@@ -81,8 +81,14 @@ pub fn main() {
 }
 
 /// Log any errors
-pub fn log_error(e: &Error) {
-    log::error!("{}", e);
+pub fn log_error(error: &Error) {
+    log::error!("{}", error);
+
+    if let Some(inner) = error.inner_error() {
+        for cause in inner.chain() {
+            log::error!("caused by: {}", cause);
+        }
+    }
 }
 
 #[allow(clippy::unnecessary_operation)]

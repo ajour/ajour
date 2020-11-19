@@ -1,8 +1,7 @@
 use super::*;
 use crate::config::Flavor;
-use crate::error;
-use crate::network::request_async;
-use crate::repository::{ReleaseChannel, RemotePackage};
+use crate::network::{request_async, DownloadError};
+use crate::repository::{ReleaseChannel, RemotePackage, RepositoryError};
 
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
@@ -23,13 +22,15 @@ pub struct WowI {
 
 #[async_trait]
 impl Backend for WowI {
-    async fn get_metadata(&self) -> Result<RepositoryMetadata> {
+    async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
         let packages = fetch_remote_packages(&[self.id.clone()]).await?;
 
         let package = packages
             .into_iter()
             .next()
-            .ok_or_else(|| error!("No package for wowi id {}", &self.id))?;
+            .ok_or(RepositoryError::WowIMissingPackage {
+                id: self.id.clone(),
+            })?;
 
         let metadata = metadata_from_wowi_package(package);
 
@@ -40,7 +41,7 @@ impl Backend for WowI {
         &self,
         _file_id: Option<i64>,
         _tag_name: Option<String>,
-    ) -> Result<(String, String)> {
+    ) -> Result<(String, String), RepositoryError> {
         Ok((
             "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
                 .to_owned(),
@@ -96,7 +97,9 @@ pub(crate) fn changelog_url(id: &str) -> String {
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
-pub(crate) async fn fetch_remote_packages(ids: &[String]) -> Result<Vec<WowIPackage>> {
+pub(crate) async fn fetch_remote_packages(
+    ids: &[String],
+) -> Result<Vec<WowIPackage>, DownloadError> {
     let client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
         .max_connections_per_host(6)
@@ -110,10 +113,10 @@ pub(crate) async fn fetch_remote_packages(ids: &[String]) -> Result<Vec<WowIPack
         let packages = resp.json();
         Ok(packages?)
     } else {
-        Err(error!(
-            "Couldn't fetch details for addon. Server returned: {}",
-            resp.text()?
-        ))
+        Err(DownloadError::InvalidStatusCode {
+            code: resp.status(),
+            url,
+        })
     }
 }
 

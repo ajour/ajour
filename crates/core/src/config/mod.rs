@@ -1,3 +1,4 @@
+use crate::fs::FilesystemError;
 use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -6,7 +7,6 @@ mod addons;
 mod wow;
 
 use crate::fs::PersistentData;
-use crate::Result;
 
 pub use crate::config::addons::Addons;
 pub use crate::config::wow::{Flavor, Wow};
@@ -168,7 +168,7 @@ impl Default for ColumnConfig {
 /// Returns a Config.
 ///
 /// This functions handles the initialization of a Config.
-pub(crate) async fn load_config() -> Result<Config> {
+pub(crate) async fn load_config() -> Result<Config, FilesystemError> {
     log::debug!("loading config");
 
     Ok(Config::load_or_default()?)

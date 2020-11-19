@@ -1,11 +1,10 @@
 use crate::{
-    bail,
+    parse::ParseError,
     repository::{
-        ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
-        RepositoryPackage,
+        ReleaseChannel, RemotePackage, RepositoryError, RepositoryIdentifiers, RepositoryKind,
+        RepositoryMetadata, RepositoryPackage,
     },
     utility::strip_non_digits,
-    Result,
 };
 
 use std::cmp::Ordering;
@@ -184,9 +183,9 @@ impl Addon {
     pub(crate) fn build_with_repo_and_folders(
         repo_package: RepositoryPackage,
         folders: Vec<AddonFolder>,
-    ) -> Result<Self> {
+    ) -> Result<Self, ParseError> {
         if folders.is_empty() {
-            bail!("No folders passed to addon");
+            return Err(ParseError::BuildAddonEmptyFolders);
         }
 
         let mut addon = Addon::empty("");
@@ -507,14 +506,17 @@ impl Addon {
         }
     }
 
-    pub(crate) async fn get_changelog(&self, is_remote: bool) -> Result<(String, String)> {
+    pub(crate) async fn get_changelog(
+        &self,
+        is_remote: bool,
+    ) -> Result<(String, String), RepositoryError> {
         if let Some(repository) = self.repository() {
             return repository
                 .get_changelog(self.release_channel, is_remote)
                 .await;
         }
 
-        bail!("No repository set for addon");
+        Err(RepositoryError::AddonNoRepository)
     }
 }
 

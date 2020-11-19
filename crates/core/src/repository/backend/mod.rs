@@ -1,5 +1,4 @@
-use super::RepositoryMetadata;
-use crate::Result;
+use super::{RepositoryError, RepositoryMetadata};
 
 use async_trait::async_trait;
 use dyn_clone::{clone_trait_object, DynClone};
@@ -16,13 +15,13 @@ pub use wowi::WowI;
 
 #[async_trait]
 pub(crate) trait Backend: DynClone + Send + Sync {
-    async fn get_metadata(&self) -> Result<RepositoryMetadata>;
+    async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError>;
 
     async fn get_changelog(
         &self,
         file_id: Option<i64>,
         tag_name: Option<String>,
-    ) -> Result<(String, String)>;
+    ) -> Result<(String, String), RepositoryError>;
 }
 
 clone_trait_object!(Backend);

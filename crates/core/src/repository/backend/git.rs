@@ -3,10 +3,10 @@ pub use gitlab::Gitlab;
 
 mod github {
     use crate::config::Flavor;
-    use crate::error;
     use crate::network::request_async;
-    use crate::repository::{Backend, ReleaseChannel, RemotePackage, RepositoryMetadata};
-    use crate::Result;
+    use crate::repository::{
+        Backend, ReleaseChannel, RemotePackage, RepositoryError, RepositoryMetadata,
+    };
 
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
@@ -24,19 +24,19 @@ mod github {
 
     #[async_trait]
     impl Backend for Github {
-        async fn get_metadata(&self) -> Result<RepositoryMetadata> {
+        async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
             let client = HttpClient::new()?;
 
             let mut path = self.url.path().split('/');
             // Get rid of leading slash
             path.next();
 
-            let author = path
-                .next()
-                .ok_or_else(|| error!("author not present in url: {:?}", self.url))?;
-            let repo = path
-                .next()
-                .ok_or_else(|| error!("repo not present in url: {:?}", self.url))?;
+            let author = path.next().ok_or(RepositoryError::GitMissingAuthor {
+                url: self.url.to_string(),
+            })?;
+            let repo = path.next().ok_or(RepositoryError::GitMissingRepo {
+                url: self.url.to_string(),
+            })?;
 
             let url = format!(
                 "https://api.github.com/repos/{}/{}/releases/latest",
@@ -45,7 +45,9 @@ mod github {
 
             let mut resp = request_async(&client, &url, vec![], None).await?;
 
-            let release: Release = resp.json()?;
+            let release: Release = resp
+                .json()
+                .map_err(|_| RepositoryError::GitMissingRelease { url: url.clone() })?;
 
             let num_non_classic = release
                 .assets
@@ -65,15 +67,15 @@ mod github {
                     && num_classic == 0
                     && num_non_classic > 1
             {
-                return Err(error!(
-                    "{} zip files on release, can't determine which to download",
-                    num_non_classic
-                ));
+                return Err(RepositoryError::GitIndeterminableZip {
+                    count: num_non_classic,
+                    url: url.clone(),
+                });
             } else if self.flavor.base_flavor() == Flavor::Classic && num_classic > 1 {
-                return Err(error!(
-                    "{} classic zip files on release, can't determine which to download",
-                    num_classic
-                ));
+                return Err(RepositoryError::GitIndeterminableZipClassic {
+                    count: num_classic,
+                    url,
+                });
             }
 
             let asset = release
@@ -88,7 +90,7 @@ mod github {
                         a.name.ends_with("zip")
                     }
                 })
-                .ok_or_else(|| error!("No zip asset for {}", &url))?;
+                .ok_or(RepositoryError::GitNoZip { url })?;
 
             let version = release.tag_name.clone();
             let download_url = asset.browser_download_url.clone();
@@ -119,9 +121,8 @@ mod github {
             &self,
             _file_id: Option<i64>,
             tag_name: Option<String>,
-        ) -> Result<(String, String)> {
-            let tag_name =
-                tag_name.ok_or_else(|| error!("Tag name must be specified for git changelog"))?;
+        ) -> Result<(String, String), RepositoryError> {
+            let tag_name = tag_name.ok_or(RepositoryError::GitChangelogTagName)?;
 
             let client = HttpClient::new()?;
 
@@ -129,12 +130,12 @@ mod github {
             // Get rid of leading slash
             path.next();
 
-            let author = path
-                .next()
-                .ok_or_else(|| error!("author not present in url: {:?}", self.url))?;
-            let repo = path
-                .next()
-                .ok_or_else(|| error!("repo not present in url: {:?}", self.url))?;
+            let author = path.next().ok_or(RepositoryError::GitMissingAuthor {
+                url: self.url.to_string(),
+            })?;
+            let repo = path.next().ok_or(RepositoryError::GitMissingRepo {
+                url: self.url.to_string(),
+            })?;
 
             let url = format!(
                 "https://api.github.com/repos/{}/{}/releases/tags/{}",
@@ -143,7 +144,9 @@ mod github {
 
             let mut resp = request_async(&client, &url, vec![], None).await?;
 
-            let release: Release = resp.json()?;
+            let release: Release = resp
+                .json()
+                .map_err(|_| RepositoryError::GitMissingRelease { url })?;
 
             Ok((release.body, release.html_url))
         }
@@ -168,10 +171,10 @@ mod github {
 
 mod gitlab {
     use crate::config::Flavor;
-    use crate::error;
     use crate::network::request_async;
-    use crate::repository::{Backend, ReleaseChannel, RemotePackage, RepositoryMetadata};
-    use crate::Result;
+    use crate::repository::{
+        Backend, ReleaseChannel, RemotePackage, RepositoryError, RepositoryMetadata,
+    };
 
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
@@ -189,19 +192,19 @@ mod gitlab {
 
     #[async_trait]
     impl Backend for Gitlab {
-        async fn get_metadata(&self) -> Result<RepositoryMetadata> {
+        async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
             let client = HttpClient::new()?;
 
             let mut path = self.url.path().split('/');
             // Get rid of leading slash
             path.next();
 
-            let author = path
-                .next()
-                .ok_or_else(|| error!("author not present in url: {:?}", self.url))?;
-            let repo = path
-                .next()
-                .ok_or_else(|| error!("repo not present in url: {:?}", self.url))?;
+            let author = path.next().ok_or(RepositoryError::GitMissingAuthor {
+                url: self.url.to_string(),
+            })?;
+            let repo = path.next().ok_or(RepositoryError::GitMissingRepo {
+                url: self.url.to_string(),
+            })?;
 
             let url = format!(
                 "https://gitlab.com/api/v4/projects/{}%2F{}/releases",
@@ -210,10 +213,12 @@ mod gitlab {
 
             let mut resp = request_async(&client, &url, vec![], None).await?;
 
-            let releases: Vec<Release> = resp.json()?;
+            let releases: Vec<Release> = resp
+                .json()
+                .map_err(|_| RepositoryError::GitMissingRelease { url: url.clone() })?;
             let release = releases
                 .get(0)
-                .ok_or_else(|| error!("No release found for {}", &url))?;
+                .ok_or(RepositoryError::GitMissingRelease { url: url.clone() })?;
 
             let version = release.tag_name.clone();
 
@@ -237,15 +242,15 @@ mod gitlab {
                     && num_classic == 0
                     && num_non_classic > 1
             {
-                return Err(error!(
-                    "{} zip files on release, can't determine which to download",
-                    num_non_classic
-                ));
+                return Err(RepositoryError::GitIndeterminableZip {
+                    count: num_non_classic,
+                    url: url.clone(),
+                });
             } else if self.flavor.base_flavor() == Flavor::Classic && num_classic > 1 {
-                return Err(error!(
-                    "{} classic zip files on release, can't determine which to download",
-                    num_classic
-                ));
+                return Err(RepositoryError::GitIndeterminableZipClassic {
+                    count: num_classic,
+                    url,
+                });
             }
 
             let asset = release
@@ -261,7 +266,7 @@ mod gitlab {
                         a.name.ends_with("zip")
                     }
                 })
-                .ok_or_else(|| error!("No zip asset for {}", &url))?;
+                .ok_or(RepositoryError::GitNoZip { url })?;
 
             let download_url = asset.url.clone();
             let date_time = Some(release.released_at);
@@ -291,9 +296,8 @@ mod gitlab {
             &self,
             _file_id: Option<i64>,
             tag_name: Option<String>,
-        ) -> Result<(String, String)> {
-            let tag_name =
-                tag_name.ok_or_else(|| error!("Tag name must be specified for git changelog"))?;
+        ) -> Result<(String, String), RepositoryError> {
+            let tag_name = tag_name.ok_or(RepositoryError::GitChangelogTagName)?;
 
             let client = HttpClient::new()?;
 
@@ -301,12 +305,12 @@ mod gitlab {
             // Get rid of leading slash
             path.next();
 
-            let author = path
-                .next()
-                .ok_or_else(|| error!("author not present in url: {:?}", self.url))?;
-            let repo = path
-                .next()
-                .ok_or_else(|| error!("repo not present in url: {:?}", self.url))?;
+            let author = path.next().ok_or(RepositoryError::GitMissingAuthor {
+                url: self.url.to_string(),
+            })?;
+            let repo = path.next().ok_or(RepositoryError::GitMissingRepo {
+                url: self.url.to_string(),
+            })?;
 
             let url = format!(
                 "https://gitlab.com/api/v4/projects/{}%2F{}/releases/{}",
@@ -315,7 +319,9 @@ mod gitlab {
 
             let mut resp = request_async(&client, &url, vec![], None).await?;
 
-            let release: Release = resp.json()?;
+            let release: Release = resp
+                .json()
+                .map_err(|_| RepositoryError::GitMissingRelease { url })?;
 
             let release_url = format!("https://gitlab.com{}", &release.tag_path);
 

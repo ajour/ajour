@@ -1,11 +1,8 @@
 use crate::addon::Addon;
-use crate::bail;
 use crate::config::Flavor;
-use crate::error::Error;
-use crate::fs::{config_dir, PersistentData};
+use crate::fs::{config_dir, FilesystemError, PersistentData};
 use crate::parse::Fingerprint;
 use crate::repository::RepositoryKind;
-use crate::Result;
 
 use async_std::fs::rename;
 use async_std::sync::{Arc, Mutex};
@@ -31,7 +28,7 @@ impl PersistentData for FingerprintCache {
     }
 }
 
-pub(crate) async fn load_fingerprint_cache() -> Result<FingerprintCache> {
+pub(crate) async fn load_fingerprint_cache() -> Result<FingerprintCache, CacheError> {
     // Migrate from the old location to the new location, if exists
     {
         let old_location = config_dir().join("fingerprints.yml");
@@ -39,11 +36,13 @@ pub(crate) async fn load_fingerprint_cache() -> Result<FingerprintCache> {
         if old_location.exists() {
             let new_location = FingerprintCache::path()?;
 
-            let _ = rename(old_location, new_location).await;
+            rename(old_location, new_location)
+                .await
+                .map_err(FilesystemError::IO)?;
         }
     }
 
-    FingerprintCache::load_or_default()
+    Ok(FingerprintCache::load_or_default()?)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -71,8 +70,8 @@ impl PersistentData for AddonCache {
     }
 }
 
-pub(crate) async fn load_addon_cache() -> Result<AddonCache> {
-    AddonCache::load_or_default()
+pub(crate) async fn load_addon_cache() -> Result<AddonCache, CacheError> {
+    Ok(AddonCache::load_or_default()?)
 }
 
 /// Update the cache with input entry. If an entry already exists in the cache,
@@ -82,7 +81,7 @@ pub(crate) async fn update_addon_cache(
     addon_cache: Arc<Mutex<AddonCache>>,
     entry: AddonCacheEntry,
     flavor: Flavor,
-) -> Result<AddonCacheEntry> {
+) -> Result<AddonCacheEntry, CacheError> {
     // Lock mutex to get mutable access and block other tasks from trying to update
     let mut addon_cache = addon_cache.lock().await;
 
@@ -96,7 +95,7 @@ pub(crate) async fn update_addon_cache(
     entries.push(entry.clone());
 
     // Persist changes to filesystem
-    let _ = addon_cache.save();
+    addon_cache.save()?;
 
     Ok(entry)
 }
@@ -107,7 +106,7 @@ pub(crate) async fn remove_addon_cache_entry(
     addon_cache: Arc<Mutex<AddonCache>>,
     entry: AddonCacheEntry,
     flavor: Flavor,
-) -> Option<AddonCacheEntry> {
+) -> Result<Option<AddonCacheEntry>, CacheError> {
     // Lock mutex to get mutable access and block other tasks from trying to update
     let mut addon_cache = addon_cache.lock().await;
 
@@ -122,11 +121,11 @@ pub(crate) async fn remove_addon_cache_entry(
         let entry = entries.remove(idx);
 
         // Persist changes to filesystem
-        let _ = addon_cache.save();
+        addon_cache.save()?;
 
-        Some(entry)
+        Ok(Some(entry))
     } else {
-        None
+        Ok(None)
     }
 }
 
@@ -141,9 +140,9 @@ pub struct AddonCacheEntry {
 }
 
 impl TryFrom<&Addon> for AddonCacheEntry {
-    type Error = Error;
+    type Error = CacheError;
 
-    fn try_from(addon: &Addon) -> Result<Self> {
+    fn try_from(addon: &Addon) -> Result<Self, CacheError> {
         if let (Some(repository), Some(repository_id)) =
             (addon.repository_kind(), addon.repository_id())
         {
@@ -159,10 +158,17 @@ impl TryFrom<&Addon> for AddonCacheEntry {
                 modified: Utc::now(),
             })
         } else {
-            bail!(
-                "No repository information set for cache entry: {}",
-                addon.title()
-            );
+            return Err(CacheError::AddonMissingRepo {
+                title: addon.title().to_owned(),
+            });
         }
     }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum CacheError {
+    #[error("No repository information to create cache entry from addon {title}")]
+    AddonMissingRepo { title: String },
+    #[error(transparent)]
+    Filesystem(#[from] crate::fs::FilesystemError),
 }

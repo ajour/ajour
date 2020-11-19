@@ -1,5 +1,6 @@
-use crate::network::{download_file, request_async};
-use crate::{error, Result};
+#[cfg(target_os = "macos")]
+use crate::fs::FilesystemError;
+use crate::network::{download_file, request_async, DownloadError};
 
 use isahc::prelude::*;
 use regex::Regex;
@@ -74,7 +75,7 @@ pub(crate) async fn get_latest_release() -> Option<Release> {
 pub(crate) async fn download_update_to_temp_file(
     bin_name: String,
     release: Release,
-) -> Result<(String, PathBuf)> {
+) -> Result<(String, PathBuf), DownloadError> {
     #[cfg(not(target_os = "linux"))]
     let current_bin_path = std::env::current_exe()?;
 
@@ -107,12 +108,7 @@ pub(crate) async fn download_update_to_temp_file(
             .iter()
             .find(|a| a.name == asset_name)
             .cloned()
-            .ok_or_else(|| {
-                Error::Custom(format!(
-                    "No new release binary available for {}",
-                    asset_name
-                ))
-            })?;
+            .ok_or_else(|| DownloadError::MissingSelfUpdateRelease { bin_name })?;
 
         let archive_path = current_bin_path.parent().unwrap().join(&asset_name);
 
@@ -131,7 +127,7 @@ pub(crate) async fn download_update_to_temp_file(
             .iter()
             .find(|a| a.name == bin_name)
             .cloned()
-            .ok_or_else(|| error!("No new release binary available for {}", bin_name))?;
+            .ok_or_else(|| DownloadError::MissingSelfUpdateRelease { bin_name })?;
 
         download_file(&asset.download_url, &new_bin_path).await?;
     }
@@ -156,7 +152,7 @@ fn extract_binary_from_tar(
     archive_path: &PathBuf,
     temp_file: &PathBuf,
     bin_name: &str,
-) -> Result<()> {
+) -> Result<(), FilesystemError> {
     use flate2::read::GzDecoder;
     use std::fs::File;
     use std::io::copy;
@@ -180,9 +176,9 @@ fn extract_binary_from_tar(
         }
     }
 
-    Err(Error::Custom(String::from(
-        "Could not file bin name in archive",
-    )))
+    Err(FilesystemError::BinMissingFromTar {
+        bin_name: bin_name.to_owned(),
+    })
 }
 
 /// Logic to help pick the right World of Warcraft folder. We want the root folder.

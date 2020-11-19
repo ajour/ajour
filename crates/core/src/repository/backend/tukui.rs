@@ -1,8 +1,7 @@
 use super::*;
 use crate::config::Flavor;
-use crate::error;
-use crate::network::request_async;
-use crate::repository::{ReleaseChannel, RemotePackage};
+use crate::network::{request_async, DownloadError};
+use crate::repository::{ReleaseChannel, RemotePackage, RepositoryError};
 use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 
 use async_trait::async_trait;
@@ -22,7 +21,7 @@ pub struct Tukui {
 
 #[async_trait]
 impl Backend for Tukui {
-    async fn get_metadata(&self) -> Result<RepositoryMetadata> {
+    async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
         let client = Arc::new(
             HttpClient::builder()
                 .redirect_policy(RedirectPolicy::Follow)
@@ -42,7 +41,7 @@ impl Backend for Tukui {
         &self,
         _file_id: Option<i64>,
         _tag_name: Option<String>,
-    ) -> Result<(String, String)> {
+    ) -> Result<(String, String), RepositoryError> {
         let url = changelog_endpoint(&self.id, &self.flavor);
 
         match self.flavor {
@@ -156,7 +155,7 @@ pub(crate) async fn fetch_remote_package(
     shared_client: Arc<HttpClient>,
     id: &str,
     flavor: &Flavor,
-) -> Result<(String, TukuiPackage)> {
+) -> Result<(String, TukuiPackage), DownloadError> {
     let url = api_endpoint(id, flavor);
 
     let timeout = Some(30);
@@ -166,10 +165,10 @@ pub(crate) async fn fetch_remote_package(
         let package = resp.json()?;
         Ok((id.to_string(), package))
     } else {
-        Err(error!(
-            "Couldn't fetch details for addon. Server returned: {}",
-            resp.text()?
-        ))
+        Err(DownloadError::InvalidStatusCode {
+            code: resp.status(),
+            url,
+        })
     }
 }
 

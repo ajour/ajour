@@ -1,4 +1,4 @@
-use crate::{addon::Addon, bail, Result};
+use crate::addon::Addon;
 use async_std::{
     fs::{create_dir_all, File},
     io::copy,
@@ -15,7 +15,7 @@ pub(crate) async fn request_async<T: ToString>(
     url: T,
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
-) -> Result<Response<isahc::Body>> {
+) -> Result<Response<isahc::Body>, DownloadError> {
     // Sometimes a download url has a space.
     let url = url.to_string().replace(" ", "%20");
 
@@ -38,7 +38,7 @@ pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
     data: D,
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
-) -> Result<Response<isahc::Body>> {
+) -> Result<Response<isahc::Body>, DownloadError> {
     let mut request = Request::builder()
         .method("POST")
         .uri(url.to_string())
@@ -64,7 +64,7 @@ pub(crate) async fn download_addon(
     shared_client: &HttpClient,
     addon: &Addon,
     to_directory: &PathBuf,
-) -> Result<()> {
+) -> Result<(), DownloadError> {
     let package = if let Some(relevant_package) = addon.relevant_release_package() {
         Some(relevant_package)
     } else if let Some(fallback_package) = addon.fallback_release_package() {
@@ -96,7 +96,10 @@ pub(crate) async fn download_addon(
             let body_length = body.len().unwrap_or_default();
 
             if body_length != content_length {
-                bail!("Download failed, body len doesn't match content len");
+                return Err(DownloadError::ContentLength {
+                    content_length,
+                    body_length,
+                });
             }
         }
 
@@ -114,7 +117,10 @@ pub(crate) async fn download_addon(
 }
 
 /// Download a file from the internet
-pub(crate) async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<()> {
+pub(crate) async fn download_file<T: ToString>(
+    url: T,
+    dest_file: &PathBuf,
+) -> Result<(), DownloadError> {
     let url = url.to_string();
 
     log::debug!("downloading file from {}", &url);
@@ -146,7 +152,10 @@ pub(crate) async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> R
         let body_length = body.len().unwrap_or_default();
 
         if body_length != content_length {
-            bail!("Download failed, body len doesn't match content len");
+            return Err(DownloadError::ContentLength {
+                content_length,
+                body_length,
+            });
         }
     }
 
@@ -157,4 +166,36 @@ pub(crate) async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> R
     log::debug!("file saved as {:?}", &dest_file);
 
     Ok(())
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum DownloadError {
+    #[error("Body len != content len: {body_length} != {content_length}")]
+    ContentLength {
+        content_length: u64,
+        body_length: u64,
+    },
+    #[error("Invalid status code {code} for url {url}")]
+    InvalidStatusCode {
+        code: isahc::http::StatusCode,
+        url: String,
+    },
+    #[error("No new release binary available for {bin_name}")]
+    MissingSelfUpdateRelease { bin_name: String },
+    #[error("Catalog failed to download")]
+    CatalogFailed,
+    #[error(transparent)]
+    Isahc(#[from] isahc::Error),
+    #[error(transparent)]
+    Http(#[from] isahc::http::Error),
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
+    #[error(transparent)]
+    Filesystem(#[from] crate::fs::FilesystemError),
+}
+
+impl From<std::io::Error> for DownloadError {
+    fn from(e: std::io::Error) -> Self {
+        DownloadError::Filesystem(crate::fs::FilesystemError::IO(e))
+    }
 }

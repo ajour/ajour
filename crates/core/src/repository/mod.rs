@@ -1,6 +1,4 @@
 use crate::config::Flavor;
-use crate::error;
-use crate::Result;
 
 use chrono::{DateTime, Utc};
 use isahc::http::uri::Uri;
@@ -72,10 +70,10 @@ impl std::fmt::Debug for RepositoryPackage {
 }
 
 impl RepositoryPackage {
-    pub(crate) fn from_source_url(flavor: Flavor, url: Uri) -> Result<Self> {
-        let host = url
-            .host()
-            .ok_or_else(|| error!("no host for url: {:?}", url))?;
+    pub(crate) fn from_source_url(flavor: Flavor, url: Uri) -> Result<Self, RepositoryError> {
+        let host = url.host().ok_or(RepositoryError::GitMissingHost {
+            url: url.to_string(),
+        })?;
 
         let (backend, kind): (Box<dyn Backend>, _) = match host {
             "github.com" => (
@@ -93,10 +91,9 @@ impl RepositoryPackage {
                 RepositoryKind::Git(GitKind::Gitlab),
             ),
             _ => {
-                return Err(error!(
-                    "Invalid host, only GitHub and GitLab are supported: {}",
-                    host
-                ))
+                return Err(RepositoryError::GitInvalidHost {
+                    host: host.to_string(),
+                })
             }
         };
 
@@ -108,7 +105,11 @@ impl RepositoryPackage {
         })
     }
 
-    pub(crate) fn from_repo_id(flavor: Flavor, kind: RepositoryKind, id: String) -> Result<Self> {
+    pub(crate) fn from_repo_id(
+        flavor: Flavor,
+        kind: RepositoryKind,
+        id: String,
+    ) -> Result<Self, RepositoryError> {
         let backend: Box<dyn Backend> = match kind {
             RepositoryKind::Curse => Box::new(Curse {
                 id: id.clone(),
@@ -122,9 +123,7 @@ impl RepositoryPackage {
                 id: id.clone(),
                 flavor,
             }),
-            RepositoryKind::Git(_) => {
-                return Err(error!("Git repo must be created with `from_source_url`"))
-            }
+            RepositoryKind::Git(_) => return Err(RepositoryError::GitWrongConstructor),
         };
 
         Ok(RepositoryPackage {
@@ -141,7 +140,7 @@ impl RepositoryPackage {
         self
     }
 
-    pub(crate) async fn resolve_metadata(&mut self) -> Result<()> {
+    pub(crate) async fn resolve_metadata(&mut self) -> Result<(), RepositoryError> {
         let metadata = self.backend.get_metadata().await?;
 
         self.metadata = metadata;
@@ -157,7 +156,7 @@ impl RepositoryPackage {
         &self,
         channel: ReleaseChannel,
         is_remote: bool,
-    ) -> Result<(String, String)> {
+    ) -> Result<(String, String), RepositoryError> {
         let file_id = if self.kind == RepositoryKind::Curse {
             if is_remote {
                 self.metadata
@@ -177,7 +176,7 @@ impl RepositoryPackage {
                 .metadata
                 .remote_packages
                 .get(&channel)
-                .ok_or_else(|| error!("No remote package for channel {:?}", channel))?;
+                .ok_or(RepositoryError::MissingPackageChannel { channel })?;
 
             Some(remote_package.version.clone())
         } else {
@@ -287,4 +286,58 @@ pub struct RepositoryIdentifiers {
     pub tukui: Option<String>,
     pub curse: Option<i32>,
     pub git: Option<String>,
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum RepositoryError {
+    #[error("No repository set for addon")]
+    AddonNoRepository,
+    #[error("Failed to parse curse id as u32: {id}")]
+    CurseIdConversion { id: String },
+    #[error("File id must be provided for curse changelog request")]
+    CurseChangelogFileId,
+    #[error("No package found for curse id {id}")]
+    CurseMissingPackage { id: String },
+    #[error("No package found for WowI id {id}")]
+    WowIMissingPackage { id: String },
+    #[error("No remote package found for channel {channel}")]
+    MissingPackageChannel { channel: ReleaseChannel },
+    #[error("Git repo must be created with `from_source_url`")]
+    GitWrongConstructor,
+    #[error("Invalid url {url}")]
+    GitInvalidUrl { url: String },
+    #[error("No valid host in {url}")]
+    GitMissingHost { url: String },
+    #[error("Invalid host {host}, only github.com and gitlab.com are supported")]
+    GitInvalidHost { host: String },
+    #[error("Author not present in {url}")]
+    GitMissingAuthor { url: String },
+    #[error("Repo not present in {url}")]
+    GitMissingRepo { url: String },
+    #[error("No release at {url}")]
+    GitMissingRelease { url: String },
+    #[error("{count} zip files on release, can't determine which to download for {url}")]
+    GitIndeterminableZip { count: usize, url: String },
+    #[error("{count} classic zip files on release, can't determine which to download for {url}")]
+    GitIndeterminableZipClassic { count: usize, url: String },
+    #[error("No zip available for {url}")]
+    GitNoZip { url: String },
+    #[error("Tag name must be specified for git changelog")]
+    GitChangelogTagName,
+    #[error(transparent)]
+    Download(#[from] crate::network::DownloadError),
+    #[error(transparent)]
+    Filesystem(#[from] crate::fs::FilesystemError),
+}
+
+impl From<std::io::Error> for RepositoryError {
+    fn from(e: std::io::Error) -> Self {
+        RepositoryError::Filesystem(crate::fs::FilesystemError::IO(e))
+    }
+}
+
+impl From<isahc::Error> for RepositoryError {
+    fn from(e: isahc::Error) -> Self {
+        RepositoryError::Download(crate::network::DownloadError::Isahc(e))
+    }
 }

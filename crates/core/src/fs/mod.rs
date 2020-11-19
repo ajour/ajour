@@ -59,3 +59,22 @@ lazy_static! {
 pub(crate) fn config_dir() -> PathBuf {
     CONFIG_DIR.lock().unwrap().clone()
 }
+
+#[derive(thiserror::Error, Debug)]
+pub enum FilesystemError {
+    #[error(transparent)]
+    IO(#[from] std::io::Error),
+    #[error(transparent)]
+    SerdeYaml(#[from] serde_yaml::Error),
+    #[error(transparent)]
+    Zip(#[from] zip::result::ZipError),
+    #[error(transparent)]
+    WalkDir(#[from] walkdir::Error),
+    #[error("File doesn't exist: {path:?}")]
+    FileDoesntExist { path: PathBuf },
+    #[cfg(target_os = "macos")]
+    #[error("Could not file bin name {bin_name} in archive")]
+    BinMissingFromTar { bin_name: String },
+}
+
+type Result<T, E = FilesystemError> = std::result::Result<T, E>;

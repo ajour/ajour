@@ -1,17 +1,18 @@
-use crate::fs::backup::{Backup, ZipBackup};
-use crate::Result;
+use crate::fs::{
+    backup::{Backup, ZipBackup},
+    FilesystemError,
+};
 
-use anyhow::Context;
 use chrono::{Local, NaiveDateTime};
 use std::convert::TryFrom;
 use std::path::{Path, PathBuf};
 
 /// Creates a .zip archive from the list of source folders and
 /// saves it to the dest folder.
-pub(crate) async fn backup_folders(
+pub async fn backup_folders(
     src_folders: Vec<BackupFolder>,
     mut dest: PathBuf,
-) -> Result<NaiveDateTime> {
+) -> Result<NaiveDateTime, FilesystemError> {
     let now = Local::now();
 
     dest.push(format!(
@@ -23,14 +24,15 @@ pub(crate) async fn backup_folders(
 
     zip_backup.backup()?;
 
-    let as_of = Archive::try_from(dest)?.as_of;
+    // Won't fail since we pass it the correct format
+    let as_of = Archive::try_from(dest).unwrap().as_of;
 
     Ok(as_of)
 }
 
 /// Finds the latest archive in the supplied backup folder and returns
 /// the datetime it was saved
-pub(crate) async fn latest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
+pub async fn latest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
     let pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].zip", &backup_dir.display());
 
     let mut backups = vec![];
@@ -56,7 +58,7 @@ pub struct BackupFolder {
 }
 
 impl BackupFolder {
-    pub(crate) fn new(path: impl AsRef<Path>, prefix: impl AsRef<Path>) -> BackupFolder {
+    pub fn new(path: impl AsRef<Path>, prefix: impl AsRef<Path>) -> BackupFolder {
         BackupFolder {
             path: path.as_ref().to_owned(),
             prefix: prefix.as_ref().to_owned(),
@@ -71,9 +73,9 @@ struct Archive {
 }
 
 impl TryFrom<PathBuf> for Archive {
-    type Error = crate::Error;
+    type Error = chrono::ParseError;
 
-    fn try_from(path: PathBuf) -> Result<Archive> {
+    fn try_from(path: PathBuf) -> Result<Archive, chrono::ParseError> {
         let file_stem = path.file_stem().unwrap().to_str().unwrap();
 
         let date_str = format!(
@@ -82,8 +84,7 @@ impl TryFrom<PathBuf> for Archive {
             file_stem.split('_').nth(3).unwrap_or_default()
         );
 
-        let as_of = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%d %H-%M-%S")
-            .context("Invalid archive file format")?;
+        let as_of = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%d %H-%M-%S")?;
 
         Ok(Archive { as_of })
     }
