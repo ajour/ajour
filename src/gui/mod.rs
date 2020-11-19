@@ -180,6 +180,7 @@ pub struct Ajour {
     catalog_last_updated: Option<DateTime<Utc>>,
     catalog_search_state: CatalogSearchState,
     catalog_header_state: CatalogHeaderState,
+    catalog_categories_per_source_cache: HashMap<String, Vec<CatalogCategory>>,
     website_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
 }
@@ -230,6 +231,7 @@ impl Default for Ajour {
             catalog_last_updated: None,
             catalog_search_state: Default::default(),
             catalog_header_state: Default::default(),
+            catalog_categories_per_source_cache: Default::default(),
             website_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
         }
