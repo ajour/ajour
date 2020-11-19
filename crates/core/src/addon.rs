@@ -1,8 +1,8 @@
 use crate::{
-    parse::ParseError,
+    error::{ParseError, RepositoryError},
     repository::{
-        ReleaseChannel, RemotePackage, RepositoryError, RepositoryIdentifiers, RepositoryKind,
-        RepositoryMetadata, RepositoryPackage,
+        ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
+        RepositoryPackage,
     },
     utility::strip_non_digits,
 };
@@ -147,7 +147,7 @@ pub struct Addon {
 }
 
 impl Addon {
-    pub(crate) fn empty(primary_folder_id: &str) -> Self {
+    pub fn empty(primary_folder_id: &str) -> Self {
         Addon {
             primary_folder_id: primary_folder_id.to_string(),
             folders: Default::default(),
@@ -196,11 +196,11 @@ impl Addon {
         Ok(addon)
     }
 
-    pub(crate) fn set_repository(&mut self, repo_package: RepositoryPackage) {
+    pub fn set_repository(&mut self, repo_package: RepositoryPackage) {
         self.repository = Some(repo_package);
     }
 
-    pub(crate) fn update_addon_folders(&mut self, mut folders: Vec<AddonFolder>) {
+    pub fn update_addon_folders(&mut self, mut folders: Vec<AddonFolder>) {
         if !folders.is_empty() {
             folders.sort_by(|a, b| a.id.cmp(&b.id));
 
@@ -250,12 +250,12 @@ impl Addon {
     }
 
     /// Returns the repository kind linked to this addon
-    pub(crate) fn repository_kind(&self) -> Option<RepositoryKind> {
+    pub fn repository_kind(&self) -> Option<RepositoryKind> {
         self.repository.as_ref().map(|r| r.kind)
     }
 
     /// Returns the version of the addon
-    pub(crate) fn version(&self) -> Option<&str> {
+    pub fn version(&self) -> Option<&str> {
         if self
             .metadata()
             .map(|m| m.version.as_deref())
@@ -273,14 +273,14 @@ impl Addon {
     }
 
     /// Sets the version of the addon
-    pub(crate) fn set_version(&mut self, version: String) {
+    pub fn set_version(&mut self, version: String) {
         if let Some(metadata) = self.repository.as_mut().map(|r| &mut r.metadata) {
             metadata.version = Some(version);
         }
     }
 
     /// Returns the title of the addon.
-    pub(crate) fn title(&self) -> &str {
+    pub fn title(&self) -> &str {
         let meta_title = self.metadata().map(|m| m.title.as_deref()).flatten();
         let folder_title = self
             .primary_addon_folder()
@@ -291,7 +291,7 @@ impl Addon {
     }
 
     /// Returns the author of the addon.
-    pub(crate) fn author(&self) -> Option<&str> {
+    pub fn author(&self) -> Option<&str> {
         let meta_author = self.metadata().map(|m| m.author.as_deref()).flatten();
         let folder_author = self
             .primary_addon_folder()
@@ -302,7 +302,7 @@ impl Addon {
     }
 
     /// Returns the game version of the addon.
-    pub(crate) fn game_version(&self) -> Option<&str> {
+    pub fn game_version(&self) -> Option<&str> {
         if self
             .metadata()
             .map(|m| m.game_version.as_deref())
@@ -321,7 +321,7 @@ impl Addon {
     }
 
     /// Returns the notes of the addon.
-    pub(crate) fn notes(&self) -> Option<&str> {
+    pub fn notes(&self) -> Option<&str> {
         let meta_notes = self.metadata().map(|m| m.notes.as_deref()).flatten();
         let folder_notes = self
             .primary_addon_folder()
@@ -332,12 +332,12 @@ impl Addon {
     }
 
     /// Returns the website url of the addon.
-    pub(crate) fn website_url(&self) -> Option<&str> {
+    pub fn website_url(&self) -> Option<&str> {
         self.metadata().map(|m| m.website_url.as_deref()).flatten()
     }
 
     /// Returns the curse id of the addon, if applicable.
-    pub(crate) fn curse_id(&self) -> Option<i32> {
+    pub fn curse_id(&self) -> Option<i32> {
         if self.repository_kind() == Some(RepositoryKind::Curse) {
             self.repository()
                 .map(|r| r.id.parse::<i32>().ok())
@@ -350,7 +350,7 @@ impl Addon {
     }
 
     /// Returns the tukui id of the addon, if applicable.
-    pub(crate) fn tukui_id(&self) -> Option<&str> {
+    pub fn tukui_id(&self) -> Option<&str> {
         if self.repository_kind() == Some(RepositoryKind::Tukui) {
             self.repository().map(|r| r.id.as_str())
         } else {
@@ -361,7 +361,7 @@ impl Addon {
     }
 
     /// Returns the wowi id of the addon, if applicable.
-    pub(crate) fn wowi_id(&self) -> Option<&str> {
+    pub fn wowi_id(&self) -> Option<&str> {
         if self.repository_kind() == Some(RepositoryKind::WowI) {
             self.repository().map(|r| r.id.as_str())
         } else {
@@ -371,21 +371,14 @@ impl Addon {
         }
     }
 
-    /// Set title for the addon
-    pub(crate) fn set_title(&mut self, title: String) {
-        if let Some(metadata) = self.repository.as_mut().map(|r| &mut r.metadata) {
-            metadata.title = Some(title);
-        }
-    }
-
-    pub(crate) fn remote_packages(&self) -> HashMap<ReleaseChannel, RemotePackage> {
+    pub fn remote_packages(&self) -> HashMap<ReleaseChannel, RemotePackage> {
         self.metadata()
             .map(|m| &m.remote_packages)
             .cloned()
             .unwrap_or_default()
     }
 
-    pub(crate) fn file_id(&self) -> Option<i64> {
+    pub fn file_id(&self) -> Option<i64> {
         self.metadata().map(|f| f.file_id).flatten()
     }
 
@@ -394,12 +387,12 @@ impl Addon {
     }
 
     /// Returns the repository id for the active repository
-    pub(crate) fn repository_id(&self) -> Option<&str> {
+    pub fn repository_id(&self) -> Option<&str> {
         self.repository().map(|r| r.id.as_str())
     }
 
     /// Function returns a `bool` indicating if the user has manually ignored the addon.
-    pub(crate) fn is_ignored(&self, ignored: Option<&Vec<String>>) -> bool {
+    pub fn is_ignored(&self, ignored: Option<&Vec<String>>) -> bool {
         match ignored {
             Some(ignored) => ignored.iter().any(|i| i == &self.primary_folder_id),
             _ => false,
@@ -407,7 +400,7 @@ impl Addon {
     }
 
     /// Function returns a `bool` indicating if the `remote_package` is a update.
-    pub(crate) fn is_updatable(&self, remote_package: &RemotePackage) -> bool {
+    pub fn is_updatable(&self, remote_package: &RemotePackage) -> bool {
         let file_id = self.file_id();
 
         if file_id.is_none() {
@@ -448,7 +441,7 @@ impl Addon {
 
     /// Returns the relevant release_package for the addon.
     /// Logic is that if a release channel above the selected is newer, we return that instead.
-    pub(crate) fn relevant_release_package(&self) -> Option<RemotePackage> {
+    pub fn relevant_release_package(&self) -> Option<RemotePackage> {
         let mut remote_packages = self.remote_packages();
 
         let stable_package = remote_packages.remove(&ReleaseChannel::Stable);
@@ -506,7 +499,7 @@ impl Addon {
         }
     }
 
-    pub(crate) async fn get_changelog(
+    pub async fn get_changelog(
         &self,
         is_remote: bool,
     ) -> Result<(String, String), RepositoryError> {

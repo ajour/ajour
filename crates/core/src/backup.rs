@@ -1,7 +1,5 @@
-use crate::fs::{
-    backup::{Backup, ZipBackup},
-    FilesystemError,
-};
+use crate::error::FilesystemError;
+use crate::fs::backup::{Backup, ZipBackup};
 
 use chrono::{Local, NaiveDateTime};
 use std::convert::TryFrom;

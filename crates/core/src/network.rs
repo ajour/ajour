@@ -1,4 +1,5 @@
 use crate::addon::Addon;
+use crate::error::DownloadError;
 use async_std::{
     fs::{create_dir_all, File},
     io::copy,
@@ -60,7 +61,7 @@ pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
 
 /// Function to download a zip archive for a `Addon`.
 /// Note: Addon needs to have a `remote_url` to the file.
-pub(crate) async fn download_addon(
+pub async fn download_addon(
     shared_client: &HttpClient,
     addon: &Addon,
     to_directory: &PathBuf,
@@ -166,36 +167,4 @@ pub(crate) async fn download_file<T: ToString>(
     log::debug!("file saved as {:?}", &dest_file);
 
     Ok(())
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum DownloadError {
-    #[error("Body len != content len: {body_length} != {content_length}")]
-    ContentLength {
-        content_length: u64,
-        body_length: u64,
-    },
-    #[error("Invalid status code {code} for url {url}")]
-    InvalidStatusCode {
-        code: isahc::http::StatusCode,
-        url: String,
-    },
-    #[error("No new release binary available for {bin_name}")]
-    MissingSelfUpdateRelease { bin_name: String },
-    #[error("Catalog failed to download")]
-    CatalogFailed,
-    #[error(transparent)]
-    Isahc(#[from] isahc::Error),
-    #[error(transparent)]
-    Http(#[from] isahc::http::Error),
-    #[error(transparent)]
-    SerdeJson(#[from] serde_json::Error),
-    #[error(transparent)]
-    Filesystem(#[from] crate::fs::FilesystemError),
-}
-
-impl From<std::io::Error> for DownloadError {
-    fn from(e: std::io::Error) -> Self {
-        DownloadError::Filesystem(crate::fs::FilesystemError::IO(e))
-    }
 }

@@ -1,5 +1,5 @@
 use crate::config::Flavor;
-use crate::network::DownloadError;
+use crate::error::DownloadError;
 
 use async_std::task;
 use chrono::prelude::*;

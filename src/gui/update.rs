@@ -5,6 +5,7 @@ use {
         ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
         SelfUpdateStatus, SortDirection, State,
     },
+    crate::{log_error, Result},
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
@@ -14,15 +15,14 @@ use {
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
-        error,
-        error::Error,
+        error::{DownloadError, FilesystemError, ParseError, RepositoryError},
         fs::{delete_addons, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
         repository::{RepositoryKind, RepositoryPackage},
         utility::{download_update_to_temp_file, wow_path_resolution},
-        Result,
     },
+    anyhow::Context,
     async_std::sync::{Arc, Mutex},
     chrono::{NaiveTime, Utc},
     iced::{Command, Length},
@@ -1402,8 +1402,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Message::AddonCacheUpdated({})", entry.title);
         }
         Message::AddonCacheEntryRemoved(maybe_entry) => {
-            if let Some(entry) = maybe_entry {
-                log::debug!("Message::AddonCacheEntryRemoved({})", entry.title);
+            match maybe_entry.context("Failed to remove cache entry") {
+                Ok(Some(entry)) => log::debug!("Message::AddonCacheEntryRemoved({})", entry.title),
+                Ok(None) => {}
+                Err(e) => {
+                    log_error(&e);
+                }
             }
         }
         Message::Interaction(Interaction::InstallSCMQuery(query)) => {
@@ -1465,9 +1469,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.hide_ignored_addons = is_checked;
             let _ = ajour.config.save();
         }
-        Message::Error(error)
-        | Message::CatalogDownloaded(Err(error))
-        | Message::AddonCacheUpdated(Err(error)) => {
+        Message::CatalogDownloaded(error @ Err(_)) => {
+            let error = error.context("Failed to download catalog").unwrap_err();
+            log_error(&error);
+            ajour.error = Some(error.to_string());
+        }
+        Message::AddonCacheUpdated(error @ Err(_)) => {
+            let error = error.context("Failed to update addon cache").unwrap_err();
+            log_error(&error);
+            ajour.error = Some(error.to_string());
+        }
+        Message::Error(error) => {
             log::error!("{}", error);
             ajour.error = Some(error.to_string());
         }
@@ -1510,7 +1522,7 @@ async fn perform_read_addon_directory(
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: PathBuf,
     flavor: Flavor,
-) -> (Flavor, Result<Vec<Addon>>) {
+) -> (Flavor, Result<Vec<Addon>, ParseError>) {
     (
         flavor,
         read_addon_directory(addon_cache, fingerprint_cache, root_dir, flavor).await,
@@ -1520,7 +1532,11 @@ async fn perform_read_addon_directory(
 async fn perform_fetch_changelog(
     addon: Addon,
     key: AddonVersionKey,
-) -> (Addon, AddonVersionKey, Result<(String, String)>) {
+) -> (
+    Addon,
+    AddonVersionKey,
+    Result<(String, String), RepositoryError>,
+) {
     let is_remote = key == AddonVersionKey::Remote;
 
     let result = addon.get_changelog(is_remote).await;
@@ -1536,7 +1552,7 @@ async fn perform_download_addon(
     flavor: Flavor,
     addon: Addon,
     to_directory: PathBuf,
-) -> (DownloadReason, Flavor, String, Result<()>) {
+) -> (DownloadReason, Flavor, String, Result<(), DownloadError>) {
     (
         reason,
         flavor,
@@ -1551,7 +1567,7 @@ async fn perform_hash_addon(
     addon_id: String,
     fingerprint_cache: Arc<Mutex<FingerprintCache>>,
     flavor: Flavor,
-) -> (Flavor, String, Result<()>) {
+) -> (Flavor, String, Result<(), ParseError>) {
     (
         flavor,
         addon_id.clone(),
@@ -1566,7 +1582,12 @@ async fn perform_unpack_addon(
     addon: Addon,
     from_directory: PathBuf,
     to_directory: PathBuf,
-) -> (DownloadReason, Flavor, String, Result<Vec<AddonFolder>>) {
+) -> (
+    DownloadReason,
+    Flavor,
+    String,
+    Result<Vec<AddonFolder>, FilesystemError>,
+) {
     (
         reason,
         flavor,
@@ -1606,7 +1627,7 @@ async fn perform_fetch_latest_addon(
             InstallKind::Source => {
                 let url = id
                     .parse::<Uri>()
-                    .map_err(|_| error!("invalid url: {}", id))?;
+                    .map_err(|_| RepositoryError::GitInvalidUrl { url: id.clone() })?;
 
                 RepositoryPackage::from_source_url(flavor, url)?
             }

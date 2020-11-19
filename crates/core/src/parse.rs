@@ -2,13 +2,10 @@ use crate::{
     addon::{Addon, AddonFolder, AddonState},
     cache::{AddonCache, AddonCacheEntry, FingerprintCache},
     config::Flavor,
+    error::{DownloadError, ParseError, RepositoryError},
     fs::PersistentData,
     murmur2::calculate_hash,
-    network::DownloadError,
-    repository::{
-        curse, tukui, wowi, RepositoryError, RepositoryIdentifiers, RepositoryKind,
-        RepositoryPackage,
-    },
+    repository::{curse, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage},
 };
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
@@ -42,7 +39,7 @@ pub struct ParsingPatterns {
     pub file_parsing_regex: HashMap<String, (regex::Regex, Regex)>,
 }
 
-pub(crate) async fn read_addon_directory<P: AsRef<Path>>(
+pub async fn read_addon_directory<P: AsRef<Path>>(
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: P,
@@ -799,7 +796,7 @@ fn build_addons(
     concatenated_addons
 }
 
-pub(crate) async fn update_addon_fingerprint(
+pub async fn update_addon_fingerprint(
     fingerprint_cache: Arc<Mutex<FingerprintCache>>,
     flavor: Flavor,
     addon_dir: impl AsRef<Path>,
@@ -851,7 +848,7 @@ pub(crate) async fn update_addon_fingerprint(
     Ok(())
 }
 
-pub(crate) fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32, ParseError> {
+pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32, ParseError> {
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
     let root_dir = addon_dir.parent().ok_or(ParseError::NoParentDirectory {
@@ -894,7 +891,7 @@ pub(crate) fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32, ParseErr
     // Parse additional files
     while let Some(path) = to_parse.pop_front() {
         if !path.exists() || !path.is_file() {
-            return Err(ParseError::InvalidFile { path: path.clone() });
+            return Err(ParseError::InvalidFile { path });
         }
 
         to_fingerprint.insert(path.clone());
@@ -1047,7 +1044,7 @@ lazy_static::lazy_static! {
 ///
 /// TOC format summary:
 /// https://wowwiki.fandom.com/wiki/TOC_format
-pub(crate) fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
+pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
     //direntry
     let file = if let Ok(file) = File::open(toc_path) {
         file
@@ -1153,48 +1150,6 @@ fn format_interface_into_game_version(interface: &str) -> String {
     }
 
     interface.to_owned()
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum ParseError {
-    #[error("Addon directory not found: {path:?}")]
-    MissingAddonDirectory { path: PathBuf },
-    #[error("No folders passed to addon")]
-    BuildAddonEmptyFolders,
-    #[error("No parent directory for {dir:?}")]
-    NoParentDirectory { dir: PathBuf },
-    #[error("Invalid UTF8 path: {path:?}")]
-    InvalidUTF8Path { path: PathBuf },
-    #[error("Path is not a file or doesn't exist: {path:?}")]
-    InvalidFile { path: PathBuf },
-    #[error("Invalid extension for path: {path:?}")]
-    InvalidExt { path: PathBuf },
-    #[error("Extension not in file parsing regex: {ext}")]
-    ParsingRegexMissingExt { ext: String },
-    #[error("Inclusion regex error for group {group} on pos {pos}, line: {line}")]
-    InclusionRegexError {
-        group: usize,
-        pos: usize,
-        line: String,
-    },
-    #[error(transparent)]
-    StripPrefix(#[from] std::path::StripPrefixError),
-    #[error(transparent)]
-    GlobPattern(#[from] glob::PatternError),
-    #[error(transparent)]
-    Glob(#[from] glob::GlobError),
-    #[error(transparent)]
-    FancyRegex(#[from] fancy_regex::Error),
-    #[error(transparent)]
-    Download(#[from] crate::network::DownloadError),
-    #[error(transparent)]
-    Filesystem(#[from] crate::fs::FilesystemError),
-}
-
-impl From<std::io::Error> for ParseError {
-    fn from(e: std::io::Error) -> Self {
-        ParseError::Filesystem(crate::fs::FilesystemError::IO(e))
-    }
 }
 
 #[cfg(test)]

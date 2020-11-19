@@ -1,6 +1,7 @@
+use crate::error::DownloadError;
 #[cfg(target_os = "macos")]
-use crate::fs::FilesystemError;
-use crate::network::{download_file, request_async, DownloadError};
+use crate::error::FilesystemError;
+use crate::network::{download_file, request_async};
 
 use isahc::prelude::*;
 use regex::Regex;
@@ -53,7 +54,7 @@ pub struct ReleaseAsset {
     pub download_url: String,
 }
 
-pub(crate) async fn get_latest_release() -> Option<Release> {
+pub async fn get_latest_release() -> Option<Release> {
     log::debug!("checking for application update");
 
     let client = HttpClient::new().ok()?;
@@ -72,7 +73,7 @@ pub(crate) async fn get_latest_release() -> Option<Release> {
 
 /// Downloads the latest release file that matches `bin_name` and saves it as
 /// `tmp_bin_name`. Will return the temp file as pathbuf.
-pub(crate) async fn download_update_to_temp_file(
+pub async fn download_update_to_temp_file(
     bin_name: String,
     release: Release,
 ) -> Result<(String, PathBuf), DownloadError> {
@@ -182,7 +183,7 @@ fn extract_binary_from_tar(
 }
 
 /// Logic to help pick the right World of Warcraft folder. We want the root folder.
-pub(crate) fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
+pub fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
     if let Some(path) = path {
         // Known folders in World of Warcraft dir
         let known_folders = ["_retail_", "_classic_", "_ptr_"];
@@ -213,7 +214,7 @@ pub(crate) fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
 ///
 /// Will retry for ~30 seconds with longer and longer delays between each, to allow for virus scan
 /// and other automated operations to complete.
-pub(crate) fn rename<F, T>(from: F, to: T) -> io::Result<()>
+pub fn rename<F, T>(from: F, to: T) -> io::Result<()>
 where
     F: AsRef<Path>,
     T: AsRef<Path>,

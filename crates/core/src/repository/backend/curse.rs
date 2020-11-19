@@ -1,6 +1,7 @@
 use super::*;
 use crate::config::Flavor;
-use crate::network::{post_json_async, request_async, DownloadError};
+use crate::error::DownloadError;
+use crate::network::{post_json_async, request_async};
 use crate::repository::{ReleaseChannel, RemotePackage};
 use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 

@@ -7,16 +7,16 @@ mod cli;
 mod command;
 mod gui;
 
-use ajour_core::error::Error;
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::utility::rename;
-use ajour_core::Result;
 
 use std::env;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
 
 pub fn main() {
     let opts_result = cli::get_opts();
@@ -81,13 +81,11 @@ pub fn main() {
 }
 
 /// Log any errors
-pub fn log_error(error: &Error) {
+pub fn log_error(error: &anyhow::Error) {
     log::error!("{}", error);
 
-    if let Some(inner) = error.inner_error() {
-        for cause in inner.chain() {
-            log::error!("caused by: {}", cause);
-        }
+    for cause in error.chain() {
+        log::error!("caused by: {}", cause);
     }
 }
 

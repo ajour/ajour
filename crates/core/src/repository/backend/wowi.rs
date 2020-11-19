@@ -1,7 +1,8 @@
 use super::*;
 use crate::config::Flavor;
-use crate::network::{request_async, DownloadError};
-use crate::repository::{ReleaseChannel, RemotePackage, RepositoryError};
+use crate::error::{DownloadError, RepositoryError};
+use crate::network::request_async;
+use crate::repository::{ReleaseChannel, RemotePackage};
 
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};

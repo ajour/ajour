@@ -1,4 +1,5 @@
-use super::{RepositoryError, RepositoryMetadata};
+use super::RepositoryMetadata;
+use crate::error::RepositoryError;
 
 use async_trait::async_trait;
 use dyn_clone::{clone_trait_object, DynClone};

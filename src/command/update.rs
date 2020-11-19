@@ -1,6 +1,7 @@
 #![allow(clippy::type_complexity)]
 
 use crate::log_error;
+use crate::Result;
 
 use ajour_core::addon::Addon;
 use ajour_core::cache::{
@@ -12,8 +13,8 @@ use ajour_core::fs::install_addon;
 use ajour_core::network::download_addon;
 use ajour_core::parse::{read_addon_directory, update_addon_fingerprint};
 use ajour_core::repository::RepositoryKind;
-use ajour_core::{error, Result};
 
+use anyhow::{format_err, Context};
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
 
@@ -50,7 +51,7 @@ pub fn update_all_addons() -> Result<()> {
         // Update addons for both flavors
         for flavor in Flavor::ALL.iter() {
             // Only returns None if the path isn't set in the config
-            let addon_directory = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| error!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+            let addon_directory = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
             if let Ok(addons) = read_addon_directory(
                 Some(addon_cache.clone()),
@@ -202,14 +203,17 @@ async fn update_addon(
     }));
 
     // Call `update_addon_fingerprint` on each folder concurrently
-    for result in join_all(folders_to_fingerprint.into_iter().map(
-        |(fingerprint_cache, flavor, addon_dir, addon_id)| {
-            update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id)
+    for (addon_dir, result) in join_all(folders_to_fingerprint.into_iter().map(
+        |(fingerprint_cache, flavor, addon_dir, addon_id)| async move {
+            (
+                addon_dir,
+                update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id).await,
+            )
         },
     ))
     .await
     {
-        if let Err(e) = result {
+        if let Err(e) = result.context(format!("failed to fingerprint folder: {:?}", addon_dir)) {
             // Log any errors fingerprinting the folder
             log_error(&e);
         }

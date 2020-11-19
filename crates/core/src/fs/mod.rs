@@ -1,3 +1,5 @@
+use crate::error::FilesystemError;
+
 use lazy_static::lazy_static;
 #[cfg(not(windows))]
 use std::env;
@@ -10,10 +12,10 @@ mod save;
 #[cfg(feature = "gui")]
 mod theme;
 
-pub(crate) use addon::{delete_addons, install_addon};
+pub use addon::{delete_addons, install_addon};
 pub use save::PersistentData;
 #[cfg(feature = "gui")]
-pub(crate) use theme::load_user_themes;
+pub use theme::load_user_themes;
 
 lazy_static! {
     pub static ref CONFIG_DIR: Arc<Mutex<PathBuf>> = {
@@ -56,25 +58,8 @@ lazy_static! {
     };
 }
 
-pub(crate) fn config_dir() -> PathBuf {
+pub fn config_dir() -> PathBuf {
     CONFIG_DIR.lock().unwrap().clone()
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum FilesystemError {
-    #[error(transparent)]
-    IO(#[from] std::io::Error),
-    #[error(transparent)]
-    SerdeYaml(#[from] serde_yaml::Error),
-    #[error(transparent)]
-    Zip(#[from] zip::result::ZipError),
-    #[error(transparent)]
-    WalkDir(#[from] walkdir::Error),
-    #[error("File doesn't exist: {path:?}")]
-    FileDoesntExist { path: PathBuf },
-    #[cfg(target_os = "macos")]
-    #[error("Could not file bin name {bin_name} in archive")]
-    BinMissingFromTar { bin_name: String },
 }
 
 type Result<T, E = FilesystemError> = std::result::Result<T, E>;

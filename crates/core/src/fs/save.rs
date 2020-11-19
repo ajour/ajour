@@ -32,7 +32,7 @@ pub trait PersistentData: DeserializeOwned + Serialize {
 
             Ok(serde_yaml::from_reader(&file)?)
         } else {
-            return Err(FilesystemError::FileDoesntExist { path });
+            Err(FilesystemError::FileDoesntExist { path })
         }
     }
 

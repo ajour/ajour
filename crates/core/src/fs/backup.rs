@@ -1,5 +1,6 @@
-use super::{FilesystemError, Result};
+use super::Result;
 use crate::backup::BackupFolder;
+use crate::error::FilesystemError;
 
 use std::fs::File;
 use std::io::{BufWriter, Read, Write};

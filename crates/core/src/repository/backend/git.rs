@@ -3,10 +3,9 @@ pub use gitlab::Gitlab;
 
 mod github {
     use crate::config::Flavor;
+    use crate::error::RepositoryError;
     use crate::network::request_async;
-    use crate::repository::{
-        Backend, ReleaseChannel, RemotePackage, RepositoryError, RepositoryMetadata,
-    };
+    use crate::repository::{Backend, ReleaseChannel, RemotePackage, RepositoryMetadata};
 
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
@@ -171,10 +170,9 @@ mod github {
 
 mod gitlab {
     use crate::config::Flavor;
+    use crate::error::RepositoryError;
     use crate::network::request_async;
-    use crate::repository::{
-        Backend, ReleaseChannel, RemotePackage, RepositoryError, RepositoryMetadata,
-    };
+    use crate::repository::{Backend, ReleaseChannel, RemotePackage, RepositoryMetadata};
 
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};

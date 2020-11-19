@@ -50,7 +50,7 @@ impl Flavor {
     }
 
     /// Returns `Flavor` which self relates to.
-    pub(crate) fn base_flavor(self) -> Flavor {
+    pub fn base_flavor(self) -> Flavor {
         match self {
             Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => Flavor::Retail,
             Flavor::Classic | Flavor::ClassicPTR => Flavor::Classic,
