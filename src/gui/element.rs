@@ -15,6 +15,7 @@ use {
         config::{Config, Flavor},
         repository::RepositoryKind,
         theme::ColorPalette,
+        utility::Release,
     },
     chrono::prelude::*,
     iced::{
@@ -31,12 +32,92 @@ use {
 pub static DEFAULT_FONT_SIZE: u16 = 14;
 pub static DEFAULT_PADDING: u16 = 10;
 
+pub fn about_container<'a>(
+    color_palette: ColorPalette,
+    release: &Option<Release>,
+    scrollable_state: &'a mut scrollable::State,
+    website_button_state: &'a mut button::State,
+    patreon_button_state: &'a mut button::State,
+) -> Container<'a, Message> {
+    let ajour_title = Text::new("Ajour").size(50);
+    let ajour_title_container =
+        Container::new(ajour_title).style(style::BrightBackgroundContainer(color_palette));
+
+    let changelog_title_text = Text::new(if let Some(release) = release {
+        format!("Changelog for {}", release.tag_name)
+    } else {
+        "Changelog".to_owned()
+    })
+    .size(DEFAULT_FONT_SIZE);
+
+    let changelog_text = Text::new(if let Some(release) = release {
+        release.body.clone()
+    } else {
+        "No changelog found.".to_owned()
+    })
+    .size(DEFAULT_FONT_SIZE);
+
+    let website_button: Element<Interaction> = Button::new(
+        website_button_state,
+        Text::new("Website").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DefaultBoxedButton(color_palette))
+    .on_press(Interaction::OpenLink("https://getajour.com".to_owned()))
+    .into();
+
+    let patreon_button: Element<Interaction> = Button::new(
+        patreon_button_state,
+        Text::new("Patreon").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DefaultBoxedButton(color_palette))
+    .on_press(Interaction::OpenLink(
+        "https://patreon.com/getajour".to_owned(),
+    ))
+    .into();
+
+    let button_row = Row::new()
+        .spacing(DEFAULT_PADDING)
+        .push(website_button.map(Message::Interaction))
+        .push(patreon_button.map(Message::Interaction));
+
+    let mut scrollable = Scrollable::new(scrollable_state)
+        .spacing(1)
+        .height(Length::FillPortion(1))
+        .style(style::Scrollable(color_palette));
+
+    let changelog_text_container =
+        Container::new(changelog_text).style(style::NormalBackgroundContainer(color_palette));
+    let changelog_title_container =
+        Container::new(changelog_title_text).style(style::BrightBackgroundContainer(color_palette));
+
+    scrollable = scrollable
+        .push(ajour_title_container)
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
+        .push(button_row)
+        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(changelog_title_container)
+        .push(changelog_text_container);
+
+    let col = Column::new().push(scrollable);
+    let row = Row::new()
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(col);
+
+    // Returns the final container.
+    Container::new(row)
+        .center_x()
+        .width(Length::Fill)
+        .height(Length::Shrink)
+        .style(style::NormalBackgroundContainer(color_palette))
+        .padding(20)
+}
+
 /// Container for settings.
 pub fn settings_container<'a, 'b>(
     color_palette: ColorPalette,
+    scrollable_state: &'a mut scrollable::State,
     directory_button_state: &'a mut button::State,
     config: &Config,
-    mode: &Mode,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
@@ -44,10 +125,16 @@ pub fn settings_container<'a, 'b>(
     column_config: &'b [(ColumnKey, Length, bool)],
     catalog_column_settings: &'a mut CatalogColumnSettings,
     catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
-    website_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
+    let mut scrollable = Scrollable::new(scrollable_state)
+        .spacing(1)
+        .height(Length::FillPortion(1))
+        .style(style::Scrollable(color_palette));
+
     // Title for the World of Warcraft directory selection.
-    let directory_info_text = Text::new("World of Warcraft directory").size(14);
+    let directory_info_text = Text::new("World of Warcraft directory").size(DEFAULT_FONT_SIZE);
+    let direction_info_text_container =
+        Container::new(directory_info_text).style(style::BrightBackgroundContainer(color_palette));
 
     // Directory button for World of Warcraft directory selection.
     let directory_button_title_container =
@@ -77,41 +164,53 @@ pub fn settings_container<'a, 'b>(
     let directory_data_text_container = Container::new(directory_data_text)
         .height(Length::Units(25))
         .center_y()
-        .style(style::NormalForegroundContainer(color_palette));
+        .style(style::NormalBackgroundContainer(color_palette));
 
     // Data row for the World of Warcraft directory selection.
-    let path_data_row = Row::new()
+    let directory_data_row = Row::new()
         .push(directory_button.map(Message::Interaction))
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(directory_data_text_container);
 
-    // Title for the theme pick list.
-    let theme_info_text = Text::new("Theme").size(14);
-    let theme_info_row = Row::new().push(theme_info_text);
+    scrollable = scrollable
+        .push(direction_info_text_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(directory_data_row);
 
-    let theme_names = theme_state
-        .themes
-        .iter()
-        .cloned()
-        .map(|(name, _)| name)
-        .collect::<Vec<_>>();
-    let theme_pick_list = PickList::new(
-        &mut theme_state.pick_list_state,
-        theme_names,
-        Some(theme_state.current_theme_name.clone()),
-        Message::ThemeSelected,
-    )
-    .text_size(14)
-    .width(Length::Units(120))
-    .style(style::PickList(color_palette));
+    let theme_column = {
+        let title_container = Container::new(Text::new("Theme").size(DEFAULT_FONT_SIZE))
+            .style(style::NormalBackgroundContainer(color_palette));
 
-    // Data row for theme picker list.
-    let theme_data_row = Row::new().push(theme_pick_list);
+        let theme_names = theme_state
+            .themes
+            .iter()
+            .cloned()
+            .map(|(name, _)| name)
+            .collect::<Vec<_>>();
+        let theme_pick_list = PickList::new(
+            &mut theme_state.pick_list_state,
+            theme_names,
+            Some(theme_state.current_theme_name.clone()),
+            Message::ThemeSelected,
+        )
+        .text_size(14)
+        .width(Length::Units(120))
+        .style(style::PickList(color_palette));
+
+        // Data row for theme picker list.
+        let theme_data_row = Row::new().push(theme_pick_list);
+
+        Column::new()
+            .push(title_container)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(theme_data_row)
+    };
 
     // Scale buttons for application scale factoring.
-    let (scale_title_row, scale_buttons_row) = {
-        let scale_title = Text::new("UI Scale").size(DEFAULT_FONT_SIZE);
-        let scale_title_row = Row::new().push(scale_title);
+    let scale_column = {
+        let title_container = Container::new(Text::new("Scale").size(DEFAULT_FONT_SIZE))
+            .style(style::NormalBackgroundContainer(color_palette));
+        let scale_title_row = Row::new().push(title_container);
 
         let scale_down_button: Element<Interaction> = Button::new(
             &mut scale_state.down_btn_state,
@@ -143,16 +242,17 @@ pub fn settings_container<'a, 'b>(
             .push(current_scale_container)
             .push(scale_up_button.map(Message::Interaction));
 
-        (scale_title_row, scale_buttons_row)
+        Column::new()
+            .push(scale_title_row)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(scale_buttons_row)
     };
-
-    // Small space below content.
-    let bottom_space = Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
         let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
-        let backup_title_row = Row::new().push(backup_title_text);
+        let backup_title_text_container = Container::new(backup_title_text)
+            .style(style::BrightBackgroundContainer(color_palette));
 
         let addon_folder_checkbox: Element<_> = Container::new(
             Checkbox::new(config.backup_addons, "AddOns", move |is_checked| {
@@ -162,7 +262,7 @@ pub fn settings_container<'a, 'b>(
             .spacing(5)
             .style(style::DefaultCheckbox(color_palette)),
         )
-        .padding(5)
+        .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
         let wtf_folder_checkbox: Element<_> = Container::new(
@@ -173,7 +273,7 @@ pub fn settings_container<'a, 'b>(
             .spacing(5)
             .style(style::DefaultCheckbox(color_palette)),
         )
-        .padding(5)
+        .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
         // Directory button for Backup directory selection.
@@ -204,13 +304,14 @@ pub fn settings_container<'a, 'b>(
         let directory_data_text_container = Container::new(directory_data_text)
             .height(Length::Units(25))
             .center_y()
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::NormalBackgroundContainer(color_palette));
 
         // Data row for the Backup directory selection.
         let backup_directory_row = Row::new()
             .align_items(Align::Center)
             .height(Length::Units(26))
             .push(addon_folder_checkbox.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(wtf_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_button.map(Message::Interaction))
@@ -265,7 +366,7 @@ pub fn settings_container<'a, 'b>(
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::NormalForegroundContainer(color_palette));
+                .style(style::NormalBackgroundContainer(color_palette));
 
             let backup_button: Element<Interaction> = backup_button.into();
 
@@ -282,25 +383,74 @@ pub fn settings_container<'a, 'b>(
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::NormalForegroundContainer(color_palette));
+                .style(style::NormalBackgroundContainer(color_palette));
 
             backup_now_row = backup_now_row.push(backup_status_text_container);
         }
 
-        (backup_title_row, backup_directory_row, backup_now_row)
+        (
+            backup_title_text_container,
+            backup_directory_row,
+            backup_now_row,
+        )
     };
 
-    let (columns_title_row, columns_scrollable) = {
-        // Title for the Columns section.
-        let columns_title_text = Text::new("My Addons Columns").size(DEFAULT_FONT_SIZE);
-        let columns_title_row = Row::new().push(columns_title_text);
+    let hide_addons_column = {
+        let hide_ignored_addons = config.hide_ignored_addons;
+        let title = "Hide ignored Addons".to_owned();
+        let checkbox = Checkbox::new(hide_ignored_addons, title, move |is_checked| {
+            Message::Interaction(Interaction::ToggleHideIgnoredAddons(is_checked))
+        })
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+        let checkbox_container =
+            Container::new(checkbox).style(style::BrightBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
 
-        // Scrollable for column selections
-        let mut columns_scrollable = Scrollable::new(&mut column_settings.scrollable_state)
-            .spacing(1)
-            .width(Length::Fill)
-            .height(Length::FillPortion(4))
-            .style(style::SecondaryScrollable(color_palette));
+    let ui_title = Text::new("UI").size(DEFAULT_FONT_SIZE);
+    let ui_title_container =
+        Container::new(ui_title).style(style::BrightBackgroundContainer(color_palette));
+
+    let addon_title = Text::new("Addons").size(DEFAULT_FONT_SIZE);
+    let addon_title_container =
+        Container::new(addon_title).style(style::BrightBackgroundContainer(color_palette));
+
+    let ui_row = Row::new()
+        .push(theme_column)
+        .push(scale_column)
+        .spacing(DEFAULT_PADDING);
+
+    scrollable = scrollable
+        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(backup_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(backup_now_row)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(backup_directory_row)
+        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(addon_title_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(hide_addons_column)
+        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(ui_title_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(ui_row);
+
+    let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
+    let columns_title_text_container =
+        Container::new(columns_title_text).style(style::BrightBackgroundContainer(color_palette));
+    scrollable = scrollable
+        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(columns_title_text_container);
+
+    let my_addons_columns_container = {
+        let title_container = Container::new(Text::new("My Addons").size(DEFAULT_FONT_SIZE))
+            .style(style::NormalBackgroundContainer(color_palette));
+        let mut my_addons_column = Column::new()
+            .push(title_container)
+            .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
 
         // Add each column to scrollable as checkbox + label + up / down buttons
         let columns_len = column_settings.columns.len();
@@ -365,33 +515,30 @@ pub fn settings_container<'a, 'b>(
                 checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
             }
 
-            let checkbox_container = Container::new(checkbox).padding(5);
+            let checkbox_container =
+                Container::new(checkbox).style(style::BrightBackgroundContainer(color_palette));
 
             let row = Row::new()
                 .align_items(Align::Center)
                 .height(Length::Units(26))
-                .push(Space::new(Length::Units(5), Length::Units(0)))
                 .push(left_button_container)
                 .push(right_button_container)
                 .push(checkbox_container);
 
-            columns_scrollable = columns_scrollable.push(row);
+            my_addons_column = my_addons_column.push(row);
         }
 
-        (columns_title_row, columns_scrollable)
+        Container::new(my_addons_column)
     };
 
-    let (catalog_columns_title_row, catalog_columns_scrollable) = {
+    let catalog_columns_container = {
         // Title for the Columns section.
-        let columns_title_text = Text::new("Catalog Columns").size(DEFAULT_FONT_SIZE);
-        let columns_title_row = Row::new().push(columns_title_text);
 
-        // Scrollable for column selections
-        let mut columns_scrollable = Scrollable::new(&mut catalog_column_settings.scrollable_state)
-            .spacing(1)
-            .width(Length::Fill)
-            .height(Length::FillPortion(4))
-            .style(style::SecondaryScrollable(color_palette));
+        let title_container = Container::new(Text::new("Catalog").size(DEFAULT_FONT_SIZE))
+            .style(style::NormalBackgroundContainer(color_palette));
+        let mut catalog_column = Column::new()
+            .push(title_container)
+            .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
 
         // Add each column to scrollable as checkbox + label + up / down buttons
         let columns_len = catalog_column_settings.columns.len();
@@ -457,148 +604,48 @@ pub fn settings_container<'a, 'b>(
                 checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
             }
 
-            let checkbox_container = Container::new(checkbox).padding(5);
+            let checkbox_container =
+                Container::new(checkbox).style(style::BrightBackgroundContainer(color_palette));
 
             let row = Row::new()
                 .align_items(Align::Center)
                 .height(Length::Units(26))
-                .push(Space::new(Length::Units(5), Length::Units(0)))
                 .push(left_button_container)
                 .push(right_button_container)
                 .push(checkbox_container);
 
-            columns_scrollable = columns_scrollable.push(row);
+            catalog_column = catalog_column.push(row);
         }
 
-        (columns_title_row, columns_scrollable)
+        Container::new(catalog_column)
     };
 
-    let (website_button, website_title) = {
-        let website_info = Text::new("About").size(14);
-        let website_info_row = Row::new().push(website_info);
+    let catalog_rows = Row::new()
+        .push(my_addons_columns_container)
+        .push(catalog_columns_container)
+        .spacing(DEFAULT_PADDING);
 
-        let website_button_title_container =
-            Container::new(Text::new("Website").size(DEFAULT_FONT_SIZE))
-                .width(Length::FillPortion(1))
-                .center_x()
-                .align_x(Align::Center);
-        let website_button: Element<Interaction> =
-            Button::new(website_button_state, website_button_title_container)
-                .width(Length::Units(100))
-                .style(style::DefaultBoxedButton(color_palette))
-                .on_press(Interaction::OpenLink("https://getajour.com".to_owned()))
-                .into();
-
-        (website_button, website_info_row)
-    };
+    scrollable = scrollable
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(catalog_rows);
 
     // Colum wrapping all the settings content.
-    let right_column = Column::new()
-        .push(directory_info_text)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(path_data_row)
-        .push(Space::new(
-            Length::Units(0),
-            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
-        ))
-        .push(backup_title_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(backup_now_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(backup_directory_row)
-        .push(bottom_space);
+    scrollable = scrollable.height(Length::Fill).width(Length::Fill);
 
-    let middle_column = Column::new()
-        .push(scale_title_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(scale_buttons_row)
-        .push(Space::new(
-            Length::Units(0),
-            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
-        ))
-        .push(theme_info_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(theme_data_row)
-        .push(Space::new(
-            Length::Units(0),
-            Length::Units(DEFAULT_PADDING + DEFAULT_PADDING),
-        ))
-        .push(website_title)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(website_button.map(Message::Interaction));
-
-    // Container wrapping colum.
-    let right_container = Container::new(right_column)
-        .width(Length::FillPortion(1))
-        .height(Length::Shrink)
-        .style(style::BrightForegroundContainer(color_palette));
-
-    let middle_container = Container::new(middle_column)
-        .width(Length::Units(150))
-        .height(Length::Shrink)
-        .style(style::BrightForegroundContainer(color_palette));
-
-    let my_addons_columns_column = Column::new()
-        .push(columns_title_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(columns_scrollable)
-        .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
-    let my_addons_columns_container = Container::new(my_addons_columns_column)
-        .width(Length::Units(200))
-        .height(Length::Units(280))
-        .style(style::BrightForegroundContainer(color_palette));
-
-    let install_from_url_option_column = Column::new()
-        .push(Text::new("Install From URL Options").size(DEFAULT_FONT_SIZE))
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(
-            Container::new(Text::new("No options").size(DEFAULT_FONT_SIZE))
-                .style(style::NormalForegroundContainer(color_palette)),
-        );
-    let install_from_url_option_column = Container::new(install_from_url_option_column)
-        .width(Length::Units(200))
-        .height(Length::Units(200))
-        .style(style::BrightForegroundContainer(color_palette));
-
-    let catalog_columns_column = Column::new()
-        .push(catalog_columns_title_row)
-        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
-        .push(catalog_columns_scrollable)
-        .push(Space::new(Length::Fill, Length::Units(DEFAULT_PADDING)));
-    let catalog_columns_container = Container::new(catalog_columns_column)
-        .width(Length::Units(200))
-        .height(Length::Units(230))
-        .style(style::BrightForegroundContainer(color_palette));
-
-    // Row to wrap each section.
-    let mut row = Row::new().push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
-
-    // Depending on mode, we show different columns to edit.
-    match mode {
-        Mode::MyAddons(_) => {
-            row = row.push(my_addons_columns_container);
-        }
-        Mode::Install => {
-            row = row.push(install_from_url_option_column);
-        }
-        Mode::Catalog => {
-            row = row.push(catalog_columns_container);
-        }
-    }
-
-    row = row
-        .push(middle_container)
-        .push(right_container)
-        .push(Space::new(
-            Length::Units(DEFAULT_PADDING + 5),
-            Length::Units(0),
-        ));
+    let col = Column::new()
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(scrollable)
+        .push(Space::new(Length::Units(0), Length::Units(20)));
+    let row = Row::new()
+        .push(Space::new(Length::Units(20), Length::Units(0)))
+        .push(col);
 
     // Returns the final container.
     Container::new(row)
+        .center_x()
+        .width(Length::Fill)
         .height(Length::Shrink)
-        .style(style::BrightForegroundContainer(color_palette))
-        .padding(DEFAULT_PADDING)
+        .style(style::NormalBackgroundContainer(color_palette))
 }
 
 pub fn addon_data_cell<'a, 'b>(
@@ -1469,6 +1516,7 @@ pub fn menu_container<'a>(
     config: &Config,
     valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,
+    about_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
     install_mode_btn_state: &'a mut button::State,
@@ -1506,9 +1554,25 @@ pub fn menu_container<'a>(
 
     let mut install_mode_button = Button::new(
         install_mode_btn_state,
-        Text::new("Install From URL").size(DEFAULT_FONT_SIZE),
+        Text::new("Install from URL").size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
+
+    let mut settings_mode_button = Button::new(
+        settings_button_state,
+        Text::new("Settings")
+            .horizontal_alignment(HorizontalAlignment::Center)
+            .size(DEFAULT_FONT_SIZE),
+    )
+    .on_press(Interaction::ModeSelected(Mode::Settings));
+
+    let mut about_mode_button = Button::new(
+        about_button_state,
+        Text::new("About")
+            .horizontal_alignment(HorizontalAlignment::Center)
+            .size(DEFAULT_FONT_SIZE),
+    )
+    .on_press(Interaction::ModeSelected(Mode::About));
 
     match mode {
         Mode::MyAddons(_) => {
@@ -1516,18 +1580,40 @@ pub fn menu_container<'a>(
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
         Mode::Install => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button =
                 install_mode_button.style(style::SelectedDefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
         Mode::Catalog => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
+        }
+        Mode::Settings => {
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button =
+                settings_mode_button.style(style::SelectedDefaultButton(color_palette));
+        }
+        Mode::About => {
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            about_mode_button =
+                about_mode_button.style(style::SelectedDefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
     }
 
@@ -1549,6 +1635,8 @@ pub fn menu_container<'a>(
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
     let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
     let install_mode_button: Element<Interaction> = install_mode_button.into();
+    let settings_mode_button: Element<Interaction> = settings_mode_button.into();
+    let about_mode_button: Element<Interaction> = about_mode_button.into();
 
     let segmented_mode_control_row = Row::new()
         .push(addons_mode_button.map(Message::Interaction))
@@ -1673,9 +1761,14 @@ pub fn menu_container<'a>(
         segmented_flavor_control_row = segmented_flavor_control_row.spacing(1);
     }
 
-    let segmented_flavor_control_container = Container::new(segmented_flavor_control_row)
-        .padding(2)
-        .style(style::SegmentedContainer(color_palette));
+    let mut segmented_flavor_control_container =
+        Container::new(segmented_flavor_control_row).padding(2);
+
+    // Only add style if we show container.
+    if valid_flavors.len() > 1 {
+        segmented_flavor_control_container =
+            segmented_flavor_control_container.style(style::SegmentedContainer(color_palette));
+    }
 
     // Displays an error, if any has occured.
     let error_text = if let Some(error) = error {
@@ -1714,16 +1807,6 @@ pub fn menu_container<'a>(
         .padding(5)
         .style(style::NormalForegroundContainer(color_palette));
 
-    let settings_button: Element<Interaction> = Button::new(
-        settings_button_state,
-        Text::new("Settings")
-            .horizontal_alignment(HorizontalAlignment::Center)
-            .size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DefaultButton(color_palette))
-    .on_press(Interaction::Settings)
-    .into();
-
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
@@ -1733,6 +1816,8 @@ pub fn menu_container<'a>(
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(error_container)
         .push(version_container);
+
+    let mut segmented_mode_control_row = Row::new().spacing(1);
 
     // Add download button to latest github release page if Ajour update is available.
     if needs_update {
@@ -1752,14 +1837,22 @@ pub fn menu_container<'a>(
 
         let new_release_button: Element<Interaction> = new_release_button.into();
 
-        let spacer = Space::new(Length::Units(3), Length::Units(0));
-
-        settings_row = settings_row.push(new_release_button.map(Message::Interaction));
-        settings_row = settings_row.push(spacer);
+        segmented_mode_control_row =
+            segmented_mode_control_row.push(new_release_button.map(Message::Interaction));
+    } else {
+        segmented_mode_control_row =
+            segmented_mode_control_row.push(about_mode_button.map(Message::Interaction));
     }
 
+    segmented_mode_control_row =
+        segmented_mode_control_row.push(settings_mode_button.map(Message::Interaction));
+
+    let segmented_mode_control_container = Container::new(segmented_mode_control_row)
+        .padding(2)
+        .style(style::SegmentedContainer(color_palette));
+
     settings_row = settings_row
-        .push(settings_button.map(Message::Interaction))
+        .push(segmented_mode_control_container)
         .push(Space::new(
             Length::Units(DEFAULT_PADDING + 5),
             Length::Units(0),

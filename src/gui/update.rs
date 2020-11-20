@@ -28,7 +28,7 @@ use {
     iced::{Command, Length},
     isahc::{http::Uri, HttpClient},
     native_dialog::*,
-    std::collections::{hash_map::DefaultHasher, HashMap, HashSet},
+    std::collections::{hash_map::DefaultHasher, HashMap},
     std::convert::TryFrom,
     std::hash::Hasher,
     std::path::{Path, PathBuf},
@@ -118,8 +118,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Refresh) => {
             log::debug!("Interaction::Refresh");
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -132,19 +130,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             return Ok(Command::perform(async {}, Message::Parse));
         }
-        Message::Interaction(Interaction::Settings) => {
-            log::debug!("Interaction::Settings");
-
-            ajour.is_showing_settings = !ajour.is_showing_settings;
-
-            // Remove the expanded addon.
-            ajour.expanded_type = ExpandType::None;
-        }
         Message::Interaction(Interaction::Ignore(id)) => {
             log::debug!("Interaction::Ignore({})", &id);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -237,8 +225,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
             log::debug!("Interaction::FlavorSelected({})", flavor);
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
             // Update the game flavor
@@ -255,17 +241,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ModeSelected(mode)) => {
             log::debug!("Interaction::ModeSelected({:?})", mode);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-
-            // Sets mode.
-            ajour.mode = mode;
+            // Toggle off About or Settings if button is clicked again
+            if ajour.mode == mode && (mode == Mode::About || mode == Mode::Settings) {
+                ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+            }
+            // Set mode
+            else {
+                ajour.mode = mode;
+            }
         }
 
         Message::Interaction(Interaction::Expand(expand_type)) => {
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-
             // An addon can be exanded in two ways.
             match &expand_type {
                 ExpandType::Details(a) => {
@@ -329,9 +315,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             log::debug!("Interaction::Delete({})", &id);
-
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -367,8 +350,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Update(id)) => {
             log::debug!("Interaction::Update({})", &id);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -397,8 +378,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::UpdateAll) => {
             log::debug!("Interaction::UpdateAll");
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -724,8 +703,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.self_update_state.latest_release = release;
         }
         Message::Interaction(Interaction::SortColumn(column_key)) => {
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -764,9 +741,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.header_state.previous_column_key = Some(column_key);
         }
         Message::Interaction(Interaction::SortCatalogColumn(column_key)) => {
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-
             // First time clicking a column should sort it in Ascending order, otherwise
             // flip the sort direction.
             let mut sort_direction = SortDirection::Asc;
@@ -785,6 +759,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Since its already sorting in Asc by default, we should sort Desc.
             if ajour.catalog_header_state.previous_column_key.is_none()
                 && column_key == CatalogColumnKey::Title
+            {
+                sort_direction = SortDirection::Desc;
+            }
+            // Exception for the date released
+            if ajour.catalog_header_state.previous_column_key.is_none()
+                && column_key == CatalogColumnKey::DateReleased
             {
                 sort_direction = SortDirection::Desc;
             }
@@ -882,6 +862,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                 }
                 Mode::Install => {}
+                Mode::Settings => {}
+                Mode::About => {}
                 Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
@@ -1210,24 +1192,36 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.catalog_last_updated = Some(Utc::now());
 
-            let mut categories = HashSet::new();
-            catalog.addons.iter().for_each(|a| {
-                for category in &a.categories {
-                    categories.insert(category.clone());
-                }
+            let mut categories_per_source =
+                catalog
+                    .addons
+                    .iter()
+                    .fold(HashMap::new(), |mut map, addon| {
+                        map.entry(addon.source.to_string())
+                            .or_insert_with(Vec::new)
+                            .append(
+                                &mut addon
+                                    .categories
+                                    .clone()
+                                    .iter()
+                                    .map(|c| CatalogCategory::Choice(c.to_string()))
+                                    .collect(),
+                            );
+                        map
+                    });
+            categories_per_source.iter_mut().for_each(move |s| {
+                s.1.sort();
+                s.1.dedup();
+                s.1.insert(0, CatalogCategory::All);
             });
 
-            // Map category strings to Category enum
-            let mut categories: Vec<_> = categories
-                .into_iter()
-                .map(CatalogCategory::Choice)
-                .collect();
-            categories.sort();
+            ajour.catalog_categories_per_source_cache = categories_per_source;
 
-            // Unshift the All Categories option into the vec
-            categories.insert(0, CatalogCategory::All);
-
-            ajour.catalog_search_state.categories = categories;
+            ajour.catalog_search_state.categories = ajour
+                .catalog_categories_per_source_cache
+                .get(&ajour.catalog_search_state.source.to_string())
+                .unwrap()
+                .to_vec();
 
             ajour.catalog = Some(catalog);
 
@@ -1236,9 +1230,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             query_and_sort_catalog(ajour);
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
-
             // Catalog search query
             ajour.catalog_search_state.query = Some(query);
 
@@ -1246,9 +1237,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::InstallAddon(flavor, id, kind)) => {
             log::debug!("Interaction::InstallAddon({}, {:?})", flavor, &kind);
-
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
 
             let install_addons = ajour.install_addons.entry(flavor).or_default();
 
@@ -1275,8 +1263,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::CatalogCategorySelected(category)) => {
             log::debug!("Interaction::CatalogCategorySelected({})", &category);
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
 
             // Select category
             ajour.catalog_search_state.category = category;
@@ -1286,8 +1272,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogResultSizeSelected(size)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", &size);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Catalog result size
             ajour.catalog_search_state.result_size = size;
 
@@ -1296,10 +1280,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogSourceSelected(source)) => {
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
 
-            // Close settings if shown.
-            ajour.is_showing_settings = false;
             // Catalog source
             ajour.catalog_search_state.source = source;
+
+            ajour.catalog_search_state.categories = ajour
+                .catalog_categories_per_source_cache
+                .get(&source.to_string())
+                .unwrap()
+                .to_vec();
+
+            ajour.catalog_search_state.category = CatalogCategory::All;
 
             query_and_sort_catalog(ajour);
         }
@@ -1469,6 +1459,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
+        Message::Interaction(Interaction::ToggleHideIgnoredAddons(is_checked)) => {
+            log::debug!("Interaction::ToggleHideIgnoredAddons({})", is_checked);
+
+            ajour.config.hide_ignored_addons = is_checked;
+            let _ = ajour.config.save();
+        }
         Message::Error(error)
         | Message::CatalogDownloaded(Err(error))
         | Message::AddonCacheUpdated(Err(error)) => {
@@ -1483,6 +1479,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.config.window_size = Some((width, height));
             let _ = ajour.config.save();
+        }
+        Message::RuntimeEvent(iced_native::Event::Keyboard(
+            iced_native::keyboard::Event::KeyReleased { key_code, .. },
+        )) => {
+            if key_code == iced_native::keyboard::KeyCode::Escape
+                && (ajour.mode == Mode::Settings || ajour.mode == Mode::About)
+            {
+                ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+            }
         }
         Message::RuntimeEvent(_) => {}
         Message::None(_) => {}

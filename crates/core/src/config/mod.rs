@@ -36,6 +36,9 @@ pub struct Config {
 
     #[serde(default)]
     pub backup_wtf: bool,
+
+    #[serde(default)]
+    pub hide_ignored_addons: bool,
 }
 
 impl Config {
