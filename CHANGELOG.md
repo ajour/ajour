@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.5.2] - 2020-11-20
+
 ### Packaging
 
 - Updated Ajour icon on macOS to a "Big Sur" version
