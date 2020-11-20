@@ -9,9 +9,13 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ## [Unreleased]
 
+### Packaging
+- Updated Ajour icon on macOS to a "Big Sur" version 
+
 ### Added
 - Option to hide ignored addons
 - About view
+- Option to hide ignored addons
 
 ### Changed
 - Settings now use the whole view
@@ -20,6 +24,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Game Version fallback to TOC could in some cases fail
 - Visual glitch when only having 1 flavor
 - Load addons into catalog asynchronously
+- Only show categories pertaining to the source selected
 
 ## [0.5.1] - 2020-11-12
 
