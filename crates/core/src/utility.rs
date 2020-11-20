@@ -43,6 +43,7 @@ pub fn regex_html_tags_to_space() -> Regex {
 pub struct Release {
     pub tag_name: String,
     pub assets: Vec<ReleaseAsset>,
+    pub body: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

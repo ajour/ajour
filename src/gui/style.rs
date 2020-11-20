@@ -421,6 +421,41 @@ impl container::StyleSheet for Row {
     }
 }
 
+pub struct ForegroundScrollable(pub ColorPalette);
+impl scrollable::StyleSheet for ForegroundScrollable {
+    fn active(&self) -> scrollable::Scrollbar {
+        scrollable::Scrollbar {
+            background: Some(Background::Color(self.0.base.foreground)),
+            border_radius: 0,
+            border_width: 0,
+            border_color: Color::TRANSPARENT,
+            scroller: scrollable::Scroller {
+                color: self.0.base.background,
+                border_radius: 2,
+                border_width: 0,
+                border_color: Color::TRANSPARENT,
+            },
+        }
+    }
+
+    fn hovered(&self) -> scrollable::Scrollbar {
+        let active = self.active();
+
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..active.scroller },
+            ..active
+        }
+    }
+
+    fn dragging(&self) -> scrollable::Scrollbar {
+        let hovered = self.hovered();
+        scrollable::Scrollbar {
+            scroller: scrollable::Scroller { ..hovered.scroller },
+            ..hovered
+        }
+    }
+}
+
 pub struct Scrollable(pub ColorPalette);
 impl scrollable::StyleSheet for Scrollable {
     fn active(&self) -> scrollable::Scrollbar {
@@ -456,47 +491,12 @@ impl scrollable::StyleSheet for Scrollable {
     }
 }
 
-pub struct SecondaryScrollable(pub ColorPalette);
-impl scrollable::StyleSheet for SecondaryScrollable {
-    fn active(&self) -> scrollable::Scrollbar {
-        scrollable::Scrollbar {
-            background: Some(Background::Color(self.0.base.foreground)),
-            border_radius: 0,
-            border_width: 0,
-            border_color: Color::TRANSPARENT,
-            scroller: scrollable::Scroller {
-                color: self.0.base.background,
-                border_radius: 2,
-                border_width: 0,
-                border_color: Color::TRANSPARENT,
-            },
-        }
-    }
-
-    fn hovered(&self) -> scrollable::Scrollbar {
-        let active = self.active();
-
-        scrollable::Scrollbar {
-            scroller: scrollable::Scroller { ..active.scroller },
-            ..active
-        }
-    }
-
-    fn dragging(&self) -> scrollable::Scrollbar {
-        let hovered = self.hovered();
-        scrollable::Scrollbar {
-            scroller: scrollable::Scroller { ..hovered.scroller },
-            ..hovered
-        }
-    }
-}
-
 pub struct PickList(pub ColorPalette);
 impl pick_list::StyleSheet for PickList {
     fn menu(&self) -> pick_list::Menu {
         pick_list::Menu {
             text_color: self.0.bright.surface,
-            background: Background::Color(self.0.base.background),
+            background: Background::Color(self.0.base.foreground),
             border_width: 1,
             border_color: self.0.base.background,
             selected_background: Background::Color(Color {
@@ -512,7 +512,10 @@ impl pick_list::StyleSheet for PickList {
             text_color: self.0.bright.surface,
             background: self.0.base.background.into(),
             border_width: 1,
-            border_color: self.0.base.foreground,
+            border_color: Color {
+                a: 0.5,
+                ..self.0.normal.primary
+            },
             border_radius: 2,
             icon_size: 0.5,
         }
@@ -584,7 +587,7 @@ pub struct DefaultCheckbox(pub ColorPalette);
 impl checkbox::StyleSheet for DefaultCheckbox {
     fn active(&self, _is_checked: bool) -> checkbox::Style {
         checkbox::Style {
-            background: Background::Color(self.0.base.foreground),
+            background: Background::Color(self.0.base.background),
             checkmark_color: self.0.bright.primary,
             border_radius: 2,
             border_width: 1,
@@ -607,7 +610,7 @@ pub struct AlwaysCheckedCheckbox(pub ColorPalette);
 impl checkbox::StyleSheet for AlwaysCheckedCheckbox {
     fn active(&self, _is_checked: bool) -> checkbox::Style {
         checkbox::Style {
-            background: Background::Color(self.0.base.foreground),
+            background: Background::Color(self.0.base.background),
             checkmark_color: self.0.normal.primary,
             border_radius: 2,
             border_width: 1,

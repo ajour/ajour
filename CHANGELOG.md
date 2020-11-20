@@ -17,9 +17,13 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 
 ### Changed
 - Date sort catalog descending first, which is more natural
+- About view
+- Option to hide ignored addons
+- Settings now use the whole view
 
 ### Fixed
 - Game Version fallback to TOC could in some cases fail
+- Visual glitch when only having 1 flavor
 - Load addons into catalog asynchronously
 - Only show categories pertaining to the source selected
 
