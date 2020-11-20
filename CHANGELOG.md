@@ -13,7 +13,6 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Updated Ajour icon on macOS to a "Big Sur" version 
 
 ### Added
-- Option to hide ignored addons
 - About view
 - Option to hide ignored addons
 
