@@ -19,6 +19,7 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 - Game Version fallback to TOC could in some cases fail
 - Load addons into catalog asynchronously
 - Only show categories pertaining to the source selected
+- Date sort catalog descending first, which is more natural
 
 ## [0.5.1] - 2020-11-12
 
