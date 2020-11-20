@@ -788,6 +788,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             {
                 sort_direction = SortDirection::Desc;
             }
+            // Exception for the date released
+            if ajour.catalog_header_state.previous_column_key.is_none()
+                && column_key == CatalogColumnKey::DateReleased
+            {
+                sort_direction = SortDirection::Desc;
+            }
 
             log::debug!(
                 "Interaction::SortCatalogColumn({:?}, {:?})",
