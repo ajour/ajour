@@ -25,6 +25,9 @@ and `Removed`.
 
 ### Changed
 
+- Date sort catalog descending first, which is more natural
+- About view
+- Option to hide ignored addons
 - Settings now use the whole view
 
 ### Fixed
