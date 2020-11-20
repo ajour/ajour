@@ -12,14 +12,16 @@ The sections should follow the order `Packaging`, `Added`, `Changed`, `Fixed` an
 ### Packaging
 - Updated Ajour icon on macOS to a "Big Sur" version 
 
-## Added
+### Added
 - Option to hide ignored addons
+
+### Changed
+- Date sort catalog descending first, which is more natural
 
 ### Fixed
 - Game Version fallback to TOC could in some cases fail
 - Load addons into catalog asynchronously
 - Only show categories pertaining to the source selected
-- Date sort catalog descending first, which is more natural
 
 ## [0.5.1] - 2020-11-12
 
