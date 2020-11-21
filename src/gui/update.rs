@@ -494,7 +494,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let mut addon = None;
 
-            match result {
+            match result.context("Failed to download addon") {
                 Ok(_) => match reason {
                     DownloadReason::Update => {
                         if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
@@ -516,8 +516,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                 },
                 Err(error) => {
-                    log::error!("{}", error);
-                    ajour.error = Some(error.to_string());
+                    log_error(&error);
+                    ajour.error = Some(error);
 
                     if reason == DownloadReason::Install {
                         if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
@@ -567,7 +567,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let mut addon = None;
             let mut folders = None;
 
-            match result {
+            match result.context("Failed to unpack addon") {
                 Ok(_folders) => match reason {
                     DownloadReason::Update => {
                         if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
@@ -600,8 +600,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                 },
                 Err(error) => {
-                    log::error!("{}", error);
-                    ajour.error = Some(error.to_string());
+                    log_error(&error);
+                    ajour.error = Some(error);
 
                     if reason == DownloadReason::Install {
                         if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
@@ -1002,11 +1002,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.backup_state.backing_up = false;
             ajour.backup_state.last_backup = Some(as_of);
         }
-        Message::BackupFinished(Err(error)) => {
-            log::error!("{}", error);
+        Message::BackupFinished(error @ Err(_)) => {
+            let error = error.context("Failed to backup folders").unwrap_err();
+
+            log_error(&error);
+            ajour.error = Some(error);
 
             ajour.backup_state.backing_up = false;
-            ajour.error = Some(error.to_string())
         }
         Message::Interaction(Interaction::ToggleColumn(is_checked, key)) => {
             // We can't untoggle the addon title column
@@ -1370,7 +1372,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::AjourUpdateDownloaded(result) => {
             log::debug!("Message::AjourUpdateDownloaded");
 
-            match result {
+            match result.context("Failed to update Ajour") {
                 Ok((current_bin_name, temp_bin_path)) => {
                     // Remove first arg, which is path to binary. We don't use this first
                     // arg as binary path because it's not reliable, per the docs.
@@ -1382,18 +1384,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         .arg("--self-update-temp")
                         .arg(&current_bin_name)
                         .spawn()
+                        .context("Failed to update Ajour")
                     {
                         Ok(_) => std::process::exit(0),
                         Err(error) => {
-                            log::error!("{}", error);
-                            ajour.error = Some(Error::from(error).to_string());
+                            log_error(&error);
+                            ajour.error = Some(error);
                             ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
                         }
                     }
                 }
                 Err(error) => {
-                    log::error!("{}", error);
-                    ajour.error = Some(error.to_string());
+                    log_error(&error);
+                    ajour.error = Some(error);
                     ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
                 }
             }
@@ -1472,16 +1475,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::CatalogDownloaded(error @ Err(_)) => {
             let error = error.context("Failed to download catalog").unwrap_err();
             log_error(&error);
-            ajour.error = Some(error.to_string());
+            ajour.error = Some(error);
         }
         Message::AddonCacheUpdated(error @ Err(_)) => {
             let error = error.context("Failed to update addon cache").unwrap_err();
             log_error(&error);
-            ajour.error = Some(error.to_string());
+            ajour.error = Some(error);
         }
         Message::Error(error) => {
-            log::error!("{}", error);
-            ajour.error = Some(error.to_string());
+            log_error(&error);
+            ajour.error = Some(error);
         }
         Message::RuntimeEvent(iced_native::Event::Window(
             iced_native::window::Event::Resized { width, height },

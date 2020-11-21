@@ -160,7 +160,7 @@ pub enum Message {
 
 pub struct Ajour {
     state: HashMap<Mode, State>,
-    error: Option<String>,
+    error: Option<anyhow::Error>,
     mode: Mode,
     addons: HashMap<Flavor, Vec<Addon>>,
     addons_scrollable_state: scrollable::State,
