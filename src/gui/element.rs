@@ -125,6 +125,7 @@ pub fn settings_container<'a, 'b>(
     column_config: &'b [(ColumnKey, Length, bool)],
     catalog_column_settings: &'a mut CatalogColumnSettings,
     catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
+    open_config_dir_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -409,6 +410,41 @@ pub fn settings_container<'a, 'b>(
         Column::new().push(checkbox_container)
     };
 
+    let config_column = {
+        let config_dir = ajour_core::fs::config_dir();
+        let config_dir_string = config_dir.as_path().display().to_string();
+        // TODO (casperstorm): button press should open config_dir
+        
+        let open_config_button_title_container =
+            Container::new(Text::new("Open data directory").size(DEFAULT_FONT_SIZE))
+                .width(Length::Units(150))
+                .center_x()
+                .align_x(Align::Center);
+        let open_config_button: Element<Interaction> = Button::new(
+            open_config_dir_button_state,
+            open_config_button_title_container,
+        )
+        .width(Length::Units(150))
+        .style(style::DefaultBoxedButton(color_palette))
+        .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+        .into();
+
+        let open_config_description = Text::new(config_dir_string)
+            .size(DEFAULT_FONT_SIZE)
+            .vertical_alignment(VerticalAlignment::Center);
+        let open_config_description_container = Container::new(open_config_description)
+            .height(Length::Units(25))
+            .center_y()
+            .style(style::NormalBackgroundContainer(color_palette));
+
+        let open_config_row = Row::new()
+            .push(open_config_button.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(open_config_description_container);
+
+        Column::new().push(open_config_row)
+    };
+
     let ui_title = Text::new("UI").size(DEFAULT_FONT_SIZE);
     let ui_title_container =
         Container::new(ui_title).style(style::BrightBackgroundContainer(color_palette));
@@ -416,6 +452,10 @@ pub fn settings_container<'a, 'b>(
     let addon_title = Text::new("Addons").size(DEFAULT_FONT_SIZE);
     let addon_title_container =
         Container::new(addon_title).style(style::BrightBackgroundContainer(color_palette));
+
+    let config_title = Text::new("Config").size(DEFAULT_FONT_SIZE);
+    let config_title_container =
+        Container::new(config_title).style(style::BrightBackgroundContainer(color_palette));
 
     let ui_row = Row::new()
         .push(theme_column)
@@ -436,7 +476,11 @@ pub fn settings_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(ui_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(ui_row);
+        .push(ui_row)
+        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(config_title_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(config_column);
 
     let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
     let columns_title_text_container =

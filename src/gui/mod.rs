@@ -188,6 +188,7 @@ pub struct Ajour {
     catalog_categories_per_source_cache: HashMap<String, Vec<CatalogCategory>>,
     website_btn_state: button::State,
     patreon_btn_state: button::State,
+    open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
 }
 
@@ -242,6 +243,7 @@ impl Default for Ajour {
             catalog_categories_per_source_cache: Default::default(),
             website_btn_state: Default::default(),
             patreon_btn_state: Default::default(),
+            open_config_dir_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
         }
     }
@@ -735,6 +737,7 @@ impl Application for Ajour {
                     &column_config,
                     &mut self.catalog_column_settings,
                     &catalog_column_config,
+                    &mut self.open_config_dir_btn_state,
                 );
 
                 content = content.push(settings_container)
