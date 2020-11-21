@@ -14,6 +14,14 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Two new themes; Ferra and One Dark
+
+### Changed
+
+- Sorted themes alphabetically in the picker
+
 ## [0.5.2] - 2020-11-20
 
 ### Packaging
