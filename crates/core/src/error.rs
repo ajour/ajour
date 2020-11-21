@@ -48,6 +48,8 @@ pub enum DownloadError {
     #[error(transparent)]
     Http(#[from] isahc::http::Error),
     #[error(transparent)]
+    Var(#[from] std::env::VarError),
+    #[error(transparent)]
     SerdeJson(#[from] serde_json::Error),
     #[error(transparent)]
     Filesystem(#[from] FilesystemError),

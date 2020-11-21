@@ -81,10 +81,7 @@ pub async fn download_update_to_temp_file(
     let current_bin_path = std::env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let current_bin_path = PathBuf::from(
-        std::env::var("APPIMAGE")
-            .map_err(|e| error!("error getting APPIMAGE env variable: {:?}", e))?,
-    );
+    let current_bin_path = PathBuf::from(std::env::var("APPIMAGE")?);
 
     let current_bin_name = current_bin_path
         .file_name()
@@ -109,7 +106,7 @@ pub async fn download_update_to_temp_file(
             .iter()
             .find(|a| a.name == asset_name)
             .cloned()
-            .ok_or_else(|| DownloadError::MissingSelfUpdateRelease { bin_name })?;
+            .ok_or(DownloadError::MissingSelfUpdateRelease { bin_name })?;
 
         let archive_path = current_bin_path.parent().unwrap().join(&asset_name);
 
@@ -128,7 +125,7 @@ pub async fn download_update_to_temp_file(
             .iter()
             .find(|a| a.name == bin_name)
             .cloned()
-            .ok_or_else(|| DownloadError::MissingSelfUpdateRelease { bin_name })?;
+            .ok_or(DownloadError::MissingSelfUpdateRelease { bin_name })?;
 
         download_file(&asset.download_url, &new_bin_path).await?;
     }

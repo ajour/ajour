@@ -159,9 +159,9 @@ impl TryFrom<&Addon> for AddonCacheEntry {
                 modified: Utc::now(),
             })
         } else {
-            return Err(CacheError::AddonMissingRepo {
+            Err(CacheError::AddonMissingRepo {
                 title: addon.title().to_owned(),
-            });
+            })
         }
     }
 }

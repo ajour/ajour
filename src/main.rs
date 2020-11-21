@@ -10,6 +10,7 @@ mod gui;
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::utility::rename;
 
+use anyhow::Context;
 use std::env;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
@@ -137,10 +138,8 @@ fn handle_self_update_temp(main_bin_name: &str) -> Result<()> {
     let temp_bin = env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let temp_bin = PathBuf::from(
-        std::env::var("APPIMAGE")
-            .map_err(|e| Error::Custom(format!("error getting APPIMAGE env variable: {:?}", e)))?,
-    );
+    let temp_bin =
+        PathBuf::from(std::env::var("APPIMAGE").context("error getting APPIMAGE env variable")?);
 
     let parent_dir = temp_bin.parent().unwrap();
 
