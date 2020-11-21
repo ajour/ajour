@@ -366,6 +366,54 @@ impl Theme {
             },
         }
     }
+
+    pub fn ferra() -> Theme {
+        Theme {
+            name: "Ferra".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#211f22").unwrap(),
+                    foreground: hex_to_color("#2b292d").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#664A50").unwrap(),
+                    secondary: hex_to_color("#855859").unwrap(),
+                    surface: hex_to_color("#816961").unwrap(),
+                    error: hex_to_color("#713f47").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#b4838d").unwrap(),
+                    secondary: hex_to_color("#e5989b").unwrap(),
+                    surface: hex_to_color("#fecdb2").unwrap(),
+                    error: hex_to_color("#e06b75").unwrap(),
+                },
+            },
+        }
+    }
+
+    pub fn one_dark() -> Theme {
+        Theme {
+            name: "One Dark".to_string(),
+            palette: ColorPalette {
+                base: BaseColors {
+                    background: hex_to_color("#282c34").unwrap(),
+                    foreground: hex_to_color("#2c323c").unwrap(),
+                },
+                normal: NormalColors {
+                    primary: hex_to_color("#385c7c").unwrap(),
+                    secondary: hex_to_color("#654473").unwrap(),
+                    surface: hex_to_color("#5b626e").unwrap(),
+                    error: hex_to_color("#713f47").unwrap(),
+                },
+                bright: BrightColors {
+                    primary: hex_to_color("#61afef").unwrap(),
+                    secondary: hex_to_color("#c679dd").unwrap(),
+                    surface: hex_to_color("#a6adba").unwrap(),
+                    error: hex_to_color("#e06b75").unwrap(),
+                },
+            },
+        }
+    }
 }
 
 fn hex_to_color(hex: &str) -> Option<iced_native::Color> {
