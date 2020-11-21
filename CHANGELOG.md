@@ -16,7 +16,8 @@ and `Removed`.
 
 ### Fixed
 
-- Fixed error handling to show better human readable errors in Ajour gui. Errors and underlying causes are still logged.
+- Fixed error handling to show better human readable errors in Ajour gui. Errors
+  and underlying causes are still logged.
 
 ## [0.5.2] - 2020-11-20
 
