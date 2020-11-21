@@ -86,7 +86,11 @@ pub fn main() {
 pub fn log_error(error: &anyhow::Error) {
     log::error!("{}", error);
 
-    for cause in error.chain() {
+    let mut causes = error.chain();
+    // Remove first entry since it's same as top level error
+    causes.next();
+
+    for cause in causes {
         log::error!("caused by: {}", cause);
     }
 }
