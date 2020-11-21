@@ -211,7 +211,7 @@ impl Theme {
                     primary: hex_to_color("#505a60").unwrap(),
                     secondary: hex_to_color("#465258").unwrap(),
                     surface: hex_to_color("#999f93").unwrap(),
-                    error: hex_to_color("#614b51").unwrap(),
+                    error: hex_to_color("#74484c").unwrap(),
                 },
                 bright: BrightColors {
                     primary: hex_to_color("#a7c080").unwrap(),
