@@ -144,7 +144,7 @@ pub enum Message {
     LatestBackup(Option<NaiveDateTime>),
     BackupFinished(Result<NaiveDateTime, FilesystemError>),
     CatalogDownloaded(Result<Catalog, DownloadError>),
-    InstallAddonFetched((Flavor, String, Result<Addon>)),
+    InstallAddonFetched((Flavor, String, Result<Addon, RepositoryError>)),
     FetchedChangelog(
         (
             Addon,

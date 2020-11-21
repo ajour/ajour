@@ -419,66 +419,68 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // if our selected flavor returns (either ok or error) - we change to idle.
             ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
-            if let Ok(addons) = result {
-                log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
+            match result.context("Failed to parse addons") {
+                Ok(addons) => {
+                    log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
 
-                // Ignored addon ids.
-                let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
+                    // Ignored addon ids.
+                    let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
 
-                // Check if addons is updatable.
-                let release_channels = ajour
-                    .config
-                    .addons
-                    .release_channels
-                    .entry(flavor)
-                    .or_default();
-                let mut addons = addons
-                    .into_iter()
-                    .map(|mut a| {
-                        // Check if we have saved release channel for addon.
-                        if let Some(release_channel) = release_channels.get(&a.primary_folder_id) {
-                            a.release_channel = *release_channel;
-                        } else {
-                            // Else we try to determine the release_channel based of installed version.
-                            for (release_channel, package) in a.remote_packages() {
-                                if package.file_id == a.file_id() {
-                                    a.release_channel = release_channel.to_owned();
-                                    break;
+                    // Check if addons is updatable.
+                    let release_channels = ajour
+                        .config
+                        .addons
+                        .release_channels
+                        .entry(flavor)
+                        .or_default();
+                    let mut addons = addons
+                        .into_iter()
+                        .map(|mut a| {
+                            // Check if we have saved release channel for addon.
+                            if let Some(release_channel) =
+                                release_channels.get(&a.primary_folder_id)
+                            {
+                                a.release_channel = *release_channel;
+                            } else {
+                                // Else we try to determine the release_channel based of installed version.
+                                for (release_channel, package) in a.remote_packages() {
+                                    if package.file_id == a.file_id() {
+                                        a.release_channel = release_channel.to_owned();
+                                        break;
+                                    }
                                 }
                             }
-                        }
 
-                        // Check if addon is updatable based on release channel.
-                        if let Some(package) = a.relevant_release_package() {
-                            if a.is_updatable(&package) && a.state != AddonState::Corrupted {
-                                a.state = AddonState::Updatable;
+                            // Check if addon is updatable based on release channel.
+                            if let Some(package) = a.relevant_release_package() {
+                                if a.is_updatable(&package) && a.state != AddonState::Corrupted {
+                                    a.state = AddonState::Updatable;
+                                }
                             }
-                        }
 
-                        if ignored_ids.iter().any(|ia| &a.primary_folder_id == ia) {
-                            a.state = AddonState::Ignored;
-                        };
+                            if ignored_ids.iter().any(|ia| &a.primary_folder_id == ia) {
+                                a.state = AddonState::Ignored;
+                            };
 
-                        a
-                    })
-                    .collect::<Vec<Addon>>();
+                            a
+                        })
+                        .collect::<Vec<Addon>>();
 
-                // Sort the addons.
-                sort_addons(&mut addons, SortDirection::Desc, ColumnKey::Status);
-                ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
-                ajour.header_state.previous_column_key = Some(ColumnKey::Status);
+                    // Sort the addons.
+                    sort_addons(&mut addons, SortDirection::Desc, ColumnKey::Status);
+                    ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                    ajour.header_state.previous_column_key = Some(ColumnKey::Status);
 
-                // Sets the flavor state to ready.
-                ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
+                    // Sets the flavor state to ready.
+                    ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
-                // Insert the addons into the HashMap.
-                ajour.addons.insert(flavor, addons);
-            } else {
-                log::error!(
-                    "Message::ParsedAddons({}) - {}",
-                    flavor,
-                    result.err().unwrap(),
-                );
+                    // Insert the addons into the HashMap.
+                    ajour.addons.insert(flavor, addons);
+                }
+                Err(error) => {
+                    log_error(&error);
+                    ajour.error = Some(error);
+                }
             }
         }
         Message::DownloadedAddon((reason, flavor, id, result)) => {
@@ -1327,7 +1329,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ));
                     }
                     Err(error) => {
-                        log::error!("{}", error);
+                        // Dont use `context` here to convert to anyhow::Error since
+                        // we actually want to show the underlying RepositoryError
+                        // message
+                        let error = anyhow::Error::new(error);
+
+                        log_error(&error);
 
                         match install_addon.kind {
                             InstallKind::Catalog { .. } => {
@@ -1343,14 +1350,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::FetchedChangelog((addon, key, result)) => {
             log::debug!("Message::FetchedChangelog(error: {})", &result.is_err());
-            match result {
+            match result.context("Failed to fetch changelog") {
                 Ok((changelog, url)) => {
                     let payload = ChangelogPayload { changelog, url };
                     let changelog = Changelog::Some(addon, payload, key);
                     ajour.expanded_type = ExpandType::Changelog(changelog);
                 }
                 Err(error) => {
-                    log::error!("Message::FetchedChangelog(error: {})", &error);
+                    log_error(&error);
+                    ajour.error = Some(error);
                     ajour.expanded_type = ExpandType::None;
                 }
             }
@@ -1603,12 +1611,12 @@ async fn perform_fetch_latest_addon(
     install_kind: InstallKind,
     id: String,
     flavor: Flavor,
-) -> (Flavor, String, Result<Addon>) {
+) -> (Flavor, String, Result<Addon, RepositoryError>) {
     async fn fetch_latest_addon(
         flavor: Flavor,
         install_kind: InstallKind,
         id: String,
-    ) -> Result<Addon> {
+    ) -> Result<Addon, RepositoryError> {
         // Needed since id for source install is a URL and this id needs to be safe
         // when using as the temp path of the downloaded zip
         let mut hasher = DefaultHasher::new();
