@@ -479,7 +479,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 Err(error) => {
                     log_error(&error);
-                    ajour.error = Some(error);
                 }
             }
         }
