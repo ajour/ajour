@@ -78,7 +78,6 @@ dependencies = [
 name = "ajour-core"
 version = "0.5.2"
 dependencies = [
- "anyhow",
  "async-std",
  "async-trait",
  "chrono",
