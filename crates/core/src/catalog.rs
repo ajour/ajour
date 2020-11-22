@@ -4,12 +4,9 @@ use crate::Result;
 use async_std::task;
 use chrono::prelude::*;
 use futures::future::join_all;
-use std::time::Duration;
 
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
-
-const DEFAULT_TIMEOUT: u64 = 30;
 
 const CURSE_CATALOG_URL: &str =
     "https://github.com/casperstorm/ajour-catalog/releases/latest/download/curse.json";
@@ -24,7 +21,6 @@ pub async fn get_catalog_addons_from(url: &str) -> Result<Vec<CatalogAddon>> {
     let client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
         .max_connections_per_host(6)
-        .timeout(Duration::from_secs(DEFAULT_TIMEOUT))
         .build()
         .unwrap();
 
