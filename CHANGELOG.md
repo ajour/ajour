@@ -20,6 +20,7 @@ and `Removed`.
   can be specified
   - Pass `ajour backup --help` to get help using this new command
 - Two new themes; Ferra and One Dark
+- Button in settings to open config data directory
 
 ### Changed
 
