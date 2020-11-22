@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix bug that would cause Ajour to panic if the catalog failed to download
+
 ## [0.5.2] - 2020-11-20
 
 ### Packaging
