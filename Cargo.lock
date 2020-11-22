@@ -65,6 +65,7 @@ dependencies = [
  "log-panics",
  "native-dialog",
  "num-format",
+ "open",
  "opener",
  "structopt",
  "timeago",
@@ -2503,6 +2504,15 @@ name = "once_cell"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "260e51e7efe62b592207e9e13a68e43692a7a279171d6ba57abd208bf23645ad"
+
+[[package]]
+name = "open"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c283bf0114efea9e42f1a60edea9859e8c47528eae09d01df4b29c1e489cc48"
+dependencies = [
+ "winapi 0.3.9",
+]
 
 [[package]]
 name = "opener"

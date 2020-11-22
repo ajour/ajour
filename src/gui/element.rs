@@ -148,7 +148,7 @@ pub fn settings_container<'a, 'b>(
         Button::new(directory_button_state, directory_button_title_container)
             .width(Length::Units(120))
             .style(style::DefaultBoxedButton(color_palette))
-            .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+            .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
             .into();
 
     // Directory text, written next to directory button to let the user
@@ -289,7 +289,7 @@ pub fn settings_container<'a, 'b>(
         )
         .width(Length::Units(120))
         .style(style::DefaultBoxedButton(color_palette))
-        .on_press(Interaction::OpenDirectory(DirectoryType::Backup))
+        .on_press(Interaction::SelectDirectory(DirectoryType::Backup))
         .into();
 
         // Directory text, written next to directory button to let the user
@@ -413,8 +413,7 @@ pub fn settings_container<'a, 'b>(
     let config_column = {
         let config_dir = ajour_core::fs::config_dir();
         let config_dir_string = config_dir.as_path().display().to_string();
-        // TODO (casperstorm): button press should open config_dir
-        
+
         let open_config_button_title_container =
             Container::new(Text::new("Open data directory").size(DEFAULT_FONT_SIZE))
                 .width(Length::Units(150))
@@ -426,7 +425,7 @@ pub fn settings_container<'a, 'b>(
         )
         .width(Length::Units(150))
         .style(style::DefaultBoxedButton(color_palette))
-        .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+        .on_press(Interaction::OpenDirectory(config_dir))
         .into();
 
         let open_config_description = Text::new(config_dir_string)
@@ -1947,7 +1946,7 @@ pub fn status_container<'a>(
             Button::new(btn_state, onboarding_button_title_container)
                 .width(Length::Units(120))
                 .style(style::DefaultButton(color_palette))
-                .on_press(Interaction::OpenDirectory(DirectoryType::Wow))
+                .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
                 .into();
 
         colum = colum

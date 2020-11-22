@@ -180,15 +180,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Persist the newly updated config.
             let _ = &ajour.config.save();
         }
-        Message::Interaction(Interaction::OpenDirectory(dir_type)) => {
-            log::debug!("Interaction::OpenDirectory({:?})", dir_type);
+        Message::Interaction(Interaction::OpenDirectory(path)) => {
+            log::debug!("Interaction::OpenDirectory({:?})", path);
+            let _ = open::that(path);
+        }
+        Message::Interaction(Interaction::SelectDirectory(dir_type)) => {
+            log::debug!("Interaction::SelectDirectory({:?})", dir_type);
 
             let message = match dir_type {
                 DirectoryType::Wow => Message::UpdateWowDirectory,
                 DirectoryType::Backup => Message::UpdateBackupDirectory,
             };
 
-            return Ok(Command::perform(open_directory(), message));
+            return Ok(Command::perform(select_directory(), message));
         }
         Message::Interaction(Interaction::OpenLink(link)) => {
             log::debug!("Interaction::OpenLink({})", &link);
@@ -1496,7 +1500,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
     Ok(Command::none())
 }
 
-async fn open_directory() -> Option<PathBuf> {
+async fn select_directory() -> Option<PathBuf> {
     let dialog = OpenSingleDir { dir: None };
     if let Ok(show) = dialog.show() {
         return show;
