@@ -16,11 +16,19 @@ and `Removed`.
 
 ### Added
 
+- Added an option to Backup via the command line. Flavors and backup folder sources
+  can be specified
+  - Pass `ajour backup --help` to get help using this new command
 - Two new themes; Ferra and One Dark
 
 ### Changed
 
 - Sorted themes alphabetically in the picker
+
+### Fixed
+
+- Fixed bug that caused catalog to fail downloading when `null` values existed
+  in the payload
 
 ## [0.5.2] - 2020-11-20
 
