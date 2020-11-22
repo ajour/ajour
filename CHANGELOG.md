@@ -14,6 +14,11 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed bug that caused catalog to fail downloading when `null` values existed
+  in the payload
+
 ## [0.5.2] - 2020-11-20
 
 ### Packaging
