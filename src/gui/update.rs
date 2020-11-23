@@ -1286,8 +1286,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
                 .get(&source.to_string())
-                .unwrap()
-                .to_vec();
+                .cloned()
+                .unwrap_or_default();
 
             ajour.catalog_search_state.category = CatalogCategory::All;
 
