@@ -1,6 +1,5 @@
-use crate::error::ClientError;
+use crate::error::FilesystemError;
 use crate::fs::backup::{Backup, ZipBackup};
-use crate::Result;
 
 use chrono::{Local, NaiveDateTime};
 use std::convert::TryFrom;
@@ -11,7 +10,7 @@ use std::path::{Path, PathBuf};
 pub async fn backup_folders(
     src_folders: Vec<BackupFolder>,
     mut dest: PathBuf,
-) -> Result<NaiveDateTime> {
+) -> Result<NaiveDateTime, FilesystemError> {
     let now = Local::now();
 
     dest.push(format!(
@@ -23,7 +22,8 @@ pub async fn backup_folders(
 
     zip_backup.backup()?;
 
-    let as_of = Archive::try_from(dest)?.as_of;
+    // Won't fail since we pass it the correct format
+    let as_of = Archive::try_from(dest).unwrap().as_of;
 
     Ok(as_of)
 }
@@ -71,9 +71,9 @@ struct Archive {
 }
 
 impl TryFrom<PathBuf> for Archive {
-    type Error = crate::ClientError;
+    type Error = chrono::ParseError;
 
-    fn try_from(path: PathBuf) -> Result<Archive> {
+    fn try_from(path: PathBuf) -> Result<Archive, chrono::ParseError> {
         let file_stem = path.file_stem().unwrap().to_str().unwrap();
 
         let date_str = format!(
@@ -82,8 +82,7 @@ impl TryFrom<PathBuf> for Archive {
             file_stem.split('_').nth(3).unwrap_or_default()
         );
 
-        let as_of = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%d %H-%M-%S")
-            .map_err(|_| ClientError::Custom("Invalid archive file format".to_string()))?;
+        let as_of = NaiveDateTime::parse_from_str(&date_str, "%Y-%m-%d %H-%M-%S")?;
 
         Ok(Archive { as_of })
     }

@@ -1,10 +1,9 @@
 use crate::config::Flavor;
-use crate::error;
-use crate::Result;
+use crate::error::DownloadError;
+
 use async_std::task;
 use chrono::prelude::*;
 use futures::future::join_all;
-
 use isahc::{config::RedirectPolicy, prelude::*};
 use serde::Deserialize;
 
@@ -17,29 +16,31 @@ const WOWI_CATALOG_URL: &str =
 
 const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
 
-pub async fn get_catalog_addons_from(url: &str) -> Result<Vec<CatalogAddon>> {
+pub async fn get_catalog_addons_from(url: &str) -> Vec<CatalogAddon> {
     let client = HttpClient::builder()
         .redirect_policy(RedirectPolicy::Follow)
         .max_connections_per_host(6)
         .build()
         .unwrap();
 
+    let mut addons = vec![];
+
     let request = client.get_async(url.to_string());
     if let Ok(mut response) = request.await {
-        if let Ok(json) = task::spawn_blocking(move || response.json()).await {
+        if let Ok(json) = task::spawn_blocking(move || response.json::<Vec<CatalogAddon>>()).await {
             log::debug!("Successfully fetched and parsed {}", url);
-            Ok(json)
+            addons.extend(json);
         } else {
             log::debug!("Could not parse {}", url);
-            Err(error!("Could not parse catalog"))
         }
     } else {
         log::debug!("Could not fetch {}", url);
-        Err(error!("Could not fetch catalog"))
     }
+
+    addons
 }
 
-pub async fn get_catalog() -> Result<Catalog> {
+pub async fn get_catalog() -> Result<Catalog, DownloadError> {
     let mut futures = vec![];
     for url in CATALOG_URLS.iter() {
         futures.push(get_catalog_addons_from(url));
@@ -47,16 +48,14 @@ pub async fn get_catalog() -> Result<Catalog> {
 
     let mut addons = vec![];
     let results = join_all(futures).await;
-    for api_result in results {
-        if let Ok(c) = api_result {
-            addons.append(&mut c.clone());
-        }
+    for _addons in results {
+        addons.extend(_addons);
     }
 
     if !addons.is_empty() {
         Ok(Catalog { addons })
     } else {
-        Err(error!("No sources could be downloaded successfully"))
+        Err(DownloadError::CatalogFailed)
     }
 }
 
@@ -137,7 +136,7 @@ mod date_parser {
     use chrono::prelude::*;
     use serde::{self, Deserialize, Deserializer};
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
         D: Deserializer<'de>,
     {

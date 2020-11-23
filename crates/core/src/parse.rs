@@ -2,12 +2,10 @@ use crate::{
     addon::{Addon, AddonFolder, AddonState},
     cache::{AddonCache, AddonCacheEntry, FingerprintCache},
     config::Flavor,
-    error,
-    error::ClientError,
+    error::{DownloadError, ParseError, RepositoryError},
     fs::PersistentData,
     murmur2::calculate_hash,
     repository::{curse, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage},
-    Result,
 };
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
@@ -46,17 +44,16 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     root_dir: P,
     flavor: Flavor,
-) -> Result<Vec<Addon>> {
+) -> Result<Vec<Addon>, ParseError> {
     log::debug!("{} - parsing addons folder", flavor);
 
     let root_dir = root_dir.as_ref();
 
     // If the path does not exists or does not point on a directory we return an Error.
     if !root_dir.is_dir() {
-        return Err(ClientError::Custom(format!(
-            "Addon directory not found: {:?}",
-            root_dir
-        )));
+        return Err(ParseError::MissingAddonDirectory {
+            path: root_dir.to_owned(),
+        });
     }
 
     // All addon dirs gathered in a `Vec<String>`.
@@ -145,7 +142,7 @@ async fn fingerprint_all_dirs(
     flavor: Flavor,
     all_dirs: &[String],
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
-) -> Result<Vec<Fingerprint>> {
+) -> Result<Vec<Fingerprint>, ParseError> {
     let mut fingerprint_cache = if let Some(fingerprint_cache) = fingerprint_cache {
         Some(fingerprint_cache.lock_arc().await)
     } else {
@@ -296,7 +293,7 @@ async fn get_curse_fingerprint_info(
     flavor: Flavor,
     addon_folders: &[AddonFolder],
     cache_entries: &[AddonCacheEntry],
-) -> Result<curse::FingerprintInfo> {
+) -> Result<curse::FingerprintInfo, ParseError> {
     // Get all fingerprint hashes
     let mut fingerprint_hashes: Vec<_> = addon_folders
         .iter()
@@ -377,7 +374,7 @@ async fn get_all_repo_packages(
     cache_entries: &[AddonCacheEntry],
     addon_folders: &[AddonFolder],
     fingerprint_info: &curse::FingerprintInfo,
-) -> Result<Vec<RepositoryPackage>> {
+) -> Result<Vec<RepositoryPackage>, DownloadError> {
     let mut curse_ids = vec![];
     let mut tukui_ids = vec![];
     let mut wowi_ids = vec![];
@@ -586,9 +583,9 @@ async fn get_all_repo_packages(
             .map(|url| {
                 let url = url
                     .parse::<Uri>()
-                    .map_err(|_| error!("invalid url: {:?}", url))?;
+                    .map_err(|_| RepositoryError::GitInvalidUrl { url: url.clone() })?;
 
-                Result::Ok(RepositoryPackage::from_source_url(flavor, url)?)
+                Result::<_, RepositoryError>::Ok(RepositoryPackage::from_source_url(flavor, url)?)
             })
             .filter_map(|result| match result {
                 Ok(package) => Some(package),
@@ -804,7 +801,7 @@ pub async fn update_addon_fingerprint(
     flavor: Flavor,
     addon_dir: impl AsRef<Path>,
     addon_id: String,
-) -> Result<()> {
+) -> Result<(), ParseError> {
     log::debug!("{} - updating fingerprint for {}", flavor, &addon_id);
 
     let addon_path = addon_dir.as_ref().join(&addon_id);
@@ -851,47 +848,41 @@ pub async fn update_addon_fingerprint(
     Ok(())
 }
 
-pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
+pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32, ParseError> {
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
-    let root_dir = addon_dir.parent().ok_or_else(|| {
-        ClientError::FingerprintError(format!("No parent directory for {:?}", addon_dir))
+    let root_dir = addon_dir.parent().ok_or(ParseError::NoParentDirectory {
+        dir: addon_dir.to_owned(),
     })?;
 
     // Add initial files
     let glob_pattern = format!(
         "{}/**/*.*",
-        addon_dir
-            .to_str()
-            .ok_or_else(|| ClientError::FingerprintError(format!(
-                "Invalid UTF8 path: {:?}",
-                addon_dir
-            )))?
+        addon_dir.to_str().ok_or(ParseError::InvalidUTF8Path {
+            path: addon_dir.to_owned(),
+        })?
     );
-    for path in glob::glob(&glob_pattern).map_err(ClientError::fingerprint)? {
-        let path = path.map_err(ClientError::fingerprint)?;
+    for path in glob::glob(&glob_pattern)? {
+        let path = path?;
         if !path.is_file() {
             continue;
         }
 
         // Test relative path matches regexes
         let relative_path = path
-            .strip_prefix(root_dir)
-            .map_err(ClientError::fingerprint)?
+            .strip_prefix(root_dir)?
             .to_str()
-            .ok_or_else(|| ClientError::FingerprintError(format!("Invalid UTF8 path: {:?}", path)))?
+            .ok_or(ParseError::InvalidUTF8Path { path: path.clone() })?
             .to_ascii_lowercase()
             .replace("/", "\\"); // Convert to windows seperator
         if RE_PARSING_PATTERNS
             .initial_inclusion_regex
-            .is_match(&relative_path)
-            .map_err(ClientError::fingerprint)?
+            .is_match(&relative_path)?
         {
             to_parse.push_back(path);
         } else if RE_PARSING_PATTERNS
             .extra_inclusion_regex
-            .is_match(&relative_path)
-            .map_err(ClientError::fingerprint)?
+            .is_match(&relative_path)?
         {
             to_fingerprint.insert(path);
         }
@@ -900,10 +891,7 @@ pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
     // Parse additional files
     while let Some(path) = to_parse.pop_front() {
         if !path.exists() || !path.is_file() {
-            return Err(ClientError::FingerprintError(format!(
-                "Invalid file given to parse: {:?}",
-                path.display()
-            )));
+            return Err(ParseError::InvalidFile { path });
         }
 
         to_fingerprint.insert(path.clone());
@@ -912,15 +900,9 @@ pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
         let ext = format!(
             ".{}",
             path.extension()
-                .ok_or_else(|| ClientError::FingerprintError(format!(
-                    "Invalid extension for path: {:?}",
-                    path
-                )))?
+                .ok_or(ParseError::InvalidExt { path: path.clone() })?
                 .to_str()
-                .ok_or_else(|| ClientError::FingerprintError(format!(
-                    "Invalid UTF8 path: {:?}",
-                    path
-                )))?
+                .ok_or(ParseError::InvalidUTF8Path { path: path.clone() })?
         );
         if !RE_PARSING_PATTERNS.file_parsing_regex.contains_key(&ext) {
             continue;
@@ -930,40 +912,32 @@ pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
         let (comment_strip_regex, inclusion_regex) = RE_PARSING_PATTERNS
             .file_parsing_regex
             .get(&ext)
-            .ok_or_else(|| {
-                ClientError::FingerprintError(format!("ext not in file parsing regex: {:?}", ext))
-            })?;
-        let mut file = File::open(&path).map_err(ClientError::fingerprint)?;
+            .ok_or(ParseError::ParsingRegexMissingExt { ext })?;
+        let mut file = File::open(&path)?;
 
         let mut buf = vec![];
-        file.read_to_end(&mut buf)
-            .map_err(ClientError::fingerprint)?;
+        file.read_to_end(&mut buf)?;
 
         let text = String::from_utf8_lossy(&buf);
         let text = comment_strip_regex.replace_all(&text, "");
         for line in text.split(&['\n', '\r'][..]) {
             let mut last_offset = 0;
-            while let Some(inc_match) = inclusion_regex
-                .captures_from_pos(line, last_offset)
-                .map_err(ClientError::fingerprint)?
-            {
+            while let Some(inc_match) = inclusion_regex.captures_from_pos(line, last_offset)? {
                 let prev_last_offset = last_offset;
                 last_offset = inc_match
                     .get(0)
-                    .ok_or_else(|| {
-                        ClientError::FingerprintError(format!(
-                            "Inclusion regex error for group 0 on pos {}, line: {:?}",
-                            prev_last_offset, line
-                        ))
+                    .ok_or(ParseError::InclusionRegexError {
+                        group: 0,
+                        pos: prev_last_offset,
+                        line: line.to_string(),
                     })?
                     .end();
                 let path_match = inc_match
                     .get(1)
-                    .ok_or_else(|| {
-                        ClientError::FingerprintError(format!(
-                            "Inclusion regex error for group 1 on pos {}, line: {:?}",
-                            prev_last_offset, line
-                        ))
+                    .ok_or(ParseError::InclusionRegexError {
+                        group: 1,
+                        pos: prev_last_offset,
+                        line: line.to_string(),
                     })?
                     .as_str();
                 // Path might be case insensitive and have windows separators. Find it
@@ -982,8 +956,7 @@ pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32> {
     // Calculate fingerprints
     let mut fingerprints = vec![];
     for path in to_fingerprint.iter() {
-        let data: Vec<_> = std::fs::read(path)
-            .map_err(ClientError::fingerprint)?
+        let data: Vec<_> = std::fs::read(path)?
             .into_iter()
             .filter(|&b| b != b' ' && b != b'\n' && b != b'\r' && b != b'\t')
             .collect();

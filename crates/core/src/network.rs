@@ -1,4 +1,5 @@
-use crate::{addon::Addon, error::ClientError, Result};
+use crate::addon::Addon;
+use crate::error::DownloadError;
 use async_std::{
     fs::{create_dir_all, File},
     io::copy,
@@ -10,12 +11,12 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 /// Generic request function.
-pub async fn request_async<T: ToString>(
+pub(crate) async fn request_async<T: ToString>(
     shared_client: &HttpClient,
     url: T,
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
-) -> Result<Response<isahc::Body>> {
+) -> Result<Response<isahc::Body>, DownloadError> {
     // Sometimes a download url has a space.
     let url = url.to_string().replace(" ", "%20");
 
@@ -33,12 +34,12 @@ pub async fn request_async<T: ToString>(
 }
 
 // Generic function for posting Json data
-pub async fn post_json_async<T: ToString, D: Serialize>(
+pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
     url: T,
     data: D,
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
-) -> Result<Response<isahc::Body>> {
+) -> Result<Response<isahc::Body>, DownloadError> {
     let mut request = Request::builder()
         .method("POST")
         .uri(url.to_string())
@@ -64,7 +65,7 @@ pub async fn download_addon(
     shared_client: &HttpClient,
     addon: &Addon,
     to_directory: &PathBuf,
-) -> Result<()> {
+) -> Result<(), DownloadError> {
     let package = if let Some(relevant_package) = addon.relevant_release_package() {
         Some(relevant_package)
     } else if let Some(fallback_package) = addon.fallback_release_package() {
@@ -96,9 +97,10 @@ pub async fn download_addon(
             let body_length = body.len().unwrap_or_default();
 
             if body_length != content_length {
-                return Err(ClientError::Custom(
-                    "Download failed, body len doesn't match content len".to_string(),
-                ));
+                return Err(DownloadError::ContentLength {
+                    content_length,
+                    body_length,
+                });
             }
         }
 
@@ -116,7 +118,10 @@ pub async fn download_addon(
 }
 
 /// Download a file from the internet
-pub async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<()> {
+pub(crate) async fn download_file<T: ToString>(
+    url: T,
+    dest_file: &PathBuf,
+) -> Result<(), DownloadError> {
     let url = url.to_string();
 
     log::debug!("downloading file from {}", &url);
@@ -148,9 +153,10 @@ pub async fn download_file<T: ToString>(url: T, dest_file: &PathBuf) -> Result<(
         let body_length = body.len().unwrap_or_default();
 
         if body_length != content_length {
-            return Err(ClientError::Custom(
-                "Download failed, body len doesn't match content len".to_string(),
-            ));
+            return Err(DownloadError::ContentLength {
+                content_length,
+                body_length,
+            });
         }
     }
 

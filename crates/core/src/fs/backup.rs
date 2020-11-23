@@ -1,6 +1,6 @@
+use super::Result;
 use crate::backup::BackupFolder;
-use crate::error::ClientError;
-use crate::Result;
+use crate::error::FilesystemError;
 
 use std::fs::File;
 use std::io::{BufWriter, Read, Write};
@@ -20,7 +20,7 @@ pub struct ZipBackup {
 }
 
 impl ZipBackup {
-    pub fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>) -> ZipBackup {
+    pub(crate) fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>) -> ZipBackup {
         ZipBackup {
             src,
             dest: dest.as_ref().to_owned(),
@@ -70,10 +70,9 @@ fn zip_write(
     options: FileOptions,
 ) -> Result<()> {
     if !path.exists() {
-        return Err(ClientError::Custom(format!(
-            "path doesn't exist while backing up folder: {:?}",
-            path
-        )));
+        return Err(FilesystemError::FileDoesntExist {
+            path: path.to_owned(),
+        });
     }
 
     let name = path.strip_prefix(prefix).unwrap().to_str().unwrap();

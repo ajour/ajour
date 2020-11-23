@@ -1,17 +1,16 @@
-use crate::log_error;
+use crate::{log_error, Result};
 
 use ajour_core::addon::Addon;
 use ajour_core::cache::{
     load_addon_cache, load_fingerprint_cache, update_addon_cache, AddonCacheEntry,
 };
 use ajour_core::config::{load_config, Flavor};
-use ajour_core::error;
 use ajour_core::fs::install_addon;
 use ajour_core::network::download_addon;
 use ajour_core::parse::update_addon_fingerprint;
 use ajour_core::repository::RepositoryPackage;
-use ajour_core::Result;
 
+use anyhow::{format_err, Context};
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
 use futures::future::join_all;
@@ -46,8 +45,8 @@ pub fn install_from_source(url: Uri, flavor: Flavor) -> Result<()> {
 
         log::debug!("Installing {} for {:?}", addon.title(), flavor);
 
-        let download_directory = config.get_download_directory_for_flavor(flavor).ok_or_else(|| error!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-        let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| error!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+        let download_directory = config.get_download_directory_for_flavor(flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+        let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
         let client = HttpClient::builder()
             .redirect_policy(RedirectPolicy::Follow)
@@ -83,14 +82,18 @@ pub fn install_from_source(url: Uri, flavor: Flavor) -> Result<()> {
         }));
 
         // Call `update_addon_fingerprint` on each folder concurrently
-        for result in join_all(folders_to_fingerprint.into_iter().map(
-            |(fingerprint_cache, flavor, addon_dir, addon_id)| {
-                update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id)
+        for (addon_dir, result) in join_all(folders_to_fingerprint.into_iter().map(
+            |(fingerprint_cache, flavor, addon_dir, addon_id)| async move {
+                (
+                    addon_dir,
+                    update_addon_fingerprint(fingerprint_cache, flavor, addon_dir, addon_id).await,
+                )
             },
         ))
         .await
         {
-            if let Err(e) = result {
+            if let Err(e) = result.context(format!("failed to fingerprint folder: {:?}", addon_dir))
+            {
                 // Log any errors fingerprinting the folder
                 log_error(&e);
             }

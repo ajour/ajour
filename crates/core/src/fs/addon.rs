@@ -1,7 +1,7 @@
+use super::Result;
 use crate::{
     addon::{Addon, AddonFolder},
     parse::parse_toc_path,
-    Result,
 };
 use std::collections::HashSet;
 use std::fs::remove_dir_all;
