@@ -48,7 +48,7 @@ dependencies = [
 
 [[package]]
 name = "ajour"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "ajour-core",
  "anyhow",
@@ -77,7 +77,7 @@ dependencies = [
 
 [[package]]
 name = "ajour-core"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "async-std",
  "async-trait",
