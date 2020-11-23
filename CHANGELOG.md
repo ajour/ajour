@@ -29,6 +29,9 @@ and `Removed`.
 
 - Fixed bug that caused catalog to fail downloading when `null` values existed
   in the payload
+- Removed timeout for downloading the catalog. Users with slow internet can now
+  fetch the catalog regardless of how long it will take  
+- Fix bug that would cause Ajour to panic if the catalog failed to download
 
 ## [0.5.2] - 2020-11-20
 
