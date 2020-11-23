@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.5.3] - 2020-11-23
+
 ### Added
 
 - Added an option to Backup via the command line. Flavors and backup folder sources
