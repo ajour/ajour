@@ -42,7 +42,7 @@ impl Flavor {
     ];
 
     /// Returns flavor `String` in CurseForge format
-    pub fn curse_format(self) -> String {
+    pub(crate) fn curse_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => "wow_retail".to_owned(),
             Flavor::Classic | Flavor::ClassicPTR => "wow_classic".to_owned(),
@@ -58,7 +58,7 @@ impl Flavor {
     }
 
     /// Returns `String` which correlate to the folder on disk.
-    pub fn folder_name(self) -> String {
+    pub(crate) fn folder_name(self) -> String {
         match self {
             Flavor::Retail => "_retail_".to_owned(),
             Flavor::RetailPTR => "_ptr_".to_owned(),

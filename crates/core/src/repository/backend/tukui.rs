@@ -1,6 +1,6 @@
 use super::*;
 use crate::config::Flavor;
-use crate::error;
+use crate::error::{DownloadError, RepositoryError};
 use crate::network::request_async;
 use crate::repository::{ReleaseChannel, RemotePackage};
 use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
@@ -22,7 +22,7 @@ pub struct Tukui {
 
 #[async_trait]
 impl Backend for Tukui {
-    async fn get_metadata(&self) -> Result<RepositoryMetadata> {
+    async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
         let client = Arc::new(
             HttpClient::builder()
                 .redirect_policy(RedirectPolicy::Follow)
@@ -42,7 +42,7 @@ impl Backend for Tukui {
         &self,
         _file_id: Option<i64>,
         _tag_name: Option<String>,
-    ) -> Result<(String, String)> {
+    ) -> Result<(String, String), RepositoryError> {
         let url = changelog_endpoint(&self.id, &self.flavor);
 
         match self.flavor {
@@ -79,7 +79,7 @@ impl Backend for Tukui {
     }
 }
 
-pub fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMetadata {
+pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMetadata {
     let mut remote_packages = HashMap::new();
 
     {
@@ -152,11 +152,11 @@ fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
-pub async fn fetch_remote_package(
+pub(crate) async fn fetch_remote_package(
     shared_client: Arc<HttpClient>,
     id: &str,
     flavor: &Flavor,
-) -> Result<(String, TukuiPackage)> {
+) -> Result<(String, TukuiPackage), DownloadError> {
     let url = api_endpoint(id, flavor);
 
     let timeout = Some(30);
@@ -166,10 +166,10 @@ pub async fn fetch_remote_package(
         let package = resp.json()?;
         Ok((id.to_string(), package))
     } else {
-        Err(error!(
-            "Couldn't fetch details for addon. Server returned: {}",
-            resp.text()?
-        ))
+        Err(DownloadError::InvalidStatusCode {
+            code: resp.status(),
+            url,
+        })
     }
 }
 

@@ -32,7 +32,9 @@ mod de {
     use std::collections::HashMap;
     use std::fmt;
 
-    pub fn de_ignored<'de, D>(deserializer: D) -> Result<HashMap<Flavor, Vec<String>>, D::Error>
+    pub(crate) fn de_ignored<'de, D>(
+        deserializer: D,
+    ) -> Result<HashMap<Flavor, Vec<String>>, D::Error>
     where
         D: Deserializer<'de>,
     {

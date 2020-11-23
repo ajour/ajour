@@ -3,6 +3,7 @@ mod style;
 mod update;
 
 use crate::cli::Opts;
+use crate::Result;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState, AddonVersionKey},
     cache::{
@@ -11,12 +12,11 @@ use ajour_core::{
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor},
-    error::ClientError,
+    error::*,
     fs::PersistentData,
     repository::ReleaseChannel,
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
-    Result,
 };
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -120,35 +120,48 @@ pub enum Interaction {
 #[allow(clippy::large_enum_variant)]
 pub enum Message {
     CachesLoaded(Result<(FingerprintCache, AddonCache)>),
-    DownloadedAddon((DownloadReason, Flavor, String, Result<()>)),
-    Error(ClientError),
+    DownloadedAddon((DownloadReason, Flavor, String, Result<(), DownloadError>)),
+    Error(anyhow::Error),
     Interaction(Interaction),
     LatestRelease(Option<utility::Release>),
     None(()),
     Parse(()),
-    ParsedAddons((Flavor, Result<Vec<Addon>>)),
-    UpdateFingerprint((Flavor, String, Result<()>)),
+    ParsedAddons((Flavor, Result<Vec<Addon>, ParseError>)),
+    UpdateFingerprint((Flavor, String, Result<(), ParseError>)),
     ThemeSelected(String),
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
-    UnpackedAddon((DownloadReason, Flavor, String, Result<Vec<AddonFolder>>)),
+    UnpackedAddon(
+        (
+            DownloadReason,
+            Flavor,
+            String,
+            Result<Vec<AddonFolder>, FilesystemError>,
+        ),
+    ),
     UpdateWowDirectory(Option<PathBuf>),
     UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),
     LatestBackup(Option<NaiveDateTime>),
-    BackupFinished(Result<NaiveDateTime>),
-    CatalogDownloaded(Result<Catalog>),
-    InstallAddonFetched((Flavor, String, Result<Addon>)),
-    FetchedChangelog((Addon, AddonVersionKey, Result<(String, String)>)),
-    AjourUpdateDownloaded(Result<(String, PathBuf)>),
-    AddonCacheUpdated(Result<AddonCacheEntry>),
-    AddonCacheEntryRemoved(Option<AddonCacheEntry>),
+    BackupFinished(Result<NaiveDateTime, FilesystemError>),
+    CatalogDownloaded(Result<Catalog, DownloadError>),
+    InstallAddonFetched((Flavor, String, Result<Addon, RepositoryError>)),
+    FetchedChangelog(
+        (
+            Addon,
+            AddonVersionKey,
+            Result<(String, String), RepositoryError>,
+        ),
+    ),
+    AjourUpdateDownloaded(Result<(String, PathBuf), DownloadError>),
+    AddonCacheUpdated(Result<AddonCacheEntry, CacheError>),
+    AddonCacheEntryRemoved(Result<Option<AddonCacheEntry>, CacheError>),
     RefreshCatalog(Instant),
 }
 
 pub struct Ajour {
     state: HashMap<Mode, State>,
-    error: Option<String>,
+    error: Option<anyhow::Error>,
     mode: Mode,
     addons: HashMap<Flavor, Vec<Addon>>,
     addons_scrollable_state: scrollable::State,

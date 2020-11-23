@@ -1,6 +1,7 @@
-use crate::error::ClientError;
+use crate::error::DownloadError;
+#[cfg(target_os = "macos")]
+use crate::error::FilesystemError;
 use crate::network::{download_file, request_async};
-use crate::Result;
 
 use isahc::prelude::*;
 use regex::Regex;
@@ -18,24 +19,24 @@ use std::path::{Path, PathBuf};
 ///
 /// A string looking like 213r323 would return 213323.
 /// A string looking like Rematch_4_10_15.zip would return 41015.
-pub fn strip_non_digits(string: &str) -> Option<String> {
+pub(crate) fn strip_non_digits(string: &str) -> Option<String> {
     let re = Regex::new(r"[\D]").unwrap();
     let stripped = re.replace_all(string, "").to_string();
     Some(stripped)
 }
 
-pub fn truncate(s: &str, max_chars: usize) -> &str {
+pub(crate) fn truncate(s: &str, max_chars: usize) -> &str {
     match s.char_indices().nth(max_chars) {
         None => s,
         Some((idx, _)) => &s[..idx],
     }
 }
 
-pub fn regex_html_tags_to_newline() -> Regex {
+pub(crate) fn regex_html_tags_to_newline() -> Regex {
     regex::Regex::new(r"<br ?/?>|#.\s").unwrap()
 }
 
-pub fn regex_html_tags_to_space() -> Regex {
+pub(crate) fn regex_html_tags_to_space() -> Regex {
     regex::Regex::new(r"<[^>]*>|&#?\w+;|[gl]t;").unwrap()
 }
 
@@ -75,14 +76,12 @@ pub async fn get_latest_release() -> Option<Release> {
 pub async fn download_update_to_temp_file(
     bin_name: String,
     release: Release,
-) -> Result<(String, PathBuf)> {
+) -> Result<(String, PathBuf), DownloadError> {
     #[cfg(not(target_os = "linux"))]
     let current_bin_path = std::env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let current_bin_path = PathBuf::from(std::env::var("APPIMAGE").map_err(|e| {
-        ClientError::Custom(format!("error getting APPIMAGE env variable: {:?}", e))
-    })?);
+    let current_bin_path = PathBuf::from(std::env::var("APPIMAGE")?);
 
     let current_bin_name = current_bin_path
         .file_name()
@@ -107,12 +106,7 @@ pub async fn download_update_to_temp_file(
             .iter()
             .find(|a| a.name == asset_name)
             .cloned()
-            .ok_or_else(|| {
-                ClientError::Custom(format!(
-                    "No new release binary available for {}",
-                    asset_name
-                ))
-            })?;
+            .ok_or(DownloadError::MissingSelfUpdateRelease { bin_name })?;
 
         let archive_path = current_bin_path.parent().unwrap().join(&asset_name);
 
@@ -131,9 +125,7 @@ pub async fn download_update_to_temp_file(
             .iter()
             .find(|a| a.name == bin_name)
             .cloned()
-            .ok_or_else(|| {
-                ClientError::Custom(format!("No new release binary available for {}", bin_name))
-            })?;
+            .ok_or(DownloadError::MissingSelfUpdateRelease { bin_name })?;
 
         download_file(&asset.download_url, &new_bin_path).await?;
     }
@@ -158,7 +150,7 @@ fn extract_binary_from_tar(
     archive_path: &PathBuf,
     temp_file: &PathBuf,
     bin_name: &str,
-) -> Result<()> {
+) -> Result<(), FilesystemError> {
     use flate2::read::GzDecoder;
     use std::fs::File;
     use std::io::copy;
@@ -182,9 +174,9 @@ fn extract_binary_from_tar(
         }
     }
 
-    Err(ClientError::Custom(String::from(
-        "Could not file bin name in archive",
-    )))
+    Err(FilesystemError::BinMissingFromTar {
+        bin_name: bin_name.to_owned(),
+    })
 }
 
 /// Logic to help pick the right World of Warcraft folder. We want the root folder.

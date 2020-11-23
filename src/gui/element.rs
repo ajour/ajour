@@ -1555,7 +1555,7 @@ pub fn menu_container<'a>(
     color_palette: ColorPalette,
     mode: &Mode,
     state: &HashMap<Mode, State>,
-    error: &Option<String>,
+    error: &Option<anyhow::Error>,
     config: &Config,
     valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,
@@ -1815,7 +1815,7 @@ pub fn menu_container<'a>(
 
     // Displays an error, if any has occured.
     let error_text = if let Some(error) = error {
-        Text::new(error).size(DEFAULT_FONT_SIZE)
+        Text::new(error.to_string()).size(DEFAULT_FONT_SIZE)
     } else {
         // Display nothing.
         Text::new("")

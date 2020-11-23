@@ -1,7 +1,7 @@
 // This code is from: https://github.com/camas/grunt/
 const MURMUR2_CONST: u32 = 1_540_483_477;
 
-pub fn calculate_hash(data: &[u8], seed: u32) -> u32 {
+pub(crate) fn calculate_hash(data: &[u8], seed: u32) -> u32 {
     let length = data.len();
     let mut h: u32 = seed ^ length as u32;
     let mut i: u32 = 0;

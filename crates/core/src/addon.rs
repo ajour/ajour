@@ -1,11 +1,10 @@
 use crate::{
-    error,
+    error::{ParseError, RepositoryError},
     repository::{
         ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
         RepositoryPackage,
     },
     utility::strip_non_digits,
-    Result,
 };
 
 use std::cmp::Ordering;
@@ -72,7 +71,7 @@ impl Ord for AddonFolder {
 
 #[allow(clippy::too_many_arguments)]
 impl AddonFolder {
-    pub fn new(
+    pub(crate) fn new(
         id: String,
         title: String,
         interface: Option<String>,
@@ -181,12 +180,12 @@ impl Addon {
         }
     }
 
-    pub fn build_with_repo_and_folders(
+    pub(crate) fn build_with_repo_and_folders(
         repo_package: RepositoryPackage,
         folders: Vec<AddonFolder>,
-    ) -> Result<Self> {
+    ) -> Result<Self, ParseError> {
         if folders.is_empty() {
-            return Err(error!("No folders passed to addon"));
+            return Err(ParseError::BuildAddonEmptyFolders);
         }
 
         let mut addon = Addon::empty("");
@@ -372,13 +371,6 @@ impl Addon {
         }
     }
 
-    /// Set title for the addon
-    pub fn set_title(&mut self, title: String) {
-        if let Some(metadata) = self.repository.as_mut().map(|r| &mut r.metadata) {
-            metadata.title = Some(title);
-        }
-    }
-
     pub fn remote_packages(&self) -> HashMap<ReleaseChannel, RemotePackage> {
         self.metadata()
             .map(|m| &m.remote_packages)
@@ -434,7 +426,7 @@ impl Addon {
     }
 
     /// Returns the first release_package which is `Some`.
-    pub fn fallback_release_package(&self) -> Option<RemotePackage> {
+    pub(crate) fn fallback_release_package(&self) -> Option<RemotePackage> {
         let mut remote_packages = self.remote_packages();
         if let Some(stable_package) = remote_packages.remove(&ReleaseChannel::Stable) {
             Some(stable_package)
@@ -507,14 +499,17 @@ impl Addon {
         }
     }
 
-    pub async fn get_changelog(&self, is_remote: bool) -> Result<(String, String)> {
+    pub async fn get_changelog(
+        &self,
+        is_remote: bool,
+    ) -> Result<(String, String), RepositoryError> {
         if let Some(repository) = self.repository() {
             return repository
                 .get_changelog(self.release_channel, is_remote)
                 .await;
         }
 
-        Err(error!("No repository set for addon"))
+        Err(RepositoryError::AddonNoRepository)
     }
 }
 
