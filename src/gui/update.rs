@@ -1477,8 +1477,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let width = (width as f64 * ajour.scale_state.scale) as u32;
             let height = (height as f64 * ajour.scale_state.scale) as u32;
 
-            ajour.config.window_size = Some((width, height));
-            let _ = ajour.config.save();
+            // Minimizing Ajour on Windows will call this function with 0, 0.
+            // We don't want to save that in config, because then it will start with zero size.
+            if width > 0 && height > 0 {
+                ajour.config.window_size = Some((width, height));
+                let _ = ajour.config.save();
+            }
         }
         Message::RuntimeEvent(iced_native::Event::Keyboard(
             iced_native::keyboard::Event::KeyReleased { key_code, .. },
