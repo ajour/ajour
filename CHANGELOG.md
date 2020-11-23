@@ -29,6 +29,7 @@ and `Removed`.
 
 - Fixed bug that caused catalog to fail downloading when `null` values existed
   in the payload
+- Ajour starts with zero height and width after being closed minimized
 
 ## [0.5.2] - 2020-11-20
 
