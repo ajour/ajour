@@ -90,6 +90,7 @@ pub struct Catalog {
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 pub struct GameVersion {
+    #[serde(with = "null_to_default")]
     pub game_version: String,
     pub flavor: Flavor,
 }
@@ -97,18 +98,39 @@ pub struct GameVersion {
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize)]
 pub struct CatalogAddon {
+    #[serde(with = "null_to_default")]
     pub id: i32,
+    #[serde(with = "null_to_default")]
     pub website_url: String,
     #[serde(with = "date_parser")]
     pub date_released: Option<DateTime<Utc>>,
+    #[serde(with = "null_to_default")]
     pub name: String,
+    #[serde(with = "null_to_default")]
     pub categories: Vec<String>,
+    #[serde(with = "null_to_default")]
     pub summary: String,
+    #[serde(with = "null_to_default")]
     pub number_of_downloads: u64,
     pub source: Source,
+    #[serde(with = "null_to_default")]
     #[deprecated(since = "0.4.4", note = "Please use game_versions instead")]
     pub flavors: Vec<Flavor>,
+    #[serde(with = "null_to_default")]
     pub game_versions: Vec<GameVersion>,
+}
+
+mod null_to_default {
+    use serde::{self, Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Default + Deserialize<'de>,
+    {
+        let opt = Option::deserialize(deserializer)?;
+        Ok(opt.unwrap_or_default())
+    }
 }
 
 mod date_parser {
@@ -172,5 +194,17 @@ mod tests {
                 panic!("{}", e);
             }
         });
+    }
+
+    #[test]
+    fn test_null_fields() {
+        let tests = [
+            r"[]",
+            r#"[{"id": null,"websiteUrl": null,"dateReleased":"2020-11-20T02:29:43.46Z","name": null,"summary": null,"numberOfDownloads": null,"categories": null,"flavors": null,"gameVersions": null,"source":"curse"}]"#,
+        ];
+
+        for test in tests.iter() {
+            serde_json::from_str::<Vec<CatalogAddon>>(test).unwrap();
+        }
     }
 }
