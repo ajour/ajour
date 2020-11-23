@@ -69,6 +69,11 @@ pub fn main() {
         Some(command) => {
             // Process the command and exit
             if let Err(e) = match command {
+                cli::Command::Backup {
+                    backup_folder,
+                    destination,
+                    flavors,
+                } => command::backup(backup_folder, destination, flavors),
                 cli::Command::Update => command::update_all_addons(),
                 cli::Command::Install { url, flavor } => command::install_from_source(url, flavor),
             } {

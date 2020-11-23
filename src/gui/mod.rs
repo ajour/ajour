@@ -1587,15 +1587,17 @@ pub struct ThemeState {
 impl Default for ThemeState {
     fn default() -> Self {
         let mut themes = vec![];
-        themes.push(("Dark".to_string(), Theme::dark()));
-        themes.push(("Light".to_string(), Theme::light()));
         themes.push(("Alliance".to_string(), Theme::alliance()));
-        themes.push(("Horde".to_string(), Theme::horde()));
         themes.push(("Ayu".to_string(), Theme::ayu()));
+        themes.push(("Dark".to_string(), Theme::dark()));
         themes.push(("Dracula".to_string(), Theme::dracula()));
+        themes.push(("Ferra".to_string(), Theme::ferra()));
         themes.push(("Forest Night".to_string(), Theme::forest_night()));
         themes.push(("Gruvbox".to_string(), Theme::gruvbox()));
+        themes.push(("Horde".to_string(), Theme::horde()));
+        themes.push(("Light".to_string(), Theme::light()));
         themes.push(("Nord".to_string(), Theme::nord()));
+        themes.push(("One Dark".to_string(), Theme::one_dark()));
         themes.push(("Outrun".to_string(), Theme::outrun()));
         themes.push(("Solarized Dark".to_string(), Theme::solarized_dark()));
         themes.push(("Solarized Light".to_string(), Theme::solarized_light()));
