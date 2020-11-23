@@ -93,6 +93,18 @@ pub enum Command {
         /// source url [Github & Gitlab currently supported]
         url: Uri,
     },
+    /// Backup your WTF and/or AddOns folders
+    Backup {
+        #[structopt(short, long, default_value = "both", parse(try_from_str = str_to_backup_folder), possible_values = &["both","wtf","addons"])]
+        /// folder to backup
+        backup_folder: BackupFolder,
+        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr"])]
+        /// space separated list of flavors to include in backup. If ommited, all flavors will be included.
+        flavors: Vec<Flavor>,
+        #[structopt()]
+        /// folder to save backups to
+        destination: PathBuf,
+    },
 }
 
 fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
@@ -103,5 +115,21 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
         "classic" => Ok(Flavor::Classic),
         "classic_ptr" => Ok(Flavor::ClassicPTR),
         _ => Err("valid values are ['retail','ptr','beta','classic','classic_ptr']"),
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum BackupFolder {
+    Both,
+    AddOns,
+    WTF,
+}
+
+fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {
+    match s {
+        "both" => Ok(BackupFolder::Both),
+        "wtf" => Ok(BackupFolder::WTF),
+        "addons" => Ok(BackupFolder::AddOns),
+        _ => Err("valid values are ['both','wtf','addons']"),
     }
 }
