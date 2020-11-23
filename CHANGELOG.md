@@ -25,7 +25,7 @@ and `Removed`.
 ### Changed
 
 - Sorted themes alphabetically in the picker
-- Better human readable errors in Ajour gui. Errors and underlying causes 
+- Better human readable errors in Ajour gui. Errors and underlying causes
 are still logged.
 
 ### Fixed
@@ -34,7 +34,7 @@ are still logged.
   in the payload
 - Ajour starts with zero height and width after being closed minimized
 - Removed timeout for downloading the catalog. Users with slow internet can now
-  fetch the catalog regardless of how long it will take  
+  fetch the catalog regardless of how long it will take
 - Catalog could cause Ajour to crash if internet connection was slow
 
 ## [0.5.2] - 2020-11-20
