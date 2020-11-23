@@ -7,16 +7,18 @@ mod cli;
 mod command;
 mod gui;
 
-use ajour_core::error::ClientError;
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::utility::rename;
-use ajour_core::Result;
 
+#[cfg(target_os = "linux")]
+use anyhow::Context;
 use std::env;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
 
 pub fn main() {
     let opts_result = cli::get_opts();
@@ -86,8 +88,16 @@ pub fn main() {
 }
 
 /// Log any errors
-pub fn log_error(e: &ClientError) {
-    log::error!("{}", e);
+pub fn log_error(error: &anyhow::Error) {
+    log::error!("{}", error);
+
+    let mut causes = error.chain();
+    // Remove first entry since it's same as top level error
+    causes.next();
+
+    for cause in causes {
+        log::error!("caused by: {}", cause);
+    }
 }
 
 #[allow(clippy::unnecessary_operation)]
@@ -138,9 +148,8 @@ fn handle_self_update_temp(main_bin_name: &str) -> Result<()> {
     let temp_bin = env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let temp_bin = PathBuf::from(std::env::var("APPIMAGE").map_err(|e| {
-        ClientError::Custom(format!("error getting APPIMAGE env variable: {:?}", e))
-    })?);
+    let temp_bin =
+        PathBuf::from(std::env::var("APPIMAGE").context("error getting APPIMAGE env variable")?);
 
     let parent_dir = temp_bin.parent().unwrap();
 

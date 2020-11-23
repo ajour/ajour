@@ -51,6 +51,7 @@ name = "ajour"
 version = "0.5.2"
 dependencies = [
  "ajour-core",
+ "anyhow",
  "async-std",
  "chrono",
  "embed-resource",
@@ -98,6 +99,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tar",
+ "thiserror",
  "walkdir",
  "zip",
 ]
@@ -129,6 +131,12 @@ checksum = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b"
 dependencies = [
  "winapi 0.3.9",
 ]
+
+[[package]]
+name = "anyhow"
+version = "1.0.34"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf8dcb5b4bbaa28653b647d8c77bd4ed40183b48882e130c1f1ffb73de069fd7"
 
 [[package]]
 name = "approx"

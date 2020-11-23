@@ -465,7 +465,7 @@ mod de {
     use serde::de::{self, Error, Unexpected, Visitor};
     use std::fmt;
 
-    pub fn deserialize_color_hex_string<'de, D>(
+    pub(crate) fn deserialize_color_hex_string<'de, D>(
         deserializer: D,
     ) -> Result<iced_native::Color, D::Error>
     where
