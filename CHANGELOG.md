@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Added a minimum size to Ajour window
+
 ## [0.5.3] - 2020-11-23
 
 ### Added
