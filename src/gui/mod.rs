@@ -846,6 +846,7 @@ pub fn run(opts: Opts) {
 
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
+    settings.window.min_size = Some((600, 300));
 
     #[cfg(feature = "wgpu")]
     {
