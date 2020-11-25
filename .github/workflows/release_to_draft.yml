@@ -81,7 +81,9 @@ jobs:
           codesign_cert_password: ${{ secrets.CODESIGN_CERT_PASSWORD }}
         run: |
           [IO.File]::WriteAllBytes("codesign_cert.pfx", [Convert]::FromBase64String($env:codesign_cert))
-          & 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x86\signtool.exe' sign /fd sha256 /tr http://timestamp.sectigo.com /td sha256 /f "codesign_cert.pfx" /p $env:codesign_cert_password ${{ matrix.target.binary_path }}
+          & 'C:\Program Files (x86)\Windows Kits\10\bin\10.0.17763.0\x86\signtool.exe' sign `
+          /fd sha256 /tr http://timestamp.sectigo.com /td sha256 /f "codesign_cert.pfx" `
+          /p $env:codesign_cert_password ${{ matrix.target.binary_path }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
