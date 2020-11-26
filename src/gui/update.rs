@@ -168,7 +168,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     if addon.is_updatable(&package) {
                         addon.state = AddonState::Updatable;
                     } else {
-                        addon.state = AddonState::Ajour(None);
+                        addon.state = AddonState::Idle;
                     }
                 }
             };
@@ -693,9 +693,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 if result.is_ok() {
-                    addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                    addon.state = AddonState::Completed;
                 } else {
-                    addon.state = AddonState::Ajour(Some("Error".to_owned()));
+                    addon.state = AddonState::Error("Error".to_owned());
                 }
             }
         }
@@ -802,7 +802,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         if addon.is_updatable(&package) {
                             addon.state = AddonState::Updatable;
                         } else {
-                            addon.state = AddonState::Ajour(None);
+                            addon.state = AddonState::Idle;
                         }
                     }
 

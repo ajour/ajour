@@ -19,16 +19,18 @@ pub enum AddonVersionKey {
 
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
-    Ignored,
-    Unknown,
-    Ajour(Option<String>),
-    Downloading,
-    Fingerprint,
-    Unpacking,
+    Completed,
     // TODO: I have currently removed the state where curse-id only addons become corrupt.
     // It can happen that the fingerprint is unknown to the API but everything else is good.
     // This is properly not the best solution going forward, but for now it solves the purpose.
     Corrupted,
+    Downloading,
+    Error(String),
+    Fingerprint,
+    Idle,
+    Ignored,
+    Unknown,
+    Unpacking,
     Updatable,
 }
 
@@ -152,7 +154,7 @@ impl Addon {
             primary_folder_id: primary_folder_id.to_string(),
             folders: Default::default(),
             release_channel: Default::default(),
-            state: AddonState::Ajour(None),
+            state: AddonState::Idle,
             repository: Default::default(),
 
             #[cfg(feature = "gui")]
