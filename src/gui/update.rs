@@ -457,7 +457,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                             // Check if addon is updatable based on release channel.
                             if let Some(package) = a.relevant_release_package() {
-                                if a.is_updatable(&package) && a.state != AddonState::Corrupted {
+                                if a.is_updatable(&package) {
                                     a.state = AddonState::Updatable;
                                 }
                             }
@@ -524,10 +524,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     log_error(&error);
                     ajour.error = Some(error);
 
-                    if reason == DownloadReason::Install {
-                        if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
-                        {
-                            install_addon.status = InstallStatus::Retry;
+                    match reason {
+                        DownloadReason::Update => {
+                            if let Some(_addon) =
+                                addons.iter_mut().find(|a| a.primary_folder_id == id)
+                            {
+                                _addon.state = AddonState::Retry;
+                            }
+                        }
+                        DownloadReason::Install => {
+                            if let Some(install_addon) =
+                                install_addons.iter_mut().find(|a| a.id == id)
+                            {
+                                install_addon.status = InstallStatus::Retry;
+                            }
                         }
                     }
                 }

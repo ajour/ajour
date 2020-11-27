@@ -1083,12 +1083,13 @@ pub fn addon_data_cell<'a, 'b>(
                     .center_x()
                     .style(style::NormalForegroundContainer(color_palette))
             }
-            AddonState::Updatable | AddonState::Corrupted => {
+            AddonState::Updatable | AddonState::Retry => {
                 let id = addon.primary_folder_id.clone();
-                let text = if addon.state == AddonState::Updatable {
-                    "Update"
-                } else {
-                    "Repair"
+
+                let text = match addon.state {
+                    AddonState::Updatable => "Update",
+                    AddonState::Retry => "Retry",
+                    _ => "",
                 };
 
                 let update_wrapper = Container::new(Text::new(text).size(DEFAULT_FONT_SIZE))
