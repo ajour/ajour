@@ -17,6 +17,7 @@ use {
         theme::ColorPalette,
         utility::Release,
     },
+    ajour_widgets::{header, Header},
     chrono::prelude::*,
     iced::{
         button, scrollable, Align, Button, Checkbox, Column, Container, Element,
@@ -25,7 +26,6 @@ use {
     num_format::{Locale, ToFormattedString},
     std::collections::HashMap,
     version_compare::{CompOp, VersionCompare},
-    widgets::{header, Header},
 };
 
 // Default values used on multiple elements.

@@ -13,16 +13,16 @@ edition = "2018"
 
 [features]
 default = ["wgpu"]
-wgpu = ["widgets/wgpu", "iced/wgpu", "iced/default_system_font"]
-opengl = ["widgets/opengl", "iced/glow", "iced/glow_default_system_font"]
+wgpu = ["ajour-widgets/wgpu", "iced/wgpu", "iced/default_system_font"]
+opengl = ["ajour-widgets/opengl", "iced/glow", "iced/glow_default_system_font"]
 
 [dependencies]
 ajour-core = { path = "crates/core", features=['gui'] }
-widgets = { path = "crates/widgets" }
+ajour-widgets = { path = "crates/widgets" }
 
-iced = { git = "https://github.com/hecrj/iced.git", default-features = false, features = ["debug"], rev = "d3b04bf892ce63d3129686968039c258945c5b02" }
-iced_futures = { git = "https://github.com/hecrj/iced.git", features = ["async-std"], rev = "d3b04bf892ce63d3129686968039c258945c5b02" }
-iced_native = { git = "https://github.com/hecrj/iced.git", rev = "d3b04bf892ce63d3129686968039c258945c5b02" }
+iced = { version = "0.2.0", default-features = false, features = ["debug"] }
+iced_futures = { version = "0.2", features = ["async-std"] }
+iced_native = { version = "0.3" }
 async-std = "1.6.2"
 isahc = { version = "0.9.6", features = ["json"] }
 image = "0.23.8"
