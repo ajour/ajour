@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Ability to retry if a addon fails during either download or unpacking
+
 ## [0.5.3] - 2020-11-23
 
 ### Added
