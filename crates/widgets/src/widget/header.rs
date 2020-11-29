@@ -1,8 +1,8 @@
 #![allow(clippy::type_complexity)]
 
 use iced_native::{
-    container, layout, mouse, space, Align, Clipboard, Container, Element, Event, Hasher, Layout,
-    Length, Point, Space, Widget,
+    container, event, layout, mouse, space, Align, Clipboard, Container, Element, Event, Hasher,
+    Layout, Length, Point, Rectangle, Space, Widget,
 };
 
 mod state;
@@ -155,7 +155,7 @@ where
         messages: &mut Vec<Message>,
         renderer: &Renderer,
         clipboard: Option<&dyn Clipboard>,
-    ) {
+    ) -> event::Status {
         let in_bounds = layout.bounds().contains(cursor_position);
 
         if self.state.resizing || in_bounds {
@@ -212,7 +212,7 @@ where
                             .unwrap()
                             .bounds()
                             .width;
-                        return;
+                        return event::Status::Captured;
                     }
                 }
                 Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
@@ -220,7 +220,7 @@ where
                         self.state.resizing = false;
                         self.state.starting_cursor_pos.take();
                         self.trigger_finished(messages);
-                        return;
+                        return event::Status::Captured;
                     }
                 }
                 Event::Mouse(mouse::Event::CursorMoved { x, .. }) => {
@@ -244,7 +244,7 @@ where
                             right_width,
                             messages,
                         );
-                        return;
+                        return event::Status::Captured;
                     }
                 }
                 _ => {}
@@ -256,7 +256,7 @@ where
         self.children
             .iter_mut()
             .zip(layout.children())
-            .for_each(|(child, layout)| {
+            .map(|(child, layout)| {
                 child.on_event(
                     event.clone(),
                     layout,
@@ -264,8 +264,9 @@ where
                     messages,
                     renderer,
                     clipboard,
-                );
-            });
+                )
+            })
+            .fold(event::Status::Ignored, event::Status::merge)
     }
 
     fn draw(
@@ -274,6 +275,7 @@ where
         defaults: &Renderer::Defaults,
         layout: Layout<'_>,
         cursor_position: Point,
+        viewport: &Rectangle,
     ) -> Renderer::Output {
         self::Renderer::draw(
             renderer,
@@ -282,6 +284,7 @@ where
             layout,
             cursor_position,
             self.state.resize_hovering,
+            viewport,
         )
     }
 
@@ -312,6 +315,7 @@ pub trait Renderer: iced_native::Renderer + container::Renderer + space::Rendere
         layout: Layout<'_>,
         cursor_position: Point,
         resize_hovering: bool,
+        viewport: &Rectangle,
     ) -> Self::Output;
 }
 

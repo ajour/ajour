@@ -74,8 +74,8 @@ pub struct SegmentedContainer(pub ColorPalette);
 impl container::StyleSheet for SegmentedContainer {
     fn style(&self) -> container::Style {
         container::Style {
-            border_radius: 4,
-            border_width: 1,
+            border_radius: 4.0,
+            border_width: 1.0,
             border_color: Color {
                 a: 0.5,
                 ..self.0.normal.primary
@@ -112,7 +112,7 @@ impl button::StyleSheet for BrightTextButton {
     fn active(&self) -> button::Style {
         button::Style {
             text_color: self.0.bright.surface,
-            border_radius: 2,
+            border_radius: 2.0,
             ..button::Style::default()
         }
     }
@@ -131,7 +131,7 @@ impl button::StyleSheet for SelectedBrightTextButton {
     fn active(&self) -> button::Style {
         button::Style {
             text_color: self.0.bright.primary,
-            border_radius: 2,
+            border_radius: 2.0,
             ..button::Style::default()
         }
     }
@@ -150,7 +150,7 @@ impl button::StyleSheet for DefaultButton {
     fn active(&self) -> button::Style {
         button::Style {
             text_color: self.0.bright.primary,
-            border_radius: 2,
+            border_radius: 2.0,
             ..button::Style::default()
         }
     }
@@ -182,8 +182,8 @@ impl button::StyleSheet for DefaultBoxedButton {
                 a: 0.5,
                 ..self.0.normal.primary
             },
-            border_width: 1,
-            border_radius: 2,
+            border_width: 1.0,
+            border_radius: 2.0,
             text_color: self.0.bright.primary,
             ..button::Style::default()
         }
@@ -221,7 +221,7 @@ impl button::StyleSheet for SecondaryBoxedButton {
                 ..self.0.normal.secondary
             })),
             text_color: self.0.bright.secondary,
-            border_radius: 2,
+            border_radius: 2.0,
             ..button::Style::default()
         }
     }
@@ -254,7 +254,7 @@ impl button::StyleSheet for SecondaryButton {
     fn active(&self) -> button::Style {
         button::Style {
             text_color: self.0.bright.secondary,
-            border_radius: 2,
+            border_radius: 2.0,
             ..button::Style::default()
         }
     }
@@ -286,7 +286,7 @@ pub struct DefaultDeleteButton(pub ColorPalette);
 impl button::StyleSheet for DefaultDeleteButton {
     fn active(&self) -> button::Style {
         button::Style {
-            border_radius: 2,
+            border_radius: 2.0,
             text_color: self.0.bright.error,
             ..button::Style::default()
         }
@@ -312,7 +312,7 @@ impl button::StyleSheet for ColumnHeaderButton {
             text_color: Color {
                 ..self.0.bright.surface
             },
-            border_radius: 2,
+            border_radius: 2.0,
             ..button::Style::default()
         }
     }
@@ -348,7 +348,7 @@ impl button::StyleSheet for SelectedColumnHeaderButton {
             text_color: Color {
                 ..self.0.bright.primary
             },
-            border_radius: 2,
+            border_radius: 2.0,
             ..button::Style::default()
         }
     }
@@ -393,7 +393,7 @@ impl button::StyleSheet for SelectedDefaultButton {
         button::Style {
             background: Some(Background::Color(self.0.normal.primary)),
             text_color: self.0.bright.primary,
-            border_radius: 2,
+            border_radius: 2.0,
             ..button::Style::default()
         }
     }
@@ -426,13 +426,13 @@ impl scrollable::StyleSheet for ForegroundScrollable {
     fn active(&self) -> scrollable::Scrollbar {
         scrollable::Scrollbar {
             background: Some(Background::Color(self.0.base.foreground)),
-            border_radius: 0,
-            border_width: 0,
+            border_radius: 0.0,
+            border_width: 0.0,
             border_color: Color::TRANSPARENT,
             scroller: scrollable::Scroller {
                 color: self.0.base.background,
-                border_radius: 2,
-                border_width: 0,
+                border_radius: 2.0,
+                border_width: 0.0,
                 border_color: Color::TRANSPARENT,
             },
         }
@@ -461,13 +461,13 @@ impl scrollable::StyleSheet for Scrollable {
     fn active(&self) -> scrollable::Scrollbar {
         scrollable::Scrollbar {
             background: Some(Background::Color(self.0.base.background)),
-            border_radius: 0,
-            border_width: 0,
+            border_radius: 0.0,
+            border_width: 0.0,
             border_color: Color::TRANSPARENT,
             scroller: scrollable::Scroller {
                 color: self.0.base.foreground,
-                border_radius: 2,
-                border_width: 0,
+                border_radius: 2.0,
+                border_width: 0.0,
                 border_color: Color::TRANSPARENT,
             },
         }
@@ -497,7 +497,7 @@ impl pick_list::StyleSheet for PickList {
         pick_list::Menu {
             text_color: self.0.bright.surface,
             background: Background::Color(self.0.base.foreground),
-            border_width: 1,
+            border_width: 1.0,
             border_color: self.0.base.background,
             selected_background: Background::Color(Color {
                 a: 0.15,
@@ -511,12 +511,12 @@ impl pick_list::StyleSheet for PickList {
         pick_list::Style {
             text_color: self.0.bright.surface,
             background: self.0.base.background.into(),
-            border_width: 1,
+            border_width: 1.0,
             border_color: Color {
                 a: 0.5,
                 ..self.0.normal.primary
             },
-            border_radius: 2,
+            border_radius: 2.0,
             icon_size: 0.5,
         }
     }
@@ -536,7 +536,7 @@ impl pick_list::StyleSheet for SecondaryPickList {
         pick_list::Menu {
             text_color: self.0.bright.surface,
             background: Background::Color(self.0.base.background),
-            border_width: 1,
+            border_width: 1.0,
             border_color: self.0.base.foreground,
             selected_background: Background::Color(Color {
                 a: 0.15,
@@ -550,9 +550,9 @@ impl pick_list::StyleSheet for SecondaryPickList {
         pick_list::Style {
             text_color: self.0.bright.surface,
             background: self.0.base.foreground.into(),
-            border_width: 0,
+            border_width: 0.0,
             border_color: self.0.base.background,
-            border_radius: 2,
+            border_radius: 2.0,
             icon_size: 0.5,
         }
     }
@@ -577,8 +577,8 @@ impl container::StyleSheet for ChannelBadge {
             background: Some(Background::Color(self.0.base.foreground)),
             text_color: Some(self.0.bright.primary),
             border_color: self.0.bright.primary,
-            border_radius: 3,
-            border_width: 1,
+            border_radius: 3.0,
+            border_width: 1.0,
         }
     }
 }
@@ -589,8 +589,8 @@ impl checkbox::StyleSheet for DefaultCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.background),
             checkmark_color: self.0.bright.primary,
-            border_radius: 2,
-            border_width: 1,
+            border_radius: 2.0,
+            border_width: 1.0,
             border_color: self.0.normal.primary,
         }
     }
@@ -599,8 +599,8 @@ impl checkbox::StyleSheet for DefaultCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.foreground),
             checkmark_color: self.0.bright.primary,
-            border_radius: 2,
-            border_width: 2,
+            border_radius: 2.0,
+            border_width: 2.0,
             border_color: self.0.bright.primary,
         }
     }
@@ -612,8 +612,8 @@ impl checkbox::StyleSheet for AlwaysCheckedCheckbox {
         checkbox::Style {
             background: Background::Color(self.0.base.background),
             checkmark_color: self.0.normal.primary,
-            border_radius: 2,
-            border_width: 1,
+            border_radius: 2.0,
+            border_width: 1.0,
             border_color: self.0.normal.primary,
         }
     }
@@ -629,8 +629,8 @@ impl text_input::StyleSheet for CatalogQueryInput {
     fn active(&self) -> text_input::Style {
         text_input::Style {
             background: Background::Color(self.0.base.foreground),
-            border_radius: 0,
-            border_width: 0,
+            border_radius: 0.0,
+            border_width: 0.0,
             border_color: self.0.base.foreground,
         }
     }
@@ -639,8 +639,8 @@ impl text_input::StyleSheet for CatalogQueryInput {
     fn focused(&self) -> text_input::Style {
         text_input::Style {
             background: Background::Color(self.0.base.foreground),
-            border_radius: 2,
-            border_width: 1,
+            border_radius: 2.0,
+            border_width: 1.0,
             border_color: Color {
                 a: 0.5,
                 ..self.0.normal.primary

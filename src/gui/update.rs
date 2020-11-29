@@ -22,6 +22,7 @@ use {
         repository::{RepositoryKind, RepositoryPackage},
         utility::{download_update_to_temp_file, wow_path_resolution},
     },
+    ajour_widgets::header::ResizeEvent,
     anyhow::Context,
     async_std::sync::{Arc, Mutex},
     chrono::{NaiveTime, Utc},
@@ -32,7 +33,6 @@ use {
     std::convert::TryFrom,
     std::hash::Hasher,
     std::path::{Path, PathBuf},
-    widgets::header::ResizeEvent,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
