@@ -80,11 +80,7 @@ Find instructions for building your own themes [here](./THEMES.md).
 
 ## Command Line
 
-Ajour accepts arguments and can even run certain operations on the command line
-without launching the GUI, such as updating all addons. This makes it possible to
-manage your addon collection through scripts and scheduling.
-
-You can pass `--help` to see a full list of supported flags, options and commands.
+Find instructions for using the command line interface [here](./CLI.md)
 
 ## Contribute
 

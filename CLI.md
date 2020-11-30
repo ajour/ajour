@@ -2,8 +2,11 @@
 
 # CLI
 
-It is possible to interact with Ajour through command line arguments.
-To get an overview you can use `ajour --help`:
+Ajour accepts arguments and can even run certain operations on the command line
+without launching the GUI, such as updating all addons. This makes it possible to
+manage your addon collection through scripts and scheduling.
+
+You can pass `--help` to see a full list of supported flags, options and commands.
 
 ```text
 USAGE:
@@ -53,22 +56,22 @@ USAGE:
     ajour backup [OPTIONS] <destination>
 
 OPTIONS:
-    # Folder to backup 
-    # [default: both] 
+    # Folder to backup
+    # [default: both]
     # [possible values: both, wtf, addons]
-    
-    -b, --backup-folder <backup-folder> 
-    
-    # Space separated list of flavors to include in backup. 
-    # If ommited, all flavors will be included 
+
+    -b, --backup-folder <backup-folder>
+
+    # Space separated list of flavors to include in backup.
+    # If ommited, all flavors will be included
     # [possible values: retail, ptr, beta, classic, classic_ptr]
-    
+
     -f, --flavors <flavors>
-                                           
+
 ARGS:
     # folder to save backups to
-    
-    <destination>            
+
+    <destination>
 ```
 
 #### Example
@@ -92,15 +95,15 @@ USAGE:
     ajour install <flavor> <url>
 
 ARGS:
-    # Flavor to install addon under 
+    # Flavor to install addon under
     # [possible values: retail, ptr, beta, classic, classic_ptr]
-    
+
     <flavor>
-    
+
     # Source url
     # [Github & Gitlab currently supported]
-    
-    <url>       
+
+    <url>
 ```
 
 #### Example
