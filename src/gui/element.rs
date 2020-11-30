@@ -1061,20 +1061,35 @@ pub fn addon_data_cell<'a, 'b>(
         .next()
     {
         let update_button_container = match &addon.state {
-            AddonState::Ajour(string) => Container::new(
-                Text::new(string.clone().unwrap_or_else(|| "".to_string())).size(DEFAULT_FONT_SIZE),
-            )
-            .height(default_height)
-            .width(*width)
-            .center_y()
-            .center_x()
-            .style(style::NormalForegroundContainer(color_palette)),
-            AddonState::Updatable | AddonState::Corrupted => {
+            AddonState::Idle => Container::new(Text::new("".to_string()).size(DEFAULT_FONT_SIZE))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .center_x()
+                .style(style::NormalForegroundContainer(color_palette)),
+            AddonState::Completed => {
+                Container::new(Text::new("Completed".to_string()).size(DEFAULT_FONT_SIZE))
+                    .height(default_height)
+                    .width(*width)
+                    .center_y()
+                    .center_x()
+                    .style(style::NormalForegroundContainer(color_palette))
+            }
+            AddonState::Error(message) => {
+                Container::new(Text::new(message).size(DEFAULT_FONT_SIZE))
+                    .height(default_height)
+                    .width(*width)
+                    .center_y()
+                    .center_x()
+                    .style(style::NormalForegroundContainer(color_palette))
+            }
+            AddonState::Updatable | AddonState::Retry => {
                 let id = addon.primary_folder_id.clone();
-                let text = if addon.state == AddonState::Updatable {
-                    "Update"
-                } else {
-                    "Repair"
+
+                let text = match addon.state {
+                    AddonState::Updatable => "Update",
+                    AddonState::Retry => "Retry",
+                    _ => "",
                 };
 
                 let update_wrapper = Container::new(Text::new(text).size(DEFAULT_FONT_SIZE))
