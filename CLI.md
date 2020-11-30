@@ -56,15 +56,18 @@ OPTIONS:
     # Folder to backup 
     # [default: both] 
     # [possible values: both, wtf, addons]
+    
     -b, --backup-folder <backup-folder> 
     
     # Space separated list of flavors to include in backup. 
     # If ommited, all flavors will be included 
     # [possible values: retail, ptr, beta, classic, classic_ptr]
+    
     -f, --flavors <flavors>
                                            
 ARGS:
     # folder to save backups to
+    
     <destination>            
 ```
 
