@@ -1,7 +1,7 @@
 # CLI
 
 It is possible to interact with Ajour through command line arguments.
-To get a overview you can use `ajour --help`:
+To get an overview you can use `ajour --help`:
 
 ```text
 USAGE:
@@ -23,7 +23,7 @@ SUBCOMMANDS:
 
 ## Options
 
-You can attatch different options together with a [subcommand](#subcommands).  
+You can attach different options together with a [subcommand](#subcommands).  
 Currently available options:
 
 
