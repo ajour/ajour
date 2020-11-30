@@ -30,12 +30,12 @@ Currently available options:
 
 ```sh
 # Enable or disable anti-aliasing.
-# Default: true
+# [default: true]
 
 --aa <true/false>
 
 # Path to a custom data directory for the app.
-# Default:
+# [default]:
 # macOS/Linux: $HOME/.config/ajour
 # Windows: %APPDATA%\ajour
 
@@ -48,16 +48,24 @@ Currently available options:
 
 Backup your WTF and/or AddOns folders.
 
-```text
+```sh
 USAGE:
     ajour backup [OPTIONS] <destination>
 
 OPTIONS:
-    -b, --backup-folder <backup-folder>    folder to backup [default: both]  [possible values: both, wtf, addons]
-    -f, --flavors <flavors>...             space separated list of flavors to include in backup. If ommited, all flavors
-                                           will be included [possible values: retail, ptr, beta, classic, classic_ptr]
+    # Folder to backup 
+    # [default: both] 
+    # [possible values: both, wtf, addons]
+    -b, --backup-folder <backup-folder> 
+    
+    # Space separated list of flavors to include in backup. 
+    # If ommited, all flavors will be included 
+    # [possible values: retail, ptr, beta, classic, classic_ptr]
+    -f, --flavors <flavors>
+                                           
 ARGS:
-    <destination>                          folder to save backups to
+    # folder to save backups to
+    <destination>            
 ```
 
 #### Example
