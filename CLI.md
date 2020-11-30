@@ -94,6 +94,7 @@ USAGE:
 ARGS:
     # Flavor to install addon under 
     # [possible values: retail, ptr, beta, classic, classic_ptr]
+    
     <flavor>
     
     # Source url
