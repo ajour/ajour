@@ -87,13 +87,19 @@ ajour backup -b wtf -f retail /tmp
 
 Install an addon from the command line.
 
-```text
+```sh
 USAGE:
     ajour install <flavor> <url>
 
 ARGS:
-    <flavor>    flavor to install addon under [possible values: retail, ptr, beta, classic, classic_ptr]
-    <url>       source url [Github & Gitlab currently supported]
+    # Flavor to install addon under 
+    # [possible values: retail, ptr, beta, classic, classic_ptr]
+    <flavor>
+    
+    # Source url
+    # [Github & Gitlab currently supported]
+    
+    <url>       
 ```
 
 #### Example
@@ -108,7 +114,7 @@ ajour install retail https://github.com/Hekili/hekili
 
 Update all addons from the command line then exit.
 
-```text
+```sh
 USAGE:
     ajour update
 ```
