@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD024 -->
+
 # CLI
 
 It is possible to interact with Ajour through command line arguments.
@@ -23,9 +25,8 @@ SUBCOMMANDS:
 
 ## Options
 
-You can attach different options together with a [subcommand](#subcommands).  
+You can attach different options together with a [subcommand](#subcommands).
 Currently available options:
-
 
 ```sh
 # Enable or disable anti-aliasing.
@@ -60,6 +61,7 @@ ARGS:
 ```
 
 #### Example
+
 ```sh
 # Backup both WTF and AddOns folder for all flavors
 
@@ -84,11 +86,12 @@ ARGS:
 ```
 
 #### Example
+
 ```sh
 # Install Hekili from Github
 
 ajour install retail https://github.com/Hekili/hekili
-``` 
+```
 
 ### Update
 
