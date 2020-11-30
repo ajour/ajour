@@ -49,14 +49,14 @@ Backup your WTF and/or AddOns folders.
 
 ```text
 USAGE:
-ajour backup [OPTIONS] <destination>
+    ajour backup [OPTIONS] <destination>
 
 OPTIONS:
     -b, --backup-folder <backup-folder>    folder to backup [default: both]  [possible values: both, wtf, addons]
     -f, --flavors <flavors>...             space separated list of flavors to include in backup. If ommited, all flavors
                                            will be included [possible values: retail, ptr, beta, classic, classic_ptr]
 ARGS:
-    <destination>    folder to save backups to
+    <destination>                          folder to save backups to
 ```
 
 #### Example
