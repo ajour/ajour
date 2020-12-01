@@ -161,7 +161,6 @@ pub(crate) async fn fetch_remote_package(
 
     let timeout = Some(30);
     let mut resp = request_async(&shared_client, &url, vec![], timeout).await?;
-    println!("{:?}", resp);
 
     if resp.status().is_success() {
         let package = resp.json()?;
