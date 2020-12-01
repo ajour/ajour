@@ -97,7 +97,7 @@ mod github {
 
             let mut remote_packages = HashMap::new();
             let remote_package = RemotePackage {
-                version,
+                version: version.clone(),
                 download_url,
                 date_time,
                 file_id: None,
@@ -108,6 +108,7 @@ mod github {
 
             let metadata = RepositoryMetadata {
                 website_url: Some(self.url.to_string()),
+                changelog_url: Some(format!("{}/releases/tag/{}", self.url, version)),
                 remote_packages,
                 title: Some(repo.to_string()),
                 ..Default::default()
@@ -271,7 +272,7 @@ mod gitlab {
 
             let mut remote_packages = HashMap::new();
             let remote_package = RemotePackage {
-                version,
+                version: version.clone(),
                 download_url,
                 date_time,
                 file_id: None,
@@ -282,6 +283,7 @@ mod gitlab {
 
             let metadata = RepositoryMetadata {
                 website_url: Some(self.url.to_string()),
+                changelog_url: Some(format!("{}/-/tags/{}", self.url, version)),
                 remote_packages,
                 title: Some(repo.to_string()),
                 ..Default::default()

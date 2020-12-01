@@ -203,6 +203,10 @@ pub struct RepositoryMetadata {
     pub(crate) game_version: Option<String>,
     pub(crate) file_id: Option<i64>,
 
+    // todo (casperstorm): better description here.
+    // This is constructed, and is different for each repo.
+    pub(crate) changelog_url: Option<String>,
+
     /// Remote packages available from the Repository
     pub(crate) remote_packages: HashMap<ReleaseChannel, RemotePackage>,
 }

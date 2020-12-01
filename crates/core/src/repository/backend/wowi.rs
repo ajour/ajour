@@ -75,7 +75,8 @@ pub(crate) fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMeta
     metadata.remote_packages = remote_packages;
 
     let website_url = addon_url(&package.id.to_string());
-    metadata.website_url = Some(website_url);
+    metadata.website_url = Some(website_url.clone());
+    metadata.changelog_url = Some(format!("{}/#changelog", website_url));
     metadata.title = Some(package.title);
 
     metadata

@@ -143,6 +143,8 @@ pub struct Addon {
     pub website_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
     pub pick_release_channel_state: iced_native::pick_list::State<ReleaseChannel>,
+    #[cfg(feature = "gui")]
+    pub changelog_btn_state: iced_native::button::State,
 }
 
 impl Addon {
@@ -176,6 +178,8 @@ impl Addon {
             website_btn_state: Default::default(),
             #[cfg(feature = "gui")]
             pick_release_channel_state: Default::default(),
+            #[cfg(feature = "gui")]
+            changelog_btn_state: Default::default(),
         }
     }
 
@@ -333,6 +337,13 @@ impl Addon {
     /// Returns the website url of the addon.
     pub fn website_url(&self) -> Option<&str> {
         self.metadata().map(|m| m.website_url.as_deref()).flatten()
+    }
+
+    /// Returns the changelog url of the addon.
+    pub fn changelog_url(&self) -> Option<&str> {
+        self.metadata()
+            .map(|m| m.changelog_url.as_deref())
+            .flatten()
     }
 
     /// Returns the curse id of the addon, if applicable.

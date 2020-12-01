@@ -706,6 +706,7 @@ pub fn addon_data_cell<'a, 'b>(
     let game_version = addon.game_version().map(str::to_string);
     let notes = addon.notes().map(str::to_string);
     let website_url = addon.website_url().map(str::to_string);
+    let changelog_url = addon.changelog_url().map(str::to_string);
     let repository_kind = addon.repository_kind();
 
     // Check if current addon is expanded.
@@ -1327,6 +1328,18 @@ pub fn addon_data_cell<'a, 'b>(
                 .style(style::DefaultDeleteButton(color_palette))
                 .into();
 
+                let mut changelog_button = Button::new(
+                    &mut addon.changelog_btn_state,
+                    Text::new("Changelog").size(DEFAULT_FONT_SIZE),
+                )
+                .style(style::DefaultButton(color_palette));
+
+                if let Some(link) = changelog_url {
+                    changelog_button = changelog_button.on_press(Interaction::OpenLink(link));
+                }
+
+                let changelog_button: Element<Interaction> = changelog_button.into();
+
                 let test_row = Row::new()
                     .push(release_channel_list)
                     .push(release_date_text_container);
@@ -1334,6 +1347,8 @@ pub fn addon_data_cell<'a, 'b>(
                 let button_row = Row::new()
                     .push(Space::new(Length::Fill, Length::Units(0)))
                     .push(website_button.map(Message::Interaction))
+                    .push(Space::new(Length::Units(5), Length::Units(0)))
+                    .push(changelog_button.map(Message::Interaction))
                     .push(Space::new(Length::Units(5), Length::Units(0)))
                     .push(force_download_button.map(Message::Interaction))
                     .push(Space::new(Length::Units(5), Length::Units(0)))

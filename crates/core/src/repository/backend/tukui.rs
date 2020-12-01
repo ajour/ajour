@@ -110,11 +110,13 @@ pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMe
     }
 
     let website_url = Some(package.web_url.clone());
+    let changelog_url = Some(format!("{}&changelog", package.web_url));
     let game_version = package.patch;
     let title = package.name;
 
     let mut metadata = RepositoryMetadata::empty();
     metadata.website_url = website_url;
+    metadata.changelog_url = changelog_url;
     metadata.game_version = game_version;
     metadata.remote_packages = remote_packages;
     metadata.title = Some(title);

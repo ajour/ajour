@@ -114,7 +114,8 @@ pub(crate) fn metadata_from_curse_package(flavor: Flavor, package: Package) -> R
     let mut metadata = RepositoryMetadata::empty();
     metadata.remote_packages = remote_packages;
     metadata.title = Some(package.name.clone());
-    metadata.website_url = Some(package.website_url);
+    metadata.website_url = Some(package.website_url.clone());
+    metadata.changelog_url = Some(format!("{}/files", package.website_url));
 
     metadata
 }
