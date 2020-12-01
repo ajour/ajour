@@ -1,15 +1,15 @@
 #![allow(clippy::type_complexity)]
 
-use iced_native::{ Align, Element,  Layout, layout, Hasher,
-    Length, Point, Widget,  Rectangle, Clipboard, Event, overlay
-};
 pub use crate::style::table_row::{Style, StyleSheet};
+use iced_native::{
+    layout, overlay, Align, Clipboard, Element, Event, Hasher, Layout, Length, Point, Rectangle,
+    Widget,
+};
 
 use std::hash::Hash;
 
 #[allow(missing_debug_implementations)]
-pub struct TableRow<'a, Message, Renderer: self::Renderer>
-{
+pub struct TableRow<'a, Message, Renderer: self::Renderer> {
     padding: u16,
     width: Length,
     height: Length,
@@ -22,14 +22,14 @@ pub struct TableRow<'a, Message, Renderer: self::Renderer>
 }
 
 impl<'a, Message, Renderer> TableRow<'a, Message, Renderer>
-    where
-        Renderer: 'a + self::Renderer,
-        Message: 'a,
+where
+    Renderer: 'a + self::Renderer,
+    Message: 'a,
 {
     /// Creates an empty [`TableRow`].
     pub fn new<T>(content: T) -> Self
-        where
-            T: Into<Element<'a, Message, Renderer>>,
+    where
+        T: Into<Element<'a, Message, Renderer>>,
     {
         TableRow {
             padding: 1,
@@ -98,12 +98,10 @@ impl<'a, Message, Renderer> TableRow<'a, Message, Renderer>
 }
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, Renderer>
-    where
-        Renderer: 'a + self::Renderer,
-        Message: 'a,
+where
+    Renderer: 'a + self::Renderer,
+    Message: 'a,
 {
-
-
     fn draw(
         &self,
         renderer: &mut Renderer,
@@ -122,7 +120,6 @@ impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, 
         )
     }
 
-
     fn hash_layout(&self, state: &mut Hasher) {
         struct Marker;
         std::any::TypeId::of::<Marker>().hash(state);
@@ -136,10 +133,7 @@ impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, 
         self.content.hash_layout(state);
     }
 
-    fn overlay(
-        &mut self,
-        layout: Layout<'_>,
-    ) -> Option<overlay::Element<'_, Message, Renderer>> {
+    fn overlay(&mut self, layout: Layout<'_>) -> Option<overlay::Element<'_, Message, Renderer>> {
         self.content.overlay(layout.children().next().unwrap())
     }
 
@@ -151,11 +145,7 @@ impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, 
         self.height
     }
 
-    fn layout(
-        &self,
-        renderer: &Renderer,
-        limits: &layout::Limits,
-    ) -> layout::Node {
+    fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let padding = f32::from(self.padding);
 
         let limits = limits
@@ -185,14 +175,13 @@ impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, 
         clipboard: Option<&dyn Clipboard>,
     ) {
         self.content.on_event(
-                    event,
-                    layout.children().next().unwrap(),
-                    cursor_position,
-                    messages,
-                    renderer,
-                    clipboard,
-                );
-
+            event,
+            layout.children().next().unwrap(),
+            cursor_position,
+            messages,
+            renderer,
+            clipboard,
+        );
     }
 }
 
@@ -206,14 +195,14 @@ pub trait Renderer: iced_native::Renderer {
         cursor_position: Point,
         style: &Self::Style,
         content: &Element<'_, Message, Self>,
-        content_layout: Layout<'_>
+        content_layout: Layout<'_>,
     ) -> Self::Output;
 }
 
 impl<'a, Message, Renderer> From<TableRow<'a, Message, Renderer>> for Element<'a, Message, Renderer>
-    where
-        Renderer: 'a + self::Renderer,
-        Message: 'a,
+where
+    Renderer: 'a + self::Renderer,
+    Message: 'a,
 {
     fn from(table_row: TableRow<'a, Message, Renderer>) -> Element<'a, Message, Renderer> {
         Element::new(table_row)

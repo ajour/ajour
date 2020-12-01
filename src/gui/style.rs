@@ -1,6 +1,6 @@
 use ajour_core::theme::ColorPalette;
-use widgets::{table_row};
 use iced::{button, checkbox, container, pick_list, scrollable, text_input, Background, Color};
+use widgets::table_row;
 
 pub struct BrightForegroundContainer(pub ColorPalette);
 impl container::StyleSheet for BrightForegroundContainer {
@@ -436,7 +436,7 @@ impl table_row::StyleSheet for TableRow {
     fn hovered(&self) -> table_row::Style {
         let style = self.style();
         table_row::Style {
-            background:  Some(Background::Color(Color {
+            background: Some(Background::Color(Color {
                 a: 0.15,
                 ..self.0.normal.primary
             })),
@@ -447,7 +447,6 @@ impl table_row::StyleSheet for TableRow {
         }
     }
 }
-
 
 pub struct ForegroundScrollable(pub ColorPalette);
 impl scrollable::StyleSheet for ForegroundScrollable {
