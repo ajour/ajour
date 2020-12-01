@@ -25,7 +25,7 @@ use {
     num_format::{Locale, ToFormattedString},
     std::collections::HashMap,
     version_compare::{CompOp, VersionCompare},
-    widgets::{header, Header},
+    widgets::{header, Header, TableRow},
 };
 
 // Default values used on multiple elements.
@@ -697,7 +697,7 @@ pub fn addon_data_cell<'a, 'b>(
     is_addon_expanded: bool,
     expand_type: &'a ExpandType,
     column_config: &'b [(ColumnKey, Length, bool)],
-) -> Container<'a, Message> {
+) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
 
     let mut row_containers = vec![];
@@ -1363,9 +1363,9 @@ pub fn addon_data_cell<'a, 'b>(
         }
     }
 
-    Container::new(addon_column)
+    TableRow::new(addon_column)
         .width(Length::Fill)
-        .style(style::Row(color_palette))
+        .style(style::TableRow(color_palette))
 }
 
 fn row_title<T: PartialEq>(
@@ -2035,7 +2035,7 @@ pub fn catalog_data_cell<'a, 'b>(
     column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
     install_addon: Option<&InstallAddon>,
-) -> Container<'a, Message> {
+) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
 
     let mut row_containers = vec![];
@@ -2297,9 +2297,9 @@ pub fn catalog_data_cell<'a, 'b>(
 
     row = row.push(right_spacer);
 
-    Container::new(row)
+    TableRow::new(row)
         .width(Length::Fill)
-        .style(style::Row(color_palette))
+        .style(style::TableRow(color_palette))
 }
 
 pub fn addon_scrollable(
