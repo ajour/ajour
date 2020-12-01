@@ -125,15 +125,11 @@ pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMe
 /// Return the tukui API endpoint.
 fn api_endpoint(id: &str, flavor: &Flavor) -> String {
     match flavor {
-        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
-            "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
-            "-2" => "https://www.tukui.org/api.php?ui=elvui".to_owned(),
-            _ => format!(
-                "https://hub.dev.wowup.io/tukui/{}/{}",
-                flavor.tukui_format(),
-                id
-            ),
-        },
+        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => format!(
+            "https://hub.dev.wowup.io/tukui/{}/{}",
+            flavor.tukui_format(),
+            id
+        ),
         Flavor::Classic | Flavor::ClassicPTR => {
             format!("https://www.tukui.org/api.php?classic-addon={}", id)
         }
@@ -165,6 +161,7 @@ pub(crate) async fn fetch_remote_package(
 
     let timeout = Some(30);
     let mut resp = request_async(&shared_client, &url, vec![], timeout).await?;
+    println!("{:?}", resp);
 
     if resp.status().is_success() {
         let package = resp.json()?;
