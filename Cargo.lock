@@ -4119,8 +4119,9 @@ dependencies = [
 
 [[package]]
 name = "widgets"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
+ "iced_core",
  "iced_glow",
  "iced_graphics",
  "iced_native",
