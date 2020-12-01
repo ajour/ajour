@@ -43,7 +43,7 @@ async-trait = "0.1.41"
 dyn-clone = "1.0.3"
 thiserror = "1.0"
 
-iced_native = { git = "https://github.com/hecrj/iced.git", rev = "d3b04bf892ce63d3129686968039c258945c5b02", optional = true }
+iced_native = { version = "0.3", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 flate2 = "1.0"

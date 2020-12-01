@@ -16,6 +16,7 @@ and `Removed`.
 
 ### Added
 
+- Ability to retry if a addon fails during either download or unpacking
 - Added a minimum size to Ajour window
 
 ## [0.5.3] - 2020-11-23

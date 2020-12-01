@@ -1,5 +1,5 @@
 [package]
-name = "widgets"
+name = "ajour-widgets"
 version = "0.1.1"
 authors = ["tarkah <admin@tarkah.dev>"]
 edition = "2018"
@@ -9,9 +9,9 @@ wgpu = ["iced_wgpu"]
 opengl = ["iced_glow"]
 
 [dependencies]
-iced_native = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02" }
-iced_graphics = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02" }
-iced_core = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02" }
+iced_native = { version = "0.3" }
+iced_graphics = { version = "0.1" }
+iced_core = { version = "0.3" }
 
-iced_wgpu = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02", optional = true }
-iced_glow = { git="https://github.com/hecrj/iced", rev="d3b04bf892ce63d3129686968039c258945c5b02", optional = true }
+iced_wgpu = { version = "0.3", optional = true }
+iced_glow = { version = "0.1", optional = true }
