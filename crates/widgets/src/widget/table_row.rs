@@ -111,10 +111,6 @@ impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, 
         layout: Layout<'_>,
         cursor_position: Point,
     ) -> Renderer::Output {
-        let bounds = layout.bounds();
-
-        let is_mouse_over = bounds.contains(cursor_position);
-
         self::Renderer::draw(
             renderer,
             defaults,
@@ -123,7 +119,6 @@ impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, 
             &self.style,
             &self.content,
             layout.children().next().unwrap(),
-            is_mouse_over
         )
     }
 
@@ -190,7 +185,7 @@ impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, 
         clipboard: Option<&dyn Clipboard>,
     ) {
         self.content.on_event(
-                    event.clone(),
+                    event,
                     layout.children().next().unwrap(),
                     cursor_position,
                     messages,
@@ -211,8 +206,7 @@ pub trait Renderer: iced_native::Renderer {
         cursor_position: Point,
         style: &Self::Style,
         content: &Element<'_, Message, Self>,
-        content_layout: Layout<'_>,
-        is_mouse_over: bool,
+        content_layout: Layout<'_>
     ) -> Self::Output;
 }
 
