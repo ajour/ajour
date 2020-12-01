@@ -18,8 +18,9 @@ impl<B> table_row::Renderer for Renderer<B>
         style_sheet: &Self::Style,
         content: &Element<'_, Message, Self>,
         content_layout: Layout<'_>,
-        is_mouse_over: bool,
     ) -> Self::Output {
+
+        let is_mouse_over = bounds.contains(cursor_position);
 
         let style = if is_mouse_over {
             style_sheet.hovered()
