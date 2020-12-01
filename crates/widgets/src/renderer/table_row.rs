@@ -13,13 +13,15 @@ where
     fn draw<Message>(
         &mut self,
         defaults: &Self::Defaults,
-        bounds: Rectangle,
+        layout: Layout<'_>,
         cursor_position: Point,
         style_sheet: &Self::Style,
         content: &Element<'_, Message, Self>,
-        content_layout: Layout<'_>,
+        viewport: &Rectangle,
     ) -> Self::Output {
+        let bounds = layout.bounds();
         let is_mouse_over = bounds.contains(cursor_position);
+        let content_layout = layout.children().next().unwrap();
 
         let style = if is_mouse_over {
             style_sheet.hovered()
@@ -28,10 +30,10 @@ where
         };
 
         let (content, mouse_interaction) =
-            content.draw(self, &defaults, content_layout, cursor_position);
+            content.draw(self, &defaults, content_layout, cursor_position, viewport);
 
         (
-            if style.background.is_some() || style.border_width > 0 {
+            if style.background.is_some() || style.border_width > 0.0 {
                 let background = Primitive::Quad {
                     bounds,
                     background: style

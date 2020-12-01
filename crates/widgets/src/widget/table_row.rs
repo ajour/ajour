@@ -2,8 +2,8 @@
 
 pub use crate::style::table_row::{Style, StyleSheet};
 use iced_native::{
-    layout, overlay, Align, Clipboard, Element, Event, Hasher, Layout, Length, Point, Rectangle,
-    Widget,
+    event, layout, overlay, Align, Clipboard, Element, Event, Hasher, Layout, Length, Point,
+    Rectangle, Widget,
 };
 
 use std::hash::Hash;
@@ -108,15 +108,16 @@ where
         defaults: &Renderer::Defaults,
         layout: Layout<'_>,
         cursor_position: Point,
+        viewport: &Rectangle,
     ) -> Renderer::Output {
         self::Renderer::draw(
             renderer,
             defaults,
-            layout.bounds(),
+            layout,
             cursor_position,
             &self.style,
             &self.content,
-            layout.children().next().unwrap(),
+            viewport,
         )
     }
 
@@ -173,7 +174,7 @@ where
         messages: &mut Vec<Message>,
         renderer: &Renderer,
         clipboard: Option<&dyn Clipboard>,
-    ) {
+    ) -> event::Status {
         self.content.on_event(
             event,
             layout.children().next().unwrap(),
@@ -182,6 +183,8 @@ where
             renderer,
             clipboard,
         );
+
+        event::Status::Ignored
     }
 }
 
@@ -191,11 +194,11 @@ pub trait Renderer: iced_native::Renderer {
     fn draw<Message>(
         &mut self,
         defaults: &Self::Defaults,
-        bounds: Rectangle,
+        layout: Layout<'_>,
         cursor_position: Point,
         style: &Self::Style,
         content: &Element<'_, Message, Self>,
-        content_layout: Layout<'_>,
+        viewport: &Rectangle,
     ) -> Self::Output;
 }
 

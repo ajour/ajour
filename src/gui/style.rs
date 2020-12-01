@@ -1,6 +1,6 @@
 use ajour_core::theme::ColorPalette;
+use ajour_widgets::table_row;
 use iced::{button, checkbox, container, pick_list, scrollable, text_input, Background, Color};
-use widgets::table_row;
 
 pub struct BrightForegroundContainer(pub ColorPalette);
 impl container::StyleSheet for BrightForegroundContainer {
@@ -428,8 +428,8 @@ impl table_row::StyleSheet for TableRow {
         table_row::Style {
             text_color: None,
             background: None,
-            border_radius: 0,
-            border_width: 0,
+            border_radius: 0.0,
+            border_width: 0.0,
             border_color: Color::TRANSPARENT,
         }
     }
@@ -440,9 +440,12 @@ impl table_row::StyleSheet for TableRow {
                 a: 0.15,
                 ..self.0.normal.primary
             })),
-            border_radius: 0,
-            border_width: 1,
-            border_color: self.0.bright.primary,
+            border_radius: 0.0,
+            border_width: 1.0,
+            border_color: Color {
+                a: 0.50,
+                ..self.0.normal.primary
+            },
             ..style
         }
     }
