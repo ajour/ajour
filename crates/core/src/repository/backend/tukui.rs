@@ -128,7 +128,11 @@ fn api_endpoint(id: &str, flavor: &Flavor) -> String {
         Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
             "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
             "-2" => "https://www.tukui.org/api.php?ui=elvui".to_owned(),
-            _ => format!("https://www.tukui.org/api.php?addon={}", id),
+            _ => format!(
+                "https://hub.dev.wowup.io/tukui/{}/{}",
+                flavor.tukui_format(),
+                id
+            ),
         },
         Flavor::Classic | Flavor::ClassicPTR => {
             format!("https://www.tukui.org/api.php?classic-addon={}", id)
