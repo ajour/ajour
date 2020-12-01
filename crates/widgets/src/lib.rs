@@ -5,8 +5,8 @@ use iced_wgpu::Renderer;
 use iced_glow::Renderer;
 
 mod renderer;
-mod widget;
 mod style;
+mod widget;
 
 pub use widget::header;
 pub use widget::table_row;

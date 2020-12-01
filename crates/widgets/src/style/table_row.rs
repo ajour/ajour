@@ -13,7 +13,6 @@ pub struct Style {
 
 /// A set of rules that dictate the style of a table row.
 pub trait StyleSheet {
-
     fn style(&self) -> Style;
 
     /// Produces the style of a hovered table row.
@@ -41,7 +40,6 @@ impl StyleSheet for Default {
     }
 }
 
-
 impl std::default::Default for Box<dyn StyleSheet> {
     fn default() -> Self {
         Box::new(Default)
@@ -49,8 +47,8 @@ impl std::default::Default for Box<dyn StyleSheet> {
 }
 
 impl<T> From<T> for Box<dyn StyleSheet>
-    where
-        T: 'static + StyleSheet,
+where
+    T: 'static + StyleSheet,
 {
     fn from(style: T) -> Self {
         Box::new(style)
