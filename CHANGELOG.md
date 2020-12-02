@@ -22,8 +22,14 @@ and `Removed`.
 ### Changed
 
 - A new Changelog button is now found when you expand a addon.
-  - The old Changelog system has been removed which means you can no longer
+  The old Changelog system has been removed which means you can no longer
   press either local or remote version.
+
+### Fixed
+
+- Fixed a bug in backup where the zip archive created on Windows didn't open properly
+  on Linux and Macos. Fixed by converting Windows `\` path separators to `/` before
+  writing to the zip file.
 
 ## [0.5.3] - 2020-11-23
 

@@ -17,6 +17,10 @@ pub enum FilesystemError {
     #[cfg(target_os = "macos")]
     #[error("Could not file bin name {bin_name} in archive")]
     BinMissingFromTar { bin_name: String },
+    #[error("Failed to normalize path slashes for {path:?}")]
+    NormalizingPathSlash { path: PathBuf },
+    #[error("Could not strip prefix {prefix:?} from {from:?}")]
+    StripPrefix { prefix: String, from: String },
 }
 
 #[derive(thiserror::Error, Debug)]
