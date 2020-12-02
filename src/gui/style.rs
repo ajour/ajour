@@ -431,6 +431,8 @@ impl table_row::StyleSheet for TableRow {
             border_radius: 0.0,
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
+            offset_left: 0.0,
+            offset_right: 0.0,
         }
     }
     fn hovered(&self) -> table_row::Style {
@@ -440,10 +442,11 @@ impl table_row::StyleSheet for TableRow {
                 a: 0.15,
                 ..self.0.normal.primary
             })),
-            border_radius: 0.0,
+            offset_left: 10.0,
+            offset_right: 25.0,
             border_width: 1.0,
             border_color: Color {
-                a: 0.50,
+                a: 0.60,
                 ..self.0.normal.primary
             },
             ..style

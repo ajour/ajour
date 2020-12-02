@@ -182,9 +182,7 @@ where
             messages,
             renderer,
             clipboard,
-        );
-
-        event::Status::Ignored
+        )
     }
 }
 

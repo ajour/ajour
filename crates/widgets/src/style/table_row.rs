@@ -9,6 +9,8 @@ pub struct Style {
     pub border_radius: f32,
     pub border_width: f32,
     pub border_color: Color,
+    pub offset_left: f32,
+    pub offset_right: f32,
 }
 
 /// A set of rules that dictate the style of a table row.
@@ -29,6 +31,8 @@ impl StyleSheet for Default {
             border_radius: 0.0,
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
+            offset_right: 0.0,
+            offset_left: 0.0,
         }
     }
 
