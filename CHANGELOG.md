@@ -19,6 +19,12 @@ and `Removed`.
 - Ability to retry if a addon fails during either download or unpacking
 - Added a minimum size to Ajour window
 
+### Fixed
+
+- Fixed a bug in backup where the zip archive created on Windows didn't open properly
+  on Linux and Macos. Fixed by converting Windows `\` path separators to `/` before
+  writing to the zip file.
+
 ## [0.5.3] - 2020-11-23
 
 ### Added
