@@ -42,6 +42,7 @@ futures = "0.3"
 async-trait = "0.1.41"
 dyn-clone = "1.0.3"
 thiserror = "1.0"
+path-slash = "0.1.3"
 
 iced_native = { version = "0.3", optional = true }
 

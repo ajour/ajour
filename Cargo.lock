@@ -93,6 +93,7 @@ dependencies = [
  "isahc",
  "lazy_static",
  "log",
+ "path-slash",
  "rayon",
  "regex",
  "retry",
@@ -2664,6 +2665,12 @@ dependencies = [
  "smallvec",
  "winapi 0.3.9",
 ]
+
+[[package]]
+name = "path-slash"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff65715a17cba8979903db6294baef56c5d39e05c8b054cffa31e69e61f24c68"
 
 [[package]]
 name = "pathfinder_geometry"

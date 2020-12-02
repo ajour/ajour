@@ -2,6 +2,7 @@ use super::Result;
 use crate::backup::BackupFolder;
 use crate::error::FilesystemError;
 
+use path_slash::PathExt;
 use std::fs::File;
 use std::io::{BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
@@ -75,7 +76,26 @@ fn zip_write(
         });
     }
 
-    let name = path.strip_prefix(prefix).unwrap().to_str().unwrap();
+    // On windows, convers `\` to `/`
+    let normalized_path = path
+        .to_slash()
+        .ok_or(FilesystemError::NormalizingPathSlash {
+            path: path.to_path_buf(),
+        })?;
+    let normalized_prefix = prefix
+        .to_slash()
+        .ok_or(FilesystemError::NormalizingPathSlash {
+            path: prefix.to_path_buf(),
+        })?;
+
+    // Strip prefix from path name and remove leading slash
+    let name = normalized_path
+        .strip_prefix(&normalized_prefix)
+        .ok_or(FilesystemError::StripPrefix {
+            prefix: normalized_prefix,
+            from: normalized_path.clone(),
+        })?
+        .trim_start_matches('/');
 
     if path.is_dir() {
         writer.add_directory(name, options)?;
