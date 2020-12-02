@@ -1,9 +1,8 @@
 use {
     super::{
-        Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
-        CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType,
-        InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, SelfUpdateStatus,
-        SortDirection, State,
+        Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
+        ColumnKey, DirectoryType, DownloadReason, ExpandType, InstallAddon, InstallKind,
+        InstallStatus, Interaction, Message, Mode, SelfUpdateStatus, SortDirection, State,
     },
     crate::{log_error, Result},
     ajour_core::{

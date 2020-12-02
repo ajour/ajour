@@ -2,11 +2,10 @@
 
 use {
     super::{
-        style, BackupFolderKind, BackupState, CatalogColumnKey,
-        CatalogColumnSettings, CatalogColumnState, CatalogRow, ColumnKey, ColumnSettings,
-        ColumnState, DirectoryType, ExpandType, InstallAddon, InstallKind, InstallStatus,
-        Interaction, Message, Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection,
-        State, ThemeState,
+        style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings,
+        CatalogColumnState, CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType,
+        ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
+        ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
     },
     crate::VERSION,
     ajour_core::{

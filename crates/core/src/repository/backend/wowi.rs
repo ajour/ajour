@@ -80,7 +80,6 @@ pub(crate) fn addon_url(id: &str) -> String {
     format!("{}{}", ADDON_URL, id)
 }
 
-
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
 pub(crate) async fn fetch_remote_packages(
