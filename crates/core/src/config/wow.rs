@@ -49,14 +49,6 @@ impl Flavor {
         }
     }
 
-    /// Returns flavor `String` in Tukui format
-    pub(crate) fn tukui_format(self) -> String {
-        match self {
-            Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => "retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPTR => "classic".to_owned(),
-        }
-    }
-
     /// Returns `Flavor` which self relates to.
     pub fn base_flavor(self) -> Flavor {
         match self {
