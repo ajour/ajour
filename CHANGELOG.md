@@ -19,6 +19,10 @@ and `Removed`.
 - Ability to retry if a addon fails during either download or unpacking
 - Added a minimum size to Ajour window
 
+### Fixed
+
+- Fixed issue where some Tukui addons wouldn't get matched correctly.
+
 ## [0.5.3] - 2020-11-23
 
 ### Added
