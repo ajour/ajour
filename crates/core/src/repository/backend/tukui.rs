@@ -102,7 +102,6 @@ fn api_endpoint(id: &str, flavor: &Flavor) -> String {
     )
 }
 
-
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
 pub(crate) async fn fetch_remote_package(
