@@ -122,18 +122,23 @@ pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMe
     metadata
 }
 
+/// Returns flavor `String` in Tukui format
+fn format_flavor(flavor: &Flavor) -> String {
+    let base_flavor = flavor.base_flavor();
+    match base_flavor {
+        Flavor::Retail => "retail".to_owned(),
+        Flavor::Classic => "classic".to_owned(),
+        _ => panic!(format!("Unknown base flavor {}", base_flavor)),
+    }
+}
+
 /// Return the tukui API endpoint.
 fn api_endpoint(id: &str, flavor: &Flavor) -> String {
-    match flavor {
-        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
-            "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
-            "-2" => "https://www.tukui.org/api.php?ui=elvui".to_owned(),
-            _ => format!("https://www.tukui.org/api.php?addon={}", id),
-        },
-        Flavor::Classic | Flavor::ClassicPTR => {
-            format!("https://www.tukui.org/api.php?classic-addon={}", id)
-        }
-    }
+    format!(
+        "https://hub.wowup.io/tukui/{}/{}",
+        format_flavor(flavor),
+        id
+    )
 }
 
 fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {

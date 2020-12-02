@@ -21,6 +21,7 @@ and `Removed`.
 
 ### Fixed
 
+- Fixed issue where some Tukui addons wouldn't get matched correctly.
 - Fixed a bug in backup where the zip archive created on Windows didn't open properly
   on Linux and Macos. Fixed by converting Windows `\` path separators to `/` before
   writing to the zip file.
