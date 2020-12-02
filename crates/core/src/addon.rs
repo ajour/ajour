@@ -508,19 +508,6 @@ impl Addon {
             }
         }
     }
-
-    pub async fn get_changelog(
-        &self,
-        is_remote: bool,
-    ) -> Result<(String, String), RepositoryError> {
-        if let Some(repository) = self.repository() {
-            return repository
-                .get_changelog(self.release_channel, is_remote)
-                .await;
-        }
-
-        Err(RepositoryError::AddonNoRepository)
-    }
 }
 
 impl PartialEq for Addon {

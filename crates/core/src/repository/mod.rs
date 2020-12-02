@@ -148,44 +148,6 @@ impl RepositoryPackage {
 
         Ok(())
     }
-
-    /// Get changelog from the repository
-    ///
-    /// `channel` and `is_remote` are only used for the Curse repository since
-    /// we can get unique changelogs for each version
-    pub(crate) async fn get_changelog(
-        &self,
-        channel: ReleaseChannel,
-        is_remote: bool,
-    ) -> Result<(String, String), RepositoryError> {
-        let file_id = if self.kind == RepositoryKind::Curse {
-            if is_remote {
-                self.metadata
-                    .remote_packages
-                    .get(&channel)
-                    .map(|p| p.file_id)
-                    .flatten()
-            } else {
-                self.metadata.file_id
-            }
-        } else {
-            None
-        };
-
-        let tag_name = if self.kind.is_git() {
-            let remote_package = self
-                .metadata
-                .remote_packages
-                .get(&channel)
-                .ok_or(RepositoryError::MissingPackageChannel { channel })?;
-
-            Some(remote_package.version.clone())
-        } else {
-            None
-        };
-
-        self.backend.get_changelog(file_id, tag_name).await
-    }
 }
 
 /// Metadata from one of the repository APIs

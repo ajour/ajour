@@ -37,46 +37,6 @@ impl Backend for Tukui {
 
         Ok(metadata)
     }
-
-    async fn get_changelog(
-        &self,
-        _file_id: Option<i64>,
-        _tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError> {
-        let url = changelog_endpoint(&self.id, &self.flavor);
-
-        match self.flavor {
-            Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPTR => {
-                // Only TukUI and ElvUI main addons has changelog which can be fetched.
-                // The others is embeded into a page.
-                if &self.id == "-1" || &self.id == "-2" {
-                    let client = HttpClient::builder().build().unwrap();
-                    let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
-
-                    if resp.status().is_success() {
-                        let changelog: String = resp.text()?;
-
-                        let c = regex_html_tags_to_newline()
-                            .replace_all(&changelog, "\n")
-                            .to_string();
-                        let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
-                        let c = truncate(&c, 2500).to_string();
-
-                        return Ok((c, url));
-                    }
-
-                    return Ok(("No changelog found".to_string(), url));
-                }
-
-                Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url))
-            }
-            Flavor::Classic | Flavor::ClassicPTR => Ok((
-                "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
-                    .to_string(),
-                url,
-            )),
-        }
-    }
 }
 
 pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMetadata {

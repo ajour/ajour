@@ -37,18 +37,6 @@ impl Backend for WowI {
 
         Ok(metadata)
     }
-
-    async fn get_changelog(
-        &self,
-        _file_id: Option<i64>,
-        _tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError> {
-        Ok((
-            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
-                .to_owned(),
-            changelog_url(&self.id),
-        ))
-    }
 }
 
 pub(crate) fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMetadata {

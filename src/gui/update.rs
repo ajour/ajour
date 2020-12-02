@@ -271,47 +271,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.expanded_type = expand_type.clone();
                     }
                 }
-                ExpandType::Changelog(changelog) => match changelog {
-                    // We request changelog.
-                    Changelog::Request(addon, key) => {
-                        log::debug!(
-                            "Interaction::Expand(Changelog::Request({:?}))",
-                            &addon.primary_folder_id
-                        );
-
-                        // Check if the current expanded_type is showing changelog, and is the same
-                        // addon. If this is the case, we close the details.
-
-                        if let ExpandType::Changelog(Changelog::Some(a, _, k)) =
-                            &ajour.expanded_type
-                        {
-                            if addon.primary_folder_id == a.primary_folder_id && key == k {
-                                ajour.expanded_type = ExpandType::None;
-                                return Ok(Command::none());
-                            }
-                        }
-
-                        ajour.expanded_type =
-                            ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
-                        return Ok(Command::perform(
-                            perform_fetch_changelog(addon.clone(), *key),
-                            Message::FetchedChangelog,
-                        ));
-                    }
-                    Changelog::Loading(a, _) => {
-                        log::debug!(
-                            "Interaction::Expand(Changelog::Loading({:?}))",
-                            &a.primary_folder_id
-                        );
-                        ajour.expanded_type = ExpandType::Changelog(changelog.clone());
-                    }
-                    Changelog::Some(a, _, _) => {
-                        log::debug!(
-                            "Interaction::Expand(Changelog::Some({:?}))",
-                            &a.primary_folder_id
-                        );
-                    }
-                },
+                // TODO (casperstorm): cleanup
+                ExpandType::Changelog(changelog) => {},
                 ExpandType::None => {
                     log::debug!("Interaction::Expand(ExpandType::None)");
                 }
@@ -1565,21 +1526,6 @@ async fn perform_read_addon_directory(
         flavor,
         read_addon_directory(addon_cache, fingerprint_cache, root_dir, flavor).await,
     )
-}
-
-async fn perform_fetch_changelog(
-    addon: Addon,
-    key: AddonVersionKey,
-) -> (
-    Addon,
-    AddonVersionKey,
-    Result<(String, String), RepositoryError>,
-) {
-    let is_remote = key == AddonVersionKey::Remote;
-
-    let result = addon.get_changelog(is_remote).await;
-
-    (addon, key, result)
 }
 
 /// Downloads the newest version of the addon.
