@@ -126,7 +126,7 @@ pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMe
 fn api_endpoint(id: &str, flavor: &Flavor) -> String {
     match flavor {
         Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => format!(
-            "https://hub.dev.wowup.io/tukui/{}/{}",
+            "https://hub.wowup.io/tukui/{}/{}",
             flavor.tukui_format(),
             id
         ),
