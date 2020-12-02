@@ -1,9 +1,9 @@
 use {
     super::{
-        AddonVersionKey, Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
-        CatalogSource, Changelog, ChangelogPayload, ColumnKey, DirectoryType, DownloadReason,
-        ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
-        SelfUpdateStatus, SortDirection, State,
+        Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
+        CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType,
+        InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, SelfUpdateStatus,
+        SortDirection, State,
     },
     crate::{log_error, Result},
     ajour_core::{
@@ -271,8 +271,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.expanded_type = expand_type.clone();
                     }
                 }
-                // TODO (casperstorm): cleanup
-                ExpandType::Changelog(changelog) => {},
                 ExpandType::None => {
                     log::debug!("Interaction::Expand(ExpandType::None)");
                 }
@@ -1329,21 +1327,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             }
                         }
                     }
-                }
-            }
-        }
-        Message::FetchedChangelog((addon, key, result)) => {
-            log::debug!("Message::FetchedChangelog(error: {})", &result.is_err());
-            match result.context("Failed to fetch changelog") {
-                Ok((changelog, url)) => {
-                    let payload = ChangelogPayload { changelog, url };
-                    let changelog = Changelog::Some(addon, payload, key);
-                    ajour.expanded_type = ExpandType::Changelog(changelog);
-                }
-                Err(error) => {
-                    log_error(&error);
-                    ajour.error = Some(error);
-                    ajour.expanded_type = ExpandType::None;
                 }
             }
         }

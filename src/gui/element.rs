@@ -2,18 +2,17 @@
 
 use {
     super::{
-        style, AddonVersionKey, BackupFolderKind, BackupState, CatalogColumnKey,
-        CatalogColumnSettings, CatalogColumnState, CatalogRow, Changelog, ColumnKey,
-        ColumnSettings, ColumnState, DirectoryType, ExpandType, InstallAddon, InstallKind,
-        InstallStatus, Interaction, Message, Mode, ReleaseChannel, ScaleState, SelfUpdateState,
-        SortDirection, State, ThemeState,
+        style, BackupFolderKind, BackupState, CatalogColumnKey,
+        CatalogColumnSettings, CatalogColumnState, CatalogRow, ColumnKey, ColumnSettings,
+        ColumnState, DirectoryType, ExpandType, InstallAddon, InstallKind, InstallStatus,
+        Interaction, Message, Mode, ReleaseChannel, ScaleState, SelfUpdateState, SortDirection,
+        State, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
         addon::{Addon, AddonState},
         catalog::Catalog,
         config::{Config, Flavor},
-        repository::RepositoryKind,
         theme::ColorPalette,
         utility::Release,
     },
@@ -786,59 +785,12 @@ pub fn addon_data_cell<'a, 'b>(
         .next()
     {
         let installed_version = Text::new(version).size(DEFAULT_FONT_SIZE);
-        let mut local_version_button = Button::new(&mut addon.local_btn_state, installed_version)
-            .style(style::BrightTextButton(color_palette));
 
-        if addon_cloned.repository_kind() == Some(RepositoryKind::Curse)
-            && addon_cloned.file_id().is_some()
-        {
-            local_version_button =
-                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
-                )));
-        }
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::Tukui)
-            && addon_cloned.repository_id().is_some()
-        {
-            local_version_button =
-                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
-                )));
-        }
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
-            local_version_button =
-                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
-                )));
-        }
-
-        // Lets check if addon is expanded, in changelog mode and local is shown.
-        if is_addon_expanded {
-            if let ExpandType::Changelog(Changelog::Some(_, _, k)) = expand_type {
-                if k == &AddonVersionKey::Local {
-                    local_version_button =
-                        local_version_button.style(style::SelectedBrightTextButton(color_palette));
-                }
-            }
-
-            if let ExpandType::Changelog(Changelog::Loading(_, k)) = expand_type {
-                if k == &AddonVersionKey::Local {
-                    local_version_button =
-                        local_version_button.style(style::SelectedBrightTextButton(color_palette));
-                }
-            }
-        }
-
-        let local_version_button: Element<Interaction> = local_version_button.into();
-
-        let installed_version_container =
-            Container::new(local_version_button.map(Message::Interaction))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .style(style::NormalForegroundContainer(color_palette));
+        let installed_version_container = Container::new(installed_version)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, installed_version_container));
     }
@@ -855,66 +807,11 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let mut remote_version_button = Button::new(&mut addon.remote_btn_state, remote_version)
-            .style(style::BrightTextButton(color_palette));
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::Curse) {
-            if let Some(package) = addon_cloned.relevant_release_package() {
-                if package.file_id.is_some() {
-                    remote_version_button =
-                        remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                            Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
-                        )));
-                }
-            }
-        }
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::Tukui)
-            && addon_cloned.repository_id().is_some()
-        {
-            remote_version_button =
-                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
-                )));
-        }
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
-            remote_version_button =
-                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
-                )));
-        }
-
-        if matches!(addon_cloned.repository_kind(), Some(RepositoryKind::Git(_))) {
-            remote_version_button = remote_version_button.on_press(Interaction::Expand(
-                ExpandType::Changelog(Changelog::Request(addon_cloned, AddonVersionKey::Remote)),
-            ));
-        }
-
-        // Lets check if addon is expanded, in changelog mode and remote is shown.
-        if is_addon_expanded {
-            if let ExpandType::Changelog(Changelog::Some(_, _, k)) = expand_type {
-                if k == &AddonVersionKey::Remote {
-                    remote_version_button =
-                        remote_version_button.style(style::SelectedBrightTextButton(color_palette));
-                }
-            }
-
-            if let ExpandType::Changelog(Changelog::Loading(_, k)) = expand_type {
-                if k == &AddonVersionKey::Remote {
-                    remote_version_button =
-                        remote_version_button.style(style::SelectedBrightTextButton(color_palette));
-                }
-            }
-        }
-
-        let remote_version_button: Element<Interaction> = remote_version_button.into();
-        let remote_version_container =
-            Container::new(remote_version_button.map(Message::Interaction))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .style(style::NormalForegroundContainer(color_palette));
+        let remote_version_container = Container::new(remote_version)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .style(style::NormalForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -1170,61 +1067,6 @@ pub fn addon_data_cell<'a, 'b>(
 
     if is_addon_expanded {
         match expand_type {
-            ExpandType::Changelog(changelog) => {
-                let changelog_text = match changelog {
-                    Changelog::Some(_, payload, _) => &payload.changelog,
-                    _ => "Loading...",
-                };
-
-                let changelog_title_text = Text::new("Changelog").size(DEFAULT_FONT_SIZE);
-                let changelog_title_container = Container::new(changelog_title_text)
-                    .style(style::BrightForegroundContainer(color_palette));
-
-                let mut full_changelog_button = Button::new(
-                    &mut addon.full_changelog_btn_state,
-                    Text::new("Full Changelog").size(DEFAULT_FONT_SIZE),
-                )
-                .style(style::DefaultButton(color_palette));
-
-                if let ExpandType::Changelog(Changelog::Some(_, p, _)) = expand_type {
-                    full_changelog_button =
-                        full_changelog_button.on_press(Interaction::OpenLink(p.url.clone()));
-                }
-
-                let full_changelog_button: Element<Interaction> = full_changelog_button.into();
-
-                let mut button_row =
-                    Row::new().push(Space::new(Length::FillPortion(1), Length::Units(0)));
-
-                if matches!(changelog, Changelog::Some(_, _, _)) {
-                    button_row = button_row.push(full_changelog_button.map(Message::Interaction));
-                }
-
-                let column = Column::new()
-                    .push(changelog_title_container)
-                    .push(Space::new(Length::Units(0), Length::Units(12)))
-                    .push(Text::new(changelog_text).size(DEFAULT_FONT_SIZE))
-                    .push(Space::new(Length::Units(0), Length::Units(8)))
-                    .push(button_row)
-                    .push(Space::new(Length::Units(0), Length::Units(4)));
-                let details_container = Container::new(column)
-                    .width(Length::Fill)
-                    .padding(20)
-                    .style(style::FadedNormalForegroundContainer(color_palette));
-
-                let row = Row::new()
-                    .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-                    .push(details_container)
-                    .push(Space::new(
-                        Length::Units(DEFAULT_PADDING + 5),
-                        Length::Units(0),
-                    ))
-                    .spacing(1);
-
-                addon_column = addon_column
-                    .push(Space::new(Length::FillPortion(1), Length::Units(1)))
-                    .push(row);
-            }
             ExpandType::Details(_) => {
                 let notes = notes.unwrap_or_else(|| "No description for addon.".to_string());
                 let author = author.unwrap_or_else(|| "-".to_string());

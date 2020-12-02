@@ -3,7 +3,6 @@ use crate::config::Flavor;
 use crate::error::{DownloadError, RepositoryError};
 use crate::network::request_async;
 use crate::repository::{ReleaseChannel, RemotePackage};
-use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, TimeZone, Utc};
@@ -103,19 +102,6 @@ fn api_endpoint(id: &str, flavor: &Flavor) -> String {
     )
 }
 
-fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
-    match flavor {
-        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
-            "-1" => "https://www.tukui.org/ui/tukui/changelog".to_owned(),
-            "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
-            _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
-        },
-        Flavor::Classic | Flavor::ClassicPTR => format!(
-            "https://www.tukui.org/classic-addons.php?id={}&changelog",
-            id
-        ),
-    }
-}
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.

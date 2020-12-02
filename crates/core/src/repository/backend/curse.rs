@@ -1,9 +1,8 @@
 use super::*;
 use crate::config::Flavor;
 use crate::error::DownloadError;
-use crate::network::{post_json_async, request_async};
+use crate::network::post_json_async;
 use crate::repository::{ReleaseChannel, RemotePackage};
-use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -44,7 +43,6 @@ impl Backend for Curse {
 
         Ok(metadata)
     }
-
 }
 
 pub(crate) fn metadata_from_curse_package(flavor: Flavor, package: Package) -> RepositoryMetadata {

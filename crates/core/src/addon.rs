@@ -1,5 +1,5 @@
 use crate::{
-    error::{ParseError, RepositoryError},
+    error::ParseError,
     repository::{
         ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
         RepositoryPackage,
@@ -124,12 +124,6 @@ pub struct Addon {
     #[cfg(feature = "gui")]
     pub details_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
-    pub remote_btn_state: iced_native::button::State,
-    #[cfg(feature = "gui")]
-    pub local_btn_state: iced_native::button::State,
-    #[cfg(feature = "gui")]
-    pub full_changelog_btn_state: iced_native::button::State,
-    #[cfg(feature = "gui")]
     pub update_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
     pub force_btn_state: iced_native::button::State,
@@ -158,12 +152,6 @@ impl Addon {
 
             #[cfg(feature = "gui")]
             details_btn_state: Default::default(),
-            #[cfg(feature = "gui")]
-            remote_btn_state: Default::default(),
-            #[cfg(feature = "gui")]
-            local_btn_state: Default::default(),
-            #[cfg(feature = "gui")]
-            full_changelog_btn_state: Default::default(),
             #[cfg(feature = "gui")]
             update_btn_state: Default::default(),
             #[cfg(feature = "gui")]

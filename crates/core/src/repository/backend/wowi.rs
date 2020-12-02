@@ -80,10 +80,6 @@ pub(crate) fn addon_url(id: &str) -> String {
     format!("{}{}", ADDON_URL, id)
 }
 
-/// Returns changelog url for addon.
-pub(crate) fn changelog_url(id: &str) -> String {
-    format!("{}{}/#changelog", ADDON_URL, id)
-}
 
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
