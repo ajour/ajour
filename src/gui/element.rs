@@ -767,7 +767,7 @@ pub fn addon_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::BrightForegroundContainer(color_palette));
+            .style(style::HoverableBrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
@@ -837,7 +837,7 @@ pub fn addon_data_cell<'a, 'b>(
                 .height(default_height)
                 .width(*width)
                 .center_y()
-                .style(style::NormalForegroundContainer(color_palette));
+                .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, installed_version_container));
     }
@@ -913,7 +913,7 @@ pub fn addon_data_cell<'a, 'b>(
                 .height(default_height)
                 .width(*width)
                 .center_y()
-                .style(style::NormalForegroundContainer(color_palette));
+                .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -936,7 +936,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, channel_container));
     }
@@ -959,7 +959,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, author_container));
     }
@@ -983,7 +983,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -1018,7 +1018,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -1043,7 +1043,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
     }
@@ -1066,14 +1066,14 @@ pub fn addon_data_cell<'a, 'b>(
                 .width(*width)
                 .center_y()
                 .center_x()
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Completed => {
                 Container::new(Text::new("Completed".to_string()).size(DEFAULT_FONT_SIZE))
                     .height(default_height)
                     .width(*width)
                     .center_y()
                     .center_x()
-                    .style(style::NormalForegroundContainer(color_palette))
+                    .style(style::HoverableForegroundContainer(color_palette))
             }
             AddonState::Error(message) => {
                 Container::new(Text::new(message).size(DEFAULT_FONT_SIZE))
@@ -1081,7 +1081,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .width(*width)
                     .center_y()
                     .center_x()
-                    .style(style::NormalForegroundContainer(color_palette))
+                    .style(style::HoverableForegroundContainer(color_palette))
             }
             AddonState::Updatable | AddonState::Retry => {
                 let id = addon.primary_folder_id.clone();
@@ -1108,7 +1108,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .width(*width)
                     .center_y()
                     .center_x()
-                    .style(style::BrightForegroundContainer(color_palette))
+                    .style(style::HoverableBrightForegroundContainer(color_palette))
             }
             AddonState::Downloading => {
                 Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
@@ -1117,7 +1117,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .center_y()
                     .center_x()
                     .padding(5)
-                    .style(style::NormalForegroundContainer(color_palette))
+                    .style(style::HoverableForegroundContainer(color_palette))
             }
             AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
@@ -1125,28 +1125,28 @@ pub fn addon_data_cell<'a, 'b>(
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Unknown => Container::new(Text::new("").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
         };
 
         row_containers.push((idx, update_button_container));
@@ -1177,7 +1177,7 @@ pub fn addon_data_cell<'a, 'b>(
 
                 let changelog_title_text = Text::new("Changelog").size(DEFAULT_FONT_SIZE);
                 let changelog_title_container = Container::new(changelog_title_text)
-                    .style(style::BrightForegroundContainer(color_palette));
+                    .style(style::HoverableBrightForegroundContainer(color_palette));
 
                 let mut full_changelog_button = Button::new(
                     &mut addon.full_changelog_btn_state,
@@ -1863,7 +1863,7 @@ pub fn menu_container<'a>(
     let version_container = Container::new(version_text)
         .center_y()
         .padding(5)
-        .style(style::NormalForegroundContainer(color_palette));
+        .style(style::HoverableForegroundContainer(color_palette));
 
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
@@ -1921,7 +1921,7 @@ pub fn menu_container<'a>(
     let settings_column = Column::new().push(settings_row);
 
     // Wraps it in a container.
-    Container::new(settings_column).style(style::BrightForegroundContainer(color_palette))
+    Container::new(settings_column).style(style::HoverableBrightForegroundContainer(color_palette))
 }
 
 pub fn status_container<'a>(
@@ -2124,7 +2124,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::BrightForegroundContainer(color_palette));
+            .style(style::HoverableBrightForegroundContainer(color_palette));
 
         row_containers.push((idx, install_container));
     }
@@ -2151,7 +2151,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::BrightForegroundContainer(color_palette));
+            .style(style::HoverableBrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
@@ -2182,7 +2182,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, description_container));
     }
@@ -2206,7 +2206,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .center_y()
             .center_x()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
     }
@@ -2236,7 +2236,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -2266,7 +2266,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -2294,7 +2294,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, num_downloads_container));
     }

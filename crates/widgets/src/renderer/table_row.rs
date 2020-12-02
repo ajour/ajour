@@ -33,7 +33,7 @@ where
             content.draw(self, &defaults, content_layout, cursor_position, viewport);
 
         (
-            if is_mouse_over && (style.background.is_some() || style.border_width > 0.0) {
+            if style.background.is_some() {
                 let background = Primitive::Quad {
                     bounds: Rectangle {
                         x: bounds.x + style.offset_left as f32,

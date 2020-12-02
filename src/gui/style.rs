@@ -24,6 +24,28 @@ impl container::StyleSheet for NormalForegroundContainer {
     }
 }
 
+pub struct HoverableBrightForegroundContainer(pub ColorPalette);
+impl container::StyleSheet for HoverableBrightForegroundContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: None,
+            text_color: Some(self.0.bright.surface),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct HoverableForegroundContainer(pub ColorPalette);
+impl container::StyleSheet for HoverableForegroundContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: None,
+            text_color: Some(self.0.normal.surface),
+            ..container::Style::default()
+        }
+    }
+}
+
 pub struct FadedNormalForegroundContainer(pub ColorPalette);
 impl container::StyleSheet for FadedNormalForegroundContainer {
     fn style(&self) -> container::Style {
@@ -427,12 +449,12 @@ impl table_row::StyleSheet for TableRow {
     fn style(&self) -> table_row::Style {
         table_row::Style {
             text_color: None,
-            background: None,
+            background: Some(Background::Color(self.0.base.foreground)),
             border_radius: 0.0,
             border_width: 0.0,
             border_color: Color::TRANSPARENT,
-            offset_left: 0.0,
-            offset_right: 0.0,
+            offset_left: 10.0,
+            offset_right: 25.0,
         }
     }
     fn hovered(&self) -> table_row::Style {
@@ -442,13 +464,6 @@ impl table_row::StyleSheet for TableRow {
                 a: 0.15,
                 ..self.0.normal.primary
             })),
-            offset_left: 10.0,
-            offset_right: 25.0,
-            border_width: 1.0,
-            border_color: Color {
-                a: 0.60,
-                ..self.0.normal.primary
-            },
             ..style
         }
     }

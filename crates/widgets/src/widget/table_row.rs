@@ -32,7 +32,7 @@ where
         T: Into<Element<'a, Message, Renderer>>,
     {
         TableRow {
-            padding: 1,
+            padding: 0,
             width: Length::Shrink,
             height: Length::Shrink,
             max_width: u32::MAX,
