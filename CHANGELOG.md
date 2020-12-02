@@ -19,6 +19,12 @@ and `Removed`.
 - Ability to retry if a addon fails during either download or unpacking
 - Added a minimum size to Ajour window
 
+### Changed
+
+- A new Changelog button is now found when you expand a addon.
+  The old Changelog system has been removed which means you can no longer
+  press either local or remote version.
+
 ### Fixed
 
 - Fixed issue where some Tukui addons wouldn't get matched correctly.

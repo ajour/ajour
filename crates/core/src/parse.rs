@@ -481,7 +481,8 @@ async fn get_all_repo_packages(
                 let package = curse_packages.remove(idx);
 
                 r.metadata.title = Some(package.name.clone());
-                r.metadata.website_url = Some(package.website_url);
+                r.metadata.website_url = Some(package.website_url.clone());
+                r.metadata.changelog_url = Some(format!("{}/files", package.website_url));
             }
         });
 

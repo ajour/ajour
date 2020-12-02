@@ -5,7 +5,7 @@ mod update;
 use crate::cli::Opts;
 use crate::Result;
 use ajour_core::{
-    addon::{Addon, AddonFolder, AddonState, AddonVersionKey},
+    addon::{Addon, AddonFolder, AddonState},
     cache::{
         load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
     },
@@ -146,13 +146,6 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime, FilesystemError>),
     CatalogDownloaded(Result<Catalog, DownloadError>),
     InstallAddonFetched((Flavor, String, Result<Addon, RepositoryError>)),
-    FetchedChangelog(
-        (
-            Addon,
-            AddonVersionKey,
-            Result<(String, String), RepositoryError>,
-        ),
-    ),
     AjourUpdateDownloaded(Result<(String, PathBuf), DownloadError>),
     AddonCacheUpdated(Result<AddonCacheEntry, CacheError>),
     AddonCacheEntryRemoved(Result<Option<AddonCacheEntry>, CacheError>),
@@ -411,17 +404,6 @@ impl Application for Ajour {
                     // Checks if the current addon is expanded.
                     let is_addon_expanded = match &self.expanded_type {
                         ExpandType::Details(a) => a.primary_folder_id == addon.primary_folder_id,
-                        ExpandType::Changelog(c) => match c {
-                            Changelog::Request(a, _) => {
-                                a.primary_folder_id == addon.primary_folder_id
-                            }
-                            Changelog::Loading(a, _) => {
-                                a.primary_folder_id == addon.primary_folder_id
-                            }
-                            Changelog::Some(a, _, _) => {
-                                a.primary_folder_id == addon.primary_folder_id
-                            }
-                        },
                         ExpandType::None => false,
                     };
 
@@ -893,22 +875,8 @@ impl Default for InstallFromSCMState {
 }
 
 #[derive(Debug, Clone)]
-pub struct ChangelogPayload {
-    changelog: String,
-    url: String,
-}
-
-#[derive(Debug, Clone)]
-pub enum Changelog {
-    Request(Addon, AddonVersionKey),
-    Loading(Addon, AddonVersionKey),
-    Some(Addon, ChangelogPayload, AddonVersionKey),
-}
-
-#[derive(Debug, Clone)]
 pub enum ExpandType {
     Details(Addon),
-    Changelog(Changelog),
     None,
 }
 

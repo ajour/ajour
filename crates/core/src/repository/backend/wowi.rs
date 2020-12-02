@@ -37,18 +37,6 @@ impl Backend for WowI {
 
         Ok(metadata)
     }
-
-    async fn get_changelog(
-        &self,
-        _file_id: Option<i64>,
-        _tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError> {
-        Ok((
-            "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
-                .to_owned(),
-            changelog_url(&self.id),
-        ))
-    }
 }
 
 pub(crate) fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMetadata {
@@ -75,7 +63,8 @@ pub(crate) fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMeta
     metadata.remote_packages = remote_packages;
 
     let website_url = addon_url(&package.id.to_string());
-    metadata.website_url = Some(website_url);
+    metadata.website_url = Some(website_url.clone());
+    metadata.changelog_url = Some(format!("{}/#changelog", website_url));
     metadata.title = Some(package.title);
 
     metadata
@@ -89,11 +78,6 @@ fn api_endpoint(ids: &str) -> String {
 /// Returns the addon website url.
 pub(crate) fn addon_url(id: &str) -> String {
     format!("{}{}", ADDON_URL, id)
-}
-
-/// Returns changelog url for addon.
-pub(crate) fn changelog_url(id: &str) -> String {
-    format!("{}{}/#changelog", ADDON_URL, id)
 }
 
 /// Function to fetch a remote addon package which contains

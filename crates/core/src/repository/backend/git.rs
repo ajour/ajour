@@ -97,7 +97,7 @@ mod github {
 
             let mut remote_packages = HashMap::new();
             let remote_package = RemotePackage {
-                version,
+                version: version.clone(),
                 download_url,
                 date_time,
                 file_id: None,
@@ -108,46 +108,13 @@ mod github {
 
             let metadata = RepositoryMetadata {
                 website_url: Some(self.url.to_string()),
+                changelog_url: Some(format!("{}/releases/tag/{}", self.url, version)),
                 remote_packages,
                 title: Some(repo.to_string()),
                 ..Default::default()
             };
 
             Ok(metadata)
-        }
-
-        async fn get_changelog(
-            &self,
-            _file_id: Option<i64>,
-            tag_name: Option<String>,
-        ) -> Result<(String, String), RepositoryError> {
-            let tag_name = tag_name.ok_or(RepositoryError::GitChangelogTagName)?;
-
-            let client = HttpClient::new()?;
-
-            let mut path = self.url.path().split('/');
-            // Get rid of leading slash
-            path.next();
-
-            let author = path.next().ok_or(RepositoryError::GitMissingAuthor {
-                url: self.url.to_string(),
-            })?;
-            let repo = path.next().ok_or(RepositoryError::GitMissingRepo {
-                url: self.url.to_string(),
-            })?;
-
-            let url = format!(
-                "https://api.github.com/repos/{}/{}/releases/tags/{}",
-                author, repo, tag_name
-            );
-
-            let mut resp = request_async(&client, &url, vec![], None).await?;
-
-            let release: Release = resp
-                .json()
-                .map_err(|_| RepositoryError::GitMissingRelease { url })?;
-
-            Ok((release.body, release.html_url))
         }
     }
 
@@ -271,7 +238,7 @@ mod gitlab {
 
             let mut remote_packages = HashMap::new();
             let remote_package = RemotePackage {
-                version,
+                version: version.clone(),
                 download_url,
                 date_time,
                 file_id: None,
@@ -282,48 +249,13 @@ mod gitlab {
 
             let metadata = RepositoryMetadata {
                 website_url: Some(self.url.to_string()),
+                changelog_url: Some(format!("{}/-/tags/{}", self.url, version)),
                 remote_packages,
                 title: Some(repo.to_string()),
                 ..Default::default()
             };
 
             Ok(metadata)
-        }
-
-        async fn get_changelog(
-            &self,
-            _file_id: Option<i64>,
-            tag_name: Option<String>,
-        ) -> Result<(String, String), RepositoryError> {
-            let tag_name = tag_name.ok_or(RepositoryError::GitChangelogTagName)?;
-
-            let client = HttpClient::new()?;
-
-            let mut path = self.url.path().split('/');
-            // Get rid of leading slash
-            path.next();
-
-            let author = path.next().ok_or(RepositoryError::GitMissingAuthor {
-                url: self.url.to_string(),
-            })?;
-            let repo = path.next().ok_or(RepositoryError::GitMissingRepo {
-                url: self.url.to_string(),
-            })?;
-
-            let url = format!(
-                "https://gitlab.com/api/v4/projects/{}%2F{}/releases/{}",
-                author, repo, tag_name
-            );
-
-            let mut resp = request_async(&client, &url, vec![], None).await?;
-
-            let release: Release = resp
-                .json()
-                .map_err(|_| RepositoryError::GitMissingRelease { url })?;
-
-            let release_url = format!("https://gitlab.com{}", &release.tag_path);
-
-            Ok((release.description, release_url))
         }
     }
 

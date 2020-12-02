@@ -1,9 +1,8 @@
 use super::*;
 use crate::config::Flavor;
 use crate::error::DownloadError;
-use crate::network::{post_json_async, request_async};
+use crate::network::post_json_async;
 use crate::repository::{ReleaseChannel, RemotePackage};
-use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -43,35 +42,6 @@ impl Backend for Curse {
         let metadata = metadata_from_curse_package(self.flavor, package);
 
         Ok(metadata)
-    }
-
-    async fn get_changelog(
-        &self,
-        file_id: Option<i64>,
-        _tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError> {
-        let file_id = file_id.ok_or(RepositoryError::CurseChangelogFileId)?;
-
-        let url = format!(
-            "{}/addon/{}/file/{}/changelog",
-            API_ENDPOINT, self.id, file_id
-        );
-        let client = HttpClient::builder().build().unwrap();
-        let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
-
-        if resp.status().is_success() {
-            let changelog: String = resp.text()?;
-
-            let c = regex_html_tags_to_newline()
-                .replace_all(&changelog, "\n")
-                .to_string();
-            let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
-            let c = truncate(&c, 2500).to_string();
-
-            return Ok((c, url));
-        }
-
-        Ok(("No changelog found.".to_owned(), url))
     }
 }
 
@@ -114,7 +84,8 @@ pub(crate) fn metadata_from_curse_package(flavor: Flavor, package: Package) -> R
     let mut metadata = RepositoryMetadata::empty();
     metadata.remote_packages = remote_packages;
     metadata.title = Some(package.name.clone());
-    metadata.website_url = Some(package.website_url);
+    metadata.website_url = Some(package.website_url.clone());
+    metadata.changelog_url = Some(format!("{}/files", package.website_url));
 
     metadata
 }
