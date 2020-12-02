@@ -785,6 +785,7 @@ pub fn addon_data_cell<'a, 'b>(
         let installed_version = Text::new(version).size(DEFAULT_FONT_SIZE);
 
         let installed_version_container = Container::new(installed_version)
+            .padding(5)
             .height(default_height)
             .width(*width)
             .center_y()
@@ -806,6 +807,7 @@ pub fn addon_data_cell<'a, 'b>(
         .next()
     {
         let remote_version_container = Container::new(remote_version)
+            .padding(5)
             .height(default_height)
             .width(*width)
             .center_y()
