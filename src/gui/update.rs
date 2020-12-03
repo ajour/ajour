@@ -1456,6 +1456,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log_error(&error);
             ajour.error = Some(error);
         }
+        Message::Interaction(Interaction::PickSelfUpdateChannel(channel)) => {
+            log::debug!("Interaction::PickSelfUpdateChannel({:?})", channel);
+
+            ajour.config.self_update_channel = channel;
+
+            let _ = ajour.config.save();
+        }
         Message::Error(error) => {
             log_error(&error);
             ajour.error = Some(error);

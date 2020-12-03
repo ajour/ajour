@@ -11,7 +11,7 @@ use ajour_core::{
     },
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
-    config::{ColumnConfig, ColumnConfigV2, Config, Flavor},
+    config::{ColumnConfig, ColumnConfigV2, Config, Flavor, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
     repository::ReleaseChannel,
@@ -114,6 +114,7 @@ pub enum Interaction {
     CatalogSourceSelected(CatalogSource),
     UpdateAjour,
     ToggleBackupFolder(bool, BackupFolderKind),
+    PickSelfUpdateChannel(SelfUpdateChannel),
 }
 
 #[derive(Debug)]
@@ -197,6 +198,7 @@ pub struct Ajour {
     patreon_btn_state: button::State,
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
+    self_update_channel_state: SelfUpdateChannelState,
 }
 
 impl Default for Ajour {
@@ -252,6 +254,10 @@ impl Default for Ajour {
             patreon_btn_state: Default::default(),
             open_config_dir_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
+            self_update_channel_state: SelfUpdateChannelState {
+                picklist: Default::default(),
+                options: SelfUpdateChannel::all(),
+            },
         }
     }
 }
@@ -737,6 +743,7 @@ impl Application for Ajour {
                     &mut self.catalog_column_settings,
                     &catalog_column_config,
                     &mut self.open_config_dir_btn_state,
+                    &mut self.self_update_channel_state,
                 );
 
                 content = content.push(settings_container)
@@ -1644,6 +1651,12 @@ pub struct SelfUpdateState {
     latest_release: Option<utility::Release>,
     status: Option<SelfUpdateStatus>,
     btn_state: button::State,
+}
+
+#[derive(Debug)]
+pub struct SelfUpdateChannelState {
+    picklist: pick_list::State<SelfUpdateChannel>,
+    options: [SelfUpdateChannel; 2],
 }
 
 async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {

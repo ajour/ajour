@@ -5,7 +5,8 @@ use {
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings,
         CatalogColumnState, CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType,
         ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
-        ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
+        ReleaseChannel, ScaleState, SelfUpdateChannelState, SelfUpdateState, SortDirection, State,
+        ThemeState,
     },
     crate::VERSION,
     ajour_core::{
@@ -124,6 +125,7 @@ pub fn settings_container<'a, 'b>(
     catalog_column_settings: &'a mut CatalogColumnSettings,
     catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
     open_config_dir_button_state: &'a mut button::State,
+    self_update_channel_state: &'a mut SelfUpdateChannelState,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -459,6 +461,24 @@ pub fn settings_container<'a, 'b>(
         .push(scale_column)
         .spacing(DEFAULT_PADDING);
 
+    let channel_title = Container::new(Text::new("Self Update Channel").size(DEFAULT_FONT_SIZE))
+        .style(style::BrightBackgroundContainer(color_palette));
+    let channel_picklist: Element<_> = PickList::new(
+        &mut self_update_channel_state.picklist,
+        &self_update_channel_state.options[..],
+        Some(config.self_update_channel),
+        Interaction::PickSelfUpdateChannel,
+    )
+    .text_size(14)
+    .width(Length::Fill)
+    .style(style::SecondaryPickList(color_palette))
+    .into();
+
+    let channel_container = Container::new(channel_picklist.map(Message::Interaction))
+        .center_y()
+        .width(Length::Units(80))
+        .style(style::NormalForegroundContainer(color_palette));
+
     scrollable = scrollable
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(backup_title_row)
@@ -466,6 +486,10 @@ pub fn settings_container<'a, 'b>(
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row)
+        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(channel_title)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(channel_container)
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(addon_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))

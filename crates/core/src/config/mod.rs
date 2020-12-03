@@ -1,6 +1,7 @@
 use crate::error::FilesystemError;
 use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
+use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
 mod addons;
@@ -168,15 +169,32 @@ impl Default for ColumnConfig {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SelfUpdateChannel {
     Release,
     PreRelease,
 }
 
+impl SelfUpdateChannel {
+    pub const fn all() -> [Self; 2] {
+        [SelfUpdateChannel::Release, SelfUpdateChannel::PreRelease]
+    }
+}
+
 impl Default for SelfUpdateChannel {
     fn default() -> Self {
         SelfUpdateChannel::Release
+    }
+}
+
+impl Display for SelfUpdateChannel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            SelfUpdateChannel::Release => "Stable",
+            SelfUpdateChannel::PreRelease => "Beta",
+        };
+
+        write!(f, "{}", s)
     }
 }
 
