@@ -9,7 +9,7 @@ repository = "https://github.com/casperstorm/ajour"
 edition = "2018"
 
 [features]
-default = ["wgpu"]
+default = []
 wgpu = ["iced_wgpu"]
 opengl = ["iced_glow"]
 
