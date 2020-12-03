@@ -23,7 +23,7 @@ name = "parse_toc"
 [dependencies]
 regex = "1.4.1"
 fancy-regex = "0.4.0" # Regex with backtracking
-async-std = "1.6.2"
+async-std = { version = "1.6.2", features = ["unstable"] }
 dirs-next = "2.0.0"
 serde = { version = "1.0.114", features=['derive'] }
 serde_yaml = "0.8.13"
