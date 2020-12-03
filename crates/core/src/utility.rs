@@ -59,8 +59,10 @@ pub async fn get_latest_release(channel: SelfUpdateChannel) -> Option<Release> {
 
     releases.into_iter().find(|r| {
         if channel == SelfUpdateChannel::PreRelease {
-            r.prerelease
+            // If prerelease, always want latest release
+            true
         } else {
+            // Otherwise ONLY non-prereleases
             !r.prerelease
         }
     })
