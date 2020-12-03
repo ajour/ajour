@@ -1347,16 +1347,26 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Message::AjourUpdateDownloaded");
 
             match result.context("Failed to update Ajour") {
-                Ok((current_bin_name, temp_bin_path)) => {
+                Ok((relaunch_path, cleanup_path)) => {
                     // Remove first arg, which is path to binary. We don't use this first
                     // arg as binary path because it's not reliable, per the docs.
                     let mut args = std::env::args();
                     args.next();
+                    let mut args: Vec<_> = args.collect();
 
-                    match std::process::Command::new(&temp_bin_path)
+                    // Remove the `--self-update-temp` arg from args if it exists,
+                    // since we need to pass it cleanly. Otherwise new process will
+                    // fail during arg parsing.
+                    if let Some(idx) = args.iter().position(|a| a == "--self-update-temp") {
+                        args.remove(idx);
+                        // Remove path passed after this arg
+                        args.remove(idx);
+                    }
+
+                    match std::process::Command::new(&relaunch_path)
                         .args(args)
                         .arg("--self-update-temp")
-                        .arg(&current_bin_name)
+                        .arg(&cleanup_path)
                         .spawn()
                         .context("Failed to update Ajour")
                     {

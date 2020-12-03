@@ -147,7 +147,7 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime, FilesystemError>),
     CatalogDownloaded(Result<Catalog, DownloadError>),
     InstallAddonFetched((Flavor, String, Result<Addon, RepositoryError>)),
-    AjourUpdateDownloaded(Result<(String, PathBuf), DownloadError>),
+    AjourUpdateDownloaded(Result<(PathBuf, PathBuf), DownloadError>),
     AddonCacheUpdated(Result<AddonCacheEntry, CacheError>),
     AddonCacheEntryRemoved(Result<Option<AddonCacheEntry>, CacheError>),
     RefreshCatalog(Instant),

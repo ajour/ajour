@@ -77,7 +77,7 @@ pub struct Opts {
     #[structopt(subcommand)]
     pub command: Option<Command>,
     #[structopt(long, hidden = true)]
-    pub self_update_temp: Option<String>,
+    pub self_update_temp: Option<PathBuf>,
 }
 
 #[derive(Debug, StructOpt)]
