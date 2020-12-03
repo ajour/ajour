@@ -1,6 +1,6 @@
 [package]
 name = "ajour-widgets"
-version = "0.1.0"
+version = "0.5.4-rc.1"
 authors = ["tarkah <admin@tarkah.dev>"]
 edition = "2018"
 
