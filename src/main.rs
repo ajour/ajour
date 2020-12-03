@@ -10,8 +10,6 @@ mod gui;
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::utility::remove_file;
 
-#[cfg(target_os = "linux")]
-use anyhow::Context;
 use std::env;
 use std::path::PathBuf;
 
