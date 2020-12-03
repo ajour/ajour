@@ -76,7 +76,7 @@ For everyone else, a detailed instruction can be found [here](https://github.com
 
 ### Cargo
 
-```
+```sh
 cargo install ajour
 ```
 
