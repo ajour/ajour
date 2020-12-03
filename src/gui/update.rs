@@ -1468,6 +1468,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::LatestRelease,
             ));
         }
+        Message::CheckLatestRelease(_) => {
+            log::debug!("Message::CheckLatestRelease");
+
+            return Ok(Command::perform(
+                get_latest_release(ajour.config.self_update_channel),
+                Message::LatestRelease,
+            ));
+        }
         Message::Error(error) => {
             log_error(&error);
             ajour.error = Some(error);

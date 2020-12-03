@@ -151,6 +151,7 @@ pub enum Message {
     AddonCacheUpdated(Result<AddonCacheEntry, CacheError>),
     AddonCacheEntryRemoved(Result<Option<AddonCacheEntry>, CacheError>),
     RefreshCatalog(Instant),
+    CheckLatestRelease(Instant),
 }
 
 pub struct Ajour {
@@ -297,8 +298,14 @@ impl Application for Ajour {
         let runtime_subscription = iced_native::subscription::events().map(Message::RuntimeEvent);
         let catalog_subscription =
             iced_futures::time::every(Duration::from_secs(60 * 5)).map(Message::RefreshCatalog);
+        let new_release_subscription = iced_futures::time::every(Duration::from_secs(60 * 60))
+            .map(Message::CheckLatestRelease);
 
-        iced::Subscription::batch(vec![runtime_subscription, catalog_subscription])
+        iced::Subscription::batch(vec![
+            runtime_subscription,
+            catalog_subscription,
+            new_release_subscription,
+        ])
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
