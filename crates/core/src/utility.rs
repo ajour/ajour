@@ -87,6 +87,12 @@ pub async fn download_update_to_temp_file(
         .unwrap()
         .to_str()
         .unwrap()
+        // Trim `temp_` from the `current_exe` path in case this self update process
+        // is running inside an instance of Ajour that was itself self updated. This
+        // is because the binary is originally launched as `temp_X` and then renamed
+        // to the main binary name, but the `current_exe` function will still return
+        // the original path it was launched at.
+        .trim_start_matches("temp_")
         .to_owned();
 
     let new_bin_path = current_bin_path
