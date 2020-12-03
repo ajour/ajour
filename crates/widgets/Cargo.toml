@@ -5,6 +5,7 @@ authors = ["tarkah <admin@tarkah.dev>"]
 edition = "2018"
 
 [features]
+default = ["wgpu"]
 wgpu = ["iced_wgpu"]
 opengl = ["iced_glow"]
 

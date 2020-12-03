@@ -9,6 +9,7 @@ repository = "https://github.com/casperstorm/ajour"
 edition = "2018"
 
 [features]
+default = []
 gui = ['iced_native']
 
 [[bin]]
