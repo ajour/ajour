@@ -47,6 +47,8 @@ pub enum DownloadError {
     MissingSelfUpdateRelease { bin_name: String },
     #[error("Catalog failed to download")]
     CatalogFailed,
+    #[error("Self update for linux only works from AppImage")]
+    SelfUpdateLinuxNonAppImage,
     #[error(transparent)]
     Isahc(#[from] isahc::Error),
     #[error(transparent)]

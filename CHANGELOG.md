@@ -18,6 +18,12 @@ and `Removed`.
 
 - Ability to retry if a addon fails during either download or unpacking
 - Added a minimum size to Ajour window
+- A new Beta self update channel has been added that can be selected to allow self
+  updating Ajour to beta releases. Use this if you'd like to help test out newer
+  features before they are released, or just want the latest a little quicker than
+  our normal release schedule. This can be changed in the settings.
+- Ajour will also check for self updates in the background while running every
+  hour. Previously self updates were only checked on launch.
 
 ### Changed
 
