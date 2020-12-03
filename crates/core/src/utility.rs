@@ -58,8 +58,8 @@ pub async fn get_latest_release(channel: SelfUpdateChannel) -> Option<Release> {
     let releases: Vec<Release> = resp.json().ok()?;
 
     releases.into_iter().find(|r| {
-        if channel == SelfUpdateChannel::PreRelease {
-            // If prerelease, always want latest release
+        if channel == SelfUpdateChannel::Beta {
+            // If beta, always want latest release
             true
         } else {
             // Otherwise ONLY non-prereleases

@@ -171,27 +171,27 @@ impl Default for ColumnConfig {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SelfUpdateChannel {
-    Release,
-    PreRelease,
+    Stable,
+    Beta,
 }
 
 impl SelfUpdateChannel {
     pub const fn all() -> [Self; 2] {
-        [SelfUpdateChannel::Release, SelfUpdateChannel::PreRelease]
+        [SelfUpdateChannel::Stable, SelfUpdateChannel::Beta]
     }
 }
 
 impl Default for SelfUpdateChannel {
     fn default() -> Self {
-        SelfUpdateChannel::Release
+        SelfUpdateChannel::Stable
     }
 }
 
 impl Display for SelfUpdateChannel {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let s = match self {
-            SelfUpdateChannel::Release => "Stable",
-            SelfUpdateChannel::PreRelease => "Beta",
+            SelfUpdateChannel::Stable => "Stable",
+            SelfUpdateChannel::Beta => "Beta",
         };
 
         write!(f, "{}", s)
