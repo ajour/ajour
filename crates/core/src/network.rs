@@ -10,11 +10,9 @@ use isahc::prelude::*;
 use serde::Serialize;
 use std::path::PathBuf;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-
 /// Ajour user-agent.
 fn user_agent() -> String {
-    format!("ajour/{}", VERSION)
+    format!("ajour/{}", env!("CARGO_PKG_VERSION"))
 }
 
 /// Generic request function.
