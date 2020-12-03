@@ -264,7 +264,10 @@ impl Application for Ajour {
     fn new(config: Config) -> (Self, Command<Message>) {
         let init_commands = vec![
             Command::perform(load_caches(), Message::CachesLoaded),
-            Command::perform(get_latest_release(), Message::LatestRelease),
+            Command::perform(
+                get_latest_release(config.self_update_channel),
+                Message::LatestRelease,
+            ),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
             Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];

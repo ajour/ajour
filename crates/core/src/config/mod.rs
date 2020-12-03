@@ -39,6 +39,9 @@ pub struct Config {
 
     #[serde(default)]
     pub hide_ignored_addons: bool,
+
+    #[serde(default)]
+    pub self_update_channel: SelfUpdateChannel,
 }
 
 impl Config {
@@ -162,6 +165,18 @@ impl Default for ColumnConfig {
             remote_version_width: 150,
             status_width: 85,
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum SelfUpdateChannel {
+    Release,
+    PreRelease,
+}
+
+impl Default for SelfUpdateChannel {
+    fn default() -> Self {
+        SelfUpdateChannel::Release
     }
 }
 

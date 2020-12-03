@@ -1,3 +1,4 @@
+use crate::config::SelfUpdateChannel;
 use crate::error::DownloadError;
 #[cfg(target_os = "macos")]
 use crate::error::FilesystemError;
@@ -28,6 +29,7 @@ pub(crate) fn strip_non_digits(string: &str) -> Option<String> {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Release {
     pub tag_name: String,
+    pub prerelease: bool,
     pub assets: Vec<ReleaseAsset>,
     pub body: String,
 }
@@ -39,21 +41,29 @@ pub struct ReleaseAsset {
     pub download_url: String,
 }
 
-pub async fn get_latest_release() -> Option<Release> {
+pub async fn get_latest_release(channel: SelfUpdateChannel) -> Option<Release> {
     log::debug!("checking for application update");
 
     let client = HttpClient::new().ok()?;
 
     let mut resp = request_async(
         &client,
-        "https://api.github.com/repos/casperstorm/ajour/releases/latest",
+        "https://api.github.com/repos/casperstorm/ajour/releases",
         vec![],
         None,
     )
     .await
     .ok()?;
 
-    Some(resp.json().ok()?)
+    let releases: Vec<Release> = resp.json().ok()?;
+
+    releases.into_iter().find(|r| {
+        if channel == SelfUpdateChannel::PreRelease {
+            r.prerelease
+        } else {
+            !r.prerelease
+        }
+    })
 }
 
 /// Downloads the latest release file that matches `bin_name` and saves it as
@@ -66,7 +76,9 @@ pub async fn download_update_to_temp_file(
     let current_bin_path = std::env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let current_bin_path = PathBuf::from(std::env::var("APPIMAGE")?);
+    let current_bin_path = PathBuf::from(
+        std::env::var("APPIMAGE").map_err(|_| DownloadError::SelfUpdateLinuxNonAppImage)?,
+    );
 
     let current_bin_name = current_bin_path
         .file_name()
