@@ -10,6 +10,13 @@ use isahc::prelude::*;
 use serde::Serialize;
 use std::path::PathBuf;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Ajour user-agent.
+fn user_agent() -> String {
+    format!("ajour/{}", VERSION)
+}
+
 /// Generic request function.
 pub(crate) async fn request_async<T: ToString>(
     shared_client: &HttpClient,
@@ -20,7 +27,9 @@ pub(crate) async fn request_async<T: ToString>(
     // Sometimes a download url has a space.
     let url = url.to_string().replace(" ", "%20");
 
-    let mut request = Request::builder().uri(url);
+    let mut request = Request::builder()
+        .uri(url)
+        .header("User-Agent", user_agent());
 
     for (name, value) in headers {
         request = request.header(name, value);
@@ -43,6 +52,7 @@ pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
     let mut request = Request::builder()
         .method("POST")
         .uri(url.to_string())
+        .header("User-Agent", user_agent())
         .header("content-type", "application/json");
 
     for (name, value) in headers {
