@@ -19,7 +19,7 @@ use {
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
         repository::{RepositoryKind, RepositoryPackage},
-        utility::{download_update_to_temp_file, wow_path_resolution},
+        utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
     ajour_widgets::header::ResizeEvent,
     anyhow::Context,
@@ -1462,6 +1462,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.self_update_channel = channel;
 
             let _ = ajour.config.save();
+
+            return Ok(Command::perform(
+                get_latest_release(ajour.config.self_update_channel),
+                Message::LatestRelease,
+            ));
         }
         Message::Error(error) => {
             log_error(&error);
