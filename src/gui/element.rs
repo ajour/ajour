@@ -806,7 +806,6 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-
         let remote_version_container = Container::new(remote_version)
             .padding(5)
             .height(default_height)
