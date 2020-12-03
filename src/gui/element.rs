@@ -2,18 +2,16 @@
 
 use {
     super::{
-        style, AddonVersionKey, BackupFolderKind, BackupState, CatalogColumnKey,
-        CatalogColumnSettings, CatalogColumnState, CatalogRow, Changelog, ColumnKey,
-        ColumnSettings, ColumnState, DirectoryType, ExpandType, InstallAddon, InstallKind,
-        InstallStatus, Interaction, Message, Mode, ReleaseChannel, ScaleState, SelfUpdateState,
-        SortDirection, State, ThemeState,
+        style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings,
+        CatalogColumnState, CatalogRow, ColumnKey, ColumnSettings, ColumnState, DirectoryType,
+        ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
+        ReleaseChannel, ScaleState, SelfUpdateState, SortDirection, State, ThemeState,
     },
     crate::VERSION,
     ajour_core::{
         addon::{Addon, AddonState},
         catalog::Catalog,
         config::{Config, Flavor},
-        repository::RepositoryKind,
         theme::ColorPalette,
         utility::Release,
     },
@@ -706,6 +704,7 @@ pub fn addon_data_cell<'a, 'b>(
     let game_version = addon.game_version().map(str::to_string);
     let notes = addon.notes().map(str::to_string);
     let website_url = addon.website_url().map(str::to_string);
+    let changelog_url = addon.changelog_url().map(str::to_string);
     let repository_kind = addon.repository_kind();
 
     // Check if current addon is expanded.
@@ -735,9 +734,8 @@ pub fn addon_data_cell<'a, 'b>(
         .next()
     {
         let title = Text::new(addon.title()).size(DEFAULT_FONT_SIZE);
-        let mut title_button = Button::new(&mut addon.details_btn_state, title).on_press(
-            Interaction::Expand(ExpandType::Details(addon_cloned.clone())),
-        );
+        let mut title_button = Button::new(&mut addon.details_btn_state, title)
+            .on_press(Interaction::Expand(ExpandType::Details(addon_cloned)));
 
         if release_package.is_some() {}
 
@@ -785,59 +783,13 @@ pub fn addon_data_cell<'a, 'b>(
         .next()
     {
         let installed_version = Text::new(version).size(DEFAULT_FONT_SIZE);
-        let mut local_version_button = Button::new(&mut addon.local_btn_state, installed_version)
-            .style(style::BrightTextButton(color_palette));
 
-        if addon_cloned.repository_kind() == Some(RepositoryKind::Curse)
-            && addon_cloned.file_id().is_some()
-        {
-            local_version_button =
-                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
-                )));
-        }
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::Tukui)
-            && addon_cloned.repository_id().is_some()
-        {
-            local_version_button =
-                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
-                )));
-        }
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
-            local_version_button =
-                local_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Local),
-                )));
-        }
-
-        // Lets check if addon is expanded, in changelog mode and local is shown.
-        if is_addon_expanded {
-            if let ExpandType::Changelog(Changelog::Some(_, _, k)) = expand_type {
-                if k == &AddonVersionKey::Local {
-                    local_version_button =
-                        local_version_button.style(style::SelectedBrightTextButton(color_palette));
-                }
-            }
-
-            if let ExpandType::Changelog(Changelog::Loading(_, k)) = expand_type {
-                if k == &AddonVersionKey::Local {
-                    local_version_button =
-                        local_version_button.style(style::SelectedBrightTextButton(color_palette));
-                }
-            }
-        }
-
-        let local_version_button: Element<Interaction> = local_version_button.into();
-
-        let installed_version_container =
-            Container::new(local_version_button.map(Message::Interaction))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .style(style::HoverableForegroundContainer(color_palette));
+        let installed_version_container = Container::new(installed_version)
+            .padding(5)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, installed_version_container));
     }
@@ -854,66 +806,13 @@ pub fn addon_data_cell<'a, 'b>(
         })
         .next()
     {
-        let mut remote_version_button = Button::new(&mut addon.remote_btn_state, remote_version)
-            .style(style::BrightTextButton(color_palette));
 
-        if addon_cloned.repository_kind() == Some(RepositoryKind::Curse) {
-            if let Some(package) = addon_cloned.relevant_release_package() {
-                if package.file_id.is_some() {
-                    remote_version_button =
-                        remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                            Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
-                        )));
-                }
-            }
-        }
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::Tukui)
-            && addon_cloned.repository_id().is_some()
-        {
-            remote_version_button =
-                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
-                )));
-        }
-
-        if addon_cloned.repository_kind() == Some(RepositoryKind::WowI) {
-            remote_version_button =
-                remote_version_button.on_press(Interaction::Expand(ExpandType::Changelog(
-                    Changelog::Request(addon_cloned.clone(), AddonVersionKey::Remote),
-                )));
-        }
-
-        if matches!(addon_cloned.repository_kind(), Some(RepositoryKind::Git(_))) {
-            remote_version_button = remote_version_button.on_press(Interaction::Expand(
-                ExpandType::Changelog(Changelog::Request(addon_cloned, AddonVersionKey::Remote)),
-            ));
-        }
-
-        // Lets check if addon is expanded, in changelog mode and remote is shown.
-        if is_addon_expanded {
-            if let ExpandType::Changelog(Changelog::Some(_, _, k)) = expand_type {
-                if k == &AddonVersionKey::Remote {
-                    remote_version_button =
-                        remote_version_button.style(style::SelectedBrightTextButton(color_palette));
-                }
-            }
-
-            if let ExpandType::Changelog(Changelog::Loading(_, k)) = expand_type {
-                if k == &AddonVersionKey::Remote {
-                    remote_version_button =
-                        remote_version_button.style(style::SelectedBrightTextButton(color_palette));
-                }
-            }
-        }
-
-        let remote_version_button: Element<Interaction> = remote_version_button.into();
-        let remote_version_container =
-            Container::new(remote_version_button.map(Message::Interaction))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .style(style::HoverableForegroundContainer(color_palette));
+        let remote_version_container = Container::new(remote_version)
+            .padding(5)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -1168,213 +1067,167 @@ pub fn addon_data_cell<'a, 'b>(
     let mut addon_column = Column::new().push(row);
 
     if is_addon_expanded {
-        match expand_type {
-            ExpandType::Changelog(changelog) => {
-                let changelog_text = match changelog {
-                    Changelog::Some(_, payload, _) => &payload.changelog,
-                    _ => "Loading...",
-                };
+        if let ExpandType::Details(_) = expand_type {
+            let notes = notes.unwrap_or_else(|| "No description for addon.".to_string());
+            let author = author.unwrap_or_else(|| "-".to_string());
+            let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
+            let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
+            let bottom_space = Space::new(Length::Units(0), Length::Units(4));
+            let notes_title_text = Text::new("Summary").size(DEFAULT_FONT_SIZE);
+            let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
+            let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
+            let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
+            let author_title_container = Container::new(author_title_text)
+                .style(style::HoverableBrightForegroundContainer(color_palette));
+            let notes_title_container = Container::new(notes_title_text)
+                .style(style::HoverableBrightForegroundContainer(color_palette));
 
-                let changelog_title_text = Text::new("Changelog").size(DEFAULT_FONT_SIZE);
-                let changelog_title_container = Container::new(changelog_title_text)
-                    .style(style::HoverableBrightForegroundContainer(color_palette));
+            let release_date_text: String = if let Some(package) = &release_package {
+                let f = timeago::Formatter::new();
+                let now = Local::now();
 
-                let mut full_changelog_button = Button::new(
-                    &mut addon.full_changelog_btn_state,
-                    Text::new("Full Changelog").size(DEFAULT_FONT_SIZE),
-                )
-                .style(style::DefaultButton(color_palette));
-
-                if let ExpandType::Changelog(Changelog::Some(_, p, _)) = expand_type {
-                    full_changelog_button =
-                        full_changelog_button.on_press(Interaction::OpenLink(p.url.clone()));
+                if let Some(time) = package.date_time.as_ref() {
+                    format!("is {}", f.convert_chrono(*time, now))
+                } else {
+                    "".to_string()
                 }
+            } else {
+                "has no avaiable release".to_string()
+            };
+            let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
+            let release_date_text_container = Container::new(release_date_text)
+                .center_y()
+                .padding(5)
+                .style(style::FadedBrightForegroundContainer(color_palette));
 
-                let full_changelog_button: Element<Interaction> = full_changelog_button.into();
+            let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
+            let release_channel_title_container = Container::new(release_channel_title)
+                .style(style::FadedBrightForegroundContainer(color_palette));
+            let release_channel_list = PickList::new(
+                &mut addon.pick_release_channel_state,
+                &ReleaseChannel::ALL[..],
+                Some(addon.release_channel),
+                Message::ReleaseChannelSelected,
+            )
+            .text_size(14)
+            .width(Length::Units(100))
+            .style(style::PickList(color_palette));
 
-                let mut button_row =
-                    Row::new().push(Space::new(Length::FillPortion(1), Length::Units(0)));
+            let mut website_button = Button::new(
+                &mut addon.website_btn_state,
+                Text::new("Website").size(DEFAULT_FONT_SIZE),
+            )
+            .style(style::DefaultButton(color_palette));
 
-                if matches!(changelog, Changelog::Some(_, _, _)) {
-                    button_row = button_row.push(full_changelog_button.map(Message::Interaction));
-                }
-
-                let column = Column::new()
-                    .push(changelog_title_container)
-                    .push(Space::new(Length::Units(0), Length::Units(12)))
-                    .push(Text::new(changelog_text).size(DEFAULT_FONT_SIZE))
-                    .push(Space::new(Length::Units(0), Length::Units(8)))
-                    .push(button_row)
-                    .push(Space::new(Length::Units(0), Length::Units(4)));
-                let details_container = Container::new(column)
-                    .width(Length::Fill)
-                    .padding(20)
-                    .style(style::FadedNormalForegroundContainer(color_palette));
-
-                let row = Row::new()
-                    .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-                    .push(details_container)
-                    .push(Space::new(
-                        Length::Units(DEFAULT_PADDING + 5),
-                        Length::Units(0),
-                    ))
-                    .spacing(1);
-
-                addon_column = addon_column
-                    .push(Space::new(Length::FillPortion(1), Length::Units(1)))
-                    .push(row);
+            if let Some(link) = website_url {
+                website_button = website_button.on_press(Interaction::OpenLink(link));
             }
-            ExpandType::Details(_) => {
-                let notes = notes.unwrap_or_else(|| "No description for addon.".to_string());
-                let author = author.unwrap_or_else(|| "-".to_string());
-                let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
-                let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
-                let bottom_space = Space::new(Length::Units(0), Length::Units(4));
-                let notes_title_text = Text::new("Summary").size(DEFAULT_FONT_SIZE);
-                let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
-                let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
-                let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
-                let author_title_container = Container::new(author_title_text)
-                    .style(style::FadedBrightForegroundContainer(color_palette));
-                let notes_title_container = Container::new(notes_title_text)
-                    .style(style::FadedBrightForegroundContainer(color_palette));
 
-                let release_date_text: String = if let Some(package) = &release_package {
-                    let f = timeago::Formatter::new();
-                    let now = Local::now();
+            let website_button: Element<Interaction> = website_button.into();
 
-                    if let Some(time) = package.date_time.as_ref() {
-                        format!("is {}", f.convert_chrono(*time, now))
-                    } else {
-                        "".to_string()
-                    }
-                } else {
-                    "has no avaiable release".to_string()
-                };
-                let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
-                let release_date_text_container = Container::new(release_date_text)
-                    .center_y()
-                    .padding(5)
-                    .style(style::FadedBrightForegroundContainer(color_palette));
+            let mut force_download_button = Button::new(
+                &mut addon.force_btn_state,
+                Text::new("Force update").size(DEFAULT_FONT_SIZE),
+            )
+            .style(style::DefaultButton(color_palette));
 
-                let release_channel_title =
-                    Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
-                let release_channel_title_container = Container::new(release_channel_title)
-                    .style(style::FadedBrightForegroundContainer(color_palette));
-                let release_channel_list = PickList::new(
-                    &mut addon.pick_release_channel_state,
-                    &ReleaseChannel::ALL[..],
-                    Some(addon.release_channel),
-                    Message::ReleaseChannelSelected,
-                )
-                .text_size(14)
-                .width(Length::Units(100))
-                .style(style::PickList(color_palette));
-
-                let mut website_button = Button::new(
-                    &mut addon.website_btn_state,
-                    Text::new("Website").size(DEFAULT_FONT_SIZE),
-                )
-                .style(style::DefaultButton(color_palette));
-
-                if let Some(link) = website_url {
-                    website_button = website_button.on_press(Interaction::OpenLink(link));
-                }
-
-                let website_button: Element<Interaction> = website_button.into();
-
-                let mut force_download_button = Button::new(
-                    &mut addon.force_btn_state,
-                    Text::new("Force update").size(DEFAULT_FONT_SIZE),
-                )
-                .style(style::DefaultButton(color_palette));
-
-                // If we have a release package on addon, enable force update.
-                if release_package.is_some() {
-                    force_download_button = force_download_button
-                        .on_press(Interaction::Update(addon.primary_folder_id.clone()));
-                }
-
-                let force_download_button: Element<Interaction> = force_download_button.into();
-
-                let is_ignored = addon.state == AddonState::Ignored;
-                let ignore_button_text = if is_ignored {
-                    Text::new("Unignore").size(DEFAULT_FONT_SIZE)
-                } else {
-                    Text::new("Ignore").size(DEFAULT_FONT_SIZE)
-                };
-
-                let mut ignore_button =
-                    Button::new(&mut addon.ignore_btn_state, ignore_button_text)
-                        .on_press(Interaction::Ignore(addon.primary_folder_id.clone()))
-                        .style(style::DefaultButton(color_palette));
-
-                if is_ignored {
-                    ignore_button = ignore_button
-                        .on_press(Interaction::Unignore(addon.primary_folder_id.clone()));
-                } else {
-                    ignore_button = ignore_button
-                        .on_press(Interaction::Ignore(addon.primary_folder_id.clone()));
-                }
-
-                let ignore_button: Element<Interaction> = ignore_button.into();
-
-                let delete_button: Element<Interaction> = Button::new(
-                    &mut addon.delete_btn_state,
-                    Text::new("Delete").size(DEFAULT_FONT_SIZE),
-                )
-                .on_press(Interaction::Delete(addon.primary_folder_id.clone()))
-                .style(style::DefaultDeleteButton(color_palette))
-                .into();
-
-                let test_row = Row::new()
-                    .push(release_channel_list)
-                    .push(release_date_text_container);
-
-                let button_row = Row::new()
-                    .push(Space::new(Length::Fill, Length::Units(0)))
-                    .push(website_button.map(Message::Interaction))
-                    .push(Space::new(Length::Units(5), Length::Units(0)))
-                    .push(force_download_button.map(Message::Interaction))
-                    .push(Space::new(Length::Units(5), Length::Units(0)))
-                    .push(ignore_button.map(Message::Interaction))
-                    .push(Space::new(Length::Units(5), Length::Units(0)))
-                    .push(delete_button.map(Message::Interaction))
-                    .width(Length::Fill);
-                let column = Column::new()
-                    .push(author_title_container)
-                    .push(Space::new(Length::Units(0), Length::Units(3)))
-                    .push(author_text)
-                    .push(Space::new(Length::Units(0), Length::Units(15)))
-                    .push(notes_title_container)
-                    .push(Space::new(Length::Units(0), Length::Units(3)))
-                    .push(notes_text)
-                    .push(Space::new(Length::Units(0), Length::Units(15)))
-                    .push(release_channel_title_container)
-                    .push(Space::new(Length::Units(0), Length::Units(3)))
-                    .push(test_row)
-                    .push(space)
-                    .push(button_row)
-                    .push(bottom_space);
-                let details_container = Container::new(column)
-                    .width(Length::Fill)
-                    .padding(20)
-                    .style(style::FadedNormalForegroundContainer(color_palette));
-
-                let row = Row::new()
-                    .push(left_spacer)
-                    .push(details_container)
-                    .push(Space::new(
-                        Length::Units(DEFAULT_PADDING + 5),
-                        Length::Units(0),
-                    ))
-                    .spacing(1);
-
-                addon_column = addon_column
-                    .push(Space::new(Length::FillPortion(1), Length::Units(1)))
-                    .push(row);
+            // If we have a release package on addon, enable force update.
+            if release_package.is_some() {
+                force_download_button = force_download_button
+                    .on_press(Interaction::Update(addon.primary_folder_id.clone()));
             }
-            _ => {}
+
+            let force_download_button: Element<Interaction> = force_download_button.into();
+
+            let is_ignored = addon.state == AddonState::Ignored;
+            let ignore_button_text = if is_ignored {
+                Text::new("Unignore").size(DEFAULT_FONT_SIZE)
+            } else {
+                Text::new("Ignore").size(DEFAULT_FONT_SIZE)
+            };
+
+            let mut ignore_button = Button::new(&mut addon.ignore_btn_state, ignore_button_text)
+                .on_press(Interaction::Ignore(addon.primary_folder_id.clone()))
+                .style(style::DefaultButton(color_palette));
+
+            if is_ignored {
+                ignore_button =
+                    ignore_button.on_press(Interaction::Unignore(addon.primary_folder_id.clone()));
+            } else {
+                ignore_button =
+                    ignore_button.on_press(Interaction::Ignore(addon.primary_folder_id.clone()));
+            }
+
+            let ignore_button: Element<Interaction> = ignore_button.into();
+
+            let delete_button: Element<Interaction> = Button::new(
+                &mut addon.delete_btn_state,
+                Text::new("Delete").size(DEFAULT_FONT_SIZE),
+            )
+            .on_press(Interaction::Delete(addon.primary_folder_id.clone()))
+            .style(style::DefaultDeleteButton(color_palette))
+            .into();
+
+            let mut changelog_button = Button::new(
+                &mut addon.changelog_btn_state,
+                Text::new("Changelog").size(DEFAULT_FONT_SIZE),
+            )
+            .style(style::DefaultButton(color_palette));
+
+            if let Some(link) = changelog_url {
+                changelog_button = changelog_button.on_press(Interaction::OpenLink(link));
+            }
+
+            let changelog_button: Element<Interaction> = changelog_button.into();
+
+            let test_row = Row::new()
+                .push(release_channel_list)
+                .push(release_date_text_container);
+
+            let button_row = Row::new()
+                .push(Space::new(Length::Fill, Length::Units(0)))
+                .push(website_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(changelog_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(force_download_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(ignore_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(5), Length::Units(0)))
+                .push(delete_button.map(Message::Interaction))
+                .width(Length::Fill);
+            let column = Column::new()
+                .push(author_title_container)
+                .push(Space::new(Length::Units(0), Length::Units(3)))
+                .push(author_text)
+                .push(Space::new(Length::Units(0), Length::Units(15)))
+                .push(notes_title_container)
+                .push(Space::new(Length::Units(0), Length::Units(3)))
+                .push(notes_text)
+                .push(Space::new(Length::Units(0), Length::Units(15)))
+                .push(release_channel_title_container)
+                .push(Space::new(Length::Units(0), Length::Units(3)))
+                .push(test_row)
+                .push(space)
+                .push(button_row)
+                .push(bottom_space);
+            let details_container = Container::new(column)
+                .width(Length::Fill)
+                .padding(20)
+                .style(style::FadedNormalForegroundContainer(color_palette));
+
+            let row = Row::new()
+                .push(left_spacer)
+                .push(details_container)
+                .push(Space::new(
+                    Length::Units(DEFAULT_PADDING + 5),
+                    Length::Units(0),
+                ))
+                .spacing(1);
+
+            addon_column = addon_column
+                .push(Space::new(Length::FillPortion(1), Length::Units(1)))
+                .push(row);
         }
     }
 

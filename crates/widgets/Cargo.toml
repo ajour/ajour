@@ -1,10 +1,15 @@
 [package]
 name = "ajour-widgets"
-version = "0.1.1"
-authors = ["tarkah <admin@tarkah.dev>"]
+description = "Widget library for Ajour"
+version = "0.5.4-rc.1"
+authors = ["Casper Rogild Storm", "tarkah <admin@tarkah.dev>"]
+license = "MIT"
+homepage = "https://github.com/casperstorm/ajour"
+repository = "https://github.com/casperstorm/ajour"
 edition = "2018"
 
 [features]
+default = []
 wgpu = ["iced_wgpu"]
 opengl = ["iced_glow"]
 

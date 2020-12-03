@@ -74,6 +74,12 @@ page.
 
 For everyone else, a detailed instruction can be found [here](https://github.com/casperstorm/ajour/blob/master/INSTALL.md).
 
+### Cargo
+
+```sh
+cargo install ajour
+```
+
 ## Themes
 
 Find instructions for building your own themes [here](./THEMES.md).

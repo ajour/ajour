@@ -3,7 +3,6 @@ use crate::config::Flavor;
 use crate::error::{DownloadError, RepositoryError};
 use crate::network::request_async;
 use crate::repository::{ReleaseChannel, RemotePackage};
-use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, TimeZone, Utc};
@@ -36,46 +35,6 @@ impl Backend for Tukui {
         let metadata = metadata_from_tukui_package(package);
 
         Ok(metadata)
-    }
-
-    async fn get_changelog(
-        &self,
-        _file_id: Option<i64>,
-        _tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError> {
-        let url = changelog_endpoint(&self.id, &self.flavor);
-
-        match self.flavor {
-            Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPTR => {
-                // Only TukUI and ElvUI main addons has changelog which can be fetched.
-                // The others is embeded into a page.
-                if &self.id == "-1" || &self.id == "-2" {
-                    let client = HttpClient::builder().build().unwrap();
-                    let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
-
-                    if resp.status().is_success() {
-                        let changelog: String = resp.text()?;
-
-                        let c = regex_html_tags_to_newline()
-                            .replace_all(&changelog, "\n")
-                            .to_string();
-                        let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
-                        let c = truncate(&c, 2500).to_string();
-
-                        return Ok((c, url));
-                    }
-
-                    return Ok(("No changelog found".to_string(), url));
-                }
-
-                Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url))
-            }
-            Flavor::Classic | Flavor::ClassicPTR => Ok((
-                "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
-                    .to_string(),
-                url,
-            )),
-        }
     }
 }
 
@@ -110,11 +69,13 @@ pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMe
     }
 
     let website_url = Some(package.web_url.clone());
+    let changelog_url = Some(format!("{}&changelog", package.web_url));
     let game_version = package.patch;
     let title = package.name;
 
     let mut metadata = RepositoryMetadata::empty();
     metadata.website_url = website_url;
+    metadata.changelog_url = changelog_url;
     metadata.game_version = game_version;
     metadata.remote_packages = remote_packages;
     metadata.title = Some(title);
@@ -122,32 +83,23 @@ pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMe
     metadata
 }
 
-/// Return the tukui API endpoint.
-fn api_endpoint(id: &str, flavor: &Flavor) -> String {
-    match flavor {
-        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
-            "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
-            "-2" => "https://www.tukui.org/api.php?ui=elvui".to_owned(),
-            _ => format!("https://www.tukui.org/api.php?addon={}", id),
-        },
-        Flavor::Classic | Flavor::ClassicPTR => {
-            format!("https://www.tukui.org/api.php?classic-addon={}", id)
-        }
+/// Returns flavor `String` in Tukui format
+fn format_flavor(flavor: &Flavor) -> String {
+    let base_flavor = flavor.base_flavor();
+    match base_flavor {
+        Flavor::Retail => "retail".to_owned(),
+        Flavor::Classic => "classic".to_owned(),
+        _ => panic!(format!("Unknown base flavor {}", base_flavor)),
     }
 }
 
-fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
-    match flavor {
-        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
-            "-1" => "https://www.tukui.org/ui/tukui/changelog".to_owned(),
-            "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
-            _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
-        },
-        Flavor::Classic | Flavor::ClassicPTR => format!(
-            "https://www.tukui.org/classic-addons.php?id={}&changelog",
-            id
-        ),
-    }
+/// Return the tukui API endpoint.
+fn api_endpoint(id: &str, flavor: &Flavor) -> String {
+    format!(
+        "https://hub.wowup.io/tukui/{}/{}",
+        format_flavor(flavor),
+        id
+    )
 }
 
 /// Function to fetch a remote addon package which contains

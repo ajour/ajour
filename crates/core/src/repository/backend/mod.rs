@@ -17,12 +17,6 @@ pub use wowi::WowI;
 #[async_trait]
 pub(crate) trait Backend: DynClone + Send + Sync {
     async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError>;
-
-    async fn get_changelog(
-        &self,
-        file_id: Option<i64>,
-        tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError>;
 }
 
 clone_trait_object!(Backend);
