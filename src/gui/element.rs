@@ -471,7 +471,7 @@ pub fn settings_container<'a, 'b>(
     )
     .text_size(14)
     .width(Length::Fill)
-    .style(style::SecondaryPickList(color_palette))
+    .style(style::PickList(color_palette))
     .into();
 
     let channel_container = Container::new(channel_picklist.map(Message::Interaction))
