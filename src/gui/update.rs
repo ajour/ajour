@@ -26,7 +26,7 @@ use {
     async_std::sync::{Arc, Mutex},
     chrono::{NaiveTime, Utc},
     iced::{Command, Length},
-    isahc::{http::Uri, HttpClient},
+    isahc::http::Uri,
     native_dialog::*,
     std::collections::{hash_map::DefaultHasher, HashMap},
     std::convert::TryFrom,
@@ -327,7 +327,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     return Ok(Command::perform(
                         perform_download_addon(
                             DownloadReason::Update,
-                            ajour.shared_client.clone(),
                             flavor,
                             addon.clone(),
                             to_directory,
@@ -365,7 +364,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         commands.push(Command::perform(
                             perform_download_addon(
                                 DownloadReason::Update,
-                                ajour.shared_client.clone(),
                                 flavor,
                                 addon,
                                 to_directory,
@@ -1301,7 +1299,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         return Ok(Command::perform(
                             perform_download_addon(
                                 DownloadReason::Install,
-                                ajour.shared_client.clone(),
                                 flavor,
                                 addon,
                                 to_directory,
@@ -1544,7 +1541,6 @@ async fn perform_read_addon_directory(
 /// This is for now only downloading from warcraftinterface.
 async fn perform_download_addon(
     reason: DownloadReason,
-    shared_client: Arc<HttpClient>,
     flavor: Flavor,
     addon: Addon,
     to_directory: PathBuf,
@@ -1553,7 +1549,7 @@ async fn perform_download_addon(
         reason,
         flavor,
         addon.primary_folder_id.clone(),
-        download_addon(&shared_client, &addon, &to_directory).await,
+        download_addon(&addon, &to_directory).await,
     )
 }
 

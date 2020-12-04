@@ -4,7 +4,7 @@ use crate::error::DownloadError;
 use crate::error::FilesystemError;
 use crate::network::{download_file, request_async};
 
-use isahc::prelude::*;
+use isahc::ResponseExt;
 use regex::Regex;
 use retry::delay::Fibonacci;
 use retry::{retry, Error as RetryError, OperationResult};
@@ -44,10 +44,7 @@ pub struct ReleaseAsset {
 pub async fn get_latest_release(channel: SelfUpdateChannel) -> Option<Release> {
     log::debug!("checking for application update");
 
-    let client = HttpClient::new().ok()?;
-
     let mut resp = request_async(
-        &client,
         "https://api.github.com/repos/casperstorm/ajour/releases",
         vec![],
         None,
