@@ -155,6 +155,13 @@ where
         cursor_position: Point,
         viewport: &Rectangle,
     ) -> Renderer::Output {
+        let bounds = layout.bounds();
+        let custom_bounds = Rectangle {
+            x: bounds.x,
+            y: bounds.y,
+            width: bounds.width,
+            height: self.inner_row_height as f32,
+        };
         self::Renderer::draw(
             renderer,
             defaults,
@@ -163,6 +170,7 @@ where
             &self.style,
             &self.content,
             viewport,
+            &custom_bounds,
         )
     }
 
@@ -212,8 +220,6 @@ where
                         if custom_bounds.contains(cursor_position) {
                             messages.push(on_press(event));
                         }
-
-                        return event::Status::Captured;
                     }
                 }
                 status_from_content
@@ -229,7 +235,7 @@ where
 
 pub trait Renderer: iced_native::Renderer {
     type Style: Default;
-
+    #[allow(clippy::too_many_arguments)]
     fn draw<Message>(
         &mut self,
         defaults: &Self::Defaults,
@@ -238,6 +244,7 @@ pub trait Renderer: iced_native::Renderer {
         style: &Self::Style,
         content: &Element<'_, Message, Self>,
         viewport: &Rectangle,
+        custom_bounds: &Rectangle,
     ) -> Self::Output;
 }
 

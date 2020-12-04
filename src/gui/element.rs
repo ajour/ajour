@@ -1781,7 +1781,7 @@ pub fn menu_container<'a>(
     let settings_column = Column::new().push(settings_row);
 
     // Wraps it in a container.
-    Container::new(settings_column).style(style::HoverableBrightForegroundContainer(color_palette))
+    Container::new(settings_column).style(style::BrightForegroundContainer(color_palette))
 }
 
 pub fn status_container<'a>(

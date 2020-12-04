@@ -18,9 +18,10 @@ where
         style_sheet: &Self::Style,
         content: &Element<'_, Message, Self>,
         viewport: &Rectangle,
+        custom_bounds: &Rectangle,
     ) -> Self::Output {
         let bounds = layout.bounds();
-        let is_mouse_over = bounds.contains(cursor_position);
+        let is_mouse_over = custom_bounds.contains(cursor_position);
         let content_layout = layout.children().next().unwrap();
 
         let style = if is_mouse_over {
@@ -39,7 +40,7 @@ where
                         x: bounds.x + style.offset_left as f32,
                         y: bounds.y,
                         width: bounds.width - style.offset_right as f32,
-                        height: bounds.height,
+                        height: custom_bounds.height,
                     },
                     background: style
                         .background
