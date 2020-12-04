@@ -10,9 +10,7 @@ use crate::{
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use futures::future::join_all;
-use isahc::config::RedirectPolicy;
 use isahc::http::Uri;
-use isahc::{prelude::Configurable, HttpClient};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -515,17 +513,9 @@ async fn get_all_repo_packages(
 
     // Get all tukui repo packages
     let tukui_repo_packages = if !tukui_ids.is_empty() {
-        let client = Arc::new(
-            HttpClient::builder()
-                .redirect_policy(RedirectPolicy::Follow)
-                .max_connections_per_host(6)
-                .build()
-                .unwrap(),
-        );
-
         let fetch_tasks: Vec<_> = tukui_ids
             .iter()
-            .map(|id| tukui::fetch_remote_package(client.clone(), &id, &flavor))
+            .map(|id| tukui::fetch_remote_package(&id, &flavor))
             .collect();
 
         join_all(fetch_tasks)

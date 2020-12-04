@@ -6,8 +6,7 @@ use crate::repository::{ReleaseChannel, RemotePackage};
 
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
+use isahc::ResponseExt;
 use serde::Deserialize;
 
 use std::collections::HashMap;
@@ -85,14 +84,9 @@ pub(crate) fn addon_url(id: &str) -> String {
 pub(crate) async fn fetch_remote_packages(
     ids: &[String],
 ) -> Result<Vec<WowIPackage>, DownloadError> {
-    let client = HttpClient::builder()
-        .redirect_policy(RedirectPolicy::Follow)
-        .max_connections_per_host(6)
-        .build()
-        .unwrap();
     let url = api_endpoint(&ids.join(","));
     let timeout = Some(30);
-    let mut resp = request_async(&client, &url, vec![], timeout).await?;
+    let mut resp = request_async(&url, vec![], timeout).await?;
 
     if resp.status().is_success() {
         let packages = resp.json();

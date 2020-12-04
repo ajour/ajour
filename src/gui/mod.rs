@@ -27,11 +27,7 @@ use iced::{
     Text, TextInput,
 };
 use image::ImageFormat;
-use isahc::{
-    config::{Configurable, RedirectPolicy},
-    http::Uri,
-    HttpClient,
-};
+use isahc::http::Uri;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -168,7 +164,6 @@ pub struct Ajour {
     refresh_btn_state: button::State,
     settings_btn_state: button::State,
     about_btn_state: button::State,
-    shared_client: Arc<HttpClient>,
     update_all_btn_state: button::State,
     header_state: HeaderState,
     theme_state: ThemeState,
@@ -217,13 +212,6 @@ impl Default for Ajour {
             refresh_btn_state: Default::default(),
             settings_btn_state: Default::default(),
             about_btn_state: Default::default(),
-            shared_client: Arc::new(
-                HttpClient::builder()
-                    .redirect_policy(RedirectPolicy::Follow)
-                    .max_connections_per_host(6)
-                    .build()
-                    .unwrap(),
-            ),
             update_all_btn_state: Default::default(),
             header_state: Default::default(),
             theme_state: Default::default(),

@@ -10,7 +10,7 @@ mod github {
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
     use isahc::http::Uri;
-    use isahc::prelude::*;
+    use isahc::ResponseExt;
     use serde::Deserialize;
 
     use std::collections::HashMap;
@@ -24,8 +24,6 @@ mod github {
     #[async_trait]
     impl Backend for Github {
         async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
-            let client = HttpClient::new()?;
-
             let mut path = self.url.path().split('/');
             // Get rid of leading slash
             path.next();
@@ -42,7 +40,7 @@ mod github {
                 author, repo
             );
 
-            let mut resp = request_async(&client, &url, vec![], None).await?;
+            let mut resp = request_async(&url, vec![], None).await?;
 
             let release: Release = resp
                 .json()
@@ -144,7 +142,7 @@ mod gitlab {
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
     use isahc::http::Uri;
-    use isahc::prelude::*;
+    use isahc::ResponseExt;
     use serde::Deserialize;
 
     use std::collections::HashMap;
@@ -158,8 +156,6 @@ mod gitlab {
     #[async_trait]
     impl Backend for Gitlab {
         async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
-            let client = HttpClient::new()?;
-
             let mut path = self.url.path().split('/');
             // Get rid of leading slash
             path.next();
@@ -176,7 +172,7 @@ mod gitlab {
                 author, repo
             );
 
-            let mut resp = request_async(&client, &url, vec![], None).await?;
+            let mut resp = request_async(&url, vec![], None).await?;
 
             let releases: Vec<Release> = resp
                 .json()

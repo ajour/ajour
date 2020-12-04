@@ -20,9 +20,6 @@ use async_std::task;
 
 use futures::future::join_all;
 
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
-
 use std::convert::TryFrom;
 use std::path::PathBuf;
 
@@ -38,15 +35,6 @@ pub fn update_all_addons() -> Result<()> {
         let addon_cache: Arc<Mutex<_>> = Arc::new(Mutex::new(load_addon_cache().await?));
 
         let mut addons_to_update = vec![];
-
-        // API request will get limited to 6 per host
-        let shared_client = Arc::new(
-            HttpClient::builder()
-                .redirect_policy(RedirectPolicy::Follow)
-                .max_connections_per_host(6)
-                .build()
-                .unwrap(),
-        );
 
         // Update addons for both flavors
         for flavor in Flavor::ALL.iter() {
@@ -96,7 +84,6 @@ pub fn update_all_addons() -> Result<()> {
                         // Only add addons that have an update available
                         if addon.is_updatable(&package) {
                             addons_to_update.push((
-                                shared_client.clone(),
                                 addon_cache.clone(),
                                 fingerprint_cache.clone(),
                                 *flavor,
@@ -117,7 +104,7 @@ pub fn update_all_addons() -> Result<()> {
 
         addons_to_update
             .iter()
-            .for_each(|(_, _, _, flavor, addon, ..)| {
+            .for_each(|(_, _, flavor, addon, ..)| {
                 let current_version = addon.version().unwrap_or_default();
                 let new_version = addon
                     .relevant_release_package()
@@ -163,16 +150,7 @@ pub fn update_all_addons() -> Result<()> {
 ///
 /// Downloads the latest file, extracts it and refingerprints the addon, saving it to the cache.
 async fn update_addon(
-    (
-        shared_client,
-        addon_cache,
-        fingerprint_cache,
-        flavor,
-        mut addon,
-        temp_directory,
-        addon_directory,
-    ): (
-        Arc<HttpClient>,
+    (addon_cache, fingerprint_cache, flavor, mut addon, temp_directory, addon_directory): (
         Arc<Mutex<AddonCache>>,
         Arc<Mutex<FingerprintCache>>,
         Flavor,
@@ -182,7 +160,7 @@ async fn update_addon(
     ),
 ) -> Result<()> {
     // Download the update to the temp directory
-    download_addon(&shared_client, &addon, &temp_directory).await?;
+    download_addon(&addon, &temp_directory).await?;
 
     // Extracts addon from the downloaded archive to the addon directory and removes the archive
     let installed_folders = install_addon(&addon, &temp_directory, &addon_directory).await?;

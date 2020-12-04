@@ -6,12 +6,10 @@ use crate::repository::{ReleaseChannel, RemotePackage};
 
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
+use isahc::ResponseExt;
 use serde::Deserialize;
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Tukui {
@@ -22,15 +20,7 @@ pub struct Tukui {
 #[async_trait]
 impl Backend for Tukui {
     async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
-        let client = Arc::new(
-            HttpClient::builder()
-                .redirect_policy(RedirectPolicy::Follow)
-                .max_connections_per_host(6)
-                .build()
-                .unwrap(),
-        );
-
-        let (_, package) = fetch_remote_package(client, &self.id, &self.flavor).await?;
+        let (_, package) = fetch_remote_package(&self.id, &self.flavor).await?;
 
         let metadata = metadata_from_tukui_package(package);
 
@@ -105,14 +95,13 @@ fn api_endpoint(id: &str, flavor: &Flavor) -> String {
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
 pub(crate) async fn fetch_remote_package(
-    shared_client: Arc<HttpClient>,
     id: &str,
     flavor: &Flavor,
 ) -> Result<(String, TukuiPackage), DownloadError> {
     let url = api_endpoint(id, flavor);
 
     let timeout = Some(30);
-    let mut resp = request_async(&shared_client, &url, vec![], timeout).await?;
+    let mut resp = request_async(&url, vec![], timeout).await?;
 
     if resp.status().is_success() {
         let package = resp.json()?;

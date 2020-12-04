@@ -1,10 +1,11 @@
 use crate::config::Flavor;
 use crate::error::DownloadError;
+use crate::network::request_async;
 
 use async_std::task;
 use chrono::prelude::*;
 use futures::future::join_all;
-use isahc::{config::RedirectPolicy, prelude::*};
+use isahc::ResponseExt;
 use serde::Deserialize;
 
 const CURSE_CATALOG_URL: &str =
@@ -17,15 +18,9 @@ const WOWI_CATALOG_URL: &str =
 const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
 
 pub async fn get_catalog_addons_from(url: &str) -> Vec<CatalogAddon> {
-    let client = HttpClient::builder()
-        .redirect_policy(RedirectPolicy::Follow)
-        .max_connections_per_host(6)
-        .build()
-        .unwrap();
-
     let mut addons = vec![];
 
-    let request = client.get_async(url.to_string());
+    let request = request_async(url, vec![], None);
     if let Ok(mut response) = request.await {
         if let Ok(json) = task::spawn_blocking(move || response.json::<Vec<CatalogAddon>>()).await {
             log::debug!("Successfully fetched and parsed {}", url);
