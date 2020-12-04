@@ -24,6 +24,7 @@ and `Removed`.
   our normal release schedule. This can be changed in the settings.
 - Ajour will also check for self updates in the background while running every
   hour. Previously self updates were only checked on launch.
+- Using `ajour/version` as user-agent to HTTP calls.
 
 ### Changed
 
