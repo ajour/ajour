@@ -1,5 +1,5 @@
 use {
-    super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING}
+    super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{style, Interaction, Message},
     ajour_core::{theme::ColorPalette, utility::Release},
     iced::{

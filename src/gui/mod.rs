@@ -414,7 +414,7 @@ impl Application for Ajour {
 
                     // A container cell which has all data about the current addon.
                     // If the addon is expanded, then this is also included in this container.
-                    let addon_data_cell = element::addon_data_cell(
+                    let addon_data_cell = elements::addon_data_container(
                         color_palette,
                         addon,
                         is_addon_expanded,
@@ -726,7 +726,7 @@ impl Application for Ajour {
                 }
             }
             Mode::Settings => {
-                let settings_container = element::settings_container(
+                let settings_container = elements::settings_container(
                     color_palette,
                     &mut self.settings_scrollable_state,
                     &mut self.directory_btn_state,
