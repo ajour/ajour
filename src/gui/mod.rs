@@ -11,7 +11,7 @@ use ajour_core::{
     },
     catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
-    config::{ColumnConfig, ColumnConfigV2, Config, Flavor},
+    config::{ColumnConfig, ColumnConfigV2, Config, Flavor, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
     repository::ReleaseChannel,
@@ -110,6 +110,7 @@ pub enum Interaction {
     CatalogSourceSelected(CatalogSource),
     UpdateAjour,
     ToggleBackupFolder(bool, BackupFolderKind),
+    PickSelfUpdateChannel(SelfUpdateChannel),
 }
 
 #[derive(Debug)]
@@ -142,10 +143,11 @@ pub enum Message {
     BackupFinished(Result<NaiveDateTime, FilesystemError>),
     CatalogDownloaded(Result<Catalog, DownloadError>),
     InstallAddonFetched((Flavor, String, Result<Addon, RepositoryError>)),
-    AjourUpdateDownloaded(Result<(String, PathBuf), DownloadError>),
+    AjourUpdateDownloaded(Result<(PathBuf, PathBuf), DownloadError>),
     AddonCacheUpdated(Result<AddonCacheEntry, CacheError>),
     AddonCacheEntryRemoved(Result<Option<AddonCacheEntry>, CacheError>),
     RefreshCatalog(Instant),
+    CheckLatestRelease(Instant),
 }
 
 pub struct Ajour {
@@ -192,6 +194,7 @@ pub struct Ajour {
     patreon_btn_state: button::State,
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
+    self_update_channel_state: SelfUpdateChannelState,
 }
 
 impl Default for Ajour {
@@ -240,6 +243,10 @@ impl Default for Ajour {
             patreon_btn_state: Default::default(),
             open_config_dir_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
+            self_update_channel_state: SelfUpdateChannelState {
+                picklist: Default::default(),
+                options: SelfUpdateChannel::all(),
+            },
         }
     }
 }
@@ -252,7 +259,10 @@ impl Application for Ajour {
     fn new(config: Config) -> (Self, Command<Message>) {
         let init_commands = vec![
             Command::perform(load_caches(), Message::CachesLoaded),
-            Command::perform(get_latest_release(), Message::LatestRelease),
+            Command::perform(
+                get_latest_release(config.self_update_channel),
+                Message::LatestRelease,
+            ),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
             Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];
@@ -276,8 +286,14 @@ impl Application for Ajour {
         let runtime_subscription = iced_native::subscription::events().map(Message::RuntimeEvent);
         let catalog_subscription =
             iced_futures::time::every(Duration::from_secs(60 * 5)).map(Message::RefreshCatalog);
+        let new_release_subscription = iced_futures::time::every(Duration::from_secs(60 * 60))
+            .map(Message::CheckLatestRelease);
 
-        iced::Subscription::batch(vec![runtime_subscription, catalog_subscription])
+        iced::Subscription::batch(vec![
+            runtime_subscription,
+            catalog_subscription,
+            new_release_subscription,
+        ])
     }
 
     fn update(&mut self, message: Message) -> Command<Message> {
@@ -722,6 +738,7 @@ impl Application for Ajour {
                     &mut self.catalog_column_settings,
                     &catalog_column_config,
                     &mut self.open_config_dir_btn_state,
+                    &mut self.self_update_channel_state,
                 );
 
                 content = content.push(settings_container)
@@ -1629,6 +1646,12 @@ pub struct SelfUpdateState {
     latest_release: Option<utility::Release>,
     status: Option<SelfUpdateStatus>,
     btn_state: button::State,
+}
+
+#[derive(Debug)]
+pub struct SelfUpdateChannelState {
+    picklist: pick_list::State<SelfUpdateChannel>,
+    options: [SelfUpdateChannel; 2],
 }
 
 async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {

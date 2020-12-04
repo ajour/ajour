@@ -8,12 +8,9 @@ mod command;
 mod gui;
 
 use ajour_core::fs::CONFIG_DIR;
-use ajour_core::utility::rename;
+use ajour_core::utility::remove_file;
 
-#[cfg(target_os = "linux")]
-use anyhow::Context;
 use std::env;
-#[cfg(target_os = "linux")]
 use std::path::PathBuf;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -48,8 +45,8 @@ pub fn main() {
 
     // Called when we launch from the temp (new release) binary during the self update
     // process. We will rename the temp file (running process) to the original binary
-    if let Some(main_bin_name) = &opts.self_update_temp {
-        if let Err(e) = handle_self_update_temp(main_bin_name) {
+    if let Some(cleanup_path) = &opts.self_update_temp {
+        if let Err(e) = handle_self_update_temp(cleanup_path) {
             log_error(&e);
             std::process::exit(1);
         }
@@ -143,19 +140,8 @@ fn setup_logger(is_cli: bool, is_debug: bool) -> Result<()> {
     Ok(())
 }
 
-fn handle_self_update_temp(main_bin_name: &str) -> Result<()> {
-    #[cfg(not(target_os = "linux"))]
-    let temp_bin = env::current_exe()?;
-
-    #[cfg(target_os = "linux")]
-    let temp_bin =
-        PathBuf::from(std::env::var("APPIMAGE").context("error getting APPIMAGE env variable")?);
-
-    let parent_dir = temp_bin.parent().unwrap();
-
-    let main_bin = parent_dir.join(main_bin_name);
-
-    rename(&temp_bin, &main_bin)?;
+fn handle_self_update_temp(cleanup_path: &PathBuf) -> Result<()> {
+    remove_file(cleanup_path)?;
 
     log::debug!("Ajour updated successfully");
 
