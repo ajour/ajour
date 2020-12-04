@@ -1,4 +1,5 @@
 mod element;
+mod elements;
 mod style;
 mod update;
 
@@ -744,7 +745,7 @@ impl Application for Ajour {
                 content = content.push(settings_container)
             }
             Mode::About => {
-                let about_container = element::about_container(
+                let about_container = elements::about_container(
                     color_palette,
                     &release_copy,
                     &mut self.about_scrollable_state,
