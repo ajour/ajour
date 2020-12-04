@@ -35,6 +35,8 @@ pub(crate) async fn request_async<T: ToString>(
         request = request.header(name, value);
     }
 
+    request = request.header("user-agent", &user_agent());
+
     if let Some(timeout) = timeout {
         request = request.timeout(std::time::Duration::from_secs(timeout));
     }
@@ -57,6 +59,8 @@ pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
     for (name, value) in headers {
         request = request.header(name, value);
     }
+
+    request = request.header("user-agent", &user_agent());
 
     if let Some(timeout) = timeout {
         request = request.timeout(std::time::Duration::from_secs(timeout));
