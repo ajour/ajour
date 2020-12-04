@@ -697,6 +697,7 @@ pub fn addon_data_cell<'a, 'b>(
     column_config: &'b [(ColumnKey, Length, bool)],
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
+    let default_row_height = 26;
 
     let mut row_containers = vec![];
 
@@ -709,6 +710,7 @@ pub fn addon_data_cell<'a, 'b>(
 
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
+    let addon_cloned_for_row = addon.clone();
     let version = addon
         .version()
         .map(str::to_string)
@@ -1230,9 +1232,15 @@ pub fn addon_data_cell<'a, 'b>(
         }
     }
 
-    TableRow::new(addon_column)
+    return TableRow::new(addon_column)
         .width(Length::Fill)
+        .inner_row_height(default_row_height)
         .style(style::TableRow(color_palette))
+        .on_press(move |_| {
+            Message::Interaction(Interaction::Expand(ExpandType::Details(
+                addon_cloned_for_row.clone(),
+            )))
+        });
 }
 
 fn row_title<T: PartialEq>(
@@ -1904,6 +1912,7 @@ pub fn catalog_data_cell<'a, 'b>(
     install_addon: Option<&InstallAddon>,
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
+    let default_row_height = 26;
 
     let mut row_containers = vec![];
 
@@ -2164,9 +2173,13 @@ pub fn catalog_data_cell<'a, 'b>(
 
     row = row.push(right_spacer);
 
-    TableRow::new(row)
+    return TableRow::new(row)
         .width(Length::Fill)
         .style(style::TableRow(color_palette))
+        .inner_row_height(default_row_height)
+        .on_press(move |_| {
+            Message::Interaction(Interaction::OpenLink(addon_data.website_url.clone()))
+        });
 }
 
 pub fn addon_scrollable(

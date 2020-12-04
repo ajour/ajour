@@ -2,7 +2,7 @@
 
 pub use crate::style::table_row::{Style, StyleSheet};
 use iced_native::{
-    event, layout, overlay, Align, Clipboard, Element, Event, Hasher, Layout, Length, Point,
+    event, layout, mouse, overlay, Align, Clipboard, Element, Event, Hasher, Layout, Length, Point,
     Rectangle, Widget,
 };
 
@@ -15,10 +15,12 @@ pub struct TableRow<'a, Message, Renderer: self::Renderer> {
     height: Length,
     max_width: u32,
     max_height: u32,
+    inner_row_height: u32,
     horizontal_alignment: Align,
     vertical_alignment: Align,
     style: Renderer::Style,
     content: Element<'a, Message, Renderer>,
+    on_press: Option<Box<dyn Fn(Event) -> Message + 'a>>,
 }
 
 impl<'a, Message, Renderer> TableRow<'a, Message, Renderer>
@@ -37,10 +39,12 @@ where
             height: Length::Shrink,
             max_width: u32::MAX,
             max_height: u32::MAX,
+            inner_row_height: u32::MAX,
             horizontal_alignment: Align::Start,
             vertical_alignment: Align::Start,
             style: Renderer::Style::default(),
             content: content.into(),
+            on_press: None,
         }
     }
     pub fn style(mut self, style: impl Into<<Renderer as self::Renderer>::Style>) -> Self {
@@ -72,6 +76,12 @@ where
         self
     }
 
+    /// Sets the maximum height of the [`TableRow`] in pixels.
+    pub fn inner_row_height(mut self, inner_row_height: u32) -> Self {
+        self.inner_row_height = inner_row_height;
+        self
+    }
+
     /// Sets the content alignment for the horizontal axis of the [`TableRow`].
     pub fn align_x(mut self, alignment: Align) -> Self {
         self.horizontal_alignment = alignment;
@@ -95,6 +105,15 @@ where
         self.vertical_alignment = Align::Center;
         self
     }
+
+    /// Sets the message that will be produced when the [`TableRow`] is pressed.
+    pub fn on_press<T>(mut self, f: T) -> Self
+    where
+        T: 'a + Fn(Event) -> Message,
+    {
+        self.on_press = Some(Box::new(f));
+        self
+    }
 }
 
 impl<'a, Message, Renderer> Widget<Message, Renderer> for TableRow<'a, Message, Renderer>
@@ -102,6 +121,32 @@ where
     Renderer: 'a + self::Renderer,
     Message: 'a,
 {
+    fn width(&self) -> Length {
+        self.width
+    }
+
+    fn height(&self) -> Length {
+        self.height
+    }
+
+    fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+        let padding = f32::from(self.padding);
+
+        let limits = limits
+            .loose()
+            .width(self.width)
+            .height(self.height)
+            .pad(padding);
+
+        let mut content = self.content.layout(renderer, &limits.loose());
+        let size = limits.resolve(content.size());
+
+        content.move_to(Point::new(padding, padding));
+        content.align(self.horizontal_alignment, self.vertical_alignment, size);
+
+        layout::Node::with_children(size.pad(padding), vec![content])
+    }
+
     fn draw(
         &self,
         renderer: &mut Renderer,
@@ -130,40 +175,9 @@ where
         self.height.hash(state);
         self.max_width.hash(state);
         self.max_height.hash(state);
+        self.inner_row_height.hash(state);
 
         self.content.hash_layout(state);
-    }
-
-    fn overlay(&mut self, layout: Layout<'_>) -> Option<overlay::Element<'_, Message, Renderer>> {
-        self.content.overlay(layout.children().next().unwrap())
-    }
-
-    fn width(&self) -> Length {
-        self.width
-    }
-
-    fn height(&self) -> Length {
-        self.height
-    }
-
-    fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
-        let padding = f32::from(self.padding);
-
-        let limits = limits
-            .loose()
-            .max_width(self.max_width)
-            .max_height(self.max_height)
-            .width(self.width)
-            .height(self.height)
-            .pad(padding);
-
-        let mut content = self.content.layout(renderer, &limits.loose());
-        let size = limits.resolve(content.size());
-
-        content.move_to(Point::new(padding, padding));
-        content.align(self.horizontal_alignment, self.vertical_alignment, size);
-
-        layout::Node::with_children(size.pad(padding), vec![content])
     }
 
     fn on_event(
@@ -175,14 +189,41 @@ where
         renderer: &Renderer,
         clipboard: Option<&dyn Clipboard>,
     ) -> event::Status {
-        self.content.on_event(
-            event,
+        let status_from_content = self.content.on_event(
+            event.clone(),
             layout.children().next().unwrap(),
             cursor_position,
             messages,
             renderer,
             clipboard,
-        )
+        );
+        match status_from_content {
+            event::Status::Ignored => {
+                if let Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) = event {
+                    if let Some(on_press) = &self.on_press {
+                        let bounds = layout.bounds();
+                        //We can face issues if the row is expanded, so we manage it by having a reduced bounds area to check for pointer
+                        let custom_bounds = Rectangle {
+                            x: bounds.x,
+                            y: bounds.y,
+                            width: bounds.width,
+                            height: self.inner_row_height as f32,
+                        };
+                        if custom_bounds.contains(cursor_position) {
+                            messages.push(on_press(event));
+                        }
+
+                        return event::Status::Captured;
+                    }
+                }
+                status_from_content
+            }
+            _ => status_from_content,
+        }
+    }
+
+    fn overlay(&mut self, layout: Layout<'_>) -> Option<overlay::Element<'_, Message, Renderer>> {
+        self.content.overlay(layout.children().next().unwrap())
     }
 }
 
