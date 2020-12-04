@@ -1,4 +1,14 @@
-on: [push, pull_request]
+on:
+  push:
+    paths:
+    - '**.rs'
+    - 'Cargo.lock'
+    - 'Cargo.toml'
+  pull_request:
+    paths:
+    - '**.rs'
+    - 'Cargo.lock'
+    - 'Cargo.toml'
 
 name: Continuous-integration
 
