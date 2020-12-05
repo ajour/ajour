@@ -189,6 +189,9 @@ pub struct Package {
     pub name: String,
     pub website_url: String,
     pub latest_files: Vec<File>,
+    pub date_created: DateTime<Utc>,
+    pub date_modified: DateTime<Utc>,
+    pub date_released: DateTime<Utc>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
