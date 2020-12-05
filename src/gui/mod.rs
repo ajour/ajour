@@ -701,7 +701,7 @@ impl Application for Ajour {
                                 && matches!(a.kind, InstallKind::Catalog {..})
                         });
 
-                        let catalog_data_cell = element::catalog_data_cell(
+                        let catalog_data_cell = elements::catalog_data_container(
                             color_palette,
                             &self.config,
                             addon,
@@ -765,13 +765,13 @@ impl Application for Ajour {
                     .cloned()
                     .unwrap_or_default();
                 match state {
-                    State::Start => Some(element::status_container(
+                    State::Start => Some(elements::status_container(
                         color_palette,
                         "Welcome to Ajour!",
                         "Please select your World of Warcraft directory",
                         Some(&mut self.onboarding_directory_btn_state),
                     )),
-                    State::Loading => Some(element::status_container(
+                    State::Loading => Some(elements::status_container(
                         color_palette,
                         "Loading..",
                         &format!("Currently parsing {} addons.", flavor.to_string()),
@@ -779,7 +779,7 @@ impl Application for Ajour {
                     )),
                     State::Ready => {
                         if !has_addons {
-                            Some(element::status_container(
+                            Some(elements::status_container(
                                 color_palette,
                                 "Woops!",
                                 &format!(
@@ -801,7 +801,7 @@ impl Application for Ajour {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
                     State::Start => None,
-                    State::Loading => Some(element::status_container(
+                    State::Loading => Some(elements::status_container(
                         color_palette,
                         "Loading..",
                         "Currently loading catalog.",
