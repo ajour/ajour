@@ -1723,7 +1723,7 @@ pub fn menu_container<'a>(
     let version_container = Container::new(version_text)
         .center_y()
         .padding(5)
-        .style(style::HoverableForegroundContainer(color_palette));
+        .style(style::NormalForegroundContainer(color_palette));
 
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
