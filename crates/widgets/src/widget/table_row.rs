@@ -76,7 +76,7 @@ where
         self
     }
 
-    /// Sets the maximum height of the [`TableRow`] in pixels.
+    /// Sets the height of the area that will be used to define the event capture area of [`TableRow`] in pixels.
     pub fn inner_row_height(mut self, inner_row_height: u32) -> Self {
         self.inner_row_height = inner_row_height;
         self
