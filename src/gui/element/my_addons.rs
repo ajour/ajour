@@ -31,7 +31,7 @@ fn row_title<T: PartialEq>(
     }
 }
 
-pub fn row_titles_header<'a>(
+pub fn titles_row_header<'a>(
     color_palette: ColorPalette,
     addons: &[Addon],
     header_state: &'a mut header::State,

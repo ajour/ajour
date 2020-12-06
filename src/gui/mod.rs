@@ -384,7 +384,7 @@ impl Application for Ajour {
                 // Addon row titles is a row of titles above the addon scrollable.
                 // This is to add titles above each section of the addon row, to let
                 // the user easily identify what the value is.
-                let addon_row_titles = element::my_addons::row_titles_header(
+                let addon_row_titles = element::my_addons::titles_row_header(
                     color_palette,
                     addons,
                     &mut self.header_state.state,
@@ -673,7 +673,7 @@ impl Application for Ajour {
                         .height(Length::Units(35))
                         .center_y();
 
-                    let catalog_row_titles = element::catalog::row_titles_header(
+                    let catalog_row_titles = element::catalog::titles_row_header(
                         color_palette,
                         catalog,
                         &mut self.catalog_header_state.state,
