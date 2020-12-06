@@ -16,6 +16,7 @@ opengl = ["iced_glow"]
 [dependencies]
 iced_native = { version = "0.3" }
 iced_graphics = { version = "0.1" }
+iced_core = { version = "0.3" }
 
 iced_wgpu = { version = "0.3", optional = true }
 iced_glow = { version = "0.1", optional = true }

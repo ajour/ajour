@@ -16,7 +16,7 @@ use {
         theme::ColorPalette,
         utility::Release,
     },
-    ajour_widgets::{header, Header},
+    ajour_widgets::{header, Header, TableRow},
     chrono::prelude::*,
     iced::{
         button, scrollable, Align, Button, Checkbox, Column, Container, Element,
@@ -719,8 +719,9 @@ pub fn addon_data_cell<'a, 'b>(
     is_addon_expanded: bool,
     expand_type: &'a ExpandType,
     column_config: &'b [(ColumnKey, Length, bool)],
-) -> Container<'a, Message> {
+) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
+    let default_row_height = 26;
 
     let mut row_containers = vec![];
 
@@ -733,6 +734,7 @@ pub fn addon_data_cell<'a, 'b>(
 
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
+    let addon_cloned_for_row = addon.clone();
     let version = addon
         .version()
         .map(str::to_string)
@@ -758,23 +760,10 @@ pub fn addon_data_cell<'a, 'b>(
         .next()
     {
         let title = Text::new(addon.title()).size(DEFAULT_FONT_SIZE);
-        let mut title_button = Button::new(&mut addon.details_btn_state, title)
-            .on_press(Interaction::Expand(ExpandType::Details(addon_cloned)));
 
         if release_package.is_some() {}
 
-        if is_addon_expanded && matches!(expand_type, ExpandType::Details(_)) {
-            title_button = title_button.style(style::SelectedBrightTextButton(color_palette));
-        } else {
-            title_button = title_button.style(style::BrightTextButton(color_palette));
-        }
-
-        let title_button: Element<Interaction> = title_button.into();
-
-        let mut title_row = Row::new()
-            .push(title_button.map(Message::Interaction))
-            .spacing(3)
-            .align_items(Align::Center);
+        let mut title_row = Row::new().push(title).spacing(3).align_items(Align::Center);
 
         if addon.release_channel != ReleaseChannel::Stable {
             let release_channel =
@@ -785,11 +774,17 @@ pub fn addon_data_cell<'a, 'b>(
             title_row = title_row.push(release_channel);
         }
 
-        let title_container = Container::new(title_row)
+        let mut title_container = Container::new(title_row)
             .height(default_height)
             .width(*width)
-            .center_y()
-            .style(style::BrightForegroundContainer(color_palette));
+            .center_y();
+        if is_addon_expanded && matches!(expand_type, ExpandType::Details(_)) {
+            title_container =
+                title_container.style(style::SelectedBrightForegroundContainer(color_palette));
+        } else {
+            title_container =
+                title_container.style(style::HoverableBrightForegroundContainer(color_palette));
+        }
 
         row_containers.push((idx, title_container));
     }
@@ -813,7 +808,7 @@ pub fn addon_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, installed_version_container));
     }
@@ -835,7 +830,7 @@ pub fn addon_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -858,7 +853,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, channel_container));
     }
@@ -881,7 +876,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, author_container));
     }
@@ -905,7 +900,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -940,7 +935,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -965,7 +960,7 @@ pub fn addon_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
     }
@@ -988,14 +983,14 @@ pub fn addon_data_cell<'a, 'b>(
                 .width(*width)
                 .center_y()
                 .center_x()
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Completed => {
                 Container::new(Text::new("Completed".to_string()).size(DEFAULT_FONT_SIZE))
                     .height(default_height)
                     .width(*width)
                     .center_y()
                     .center_x()
-                    .style(style::NormalForegroundContainer(color_palette))
+                    .style(style::HoverableForegroundContainer(color_palette))
             }
             AddonState::Error(message) => {
                 Container::new(Text::new(message).size(DEFAULT_FONT_SIZE))
@@ -1003,7 +998,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .width(*width)
                     .center_y()
                     .center_x()
-                    .style(style::NormalForegroundContainer(color_palette))
+                    .style(style::HoverableForegroundContainer(color_palette))
             }
             AddonState::Updatable | AddonState::Retry => {
                 let id = addon.primary_folder_id.clone();
@@ -1030,7 +1025,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .width(*width)
                     .center_y()
                     .center_x()
-                    .style(style::BrightForegroundContainer(color_palette))
+                    .style(style::HoverableBrightForegroundContainer(color_palette))
             }
             AddonState::Downloading => {
                 Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
@@ -1039,7 +1034,7 @@ pub fn addon_data_cell<'a, 'b>(
                     .center_y()
                     .center_x()
                     .padding(5)
-                    .style(style::NormalForegroundContainer(color_palette))
+                    .style(style::HoverableForegroundContainer(color_palette))
             }
             AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
@@ -1047,28 +1042,28 @@ pub fn addon_data_cell<'a, 'b>(
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Unknown => Container::new(Text::new("").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
                 .center_y()
                 .center_x()
                 .padding(5)
-                .style(style::NormalForegroundContainer(color_palette)),
+                .style(style::HoverableForegroundContainer(color_palette)),
         };
 
         row_containers.push((idx, update_button_container));
@@ -1101,9 +1096,9 @@ pub fn addon_data_cell<'a, 'b>(
             let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
             let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
             let author_title_container = Container::new(author_title_text)
-                .style(style::FadedBrightForegroundContainer(color_palette));
+                .style(style::HoverableBrightForegroundContainer(color_palette));
             let notes_title_container = Container::new(notes_title_text)
-                .style(style::FadedBrightForegroundContainer(color_palette));
+                .style(style::HoverableBrightForegroundContainer(color_palette));
 
             let release_date_text: String = if let Some(package) = &release_package {
                 let f = timeago::Formatter::new();
@@ -1254,9 +1249,15 @@ pub fn addon_data_cell<'a, 'b>(
         }
     }
 
-    Container::new(addon_column)
+    return TableRow::new(addon_column)
         .width(Length::Fill)
-        .style(style::Row(color_palette))
+        .inner_row_height(default_row_height)
+        .style(style::TableRow(color_palette))
+        .on_press(move |_| {
+            Message::Interaction(Interaction::Expand(ExpandType::Details(
+                addon_cloned_for_row.clone(),
+            )))
+        });
 }
 
 fn row_title<T: PartialEq>(
@@ -1926,13 +1927,13 @@ pub fn catalog_data_cell<'a, 'b>(
     column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
     install_addon: Option<&InstallAddon>,
-) -> Container<'a, Message> {
+) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
+    let default_row_height = 26;
 
     let mut row_containers = vec![];
 
     let addon_data = &addon.addon;
-    let website_state = &mut addon.website_state;
     let install_button_state = &mut addon.install_button_state;
 
     let flavor_exists_for_addon = addon_data
@@ -2000,7 +2001,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::BrightForegroundContainer(color_palette));
+            .style(style::HoverableBrightForegroundContainer(color_palette));
 
         row_containers.push((idx, install_container));
     }
@@ -2018,16 +2019,12 @@ pub fn catalog_data_cell<'a, 'b>(
         .next()
     {
         let title = Text::new(&addon_data.name).size(DEFAULT_FONT_SIZE);
-        let title_button: Element<Interaction> = Button::new(website_state, title)
-            .style(style::BrightTextButton(color_palette))
-            .on_press(Interaction::OpenLink(addon_data.website_url.clone()))
-            .into();
 
-        let title_container = Container::new(title_button.map(Message::Interaction))
+        let title_container = Container::new(title)
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::BrightForegroundContainer(color_palette));
+            .style(style::HoverableBrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
@@ -2058,7 +2055,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, description_container));
     }
@@ -2082,7 +2079,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .center_y()
             .center_x()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
     }
@@ -2112,7 +2109,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -2142,7 +2139,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -2170,7 +2167,7 @@ pub fn catalog_data_cell<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, num_downloads_container));
     }
@@ -2188,9 +2185,13 @@ pub fn catalog_data_cell<'a, 'b>(
 
     row = row.push(right_spacer);
 
-    Container::new(row)
+    return TableRow::new(row)
         .width(Length::Fill)
-        .style(style::Row(color_palette))
+        .style(style::TableRow(color_palette))
+        .inner_row_height(default_row_height)
+        .on_press(move |_| {
+            Message::Interaction(Interaction::OpenLink(addon_data.website_url.clone()))
+        });
 }
 
 pub fn addon_scrollable(

@@ -110,6 +110,7 @@ dependencies = [
 name = "ajour-widgets"
 version = "0.5.4-rc.2"
 dependencies = [
+ "iced_core",
  "iced_glow",
  "iced_graphics",
  "iced_native",
