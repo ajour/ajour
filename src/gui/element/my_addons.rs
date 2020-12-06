@@ -585,7 +585,7 @@ pub fn data_row_container<'a, 'b>(
 
             let changelog_button: Element<Interaction> = changelog_button.into();
 
-            let test_row = Row::new()
+            let release_row = Row::new()
                 .push(release_channel_list)
                 .push(release_date_text_container);
 
@@ -612,7 +612,7 @@ pub fn data_row_container<'a, 'b>(
                 .push(Space::new(Length::Units(0), Length::Units(15)))
                 .push(release_channel_title_container)
                 .push(Space::new(Length::Units(0), Length::Units(3)))
-                .push(test_row)
+                .push(release_row)
                 .push(space)
                 .push(button_row)
                 .push(bottom_space);
