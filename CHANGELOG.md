@@ -16,6 +16,9 @@ and `Removed`.
 
 ### Added
 
+- Rows in both My Addons and Catalog will now highlight on mouseover.
+  In My Addons a row will expand when pressed, and in Catalog it will
+  launch the addon website
 - Ability to retry if a addon fails during either download or unpacking
 - Added a minimum size to Ajour window
 - A new Beta self update channel has been added that can be selected to allow self

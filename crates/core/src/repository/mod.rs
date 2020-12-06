@@ -11,7 +11,7 @@ use std::collections::HashMap;
 mod backend;
 use backend::Backend;
 
-pub(crate) use backend::{curse, tukui, wowi};
+pub use backend::{curse, tukui, wowi};
 use backend::{Curse, Github, Gitlab, Tukui, WowI};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]

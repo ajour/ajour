@@ -5,7 +5,7 @@ use {
         InstallKind, InstallStatus, Interaction, Message, Mode, SortDirection,
     },
     ajour_core::{config::Config, theme::ColorPalette},
-    ajour_widgets::{header, Header},
+    ajour_widgets::{header, Header, TableRow},
     chrono::prelude::*,
     iced::{Align, Button, Container, Element, Length, Row, Space, Text},
     num_format::{Locale, ToFormattedString},
@@ -101,13 +101,13 @@ pub fn data_row_container<'a, 'b>(
     column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
     install_addon: Option<&InstallAddon>,
-) -> Container<'a, Message> {
+) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
+    let default_row_height = 26;
 
     let mut row_containers = vec![];
 
     let addon_data = &addon.addon;
-    let website_state = &mut addon.website_state;
     let install_button_state = &mut addon.install_button_state;
 
     let flavor_exists_for_addon = addon_data
@@ -175,7 +175,7 @@ pub fn data_row_container<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::BrightForegroundContainer(color_palette));
+            .style(style::HoverableBrightForegroundContainer(color_palette));
 
         row_containers.push((idx, install_container));
     }
@@ -193,16 +193,12 @@ pub fn data_row_container<'a, 'b>(
         .next()
     {
         let title = Text::new(&addon_data.name).size(DEFAULT_FONT_SIZE);
-        let title_button: Element<Interaction> = Button::new(website_state, title)
-            .style(style::BrightTextButton(color_palette))
-            .on_press(Interaction::OpenLink(addon_data.website_url.clone()))
-            .into();
 
-        let title_container = Container::new(title_button.map(Message::Interaction))
+        let title_container = Container::new(title)
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::BrightForegroundContainer(color_palette));
+            .style(style::HoverableBrightForegroundContainer(color_palette));
 
         row_containers.push((idx, title_container));
     }
@@ -233,7 +229,7 @@ pub fn data_row_container<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, description_container));
     }
@@ -257,7 +253,7 @@ pub fn data_row_container<'a, 'b>(
             .center_y()
             .center_x()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, source_container));
     }
@@ -287,7 +283,7 @@ pub fn data_row_container<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -317,7 +313,7 @@ pub fn data_row_container<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, game_version_container));
     }
@@ -345,7 +341,7 @@ pub fn data_row_container<'a, 'b>(
             .width(*width)
             .center_y()
             .padding(5)
-            .style(style::NormalForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, num_downloads_container));
     }
@@ -363,7 +359,11 @@ pub fn data_row_container<'a, 'b>(
 
     row = row.push(right_spacer);
 
-    Container::new(row)
+    return TableRow::new(row)
         .width(Length::Fill)
-        .style(style::Row(color_palette))
+        .style(style::TableRow(color_palette))
+        .inner_row_height(default_row_height)
+        .on_press(move |_| {
+            Message::Interaction(Interaction::OpenLink(addon_data.website_url.clone()))
+        });
 }
