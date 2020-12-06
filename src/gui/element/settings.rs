@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
