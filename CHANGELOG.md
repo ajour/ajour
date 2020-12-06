@@ -25,8 +25,8 @@ and `Removed`.
   updating Ajour to beta releases. Use this if you'd like to help test out newer
   features before they are released, or just want the latest a little quicker than
   our normal release schedule. This can be changed in the settings.
-- Periodic self update check. Ajour will now check for self updates while running every
-  hour. Previously self updates were only checked on launch.
+- Periodic self update check. Ajour will now check for self updates while running
+  every hour. Previously self updates were only checked on launch.
 
 ### Changed
 
