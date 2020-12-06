@@ -61,6 +61,17 @@ impl container::StyleSheet for FadedNormalForegroundContainer {
     }
 }
 
+pub struct SelectedBrightForegroundContainer(pub ColorPalette);
+impl container::StyleSheet for SelectedBrightForegroundContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: None,
+            text_color: Some(self.0.bright.primary),
+            ..container::Style::default()
+        }
+    }
+}
+
 pub struct FadedBrightForegroundContainer(pub ColorPalette);
 impl container::StyleSheet for FadedBrightForegroundContainer {
     fn style(&self) -> container::Style {

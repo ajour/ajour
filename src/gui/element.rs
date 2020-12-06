@@ -736,23 +736,10 @@ pub fn addon_data_cell<'a, 'b>(
         .next()
     {
         let title = Text::new(addon.title()).size(DEFAULT_FONT_SIZE);
-        let mut title_button = Button::new(&mut addon.details_btn_state, title)
-            .on_press(Interaction::Expand(ExpandType::Details(addon_cloned)));
 
         if release_package.is_some() {}
 
-        if is_addon_expanded && matches!(expand_type, ExpandType::Details(_)) {
-            title_button = title_button.style(style::SelectedBrightTextButton(color_palette));
-        } else {
-            title_button = title_button.style(style::BrightTextButton(color_palette));
-        }
-
-        let title_button: Element<Interaction> = title_button.into();
-
-        let mut title_row = Row::new()
-            .push(title_button.map(Message::Interaction))
-            .spacing(3)
-            .align_items(Align::Center);
+        let mut title_row = Row::new().push(title).spacing(3).align_items(Align::Center);
 
         if addon.release_channel != ReleaseChannel::Stable {
             let release_channel =
@@ -763,11 +750,17 @@ pub fn addon_data_cell<'a, 'b>(
             title_row = title_row.push(release_channel);
         }
 
-        let title_container = Container::new(title_row)
+        let mut title_container = Container::new(title_row)
             .height(default_height)
             .width(*width)
-            .center_y()
-            .style(style::HoverableBrightForegroundContainer(color_palette));
+            .center_y();
+        if is_addon_expanded && matches!(expand_type, ExpandType::Details(_)) {
+            title_container =
+                title_container.style(style::SelectedBrightForegroundContainer(color_palette));
+        } else {
+            title_container =
+                title_container.style(style::HoverableBrightForegroundContainer(color_palette));
+        }
 
         row_containers.push((idx, title_container));
     }
@@ -1917,7 +1910,6 @@ pub fn catalog_data_cell<'a, 'b>(
     let mut row_containers = vec![];
 
     let addon_data = &addon.addon;
-    let website_state = &mut addon.website_state;
     let install_button_state = &mut addon.install_button_state;
 
     let flavor_exists_for_addon = addon_data
@@ -2003,12 +1995,8 @@ pub fn catalog_data_cell<'a, 'b>(
         .next()
     {
         let title = Text::new(&addon_data.name).size(DEFAULT_FONT_SIZE);
-        let title_button: Element<Interaction> = Button::new(website_state, title)
-            .style(style::BrightTextButton(color_palette))
-            .on_press(Interaction::OpenLink(addon_data.website_url.clone()))
-            .into();
 
-        let title_container = Container::new(title_button.map(Message::Interaction))
+        let title_container = Container::new(title)
             .height(default_height)
             .width(*width)
             .center_y()

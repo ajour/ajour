@@ -2,7 +2,7 @@ use crate::style::table_row::StyleSheet;
 
 use crate::widget::table_row;
 use iced_graphics::{Backend, Primitive, Renderer};
-use iced_native::{Background, Color, Element, Layout, Point, Rectangle};
+use iced_native::{mouse, Background, Color, Element, Layout, Point, Rectangle};
 
 impl<B> table_row::Renderer for Renderer<B>
 where
@@ -56,7 +56,11 @@ where
             } else {
                 content
             },
-            mouse_interaction,
+            if is_mouse_over {
+                mouse::Interaction::Pointer
+            } else {
+                mouse_interaction
+            },
         )
     }
 }
