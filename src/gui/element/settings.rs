@@ -12,7 +12,7 @@ use {
     },
 };
 
-pub fn settings_container<'a, 'b>(
+pub fn data_container<'a, 'b>(
     color_palette: ColorPalette,
     scrollable_state: &'a mut scrollable::State,
     directory_button_state: &'a mut button::State,

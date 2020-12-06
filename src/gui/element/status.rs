@@ -7,7 +7,7 @@ use {
     },
 };
 
-pub fn status_container<'a>(
+pub fn data_container<'a>(
     color_palette: ColorPalette,
     title: &str,
     description: &str,

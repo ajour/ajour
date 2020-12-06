@@ -728,7 +728,7 @@ impl Application for Ajour {
                 }
             }
             Mode::Settings => {
-                let settings_container = element::settings::settings_container(
+                let settings_container = element::settings::data_container(
                     color_palette,
                     &mut self.settings_scrollable_state,
                     &mut self.directory_btn_state,
@@ -747,7 +747,7 @@ impl Application for Ajour {
                 content = content.push(settings_container)
             }
             Mode::About => {
-                let about_container = element::about_container(
+                let about_container = element::about::data_container(
                     color_palette,
                     &release_copy,
                     &mut self.about_scrollable_state,
@@ -767,13 +767,13 @@ impl Application for Ajour {
                     .cloned()
                     .unwrap_or_default();
                 match state {
-                    State::Start => Some(element::status::status_container(
+                    State::Start => Some(element::status::data_container(
                         color_palette,
                         "Welcome to Ajour!",
                         "Please select your World of Warcraft directory",
                         Some(&mut self.onboarding_directory_btn_state),
                     )),
-                    State::Loading => Some(element::status::status_container(
+                    State::Loading => Some(element::status::data_container(
                         color_palette,
                         "Loading..",
                         &format!("Currently parsing {} addons.", flavor.to_string()),
@@ -781,7 +781,7 @@ impl Application for Ajour {
                     )),
                     State::Ready => {
                         if !has_addons {
-                            Some(element::status::status_container(
+                            Some(element::status::data_container(
                                 color_palette,
                                 "Woops!",
                                 &format!(
@@ -803,7 +803,7 @@ impl Application for Ajour {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
                     State::Start => None,
-                    State::Loading => Some(element::status::status_container(
+                    State::Loading => Some(element::status::data_container(
                         color_palette,
                         "Loading..",
                         "Currently loading catalog.",

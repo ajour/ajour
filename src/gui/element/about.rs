@@ -8,7 +8,7 @@ use {
     },
 };
 
-pub fn about_container<'a>(
+pub fn data_container<'a>(
     color_palette: ColorPalette,
     release: &Option<Release>,
     scrollable_state: &'a mut scrollable::State,

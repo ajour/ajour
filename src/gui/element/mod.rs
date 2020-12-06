@@ -1,6 +1,4 @@
-mod about;
-pub use about::about_container;
-
+pub mod about;
 pub mod catalog;
 pub mod menu;
 pub mod my_addons;
