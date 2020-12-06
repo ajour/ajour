@@ -1,15 +1,101 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, ColumnKey, ExpandType, Interaction, Message, ReleaseChannel},
+    crate::gui::{
+        style, ColumnKey, ColumnState, Config, ExpandType, Flavor, Interaction, Message, Mode,
+        ReleaseChannel, SortDirection, State,
+    },
     ajour_core::{
         addon::{Addon, AddonState},
         theme::ColorPalette,
     },
+    ajour_widgets::{header, Header},
     chrono::prelude::*,
-    iced::{Align, Button, Column, Container, Element, Length, PickList, Row, Space, Text},
+    iced::{button, Align, Button, Column, Container, Element, Length, PickList, Row, Space, Text},
+    std::collections::HashMap,
 };
 
-pub fn addon_data_container<'a, 'b>(
+fn row_title<T: PartialEq>(
+    column_key: T,
+    previous_column_key: Option<T>,
+    previous_sort_direction: Option<SortDirection>,
+    title: &str,
+) -> String {
+    if Some(column_key) == previous_column_key {
+        match previous_sort_direction {
+            Some(SortDirection::Asc) => format!("{} ▲", title),
+            Some(SortDirection::Desc) => format!("{} ▼", title),
+            _ => title.to_string(),
+        }
+    } else {
+        title.to_string()
+    }
+}
+
+pub fn row_titles_header<'a>(
+    color_palette: ColorPalette,
+    addons: &[Addon],
+    header_state: &'a mut header::State,
+    column_state: &'a mut [ColumnState],
+    previous_column_key: Option<ColumnKey>,
+    previous_sort_direction: Option<SortDirection>,
+) -> Header<'a, Message> {
+    // A row containing titles above the addon rows.
+    let mut row_titles = vec![];
+
+    for column in column_state.iter_mut().filter(|c| !c.hidden) {
+        let column_key = column.key;
+
+        let row_title = row_title(
+            column_key,
+            previous_column_key,
+            previous_sort_direction,
+            &column.key.title(),
+        );
+
+        let mut row_header = Button::new(
+            &mut column.btn_state,
+            Text::new(row_title)
+                .size(DEFAULT_FONT_SIZE)
+                .width(Length::Fill),
+        )
+        .width(Length::Fill)
+        .on_press(Interaction::SortColumn(column_key));
+
+        if previous_column_key == Some(column_key) {
+            row_header = row_header.style(style::SelectedColumnHeaderButton(color_palette));
+        } else {
+            row_header = row_header.style(style::ColumnHeaderButton(color_palette));
+        }
+
+        let row_header: Element<Interaction> = row_header.into();
+
+        let row_container = Container::new(row_header.map(Message::Interaction))
+            .width(column.width)
+            .style(style::NormalBackgroundContainer(color_palette));
+
+        // Only shows row titles if we have any addons.
+        if !addons.is_empty() {
+            row_titles.push((column.key.as_string(), row_container));
+        }
+    }
+
+    Header::new(
+        header_state,
+        row_titles,
+        Some(Length::Units(DEFAULT_PADDING)),
+        Some(Length::Units(DEFAULT_PADDING + 5)),
+    )
+    .spacing(1)
+    .height(Length::Units(25))
+    .on_resize(3, |event| {
+        Message::Interaction(Interaction::ResizeColumn(
+            Mode::MyAddons(Flavor::default()),
+            event,
+        ))
+    })
+}
+
+pub fn data_row_container<'a, 'b>(
     color_palette: ColorPalette,
     addon: &'a mut Addon,
     is_addon_expanded: bool,
@@ -553,4 +639,105 @@ pub fn addon_data_container<'a, 'b>(
     Container::new(addon_column)
         .width(Length::Fill)
         .style(style::Row(color_palette))
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn menu_container<'a>(
+    color_palette: ColorPalette,
+    flavor: Flavor,
+    update_all_button_state: &'a mut button::State,
+    refresh_button_state: &'a mut button::State,
+    state: &HashMap<Mode, State>,
+    addons: &[Addon],
+    config: &Config,
+) -> Container<'a, Message> {
+    // MyAddons state.
+    let state = state
+        .get(&Mode::MyAddons(flavor))
+        .cloned()
+        .unwrap_or_default();
+
+    // A row contain general settings.
+    let mut settings_row = Row::new().height(Length::Units(35));
+
+    let mut update_all_button = Button::new(
+        update_all_button_state,
+        Text::new("Update All").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DefaultButton(color_palette));
+
+    let mut refresh_button = Button::new(
+        refresh_button_state,
+        Text::new("Refresh").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DefaultButton(color_palette));
+
+    // Is any addon performing an action.
+    let addons_performing_actions = addons
+        .iter()
+        .any(|a| matches!(a.state, AddonState::Downloading | AddonState::Unpacking));
+
+    // Is any addon updtable.
+    let any_addon_updatable = addons
+        .iter()
+        .any(|a| matches!(a.state, AddonState::Updatable));
+
+    // Enable update_all_button if:
+    //   - We have addons.
+    //   - No addon is performing any task.
+    //   - We have updatable addons.
+    if !addons.is_empty() && !addons_performing_actions && any_addon_updatable {
+        update_all_button = update_all_button.on_press(Interaction::UpdateAll);
+    }
+
+    // Enable refresh_button if:
+    //   - No addon is performing any task.
+    //   - Mode state isn't start or loading
+    if !addons_performing_actions && !matches!(state, State::Start | State::Loading) {
+        refresh_button = refresh_button.on_press(Interaction::Refresh);
+    }
+
+    let update_all_button: Element<Interaction> = update_all_button.into();
+    let refresh_button: Element<Interaction> = refresh_button.into();
+
+    // Displays text depending on the state of the app.
+    let flavor = config.wow.flavor;
+    let ignored_addons = config.addons.ignored.get(&flavor);
+    let parent_addons_count = addons
+        .iter()
+        .filter(|a| !a.is_ignored(ignored_addons))
+        .count();
+
+    let status_text = match state {
+        State::Ready => Text::new(format!(
+            "{} {} addons loaded",
+            parent_addons_count,
+            config.wow.flavor.to_string()
+        ))
+        .size(DEFAULT_FONT_SIZE),
+        _ => Text::new(""),
+    };
+
+    let status_container = Container::new(status_text)
+        .center_y()
+        .padding(5)
+        .style(style::NormalBackgroundContainer(color_palette));
+
+    // Surrounds the elements with spacers, in order to make the GUI look good.
+    settings_row = settings_row
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+        .push(refresh_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(7), Length::Units(0)))
+        .push(update_all_button.map(Message::Interaction))
+        .push(Space::new(Length::Units(7), Length::Units(0)))
+        .push(status_container)
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
+
+    // Add space above settings_row.
+    let settings_column = Column::new()
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(settings_row);
+
+    // Wraps it in a container.
+    Container::new(settings_column)
 }

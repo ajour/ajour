@@ -1,16 +1,100 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
-        style, CatalogColumnKey, CatalogRow, InstallAddon, InstallKind, InstallStatus, Interaction,
-        Message,
+        style, Catalog, CatalogColumnKey, CatalogColumnState, CatalogRow, InstallAddon,
+        InstallKind, InstallStatus, Interaction, Message, Mode, SortDirection,
     },
     ajour_core::{config::Config, theme::ColorPalette},
+    ajour_widgets::{header, Header},
     chrono::prelude::*,
     iced::{Align, Button, Container, Element, Length, Row, Space, Text},
     num_format::{Locale, ToFormattedString},
 };
 
-pub fn catalog_data_container<'a, 'b>(
+fn row_title<T: PartialEq>(
+    column_key: T,
+    previous_column_key: Option<T>,
+    previous_sort_direction: Option<SortDirection>,
+    title: &str,
+) -> String {
+    if Some(column_key) == previous_column_key {
+        match previous_sort_direction {
+            Some(SortDirection::Asc) => format!("{} ▲", title),
+            Some(SortDirection::Desc) => format!("{} ▼", title),
+            _ => title.to_string(),
+        }
+    } else {
+        title.to_string()
+    }
+}
+
+pub fn row_titles_header<'a>(
+    color_palette: ColorPalette,
+    catalog: &Catalog,
+    header_state: &'a mut header::State,
+    column_state: &'a mut [CatalogColumnState],
+    previous_column_key: Option<CatalogColumnKey>,
+    previous_sort_direction: Option<SortDirection>,
+) -> Header<'a, Message> {
+    // A row containing titles above the addon rows.
+    let mut row_titles = vec![];
+
+    for column in column_state.iter_mut().filter(|c| !c.hidden) {
+        let column_key = column.key;
+
+        let row_title = row_title(
+            column_key,
+            previous_column_key,
+            previous_sort_direction,
+            &column.key.title(),
+        );
+
+        let mut row_header = Button::new(
+            &mut column.btn_state,
+            Text::new(row_title)
+                .size(DEFAULT_FONT_SIZE)
+                .width(Length::Fill),
+        )
+        .width(Length::Fill);
+
+        if column_key != CatalogColumnKey::Install {
+            row_header = row_header.on_press(Interaction::SortCatalogColumn(column_key));
+        }
+
+        if previous_column_key == Some(column_key) {
+            row_header = row_header.style(style::SelectedColumnHeaderButton(color_palette));
+        } else if column_key == CatalogColumnKey::Install {
+            row_header = row_header.style(style::UnclickableColumnHeaderButton(color_palette));
+        } else {
+            row_header = row_header.style(style::ColumnHeaderButton(color_palette));
+        }
+
+        let row_header: Element<Interaction> = row_header.into();
+
+        let row_container = Container::new(row_header.map(Message::Interaction))
+            .width(column.width)
+            .style(style::NormalBackgroundContainer(color_palette));
+
+        // Only shows row titles if we have any catalog results.
+        if !catalog.addons.is_empty() {
+            row_titles.push((column.key.as_string(), row_container));
+        }
+    }
+
+    Header::new(
+        header_state,
+        row_titles,
+        Some(Length::Units(DEFAULT_PADDING)),
+        Some(Length::Units(DEFAULT_PADDING + 5)),
+    )
+    .spacing(1)
+    .height(Length::Units(25))
+    .on_resize(3, |event| {
+        Message::Interaction(Interaction::ResizeColumn(Mode::Catalog, event))
+    })
+}
+
+pub fn data_row_container<'a, 'b>(
     color_palette: ColorPalette,
     config: &Config,
     addon: &'a mut CatalogRow,
