@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.5.4] - 2020-12-07
+
 ### Added
 
 - Row Highlighting. Rows in `My Addons` and `Catalog` will now highlight on mouseover.
