@@ -224,10 +224,7 @@ where
                 }
                 status_from_content
             }
-            _ => {
-                println!("{:?}", event);
-                status_from_content
-            }
+            _ => status_from_content,
         }
     }
 
