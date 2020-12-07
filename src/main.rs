@@ -155,7 +155,8 @@ fn handle_self_update_temp(cleanup_path: &PathBuf) -> Result<()> {
     // current bin to that bin name. This was passed as a string of just the file
     // name, so we want to make an actual full path out of it first.
     if current_bin
-        .as_os_str()
+        .file_name()
+        .unwrap_or_default()
         .to_str()
         .unwrap_or_default()
         .starts_with("tmp_")
