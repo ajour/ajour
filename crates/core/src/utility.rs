@@ -214,7 +214,7 @@ pub fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
 ///
 /// Will retry for ~30 seconds with longer and longer delays between each, to allow for virus scan
 /// and other automated operations to complete.
-fn rename<F, T>(from: F, to: T) -> io::Result<()>
+pub fn rename<F, T>(from: F, to: T) -> io::Result<()>
 where
     F: AsRef<Path>,
     T: AsRef<Path>,

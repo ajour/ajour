@@ -8,7 +8,7 @@ mod command;
 mod gui;
 
 use ajour_core::fs::CONFIG_DIR;
-use ajour_core::utility::remove_file;
+use ajour_core::utility::{remove_file, rename};
 
 use std::env;
 use std::path::PathBuf;
@@ -141,7 +141,35 @@ fn setup_logger(is_cli: bool, is_debug: bool) -> Result<()> {
 }
 
 fn handle_self_update_temp(cleanup_path: &PathBuf) -> Result<()> {
-    remove_file(cleanup_path)?;
+    #[cfg(not(target_os = "linux"))]
+    let current_bin = env::current_exe()?;
+
+    #[cfg(target_os = "linux")]
+    let current_bin =
+        PathBuf::from(env::var("APPIMAGE").context("error getting APPIMAGE env variable")?);
+
+    // Fix for self updating pre 0.5.4 to >= 0.5.4
+    //
+    // Pre 0.5.4, `cleanup_path` is actually the file name of the main bin name that
+    // got passed via the CLI in the self update process. We want to rename the
+    // current bin to that bin name. This was passed as a string of just the file
+    // name, so we want to make an actual full path out of it first.
+    if current_bin
+        .as_os_str()
+        .to_str()
+        .unwrap_or_default()
+        .starts_with("tmp_")
+    {
+        let main_bin_name = cleanup_path;
+
+        let parent_dir = current_bin.parent().unwrap();
+
+        let main_bin = parent_dir.join(&main_bin_name);
+
+        rename(&current_bin, &main_bin)?;
+    } else {
+        remove_file(cleanup_path)?;
+    }
 
     log::debug!("Ajour updated successfully");
 
