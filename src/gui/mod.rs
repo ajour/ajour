@@ -23,8 +23,8 @@ use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::{
     button, pick_list, scrollable, text_input, Align, Application, Button, Column, Command,
-    Container, Element, HorizontalAlignment, Length, PickList, Row, Settings, Space, Subscription,
-    Text, TextInput,
+    Container, Element, HorizontalAlignment, Length, PickList, Row, Scrollable, Settings, Space,
+    Subscription, Text, TextInput,
 };
 use image::ImageFormat;
 use isahc::http::Uri;
@@ -332,7 +332,7 @@ impl Application for Ajour {
         };
 
         // Menu container at the top of the applications.
-        let menu_container = element::menu_container(
+        let menu_container = element::menu::data_container(
             color_palette,
             &self.mode,
             &self.state,
@@ -370,7 +370,7 @@ impl Application for Ajour {
                 let has_addons = !&addons.is_empty();
 
                 // Menu for addons.
-                let menu_addons_container = element::menu_addons_container(
+                let menu_addons_container = element::my_addons::menu_container(
                     color_palette,
                     flavor,
                     &mut self.update_all_btn_state,
@@ -384,7 +384,7 @@ impl Application for Ajour {
                 // Addon row titles is a row of titles above the addon scrollable.
                 // This is to add titles above each section of the addon row, to let
                 // the user easily identify what the value is.
-                let addon_row_titles = element::addon_row_titles(
+                let addon_row_titles = element::my_addons::titles_row_header(
                     color_palette,
                     addons,
                     &mut self.header_state.state,
@@ -395,8 +395,10 @@ impl Application for Ajour {
 
                 // A scrollable list containing rows.
                 // Each row holds data about a single addon.
-                let mut addons_scrollable =
-                    element::addon_scrollable(color_palette, &mut self.addons_scrollable_state);
+                let mut addons_scrollable = Scrollable::new(&mut self.addons_scrollable_state)
+                    .spacing(1)
+                    .height(Length::FillPortion(1))
+                    .style(style::Scrollable(color_palette));
 
                 // Loops though the addons.
                 for addon in addons {
@@ -413,7 +415,7 @@ impl Application for Ajour {
 
                     // A container cell which has all data about the current addon.
                     // If the addon is expanded, then this is also included in this container.
-                    let addon_data_cell = element::addon_data_cell(
+                    let addon_data_cell = element::my_addons::data_row_container(
                         color_palette,
                         addon,
                         is_addon_expanded,
@@ -671,7 +673,7 @@ impl Application for Ajour {
                         .height(Length::Units(35))
                         .center_y();
 
-                    let catalog_row_titles = element::catalog_row_titles(
+                    let catalog_row_titles = element::catalog::titles_row_header(
                         color_palette,
                         catalog,
                         &mut self.catalog_header_state.state,
@@ -680,10 +682,11 @@ impl Application for Ajour {
                         self.catalog_header_state.previous_sort_direction,
                     );
 
-                    let mut catalog_scrollable = element::addon_scrollable(
-                        color_palette,
-                        &mut self.catalog_search_state.scrollable_state,
-                    );
+                    let mut catalog_scrollable =
+                        Scrollable::new(&mut self.catalog_search_state.scrollable_state)
+                            .spacing(1)
+                            .height(Length::FillPortion(1))
+                            .style(style::Scrollable(color_palette));
 
                     let install_addons = self.install_addons.entry(flavor).or_default();
 
@@ -700,7 +703,7 @@ impl Application for Ajour {
                                 && matches!(a.kind, InstallKind::Catalog {..})
                         });
 
-                        let catalog_data_cell = element::catalog_data_cell(
+                        let catalog_data_cell = element::catalog::data_row_container(
                             color_palette,
                             &self.config,
                             addon,
@@ -725,7 +728,7 @@ impl Application for Ajour {
                 }
             }
             Mode::Settings => {
-                let settings_container = element::settings_container(
+                let settings_container = element::settings::data_container(
                     color_palette,
                     &mut self.settings_scrollable_state,
                     &mut self.directory_btn_state,
@@ -744,7 +747,7 @@ impl Application for Ajour {
                 content = content.push(settings_container)
             }
             Mode::About => {
-                let about_container = element::about_container(
+                let about_container = element::about::data_container(
                     color_palette,
                     &release_copy,
                     &mut self.about_scrollable_state,
@@ -764,13 +767,13 @@ impl Application for Ajour {
                     .cloned()
                     .unwrap_or_default();
                 match state {
-                    State::Start => Some(element::status_container(
+                    State::Start => Some(element::status::data_container(
                         color_palette,
                         "Welcome to Ajour!",
                         "Please select your World of Warcraft directory",
                         Some(&mut self.onboarding_directory_btn_state),
                     )),
-                    State::Loading => Some(element::status_container(
+                    State::Loading => Some(element::status::data_container(
                         color_palette,
                         "Loading..",
                         &format!("Currently parsing {} addons.", flavor.to_string()),
@@ -778,7 +781,7 @@ impl Application for Ajour {
                     )),
                     State::Ready => {
                         if !has_addons {
-                            Some(element::status_container(
+                            Some(element::status::data_container(
                                 color_palette,
                                 "Woops!",
                                 &format!(
@@ -800,7 +803,7 @@ impl Application for Ajour {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
                     State::Start => None,
-                    State::Loading => Some(element::status_container(
+                    State::Loading => Some(element::status::data_container(
                         color_palette,
                         "Loading..",
                         "Currently loading catalog.",
