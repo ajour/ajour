@@ -207,7 +207,7 @@ where
         );
         match status_from_content {
             event::Status::Ignored => {
-                if let Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) = event {
+                if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) = event {
                     if let Some(on_press) = &self.on_press {
                         let bounds = layout.bounds();
                         //We can face issues if the row is expanded, so we manage it by having a reduced bounds area to check for pointer
