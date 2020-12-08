@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Changed
+
+- Catalog search now uses a fuzzy match for better searching of the catalog.
+
 ## [0.5.4] - 2020-12-07
 
 ### Added
