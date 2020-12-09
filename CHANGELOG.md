@@ -14,6 +14,11 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Certain CF addons weren't fingerprinted correctly due to a bug in the fingerprinting
+  logic for splitting on lines.
+
 ## [0.5.4] - 2020-12-07
 
 ### Added
