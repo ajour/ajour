@@ -17,8 +17,8 @@ wgpu = ["ajour-widgets/wgpu", "iced/wgpu", "iced/default_system_font"]
 opengl = ["ajour-widgets/opengl", "iced/glow", "iced/glow_default_system_font"]
 
 [dependencies]
-ajour-core = { version = "0.5.4-rc.2", path = "crates/core", features=['gui'] }
-ajour-widgets = { version = "0.5.4-rc.2", path = "crates/widgets" }
+ajour-core = { version = "0.5.4", path = "crates/core", features=['gui'] }
+ajour-widgets = { version = "0.5.4", path = "crates/widgets" }
 
 iced = { version = "0.2.0", default-features = false, features = ["debug"] }
 iced_futures = { version = "0.2", features = ["async-std"] }
