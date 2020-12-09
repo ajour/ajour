@@ -1750,7 +1750,17 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
                     })
                     .next()
                 {
-                    a.width = column.width.map_or(Length::Fill, Length::Units);
+                    // Always force "Title" column as Length::Fill
+                    //
+                    // Shouldn't be an issue here, as it was for catalog column fix
+                    // below, but will cover things in case anyone accidently manually
+                    // modifies their config and sets a fixed width on this column.
+                    a.width = if a.key == ColumnKey::Title {
+                        Length::Fill
+                    } else {
+                        column.width.map_or(Length::Fill, Length::Units)
+                    };
+
                     a.hidden = column.hidden;
                     a.order = idx;
                 }
