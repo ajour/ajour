@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Ignored addons are now sorted correctly again
+
 ## [0.5.4] - 2020-12-07
 
 ### Added
