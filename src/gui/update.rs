@@ -25,6 +25,10 @@ use {
     anyhow::Context,
     async_std::sync::{Arc, Mutex},
     chrono::{NaiveTime, Utc},
+    fuzzy_matcher::{
+        skim::{SkimMatcherV2, SkimScoreConfig},
+        FuzzyMatcher,
+    },
     iced::{Command, Length},
     isahc::http::Uri,
     native_dialog::*,
@@ -1214,7 +1218,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
             // Catalog search query
-            ajour.catalog_search_state.query = Some(query);
+            ajour.catalog_search_state.query = if query.is_empty() {
+                None
+            } else {
+                // Always set sort config to None when a new character is typed
+                // so the sort will be off fuzzy match score.
+                ajour.catalog_header_state.previous_column_key.take();
+                ajour.catalog_header_state.previous_sort_direction.take();
+
+                Some(query)
+            };
 
             query_and_sort_catalog(ajour);
         }
@@ -1811,46 +1824,90 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
 
-        let mut catalog_rows: Vec<_> = catalog
+        // Use default, can tweak if needed in future
+        let fuzzy_match_config = SkimScoreConfig {
+            ..Default::default()
+        };
+        let fuzzy_matcher = SkimMatcherV2::default().score_config(fuzzy_match_config);
+
+        let mut catalog_rows_and_score = catalog
             .addons
             .iter()
             .filter(|a| !a.game_versions.is_empty())
-            .filter(|a| {
-                let cleaned_text =
-                    format!("{} {}", a.name.to_lowercase(), a.summary.to_lowercase());
+            .filter_map(|a| {
+                let title_and_summary = format!("{} {}", a.name, a.summary);
 
                 if let Some(query) = &query {
-                    cleaned_text.contains(query)
+                    if let Some(score) = fuzzy_matcher.fuzzy_match(&title_and_summary, &query) {
+                        Some((a, score))
+                    } else {
+                        None
+                    }
                 } else {
-                    true
+                    Some((a, 0))
                 }
             })
-            .filter(|a| {
+            .filter(|(a, _)| {
                 a.game_versions
                     .iter()
                     .any(|gc| gc.flavor == flavor.base_flavor())
             })
-            .filter(|a| match source {
+            .filter(|(a, _)| match source {
                 CatalogSource::Choice(source) => a.source == *source,
             })
-            .filter(|a| match category {
+            .filter(|(a, _)| match category {
                 CatalogCategory::All => true,
                 CatalogCategory::Choice(name) => a.categories.iter().any(|c| c == name),
             })
-            .cloned()
-            .map(CatalogRow::from)
-            .collect();
+            .map(|(a, score)| (CatalogRow::from(a.clone()), score))
+            .collect::<Vec<_>>();
 
-        let sort_direction = ajour
-            .catalog_header_state
-            .previous_sort_direction
-            .unwrap_or(SortDirection::Desc);
-        let column_key = ajour
-            .catalog_header_state
-            .previous_column_key
-            .unwrap_or(CatalogColumnKey::NumDownloads);
+        let mut catalog_rows = if query.is_some() {
+            // If a query is defined, the default sort is the fuzzy match score
+            catalog_rows_and_score.sort_by(|(addon_a, score_a), (addon_b, score_b)| {
+                score_a.cmp(&score_b).reverse().then_with(|| {
+                    addon_a
+                        .addon
+                        .number_of_downloads
+                        .cmp(&addon_b.addon.number_of_downloads)
+                        .reverse()
+                })
+            });
 
-        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key, flavor);
+            catalog_rows_and_score
+                .into_iter()
+                .map(|(a, _)| a)
+                .collect::<Vec<_>>()
+        } else {
+            catalog_rows_and_score
+                .into_iter()
+                .map(|(a, _)| a)
+                .collect::<Vec<_>>()
+        };
+
+        // If no query is defined, use the column sorting configuration or default
+        // sort of NumDownloads DESC.
+        //
+        // If a query IS defined, only sort if column has been sorted after query
+        // has been typed. Sort direction / key are set to None anytime a character
+        // is typed into the query box so results will sort by fuzzy match score.
+        // Therefore they'll only be Some if the columns are sorted after the query
+        // is input.
+        if query.is_none()
+            || (ajour.catalog_header_state.previous_sort_direction.is_some()
+                && ajour.catalog_header_state.previous_column_key.is_some())
+        {
+            let sort_direction = ajour
+                .catalog_header_state
+                .previous_sort_direction
+                .unwrap_or(SortDirection::Desc);
+            let column_key = ajour
+                .catalog_header_state
+                .previous_column_key
+                .unwrap_or(CatalogColumnKey::NumDownloads);
+
+            sort_catalog_addons(&mut catalog_rows, sort_direction, column_key, flavor);
+        }
 
         catalog_rows = catalog_rows
             .into_iter()

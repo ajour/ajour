@@ -14,8 +14,14 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Changed
+
+- Catalog search now uses a fuzzy match for better searching of the catalog.
+
 ### Fixed
 
+- Certain CF addons weren't fingerprinted correctly due to a bug in the fingerprinting
+  logic for splitting on lines.
 - Fix a bug where users upgrading from an older version of Ajour might have incorrect
   behavior when trying to resize a column in the Catalog
 
