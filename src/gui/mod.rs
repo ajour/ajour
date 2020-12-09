@@ -1807,7 +1807,18 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
                     })
                     .next()
                 {
-                    a.width = column.width.map_or(Length::Fill, Length::Units);
+                    // Always force "Title" column as Length::Fill
+                    //
+                    // An older version of ajour used a different column as the fill
+                    // column and some users have migration issues when updating to
+                    // a newer version, causing NO columns to be set as Fill and
+                    // making resizing columns work incorrectly
+                    a.width = if a.key == CatalogColumnKey::Title {
+                        Length::Fill
+                    } else {
+                        column.width.map_or(Length::Fill, Length::Units)
+                    };
+
                     a.hidden = column.hidden;
                     a.order = idx;
                 }
