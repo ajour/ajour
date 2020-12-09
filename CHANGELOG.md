@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Changed
+
+- Catalog search now uses a fuzzy match for better searching of the catalog.
+
 ### Fixed
 
 - Certain CF addons weren't fingerprinted correctly due to a bug in the fingerprinting
