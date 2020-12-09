@@ -911,7 +911,7 @@ pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32, ParseError> {
 
         let text = String::from_utf8_lossy(&buf);
         let text = comment_strip_regex.replace_all(&text, "");
-        for line in text.split(&['\n', '\r'][..]) {
+        for line in text.lines() {
             let mut last_offset = 0;
             while let Some(inc_match) = inclusion_regex.captures_from_pos(line, last_offset)? {
                 let prev_last_offset = last_offset;
