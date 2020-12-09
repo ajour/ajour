@@ -24,6 +24,7 @@ and `Removed`.
   logic for splitting on lines.
 - Fix a bug where users upgrading from an older version of Ajour might have incorrect
   behavior when trying to resize a column in the Catalog
+- Ignored addons are now sorted correctly again
 
 ## [0.5.4] - 2020-12-07
 
