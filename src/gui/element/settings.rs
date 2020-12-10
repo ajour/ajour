@@ -4,8 +4,8 @@ use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
-        ColumnSettings, DirectoryType, Interaction, Message, ScaleState, SelfUpdateChannelState,
-        ThemeState,
+        ColumnSettings, DefaultReleaseChannelState, DirectoryType, Interaction, Message,
+        ReleaseChannel, ScaleState, SelfUpdateChannelState, ThemeState,
     },
     ajour_core::{config::Config, theme::ColorPalette},
     iced::{
@@ -28,6 +28,7 @@ pub fn data_container<'a, 'b>(
     catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
     open_config_dir_button_state: &'a mut button::State,
     self_update_channel_state: &'a mut SelfUpdateChannelState,
+    default_release_channel_state: &'a mut DefaultReleaseChannelState,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -312,6 +313,30 @@ pub fn data_container<'a, 'b>(
         Column::new().push(checkbox_container)
     };
 
+    let default_release_channel_column = {
+        let title_container =
+            Container::new(Text::new("Global Release Channel").size(DEFAULT_FONT_SIZE))
+                .style(style::NormalBackgroundContainer(color_palette));
+
+        let pick_list = PickList::new(
+            &mut default_release_channel_state.picklist,
+            &ReleaseChannel::ALL[..],
+            Some(ReleaseChannel::Stable),
+            Message::DefaultReleaseChannel,
+        )
+        .text_size(14)
+        .width(Length::Units(120))
+        .style(style::PickList(color_palette));
+
+        // Data row for release channel picker list.
+        let data_row = Row::new().push(pick_list);
+
+        Column::new()
+            .push(title_container)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(data_row)
+    };
+
     let config_column = {
         let config_dir = ajour_core::fs::config_dir();
         let config_dir_string = config_dir.as_path().display().to_string();
@@ -395,6 +420,8 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(addon_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(default_release_channel_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(ui_title_container)

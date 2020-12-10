@@ -126,6 +126,7 @@ pub enum Message {
     ParsedAddons((Flavor, Result<Vec<Addon>, ParseError>)),
     UpdateFingerprint((Flavor, String, Result<(), ParseError>)),
     ThemeSelected(String),
+    // TODO: Rename to addon specific.
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
     UnpackedAddon(
@@ -148,6 +149,8 @@ pub enum Message {
     AddonCacheEntryRemoved(Result<Option<AddonCacheEntry>, CacheError>),
     RefreshCatalog(Instant),
     CheckLatestRelease(Instant),
+    // TODO: Rename to DefaultReleaseChannelSelected.
+    DefaultReleaseChannel(ReleaseChannel),
 }
 
 pub struct Ajour {
@@ -195,6 +198,7 @@ pub struct Ajour {
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
     self_update_channel_state: SelfUpdateChannelState,
+    default_release_channel_state: DefaultReleaseChannelState,
 }
 
 impl Default for Ajour {
@@ -246,6 +250,11 @@ impl Default for Ajour {
             self_update_channel_state: SelfUpdateChannelState {
                 picklist: Default::default(),
                 options: SelfUpdateChannel::all(),
+            },
+            default_release_channel_state: DefaultReleaseChannelState {
+                picklist: Default::default(),
+                // TODO: Change to default when we have created it.
+                release_channel: ReleaseChannel::Stable,
             },
         }
     }
@@ -742,6 +751,7 @@ impl Application for Ajour {
                     &catalog_column_config,
                     &mut self.open_config_dir_btn_state,
                     &mut self.self_update_channel_state,
+                    &mut self.default_release_channel_state,
                 );
 
                 content = content.push(settings_container)
@@ -1653,6 +1663,12 @@ pub struct SelfUpdateState {
 pub struct SelfUpdateChannelState {
     picklist: pick_list::State<SelfUpdateChannel>,
     options: [SelfUpdateChannel; 2],
+}
+
+#[derive(Debug)]
+pub struct DefaultReleaseChannelState {
+    picklist: pick_list::State<ReleaseChannel>,
+    release_channel: ReleaseChannel,
 }
 
 async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {

@@ -1496,6 +1496,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::LatestRelease,
             ));
         }
+        Message::DefaultReleaseChannel(channel) => {
+            println!("{:?}", channel);
+        }
         Message::Error(error) => {
             log_error(&error);
             ajour.error = Some(error);
