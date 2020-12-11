@@ -21,6 +21,14 @@ impl FingerprintCache {
     pub(crate) fn get_mut_for_flavor(&mut self, flavor: Flavor) -> &mut Vec<Fingerprint> {
         self.0.entry(flavor).or_default()
     }
+
+    pub(crate) fn flavor_exists(&self, flavor: Flavor) -> bool {
+        self.0.contains_key(&flavor)
+    }
+
+    pub(crate) fn delete_flavor(&mut self, flavor: Flavor) {
+        self.0.remove_entry(&flavor);
+    }
 }
 
 impl PersistentData for FingerprintCache {

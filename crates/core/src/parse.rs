@@ -49,6 +49,22 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // If the path does not exists or does not point on a directory we return an Error.
     if !root_dir.is_dir() {
+        // Delete fingerprints if flavor addon folder no longer exists on filesystem
+        if let Some(fingerprint_cache) = &fingerprint_cache {
+            let mut cache = fingerprint_cache.lock().await;
+
+            if cache.flavor_exists(flavor) {
+                cache.delete_flavor(flavor);
+
+                log::info!(
+                    "{} - deleting cached fingerprints since AddOns folder doesn't exist",
+                    flavor
+                )
+            }
+
+            cache.save()?;
+        }
+
         return Err(ParseError::MissingAddonDirectory {
             path: root_dir.to_owned(),
         });
@@ -76,6 +92,22 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Return early if there are no directories to parse
     if all_dirs.is_empty() {
+        // Delete all cached fingerprints for this flavor since there are no addon folders
+        if let Some(fingerprint_cache) = &fingerprint_cache {
+            let mut cache = fingerprint_cache.lock().await;
+
+            if cache.flavor_exists(flavor) {
+                cache.delete_flavor(flavor);
+
+                log::info!(
+                    "{} - deleting cached fingerprints since AddOns folder is empty",
+                    flavor
+                )
+            }
+
+            cache.save()?;
+        }
+
         return Ok(vec![]);
     }
 
