@@ -1,4 +1,4 @@
-use crate::addon::Addon;
+use crate::addon::{Addon, AddonFolder};
 use crate::config::Flavor;
 use crate::error::{CacheError, FilesystemError};
 use crate::fs::{config_dir, PersistentData};
@@ -130,6 +130,52 @@ pub async fn remove_addon_cache_entry(
     }
 }
 
+/// Removes cache entires that have folder
+/// names that are missing in the input `folders`
+///
+/// Pass `false` to save_cache for testing purposes
+pub async fn remove_entries_with_missing_folders(
+    addon_cache: Arc<Mutex<AddonCache>>,
+    flavor: Flavor,
+    folders: &[AddonFolder],
+    save_cache: bool,
+) -> Result<usize, CacheError> {
+    // Name of all folders to check against
+    let folder_names = folders.iter().map(|f| f.id.clone()).collect::<Vec<_>>();
+
+    // Lock mutex to get mutable access and block other tasks from trying to update
+    let mut addon_cache = addon_cache.lock().await;
+
+    // Get entries for flavor
+    let entries = addon_cache.get_mut_for_flavor(flavor);
+
+    // Get the idx of any entry that has a folder name that's missing
+    // from our input folders
+    let entries_to_delete = entries
+        .iter()
+        .cloned()
+        .enumerate()
+        .filter(|(_, entry)| !entry.folder_names.iter().all(|f| folder_names.contains(&f)))
+        .map(|(idx, _)| idx)
+        .collect::<Vec<_>>();
+
+    if !entries_to_delete.is_empty() {
+        // Remove each entry, accounting for offset since items shift left on
+        // each remove
+        for (offset, idx) in entries_to_delete.iter().enumerate() {
+            entries.remove(*idx - offset);
+        }
+
+        // Persist changes to filesystem
+        if save_cache {
+            addon_cache.save()?;
+        }
+    }
+
+    // Return number of entries deleted
+    Ok(entries_to_delete.len())
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AddonCacheEntry {
     pub title: String,
@@ -163,5 +209,80 @@ impl TryFrom<&Addon> for AddonCacheEntry {
                 title: addon.title().to_owned(),
             })
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::repository::RepositoryIdentifiers;
+
+    use async_std::task;
+
+    #[test]
+    fn test_remove_entries_with_missing_folders() {
+        task::block_on(async {
+            let flavor = Flavor::Retail;
+
+            let addon_folders = (0..30)
+                .map(|idx| AddonFolder {
+                    id: format!("folder_{}", idx + 1),
+                    title: format!("folder_{}", idx + 1),
+                    interface: Default::default(),
+                    path: Default::default(),
+                    author: Default::default(),
+                    notes: Default::default(),
+                    version: Default::default(),
+                    repository_identifiers: RepositoryIdentifiers {
+                        curse: Some(idx as i32),
+                        ..Default::default()
+                    },
+                    dependencies: Default::default(),
+                    fingerprint: Default::default(),
+                })
+                .collect::<Vec<_>>();
+
+            let cache = {
+                let cache: Arc<Mutex<AddonCache>> = Default::default();
+                let mut cache_lock = cache.lock_arc().await;
+
+                let entries = cache_lock.get_mut_for_flavor(flavor);
+
+                entries.extend(addon_folders.chunks(10).enumerate().map(|(idx, folders)| {
+                    AddonCacheEntry {
+                        title: format!("Test{}", idx + 1),
+                        repository: RepositoryKind::Tukui,
+                        repository_id: format!("{}", idx + 1),
+                        primary_folder_id: folders.first().map(|f| f.id.clone()).unwrap(),
+                        folder_names: folders.iter().map(|f| f.id.clone()).collect(),
+                        modified: Utc::now(),
+                    }
+                }));
+
+                cache
+            };
+
+            // Remove partial 1 folder from the first 10, then all folders of
+            // the last 10. Only the middle 10 folders are fully in tact,
+            // meaning on the 2nd entry should remain after this operation
+            let num_deleted = remove_entries_with_missing_folders(
+                cache.clone(),
+                flavor,
+                &addon_folders[5..20],
+                false,
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(num_deleted, 2);
+
+            let mut cache_lock = cache.lock().await;
+
+            let entries = cache_lock.get_mut_for_flavor(flavor);
+
+            let names = entries.iter().map(|e| e.title.clone()).collect::<Vec<_>>();
+
+            assert_eq!(names, vec!["Test2".to_string()]);
+        });
     }
 }

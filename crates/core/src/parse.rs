@@ -1,8 +1,8 @@
 use crate::{
     addon::{Addon, AddonFolder, AddonState},
-    cache::{AddonCache, AddonCacheEntry, FingerprintCache},
+    cache::{self, AddonCache, AddonCacheEntry, FingerprintCache},
     config::Flavor,
-    error::{DownloadError, ParseError, RepositoryError},
+    error::{CacheError, DownloadError, ParseError, RepositoryError},
     fs::PersistentData,
     murmur2::calculate_hash,
     repository::{curse, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage},
@@ -87,7 +87,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut addon_folders = parse_addon_folders(root_dir, flavor, &all_dirs, &fingerprints).await;
 
     // Get all cached entries
-    let cache_entries = get_cache_entries(flavor, addon_cache).await;
+    let cache_entries = get_cache_entries(flavor, addon_cache, &addon_folders).await?;
 
     // Get fingerprint info for all non-cached addon folders
     let fingerprint_info =
@@ -272,8 +272,29 @@ async fn parse_addon_folders(
 async fn get_cache_entries(
     flavor: Flavor,
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
-) -> Vec<AddonCacheEntry> {
+    addon_folders: &[AddonFolder],
+) -> Result<Vec<AddonCacheEntry>, CacheError> {
     let cache_entries = if let Some(addon_cache) = addon_cache {
+        // Remove any cached entries for folders that no longer exist
+        // on the filesystem
+        {
+            let num_removed = cache::remove_entries_with_missing_folders(
+                addon_cache.clone(),
+                flavor,
+                addon_folders,
+                true,
+            )
+            .await?;
+
+            if num_removed > 0 {
+                log::debug!(
+                    "{} - {} cached entries removed due to missing addon folders",
+                    flavor,
+                    num_removed
+                );
+            }
+        }
+
         let mut addon_cache = addon_cache.lock().await;
         let addon_cache_entries = addon_cache.get_mut_for_flavor(flavor);
 
@@ -282,9 +303,13 @@ async fn get_cache_entries(
         vec![]
     };
 
-    log::debug!("{} - {} cached entries", flavor, cache_entries.len());
+    log::debug!(
+        "{} - {} valid cache entries retrieved",
+        flavor,
+        cache_entries.len()
+    );
 
-    cache_entries
+    Ok(cache_entries)
 }
 
 async fn get_curse_fingerprint_info(
