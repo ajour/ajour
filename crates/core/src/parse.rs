@@ -310,7 +310,7 @@ async fn get_cache_entries(
         // Remove any cached entries for folders that no longer exist
         // on the filesystem
         {
-            let num_removed = cache::remove_entries_with_missing_folders(
+            let num_removed = cache::remove_addon_entries_with_missing_folders(
                 addon_cache.clone(),
                 flavor,
                 addon_folders,

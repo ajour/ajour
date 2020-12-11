@@ -138,11 +138,11 @@ pub async fn remove_addon_cache_entry(
     }
 }
 
-/// Removes cache entires that have folder
+/// Removes addon cache entires that have folder
 /// names that are missing in the input `folders`
 ///
 /// Pass `false` to save_cache for testing purposes
-pub async fn remove_entries_with_missing_folders(
+pub async fn remove_addon_entries_with_missing_folders(
     addon_cache: Arc<Mutex<AddonCache>>,
     flavor: Flavor,
     folders: &[AddonFolder],
@@ -273,7 +273,7 @@ mod test {
             // Remove partial 1 folder from the first 10, then all folders of
             // the last 10. Only the middle 10 folders are fully in tact,
             // meaning on the 2nd entry should remain after this operation
-            let num_deleted = remove_entries_with_missing_folders(
+            let num_deleted = remove_addon_entries_with_missing_folders(
                 cache.clone(),
                 flavor,
                 &addon_folders[5..20],
