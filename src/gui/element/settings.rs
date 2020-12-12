@@ -318,7 +318,7 @@ pub fn data_container<'a, 'b>(
             Container::new(Text::new("Default Release Channel").size(DEFAULT_FONT_SIZE))
                 .style(style::NormalBackgroundContainer(color_palette));
 
-        // Filter away `ReleaseChannel::Default` because we want to select a actual value. 
+        // Filter away `ReleaseChannel::Default` because we want to select a actual value.
         let release_channels: Vec<_> = ReleaseChannel::ALL
             .to_vec()
             .into_iter()
