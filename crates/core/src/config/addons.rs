@@ -7,6 +7,9 @@ use std::collections::HashMap;
 /// Struct for addons specific settings.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct Addons {
+    #[serde(default)]
+    pub default_release_channel: ReleaseChannel,
+
     #[serde(default, deserialize_with = "de_ignored")]
     pub ignored: HashMap<Flavor, Vec<String>>,
 
@@ -17,6 +20,7 @@ pub struct Addons {
 impl Default for Addons {
     fn default() -> Self {
         Addons {
+            default_release_channel: ReleaseChannel::Stable,
             ignored: HashMap::new(),
             release_channels: HashMap::new(),
         }

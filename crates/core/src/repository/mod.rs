@@ -213,13 +213,15 @@ impl Ord for RemotePackage {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
 pub enum ReleaseChannel {
+    Default,
     Stable,
     Beta,
     Alpha,
 }
 
 impl ReleaseChannel {
-    pub const ALL: [ReleaseChannel; 3] = [
+    pub const ALL: [ReleaseChannel; 4] = [
+        ReleaseChannel::Default,
         ReleaseChannel::Stable,
         ReleaseChannel::Beta,
         ReleaseChannel::Alpha,
@@ -228,7 +230,7 @@ impl ReleaseChannel {
 
 impl Default for ReleaseChannel {
     fn default() -> ReleaseChannel {
-        ReleaseChannel::Stable
+        ReleaseChannel::Default
     }
 }
 
@@ -238,6 +240,7 @@ impl std::fmt::Display for ReleaseChannel {
             f,
             "{}",
             match self {
+                ReleaseChannel::Default => "Default",
                 ReleaseChannel::Stable => "Stable",
                 ReleaseChannel::Beta => "Beta",
                 ReleaseChannel::Alpha => "Alpha",

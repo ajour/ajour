@@ -1488,6 +1488,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::LatestRelease,
             ));
         }
+        Message::Interaction(Interaction::PickDefaultAddonReleaseChannel(channel)) => {
+            log::debug!("Interaction::PickDefaultAddonReleaseChannel({:?})", channel);
+
+            ajour.config.addons.default_release_channel = channel;
+
+            let _ = ajour.config.save();
+        }
         Message::CheckLatestRelease(_) => {
             log::debug!("Message::CheckLatestRelease");
 
@@ -1495,9 +1502,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 get_latest_release(ajour.config.self_update_channel),
                 Message::LatestRelease,
             ));
-        }
-        Message::DefaultReleaseChannel(channel) => {
-            println!("{:?}", channel);
         }
         Message::Error(error) => {
             log_error(&error);

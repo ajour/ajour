@@ -111,6 +111,7 @@ pub enum Interaction {
     UpdateAjour,
     ToggleBackupFolder(bool, BackupFolderKind),
     PickSelfUpdateChannel(SelfUpdateChannel),
+    PickDefaultAddonReleaseChannel(ReleaseChannel),
 }
 
 #[derive(Debug)]
@@ -149,8 +150,6 @@ pub enum Message {
     AddonCacheEntryRemoved(Result<Option<AddonCacheEntry>, CacheError>),
     RefreshCatalog(Instant),
     CheckLatestRelease(Instant),
-    // TODO: Rename to DefaultReleaseChannelSelected.
-    DefaultReleaseChannel(ReleaseChannel),
 }
 
 pub struct Ajour {
@@ -198,7 +197,7 @@ pub struct Ajour {
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
     self_update_channel_state: SelfUpdateChannelState,
-    default_release_channel_state: DefaultReleaseChannelState,
+    default_addon_release_channel_picklist_state: pick_list::State<ReleaseChannel>,
 }
 
 impl Default for Ajour {
@@ -251,11 +250,7 @@ impl Default for Ajour {
                 picklist: Default::default(),
                 options: SelfUpdateChannel::all(),
             },
-            default_release_channel_state: DefaultReleaseChannelState {
-                picklist: Default::default(),
-                // TODO: Change to default when we have created it.
-                release_channel: ReleaseChannel::Stable,
-            },
+            default_addon_release_channel_picklist_state: Default::default(),
         }
     }
 }
@@ -751,7 +746,7 @@ impl Application for Ajour {
                     &catalog_column_config,
                     &mut self.open_config_dir_btn_state,
                     &mut self.self_update_channel_state,
-                    &mut self.default_release_channel_state,
+                    &mut self.default_addon_release_channel_picklist_state,
                 );
 
                 content = content.push(settings_container)
@@ -1663,12 +1658,6 @@ pub struct SelfUpdateState {
 pub struct SelfUpdateChannelState {
     picklist: pick_list::State<SelfUpdateChannel>,
     options: [SelfUpdateChannel; 2],
-}
-
-#[derive(Debug)]
-pub struct DefaultReleaseChannelState {
-    picklist: pick_list::State<ReleaseChannel>,
-    release_channel: ReleaseChannel,
 }
 
 async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {

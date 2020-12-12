@@ -4,13 +4,13 @@ use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
-        ColumnSettings, DefaultReleaseChannelState, DirectoryType, Interaction, Message,
-        ReleaseChannel, ScaleState, SelfUpdateChannelState, ThemeState,
+        ColumnSettings, DirectoryType, Interaction, Message, ReleaseChannel, ScaleState,
+        SelfUpdateChannelState, ThemeState,
     },
     ajour_core::{config::Config, theme::ColorPalette},
     iced::{
-        button, scrollable, Align, Button, Checkbox, Column, Container, Element, Length, PickList,
-        Row, Scrollable, Space, Text, VerticalAlignment,
+        button, pick_list, scrollable, Align, Button, Checkbox, Column, Container, Element, Length,
+        PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
 };
 
@@ -28,7 +28,7 @@ pub fn data_container<'a, 'b>(
     catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
     open_config_dir_button_state: &'a mut button::State,
     self_update_channel_state: &'a mut SelfUpdateChannelState,
-    default_release_channel_state: &'a mut DefaultReleaseChannelState,
+    default_addon_release_channel_picklist_state: &'a mut pick_list::State<ReleaseChannel>,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -315,21 +315,28 @@ pub fn data_container<'a, 'b>(
 
     let default_release_channel_column = {
         let title_container =
-            Container::new(Text::new("Global Release Channel").size(DEFAULT_FONT_SIZE))
+            Container::new(Text::new("Default Release Channel").size(DEFAULT_FONT_SIZE))
                 .style(style::NormalBackgroundContainer(color_palette));
 
-        let pick_list = PickList::new(
-            &mut default_release_channel_state.picklist,
-            &ReleaseChannel::ALL[..],
-            Some(ReleaseChannel::Stable),
-            Message::DefaultReleaseChannel,
+        // Filter away `ReleaseChannel::Default` because we want to select a actual value. 
+        let release_channels: Vec<_> = ReleaseChannel::ALL
+            .to_vec()
+            .into_iter()
+            .filter(|rc| rc != &ReleaseChannel::Default)
+            .collect();
+        let pick_list: Element<_> = PickList::new(
+            default_addon_release_channel_picklist_state,
+            release_channels,
+            Some(config.addons.default_release_channel),
+            Interaction::PickDefaultAddonReleaseChannel,
         )
         .text_size(14)
         .width(Length::Units(120))
-        .style(style::PickList(color_palette));
+        .style(style::PickList(color_palette))
+        .into();
 
         // Data row for release channel picker list.
-        let data_row = Row::new().push(pick_list);
+        let data_row = Row::new().push(pick_list.map(Message::Interaction));
 
         Column::new()
             .push(title_container)
@@ -388,23 +395,31 @@ pub fn data_container<'a, 'b>(
         .push(scale_column)
         .spacing(DEFAULT_PADDING);
 
-    let channel_title = Container::new(Text::new("Self Update Channel").size(DEFAULT_FONT_SIZE))
-        .style(style::BrightBackgroundContainer(color_palette));
-    let channel_picklist: Element<_> = PickList::new(
-        &mut self_update_channel_state.picklist,
-        &self_update_channel_state.options[..],
-        Some(config.self_update_channel),
-        Interaction::PickSelfUpdateChannel,
-    )
-    .text_size(14)
-    .width(Length::Fill)
-    .style(style::PickList(color_palette))
-    .into();
+    let self_update_channel_container = {
+        let channel_title =
+            Container::new(Text::new("Self Update Channel").size(DEFAULT_FONT_SIZE))
+                .style(style::NormalBackgroundContainer(color_palette));
+        let channel_picklist: Element<_> = PickList::new(
+            &mut self_update_channel_state.picklist,
+            &self_update_channel_state.options[..],
+            Some(config.self_update_channel),
+            Interaction::PickSelfUpdateChannel,
+        )
+        .text_size(14)
+        .width(Length::Fill)
+        .style(style::PickList(color_palette))
+        .into();
 
-    let channel_container = Container::new(channel_picklist.map(Message::Interaction))
-        .center_y()
-        .width(Length::Units(80))
-        .style(style::NormalForegroundContainer(color_palette));
+        let channel_container = Container::new(channel_picklist.map(Message::Interaction))
+            .center_y()
+            .width(Length::Units(120))
+            .style(style::NormalForegroundContainer(color_palette));
+
+        Column::new()
+            .push(channel_title)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(channel_container)
+    };
 
     scrollable = scrollable
         .push(Space::new(Length::Units(0), Length::Units(20)))
@@ -413,10 +428,6 @@ pub fn data_container<'a, 'b>(
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row)
-        .push(Space::new(Length::Units(0), Length::Units(20)))
-        .push(channel_title)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(channel_container)
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(addon_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
@@ -430,7 +441,9 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(config_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(config_column);
+        .push(config_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(self_update_channel_container);
 
     let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
     let columns_title_text_container =
