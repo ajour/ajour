@@ -4,7 +4,7 @@ use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
-        ColumnSettings, DirectoryType, Interaction, Message, ReleaseChannel, ScaleState,
+        ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Message, ScaleState,
         SelfUpdateChannelState, ThemeState,
     },
     ajour_core::{config::Config, theme::ColorPalette},
@@ -28,7 +28,7 @@ pub fn data_container<'a, 'b>(
     catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
     open_config_dir_button_state: &'a mut button::State,
     self_update_channel_state: &'a mut SelfUpdateChannelState,
-    default_addon_release_channel_picklist_state: &'a mut pick_list::State<ReleaseChannel>,
+    default_addon_release_channel_picklist_state: &'a mut pick_list::State<GlobalReleaseChannel>,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -313,22 +313,16 @@ pub fn data_container<'a, 'b>(
         Column::new().push(checkbox_container)
     };
 
-    let default_release_channel_column = {
+    let global_release_channel_column = {
         let title_container =
-            Container::new(Text::new("Default Release Channel").size(DEFAULT_FONT_SIZE))
+            Container::new(Text::new("Global Release Channel").size(DEFAULT_FONT_SIZE))
                 .style(style::NormalBackgroundContainer(color_palette));
 
-        // Filter away `ReleaseChannel::Default` because we want to select a actual value.
-        let release_channels: Vec<_> = ReleaseChannel::ALL
-            .to_vec()
-            .into_iter()
-            .filter(|rc| rc != &ReleaseChannel::Default)
-            .collect();
         let pick_list: Element<_> = PickList::new(
             default_addon_release_channel_picklist_state,
-            release_channels,
-            Some(config.addons.default_release_channel),
-            Interaction::PickDefaultAddonReleaseChannel,
+            &GlobalReleaseChannel::ALL[..],
+            Some(config.addons.global_release_channel),
+            Interaction::PickGlobalReleaseChannel,
         )
         .text_size(14)
         .width(Length::Units(120))
@@ -431,7 +425,7 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(addon_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(default_release_channel_column)
+        .push(global_release_channel_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(20)))

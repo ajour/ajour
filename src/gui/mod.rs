@@ -14,7 +14,7 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
-    repository::ReleaseChannel,
+    repository::{GlobalReleaseChannel, ReleaseChannel},
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
@@ -111,7 +111,7 @@ pub enum Interaction {
     UpdateAjour,
     ToggleBackupFolder(bool, BackupFolderKind),
     PickSelfUpdateChannel(SelfUpdateChannel),
-    PickDefaultAddonReleaseChannel(ReleaseChannel),
+    PickGlobalReleaseChannel(GlobalReleaseChannel),
 }
 
 #[derive(Debug)]
@@ -197,7 +197,7 @@ pub struct Ajour {
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
     self_update_channel_state: SelfUpdateChannelState,
-    default_addon_release_channel_picklist_state: pick_list::State<ReleaseChannel>,
+    default_addon_release_channel_picklist_state: pick_list::State<GlobalReleaseChannel>,
 }
 
 impl Default for Ajour {

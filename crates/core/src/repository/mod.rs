@@ -211,9 +211,50 @@ impl Ord for RemotePackage {
     }
 }
 
+/// This is the global channel used.
+/// If an addon has chosen `Default` as `ReleaseChannel`, we will `GlobalReleaseChannel`
+/// instead, which is saved in the config.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
+pub enum GlobalReleaseChannel {
+    Stable,
+    Beta,
+    Alpha,
+}
+
+impl GlobalReleaseChannel {
+    pub const ALL: [GlobalReleaseChannel; 3] = [
+        GlobalReleaseChannel::Stable,
+        GlobalReleaseChannel::Beta,
+        GlobalReleaseChannel::Alpha,
+    ];
+}
+
+impl Default for GlobalReleaseChannel {
+    fn default() -> GlobalReleaseChannel {
+        GlobalReleaseChannel::Stable
+    }
+}
+
+impl std::fmt::Display for GlobalReleaseChannel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                GlobalReleaseChannel::Stable => "Stable",
+                GlobalReleaseChannel::Beta => "Beta",
+                GlobalReleaseChannel::Alpha => "Alpha",
+            }
+        )
+    }
+}
+
+/// This is the channel used on an addon level.
+/// If `Default` is chosen, we will use the value from `GlobalReleaseChannel` which
+/// is saved in the config.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
 pub enum ReleaseChannel {
-    Default,
+    Default(GlobalReleaseChannel),
     Stable,
     Beta,
     Alpha,
@@ -221,7 +262,7 @@ pub enum ReleaseChannel {
 
 impl ReleaseChannel {
     pub const ALL: [ReleaseChannel; 4] = [
-        ReleaseChannel::Default,
+        ReleaseChannel::Default(GlobalReleaseChannel::Stable),
         ReleaseChannel::Stable,
         ReleaseChannel::Beta,
         ReleaseChannel::Alpha,
@@ -230,7 +271,7 @@ impl ReleaseChannel {
 
 impl Default for ReleaseChannel {
     fn default() -> ReleaseChannel {
-        ReleaseChannel::Default
+        ReleaseChannel::Default(GlobalReleaseChannel::Stable)
     }
 }
 
@@ -240,7 +281,7 @@ impl std::fmt::Display for ReleaseChannel {
             f,
             "{}",
             match self {
-                ReleaseChannel::Default => "Default",
+                ReleaseChannel::Default(_) => "Default",
                 ReleaseChannel::Stable => "Stable",
                 ReleaseChannel::Beta => "Beta",
                 ReleaseChannel::Alpha => "Alpha",

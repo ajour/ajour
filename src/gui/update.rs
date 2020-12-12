@@ -1488,10 +1488,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::LatestRelease,
             ));
         }
-        Message::Interaction(Interaction::PickDefaultAddonReleaseChannel(channel)) => {
-            log::debug!("Interaction::PickDefaultAddonReleaseChannel({:?})", channel);
+        Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
+            log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
 
-            ajour.config.addons.default_release_channel = channel;
+            ajour.config.addons.global_release_channel = channel;
 
             let _ = ajour.config.save();
         }
