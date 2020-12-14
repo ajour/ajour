@@ -149,9 +149,9 @@ pub fn data_row_container<'a, 'b>(
 
         if release_package.is_some() {}
 
-        let mut title_row = Row::new().push(title).spacing(3).align_items(Align::Center);
+        let mut title_row = Row::new().push(title).spacing(5).align_items(Align::Center);
 
-        if addon.release_channel != ReleaseChannel::Stable {
+        if addon.release_channel != ReleaseChannel::Default {
             let release_channel =
                 Container::new(Text::new(addon.release_channel.to_string()).size(10))
                     .style(style::ChannelBadge(color_palette))

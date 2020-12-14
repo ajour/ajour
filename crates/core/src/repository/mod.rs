@@ -227,6 +227,14 @@ impl GlobalReleaseChannel {
         GlobalReleaseChannel::Beta,
         GlobalReleaseChannel::Alpha,
     ];
+
+    pub fn convert_to_release_channel(&self) -> ReleaseChannel {
+        match self {
+            GlobalReleaseChannel::Stable => ReleaseChannel::Stable,
+            GlobalReleaseChannel::Beta => ReleaseChannel::Beta,
+            GlobalReleaseChannel::Alpha => ReleaseChannel::Alpha,
+        }
+    }
 }
 
 impl Default for GlobalReleaseChannel {

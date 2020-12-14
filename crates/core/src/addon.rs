@@ -449,6 +449,12 @@ impl Addon {
         let beta_package = remote_packages.remove(&ReleaseChannel::Beta);
         let alpha_package = remote_packages.remove(&ReleaseChannel::Alpha);
 
+        let release_channel = if self.release_channel == ReleaseChannel::Default {
+            default_release_channel.convert_to_release_channel()
+        } else {
+            self.release_channel
+        };
+
         fn should_choose_other(
             base: &Option<RemotePackage>,
             other: &Option<RemotePackage>,
@@ -468,9 +474,9 @@ impl Addon {
             }
         }
 
-        match &self.release_channel {
-            // TODO: Handle default channel.
-            ReleaseChannel::Default => None,
+        match release_channel {
+            ReleaseChannel::Default => 
+                None,
             ReleaseChannel::Stable => stable_package,
             ReleaseChannel::Beta => {
                 let choose_stable = should_choose_other(&beta_package, &stable_package);
