@@ -381,6 +381,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::batch(commands));
         }
         Message::ParsedAddons((flavor, result)) => {
+            let global_release_channel = ajour.config.addons.global_release_channel;
+
             // if our selected flavor returns (either ok or error) - we change to idle.
             ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
@@ -417,7 +419,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             }
 
                             // Check if addon is updatable based on release channel.
-                            if let Some(package) = a.relevant_release_package() {
+                            if let Some(package) =
+                                a.relevant_release_package(global_release_channel)
+                            {
                                 if a.is_updatable(&package) {
                                     a.state = AddonState::Updatable;
                                 }
@@ -432,7 +436,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         .collect::<Vec<Addon>>();
 
                     // Sort the addons.
-                    sort_addons(&mut addons, SortDirection::Desc, ColumnKey::Status);
+                    sort_addons(
+                        &mut addons,
+                        &global_release_channel,
+                        SortDirection::Desc,
+                        ColumnKey::Status,
+                    );
                     ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
                     ajour.header_state.previous_column_key = Some(ColumnKey::Status);
 
@@ -598,6 +607,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
 
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let mut commands = vec![];
 
             if let (Some(addon), Some(folders)) = (addon, folders) {
@@ -606,7 +616,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 addon.state = AddonState::Fingerprint;
 
                 let mut version = None;
-                if let Some(package) = addon.relevant_release_package() {
+                if let Some(package) = addon.relevant_release_package(global_release_channel) {
                     version = Some(package.version);
                 }
                 if let Some(version) = version {
@@ -769,6 +779,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
 
+            let global_release_channel = ajour.config.addons.global_release_channel;
             if let ExpandType::Details(expanded_addon) = &ajour.expanded_type {
                 let flavor = ajour.config.wow.flavor;
                 let addons = ajour.addons.entry(flavor).or_default();
@@ -779,7 +790,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.release_channel = release_channel;
 
                     // Check if addon is updatable.
-                    if let Some(package) = addon.relevant_release_package() {
+                    if let Some(package) = addon.relevant_release_package(global_release_channel) {
                         if addon.is_updatable(&package) {
                             addon.state = AddonState::Updatable;
                         } else {
@@ -1659,7 +1670,12 @@ async fn perform_fetch_latest_addon(
     )
 }
 
-fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {
+fn sort_addons(
+    addons: &mut [Addon],
+    global_release_channel: &GlobalReleaseChannel,
+    sort_direction: SortDirection,
+    column_key: ColumnKey,
+) {
     match (column_key, sort_direction) {
         (ColumnKey::Title, SortDirection::Asc) => {
             addons.sort_by(|a, b| a.title().to_lowercase().cmp(&b.title().to_lowercase()));
@@ -1671,8 +1687,8 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
                     .cmp(&b.title().to_lowercase())
                     .reverse()
                     .then_with(|| {
-                        a.relevant_release_package()
-                            .cmp(&b.relevant_release_package())
+                        a.relevant_release_package(global_release_channel)
+                            .cmp(&b.relevant_release_package(global_release_channel))
                     })
             });
         }
@@ -1693,15 +1709,15 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
         }
         (ColumnKey::RemoteVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
-                    .cmp(&b.relevant_release_package())
+                a.relevant_release_package(global_release_channel)
+                    .cmp(&b.relevant_release_package(global_release_channel))
                     .then_with(|| a.cmp(&b))
             });
         }
         (ColumnKey::RemoteVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
-                    .cmp(&b.relevant_release_package())
+                a.relevant_release_package(global_release_channel)
+                    .cmp(&b.relevant_release_package(global_release_channel))
                     .reverse()
                     .then_with(|| a.cmp(&b))
             });
@@ -1737,16 +1753,22 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
         }
         (ColumnKey::DateReleased, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
+                a.relevant_release_package(global_release_channel)
                     .map(|p| p.date_time)
-                    .cmp(&b.relevant_release_package().map(|p| p.date_time))
+                    .cmp(
+                        &b.relevant_release_package(global_release_channel)
+                            .map(|p| p.date_time),
+                    )
             });
         }
         (ColumnKey::DateReleased, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
+                a.relevant_release_package(global_release_channel)
                     .map(|p| p.date_time)
-                    .cmp(&b.relevant_release_package().map(|p| p.date_time))
+                    .cmp(
+                        &b.relevant_release_package(global_release_channel)
+                            .map(|p| p.date_time),
+                    )
                     .reverse()
             });
         }
