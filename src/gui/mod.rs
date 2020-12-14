@@ -424,6 +424,7 @@ impl Application for Ajour {
                         addon,
                         is_addon_expanded,
                         &self.expanded_type,
+                        &self.config,
                         &column_config,
                     );
 

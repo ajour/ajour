@@ -254,7 +254,7 @@ impl std::fmt::Display for GlobalReleaseChannel {
 /// is saved in the config.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
 pub enum ReleaseChannel {
-    Default(GlobalReleaseChannel),
+    Default,
     Stable,
     Beta,
     Alpha,
@@ -262,7 +262,7 @@ pub enum ReleaseChannel {
 
 impl ReleaseChannel {
     pub const ALL: [ReleaseChannel; 4] = [
-        ReleaseChannel::Default(GlobalReleaseChannel::Stable),
+        ReleaseChannel::Default,
         ReleaseChannel::Stable,
         ReleaseChannel::Beta,
         ReleaseChannel::Alpha,
@@ -271,7 +271,7 @@ impl ReleaseChannel {
 
 impl Default for ReleaseChannel {
     fn default() -> ReleaseChannel {
-        ReleaseChannel::Default(GlobalReleaseChannel::Stable)
+        ReleaseChannel::Default
     }
 }
 
@@ -281,7 +281,7 @@ impl std::fmt::Display for ReleaseChannel {
             f,
             "{}",
             match self {
-                ReleaseChannel::Default(_) => "Default",
+                ReleaseChannel::Default => "Default",
                 ReleaseChannel::Stable => "Stable",
                 ReleaseChannel::Beta => "Beta",
                 ReleaseChannel::Alpha => "Alpha",

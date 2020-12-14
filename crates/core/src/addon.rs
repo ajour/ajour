@@ -2,7 +2,7 @@ use crate::{
     error::ParseError,
     repository::{
         ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
-        RepositoryPackage,
+        RepositoryPackage, GlobalReleaseChannel,
     },
     utility::strip_non_digits,
 };
@@ -439,7 +439,10 @@ impl Addon {
 
     /// Returns the relevant release_package for the addon.
     /// Logic is that if a release channel above the selected is newer, we return that instead.
-    pub fn relevant_release_package(&self) -> Option<RemotePackage> {
+    pub fn relevant_release_package(
+        &self,
+        default_release_channel: GlobalReleaseChannel,
+    ) -> Option<RemotePackage> {
         let mut remote_packages = self.remote_packages();
 
         let stable_package = remote_packages.remove(&ReleaseChannel::Stable);
@@ -467,7 +470,7 @@ impl Addon {
 
         match &self.release_channel {
             // TODO: Handle default channel.
-            ReleaseChannel::Default(_) => None,
+            ReleaseChannel::Default => None,
             ReleaseChannel::Stable => stable_package,
             ReleaseChannel::Beta => {
                 let choose_stable = should_choose_other(&beta_package, &stable_package);

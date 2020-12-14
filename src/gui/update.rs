@@ -164,10 +164,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Update ajour state.
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 // Check if addon is updatable.
-                if let Some(package) = addon.relevant_release_package() {
+                if let Some(package) = addon.relevant_release_package(global_release_channel) {
                     if addon.is_updatable(&package) {
                         addon.state = AddonState::Updatable;
                     } else {
