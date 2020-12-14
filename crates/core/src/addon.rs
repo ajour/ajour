@@ -475,8 +475,7 @@ impl Addon {
         }
 
         match release_channel {
-            ReleaseChannel::Default => 
-                None,
+            ReleaseChannel::Default => None,
             ReleaseChannel::Stable => stable_package,
             ReleaseChannel::Beta => {
                 let choose_stable = should_choose_other(&beta_package, &stable_package);
