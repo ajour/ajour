@@ -1,7 +1,7 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
-        style, ColumnKey, ColumnState, Config, ExpandType, Flavor, Interaction, Message, Mode,
+        style, ColumnKey, ColumnState, ExpandType, Flavor, Interaction, Message, Mode,
         ReleaseChannel, SortDirection, State,
     },
     ajour_core::{
@@ -125,8 +125,7 @@ pub fn data_row_container<'a, 'b>(
         .version()
         .map(str::to_string)
         .unwrap_or_else(|| "-".to_string());
-    let release_package =
-        addon_cloned.relevant_release_package(global_release_channel);
+    let release_package = addon_cloned.relevant_release_package(global_release_channel);
     let remote_version = if let Some(package) = &release_package {
         package.version.clone()
     } else {

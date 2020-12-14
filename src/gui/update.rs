@@ -1,8 +1,9 @@
 use {
     super::{
         Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
-        ColumnKey, DirectoryType, DownloadReason, ExpandType, InstallAddon, InstallKind,
-        InstallStatus, Interaction, Message, Mode, SelfUpdateStatus, SortDirection, State,
+        ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel, InstallAddon,
+        InstallKind, InstallStatus, Interaction, Message, Mode, SelfUpdateStatus, SortDirection,
+        State,
     },
     crate::{log_error, Result},
     ajour_core::{
@@ -321,6 +322,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.expanded_type = ExpandType::None;
 
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let addons = ajour.addons.entry(flavor).or_default();
             let to_directory = ajour
                 .config
@@ -333,6 +335,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         perform_download_addon(
                             DownloadReason::Update,
                             flavor,
+                            global_release_channel,
                             addon.clone(),
                             to_directory,
                         ),
@@ -349,6 +352,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Update all updatable addons, expect ignored.
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
             let mut addons: Vec<_> = ajour
                 .addons
@@ -370,6 +374,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             perform_download_addon(
                                 DownloadReason::Update,
                                 flavor,
+                                global_release_channel,
                                 addon,
                                 to_directory,
                             ),
@@ -438,7 +443,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // Sort the addons.
                     sort_addons(
                         &mut addons,
-                        &global_release_channel,
+                        global_release_channel,
                         SortDirection::Desc,
                         ColumnKey::Status,
                     );
@@ -729,9 +734,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let mut addons = ajour.addons.entry(flavor).or_default();
 
-            sort_addons(&mut addons, sort_direction, column_key);
+            sort_addons(
+                &mut addons,
+                global_release_channel,
+                sort_direction,
+                column_key,
+            );
 
             ajour.header_state.previous_sort_direction = Some(sort_direction);
             ajour.header_state.previous_column_key = Some(column_key);
@@ -1316,6 +1327,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon.state = AddonState::Downloading;
                         install_addon.addon = Some(addon.clone());
 
+                        let global_release_channel = ajour.config.addons.global_release_channel;
                         let to_directory = ajour
                             .config
                             .get_download_directory_for_flavor(flavor)
@@ -1325,6 +1337,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             perform_download_addon(
                                 DownloadReason::Install,
                                 flavor,
+                                global_release_channel,
                                 addon,
                                 to_directory,
                             ),
@@ -1574,6 +1587,7 @@ async fn perform_read_addon_directory(
 async fn perform_download_addon(
     reason: DownloadReason,
     flavor: Flavor,
+    global_release_channel: GlobalReleaseChannel,
     addon: Addon,
     to_directory: PathBuf,
 ) -> (DownloadReason, Flavor, String, Result<(), DownloadError>) {
@@ -1581,7 +1595,7 @@ async fn perform_download_addon(
         reason,
         flavor,
         addon.primary_folder_id.clone(),
-        download_addon(&addon, &to_directory).await,
+        download_addon(&addon, global_release_channel, &to_directory).await,
     )
 }
 
@@ -1672,7 +1686,7 @@ async fn perform_fetch_latest_addon(
 
 fn sort_addons(
     addons: &mut [Addon],
-    global_release_channel: &GlobalReleaseChannel,
+    global_release_channel: GlobalReleaseChannel,
     sort_direction: SortDirection,
     column_key: ColumnKey,
 ) {
