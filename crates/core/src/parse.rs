@@ -1,8 +1,8 @@
 use crate::{
     addon::{Addon, AddonFolder, AddonState},
-    cache::{AddonCache, AddonCacheEntry, FingerprintCache},
+    cache::{self, AddonCache, AddonCacheEntry, FingerprintCache},
     config::Flavor,
-    error::{DownloadError, ParseError, RepositoryError},
+    error::{CacheError, DownloadError, ParseError, RepositoryError},
     fs::PersistentData,
     murmur2::calculate_hash,
     repository::{curse, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage},
@@ -49,6 +49,22 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // If the path does not exists or does not point on a directory we return an Error.
     if !root_dir.is_dir() {
+        // Delete fingerprints if flavor addon folder no longer exists on filesystem
+        if let Some(fingerprint_cache) = &fingerprint_cache {
+            let mut cache = fingerprint_cache.lock().await;
+
+            if cache.flavor_exists(flavor) {
+                cache.delete_flavor(flavor);
+
+                log::info!(
+                    "{} - deleting cached fingerprints since AddOns folder doesn't exist",
+                    flavor
+                )
+            }
+
+            cache.save()?;
+        }
+
         return Err(ParseError::MissingAddonDirectory {
             path: root_dir.to_owned(),
         });
@@ -76,6 +92,22 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Return early if there are no directories to parse
     if all_dirs.is_empty() {
+        // Delete all cached fingerprints for this flavor since there are no addon folders
+        if let Some(fingerprint_cache) = &fingerprint_cache {
+            let mut cache = fingerprint_cache.lock().await;
+
+            if cache.flavor_exists(flavor) {
+                cache.delete_flavor(flavor);
+
+                log::info!(
+                    "{} - deleting cached fingerprints since AddOns folder is empty",
+                    flavor
+                )
+            }
+
+            cache.save()?;
+        }
+
         return Ok(vec![]);
     }
 
@@ -87,7 +119,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut addon_folders = parse_addon_folders(root_dir, flavor, &all_dirs, &fingerprints).await;
 
     // Get all cached entries
-    let cache_entries = get_cache_entries(flavor, addon_cache).await;
+    let cache_entries = get_cache_entries(flavor, addon_cache, &addon_folders).await?;
 
     // Get fingerprint info for all non-cached addon folders
     let fingerprint_info =
@@ -272,8 +304,29 @@ async fn parse_addon_folders(
 async fn get_cache_entries(
     flavor: Flavor,
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
-) -> Vec<AddonCacheEntry> {
+    addon_folders: &[AddonFolder],
+) -> Result<Vec<AddonCacheEntry>, CacheError> {
     let cache_entries = if let Some(addon_cache) = addon_cache {
+        // Remove any cached entries for folders that no longer exist
+        // on the filesystem
+        {
+            let num_removed = cache::remove_addon_entries_with_missing_folders(
+                addon_cache.clone(),
+                flavor,
+                addon_folders,
+                true,
+            )
+            .await?;
+
+            if num_removed > 0 {
+                log::debug!(
+                    "{} - {} cached entries removed due to missing addon folders",
+                    flavor,
+                    num_removed
+                );
+            }
+        }
+
         let mut addon_cache = addon_cache.lock().await;
         let addon_cache_entries = addon_cache.get_mut_for_flavor(flavor);
 
@@ -282,9 +335,13 @@ async fn get_cache_entries(
         vec![]
     };
 
-    log::debug!("{} - {} cached entries", flavor, cache_entries.len());
+    log::debug!(
+        "{} - {} valid cache entries retrieved",
+        flavor,
+        cache_entries.len()
+    );
 
-    cache_entries
+    Ok(cache_entries)
 }
 
 async fn get_curse_fingerprint_info(

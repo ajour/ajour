@@ -155,6 +155,8 @@ pub enum ParseError {
     Download(#[from] DownloadError),
     #[error(transparent)]
     Filesystem(#[from] FilesystemError),
+    #[error(transparent)]
+    Cache(#[from] CacheError),
 }
 
 impl From<std::io::Error> for ParseError {
