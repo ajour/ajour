@@ -1,9 +1,9 @@
 use {
     super::{
-        Ajour, ReleaseChannel, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
+        Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
         ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel, InstallAddon,
-        InstallKind, InstallStatus, Interaction, Message, Mode, SelfUpdateStatus, SortDirection,
-        State,
+        InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel, SelfUpdateStatus,
+        SortDirection, State,
     },
     crate::{log_error, Result},
     ajour_core::{
@@ -1511,8 +1511,30 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
             log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
 
-            ajour.config.addons.global_release_channel = channel;
+            // Update all addon states, expect ignored, if needed.
+            let flavors = &Flavor::ALL[..];
+            for flavor in flavors {
+                let ignored_ids = ajour.config.addons.ignored.entry(*flavor).or_default();
+                let mut addons: Vec<_> = ajour
+                    .addons
+                    .entry(*flavor)
+                    .or_default()
+                    .iter_mut()
+                    .filter(|a| !ignored_ids.iter().any(|i| i == &a.primary_folder_id))
+                    .collect();
+                for addon in addons.iter_mut() {
+                    // Check if addon is updatable.
+                    if let Some(package) = addon.relevant_release_package(channel) {
+                        if addon.is_updatable(&package) {
+                            addon.state = AddonState::Updatable;
+                        } else {
+                            addon.state = AddonState::Idle;
+                        }
+                    }
+                }
+            }
 
+            ajour.config.addons.global_release_channel = channel;
             let _ = ajour.config.save();
         }
         Message::CheckLatestRelease(_) => {
