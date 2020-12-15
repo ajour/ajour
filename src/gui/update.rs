@@ -1,6 +1,6 @@
 use {
     super::{
-        Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
+        Ajour, ReleaseChannel, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
         ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel, InstallAddon,
         InstallKind, InstallStatus, Interaction, Message, Mode, SelfUpdateStatus, SortDirection,
         State,
@@ -414,13 +414,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             {
                                 a.release_channel = *release_channel;
                             } else {
-                                // Else we try to determine the release_channel based of installed version.
-                                for (release_channel, package) in a.remote_packages() {
-                                    if package.file_id == a.file_id() {
-                                        a.release_channel = release_channel.to_owned();
-                                        break;
-                                    }
-                                }
+                                // Else we set it to the default release channel.
+                                a.release_channel = ReleaseChannel::Default;
                             }
 
                             // Check if addon is updatable based on release channel.
