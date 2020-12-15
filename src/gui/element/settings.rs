@@ -309,7 +309,7 @@ pub fn data_container<'a, 'b>(
         .text_size(DEFAULT_FONT_SIZE)
         .spacing(5);
         let checkbox_container =
-            Container::new(checkbox).style(style::BrightBackgroundContainer(color_palette));
+            Container::new(checkbox).style(style::NormalBackgroundContainer(color_palette));
         Column::new().push(checkbox_container)
     };
 
@@ -380,9 +380,9 @@ pub fn data_container<'a, 'b>(
     let addon_title_container =
         Container::new(addon_title).style(style::BrightBackgroundContainer(color_palette));
 
-    let config_title = Text::new("Config").size(DEFAULT_FONT_SIZE);
-    let config_title_container =
-        Container::new(config_title).style(style::BrightBackgroundContainer(color_palette));
+    let ajour_settings_title = Text::new("Ajour").size(DEFAULT_FONT_SIZE);
+    let ajour_settings_title_container =
+        Container::new(ajour_settings_title).style(style::BrightBackgroundContainer(color_palette));
 
     let ui_row = Row::new()
         .push(theme_column)
@@ -390,9 +390,8 @@ pub fn data_container<'a, 'b>(
         .spacing(DEFAULT_PADDING);
 
     let self_update_channel_container = {
-        let channel_title =
-            Container::new(Text::new("Self Update Channel").size(DEFAULT_FONT_SIZE))
-                .style(style::NormalBackgroundContainer(color_palette));
+        let channel_title = Container::new(Text::new("Update Channel").size(DEFAULT_FONT_SIZE))
+            .style(style::NormalBackgroundContainer(color_palette));
         let channel_picklist: Element<_> = PickList::new(
             &mut self_update_channel_state.picklist,
             &self_update_channel_state.options[..],
@@ -433,11 +432,11 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(ui_row)
         .push(Space::new(Length::Units(0), Length::Units(20)))
-        .push(config_title_container)
+        .push(ajour_settings_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(config_column)
+        .push(self_update_channel_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(self_update_channel_container);
+        .push(config_column);
 
     let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
     let columns_title_text_container =
