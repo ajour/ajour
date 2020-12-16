@@ -14,7 +14,7 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
-    repository::ReleaseChannel,
+    repository::{GlobalReleaseChannel, ReleaseChannel},
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
@@ -111,6 +111,7 @@ pub enum Interaction {
     UpdateAjour,
     ToggleBackupFolder(bool, BackupFolderKind),
     PickSelfUpdateChannel(SelfUpdateChannel),
+    PickGlobalReleaseChannel(GlobalReleaseChannel),
 }
 
 #[derive(Debug)]
@@ -126,6 +127,7 @@ pub enum Message {
     ParsedAddons((Flavor, Result<Vec<Addon>, ParseError>)),
     UpdateFingerprint((Flavor, String, Result<(), ParseError>)),
     ThemeSelected(String),
+    // TODO: Rename to addon specific.
     ReleaseChannelSelected(ReleaseChannel),
     ThemesLoaded(Vec<Theme>),
     UnpackedAddon(
@@ -195,6 +197,7 @@ pub struct Ajour {
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
     self_update_channel_state: SelfUpdateChannelState,
+    default_addon_release_channel_picklist_state: pick_list::State<GlobalReleaseChannel>,
 }
 
 impl Default for Ajour {
@@ -247,6 +250,7 @@ impl Default for Ajour {
                 picklist: Default::default(),
                 options: SelfUpdateChannel::all(),
             },
+            default_addon_release_channel_picklist_state: Default::default(),
         }
     }
 }
@@ -420,6 +424,7 @@ impl Application for Ajour {
                         addon,
                         is_addon_expanded,
                         &self.expanded_type,
+                        &self.config,
                         &column_config,
                     );
 
@@ -742,6 +747,7 @@ impl Application for Ajour {
                     &catalog_column_config,
                     &mut self.open_config_dir_btn_state,
                     &mut self.self_update_channel_state,
+                    &mut self.default_addon_release_channel_picklist_state,
                 );
 
                 content = content.push(settings_container)

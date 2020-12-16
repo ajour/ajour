@@ -1,8 +1,9 @@
 use {
     super::{
         Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
-        ColumnKey, DirectoryType, DownloadReason, ExpandType, InstallAddon, InstallKind,
-        InstallStatus, Interaction, Message, Mode, SelfUpdateStatus, SortDirection, State,
+        ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel, InstallAddon,
+        InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel, SelfUpdateStatus,
+        SortDirection, State,
     },
     crate::{log_error, Result},
     ajour_core::{
@@ -164,10 +165,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Update ajour state.
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 // Check if addon is updatable.
-                if let Some(package) = addon.relevant_release_package() {
+                if let Some(package) = addon.relevant_release_package(global_release_channel) {
                     if addon.is_updatable(&package) {
                         addon.state = AddonState::Updatable;
                     } else {
@@ -320,6 +322,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.expanded_type = ExpandType::None;
 
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let addons = ajour.addons.entry(flavor).or_default();
             let to_directory = ajour
                 .config
@@ -332,6 +335,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         perform_download_addon(
                             DownloadReason::Update,
                             flavor,
+                            global_release_channel,
                             addon.clone(),
                             to_directory,
                         ),
@@ -348,6 +352,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Update all updatable addons, expect ignored.
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
             let mut addons: Vec<_> = ajour
                 .addons
@@ -369,6 +374,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             perform_download_addon(
                                 DownloadReason::Update,
                                 flavor,
+                                global_release_channel,
                                 addon,
                                 to_directory,
                             ),
@@ -380,6 +386,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             return Ok(Command::batch(commands));
         }
         Message::ParsedAddons((flavor, result)) => {
+            let global_release_channel = ajour.config.addons.global_release_channel;
+
             // if our selected flavor returns (either ok or error) - we change to idle.
             ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
@@ -406,17 +414,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             {
                                 a.release_channel = *release_channel;
                             } else {
-                                // Else we try to determine the release_channel based of installed version.
-                                for (release_channel, package) in a.remote_packages() {
-                                    if package.file_id == a.file_id() {
-                                        a.release_channel = release_channel.to_owned();
-                                        break;
-                                    }
-                                }
+                                // Else we set it to the default release channel.
+                                a.release_channel = ReleaseChannel::Default;
                             }
 
                             // Check if addon is updatable based on release channel.
-                            if let Some(package) = a.relevant_release_package() {
+                            if let Some(package) =
+                                a.relevant_release_package(global_release_channel)
+                            {
                                 if a.is_updatable(&package) {
                                     a.state = AddonState::Updatable;
                                 }
@@ -431,7 +436,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         .collect::<Vec<Addon>>();
 
                     // Sort the addons.
-                    sort_addons(&mut addons, SortDirection::Desc, ColumnKey::Status);
+                    sort_addons(
+                        &mut addons,
+                        global_release_channel,
+                        SortDirection::Desc,
+                        ColumnKey::Status,
+                    );
                     ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
                     ajour.header_state.previous_column_key = Some(ColumnKey::Status);
 
@@ -597,6 +607,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
 
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let mut commands = vec![];
 
             if let (Some(addon), Some(folders)) = (addon, folders) {
@@ -605,7 +616,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 addon.state = AddonState::Fingerprint;
 
                 let mut version = None;
-                if let Some(package) = addon.relevant_release_package() {
+                if let Some(package) = addon.relevant_release_package(global_release_channel) {
                     version = Some(package.version);
                 }
                 if let Some(version) = version {
@@ -718,9 +729,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let mut addons = ajour.addons.entry(flavor).or_default();
 
-            sort_addons(&mut addons, sort_direction, column_key);
+            sort_addons(
+                &mut addons,
+                global_release_channel,
+                sort_direction,
+                column_key,
+            );
 
             ajour.header_state.previous_sort_direction = Some(sort_direction);
             ajour.header_state.previous_column_key = Some(column_key);
@@ -768,6 +785,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
 
+            let global_release_channel = ajour.config.addons.global_release_channel;
             if let ExpandType::Details(expanded_addon) = &ajour.expanded_type {
                 let flavor = ajour.config.wow.flavor;
                 let addons = ajour.addons.entry(flavor).or_default();
@@ -778,7 +796,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     addon.release_channel = release_channel;
 
                     // Check if addon is updatable.
-                    if let Some(package) = addon.relevant_release_package() {
+                    if let Some(package) = addon.relevant_release_package(global_release_channel) {
                         if addon.is_updatable(&package) {
                             addon.state = AddonState::Updatable;
                         } else {
@@ -787,16 +805,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
 
                     // Update config with the newly changed release channel.
-                    ajour
-                        .config
-                        .addons
-                        .release_channels
-                        .entry(flavor)
-                        .or_default()
-                        .insert(addon.primary_folder_id.clone(), release_channel);
+                    // Unless its default, then we dont need it in config.
+                    if release_channel != ReleaseChannel::Default {
+                        ajour
+                            .config
+                            .addons
+                            .release_channels
+                            .entry(flavor)
+                            .or_default()
+                            .insert(addon.primary_folder_id.clone(), release_channel);
 
-                    // Persist the newly updated config.
-                    let _ = &ajour.config.save();
+                        // Persist the newly updated config.
+                        let _ = &ajour.config.save();
+                    }
                 }
             }
         }
@@ -1304,6 +1325,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon.state = AddonState::Downloading;
                         install_addon.addon = Some(addon.clone());
 
+                        let global_release_channel = ajour.config.addons.global_release_channel;
                         let to_directory = ajour
                             .config
                             .get_download_directory_for_flavor(flavor)
@@ -1313,6 +1335,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             perform_download_addon(
                                 DownloadReason::Install,
                                 flavor,
+                                global_release_channel,
                                 addon,
                                 to_directory,
                             ),
@@ -1488,6 +1511,35 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::LatestRelease,
             ));
         }
+        Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
+            log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
+
+            // Update all addon states, expect ignored, if needed.
+            let flavors = &Flavor::ALL[..];
+            for flavor in flavors {
+                let ignored_ids = ajour.config.addons.ignored.entry(*flavor).or_default();
+                let mut addons: Vec<_> = ajour
+                    .addons
+                    .entry(*flavor)
+                    .or_default()
+                    .iter_mut()
+                    .filter(|a| !ignored_ids.iter().any(|i| i == &a.primary_folder_id))
+                    .collect();
+                for addon in addons.iter_mut() {
+                    // Check if addon is updatable.
+                    if let Some(package) = addon.relevant_release_package(channel) {
+                        if addon.is_updatable(&package) {
+                            addon.state = AddonState::Updatable;
+                        } else {
+                            addon.state = AddonState::Idle;
+                        }
+                    }
+                }
+            }
+
+            ajour.config.addons.global_release_channel = channel;
+            let _ = ajour.config.save();
+        }
         Message::CheckLatestRelease(_) => {
             log::debug!("Message::CheckLatestRelease");
 
@@ -1555,6 +1607,7 @@ async fn perform_read_addon_directory(
 async fn perform_download_addon(
     reason: DownloadReason,
     flavor: Flavor,
+    global_release_channel: GlobalReleaseChannel,
     addon: Addon,
     to_directory: PathBuf,
 ) -> (DownloadReason, Flavor, String, Result<(), DownloadError>) {
@@ -1562,7 +1615,7 @@ async fn perform_download_addon(
         reason,
         flavor,
         addon.primary_folder_id.clone(),
-        download_addon(&addon, &to_directory).await,
+        download_addon(&addon, global_release_channel, &to_directory).await,
     )
 }
 
@@ -1651,7 +1704,12 @@ async fn perform_fetch_latest_addon(
     )
 }
 
-fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {
+fn sort_addons(
+    addons: &mut [Addon],
+    global_release_channel: GlobalReleaseChannel,
+    sort_direction: SortDirection,
+    column_key: ColumnKey,
+) {
     match (column_key, sort_direction) {
         (ColumnKey::Title, SortDirection::Asc) => {
             addons.sort_by(|a, b| a.title().to_lowercase().cmp(&b.title().to_lowercase()));
@@ -1663,8 +1721,8 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
                     .cmp(&b.title().to_lowercase())
                     .reverse()
                     .then_with(|| {
-                        a.relevant_release_package()
-                            .cmp(&b.relevant_release_package())
+                        a.relevant_release_package(global_release_channel)
+                            .cmp(&b.relevant_release_package(global_release_channel))
                     })
             });
         }
@@ -1685,15 +1743,15 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
         }
         (ColumnKey::RemoteVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
-                    .cmp(&b.relevant_release_package())
+                a.relevant_release_package(global_release_channel)
+                    .cmp(&b.relevant_release_package(global_release_channel))
                     .then_with(|| a.cmp(&b))
             });
         }
         (ColumnKey::RemoteVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
-                    .cmp(&b.relevant_release_package())
+                a.relevant_release_package(global_release_channel)
+                    .cmp(&b.relevant_release_package(global_release_channel))
                     .reverse()
                     .then_with(|| a.cmp(&b))
             });
@@ -1729,16 +1787,22 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
         }
         (ColumnKey::DateReleased, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
+                a.relevant_release_package(global_release_channel)
                     .map(|p| p.date_time)
-                    .cmp(&b.relevant_release_package().map(|p| p.date_time))
+                    .cmp(
+                        &b.relevant_release_package(global_release_channel)
+                            .map(|p| p.date_time),
+                    )
             });
         }
         (ColumnKey::DateReleased, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
+                a.relevant_release_package(global_release_channel)
                     .map(|p| p.date_time)
-                    .cmp(&b.relevant_release_package().map(|p| p.date_time))
+                    .cmp(
+                        &b.relevant_release_package(global_release_channel)
+                            .map(|p| p.date_time),
+                    )
                     .reverse()
             });
         }

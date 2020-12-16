@@ -1,8 +1,8 @@
 use crate::{
     error::ParseError,
     repository::{
-        ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
-        RepositoryPackage,
+        GlobalReleaseChannel, ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind,
+        RepositoryMetadata, RepositoryPackage,
     },
     utility::strip_non_digits,
 };
@@ -439,12 +439,21 @@ impl Addon {
 
     /// Returns the relevant release_package for the addon.
     /// Logic is that if a release channel above the selected is newer, we return that instead.
-    pub fn relevant_release_package(&self) -> Option<RemotePackage> {
+    pub fn relevant_release_package(
+        &self,
+        default_release_channel: GlobalReleaseChannel,
+    ) -> Option<RemotePackage> {
         let mut remote_packages = self.remote_packages();
 
         let stable_package = remote_packages.remove(&ReleaseChannel::Stable);
         let beta_package = remote_packages.remove(&ReleaseChannel::Beta);
         let alpha_package = remote_packages.remove(&ReleaseChannel::Alpha);
+
+        let release_channel = if self.release_channel == ReleaseChannel::Default {
+            default_release_channel.convert_to_release_channel()
+        } else {
+            self.release_channel
+        };
 
         fn should_choose_other(
             base: &Option<RemotePackage>,
@@ -465,7 +474,8 @@ impl Addon {
             }
         }
 
-        match &self.release_channel {
+        match release_channel {
+            ReleaseChannel::Default => None,
             ReleaseChannel::Stable => stable_package,
             ReleaseChannel::Beta => {
                 let choose_stable = should_choose_other(&beta_package, &stable_package);
@@ -506,21 +516,14 @@ impl PartialEq for Addon {
 
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.title().cmp(&other.title()).then_with(|| {
-            self.relevant_release_package()
-                .cmp(&other.relevant_release_package())
-                .reverse()
-        }))
+        Some(self.title().cmp(&other.title()))
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.title().cmp(&other.title()).then_with(|| {
-            self.relevant_release_package()
-                .cmp(&other.relevant_release_package())
-                .reverse()
-        })
+        self.title().cmp(&other.title())
     }
 }
+
 impl Eq for Addon {}
