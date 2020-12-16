@@ -1,5 +1,6 @@
 use ajour_core::network::request_async;
 use async_std::fs;
+use async_std::path::Path;
 use async_std::stream::StreamExt;
 use futures::future;
 use isahc::http;
@@ -8,15 +9,21 @@ use mlua::{prelude::*, Value};
 use serde::Deserialize;
 
 use std::collections::{HashMap, HashSet};
-use std::fmt::{self, Debug};
-use std::path::Path;
+use std::fmt::{self, Debug, Write};
 
-pub async fn list_accounts(wtf_path: impl AsRef<Path>) -> Vec<String> {
+mod companion;
+mod error;
+
+pub use companion::{ensure_companion_addon_exists, write_updates};
+pub use error::Error;
+
+/// Return a list of Account names under the specified WTF folder
+pub async fn list_accounts(wtf_path: impl AsRef<Path>) -> Result<Vec<String>, Error> {
     let account_path = wtf_path.as_ref().join("Account");
 
     let mut accounts = vec![];
 
-    let mut read_dir = fs::read_dir(account_path).await.unwrap();
+    let mut read_dir = fs::read_dir(account_path).await?;
 
     while let Some(entry) = read_dir.next().await {
         if let Ok(entry) = entry {
@@ -34,11 +41,13 @@ pub async fn list_accounts(wtf_path: impl AsRef<Path>) -> Vec<String> {
         }
     }
 
-    accounts
+    Ok(accounts)
 }
 
-pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Vec<Aura> {
-    let path = wtf_path
+/// Parse and return all Auras installed under the accounts `WeakAuras.lua`
+/// SavedVariables file
+pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<Vec<Aura>, Error> {
+    let lua_path = wtf_path
         .as_ref()
         .join("Account")
         .join(&account)
@@ -47,14 +56,13 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Vec<Aur
 
     let lua = mlua::Lua::new();
 
-    let source = fs::read_to_string(&path).await.unwrap();
+    let source = fs::read_to_string(&lua_path).await?;
     let expression = source.replace("WeakAurasSaved = {", "{");
 
-    let table = lua.load(&expression).eval::<mlua::Table>().unwrap();
+    let table = lua.load(&expression).eval::<mlua::Table>()?;
 
     let displays = table
-        .get::<_, HashMap<String, MaybeAuraDisplay>>("displays")
-        .unwrap()
+        .get::<_, HashMap<String, MaybeAuraDisplay>>("displays")?
         .values()
         .cloned()
         .filter_map(MaybeAuraDisplay::into_inner)
@@ -72,9 +80,9 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Vec<Aur
         slugs.join(",")
     );
 
-    let mut response = request_async(url, vec![], None).await.unwrap();
+    let mut response = request_async(url, vec![], None).await?;
 
-    let mut auras: Vec<Aura> = response.json().unwrap();
+    let mut auras: Vec<Aura> = response.json()?;
 
     auras.iter_mut().for_each(|a| {
         let displays = displays
@@ -86,10 +94,12 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Vec<Aur
         a.displays = displays
     });
 
-    auras
+    Ok(auras)
 }
 
-pub async fn get_aura_updates(auras: &[Aura]) -> Vec<AuraUpdate> {
+/// Fetch and return the encoded update strings for all Auras that have an
+/// update available.
+pub async fn get_aura_updates(auras: &[Aura]) -> Result<Vec<AuraUpdate>, Error> {
     let fetched_updates = future::join_all(
         auras
             .iter()
@@ -101,30 +111,76 @@ pub async fn get_aura_updates(auras: &[Aura]) -> Vec<AuraUpdate> {
     let mut updates = vec![];
 
     for (slug, encoded_update) in fetched_updates {
-        updates.push(AuraUpdate {
-            slug,
-            encoded_update,
-        });
+        let encoded_update = encoded_update?;
+
+        if let Some(aura) = auras.iter().find(|a| a.slug == slug).cloned() {
+            updates.push(AuraUpdate {
+                slug,
+                encoded_update,
+                aura,
+            });
+        }
     }
 
-    updates
+    Ok(updates)
 }
 
-async fn get_encoded_update(slug: &str) -> String {
+async fn get_encoded_update(slug: &str) -> Result<String, Error> {
     let url = format!("https://data.wago.io/api/raw/encoded?id={}", slug);
 
-    request_async(url, vec![], None)
-        .await
-        .unwrap()
-        .text_async()
-        .await
-        .unwrap()
+    Ok(request_async(url, vec![], None).await?.text_async().await?)
 }
 
+/// An Aura that has an update. This stores the [`Aura`] along with the encoded
+/// string of it's new version fetched from Wago.io.
 #[derive(Clone)]
 pub struct AuraUpdate {
-    slug: String,
-    encoded_update: String,
+    pub slug: String,
+    pub encoded_update: String,
+    pub aura: Aura,
+}
+
+impl AuraUpdate {
+    #[rustfmt::skip]
+    fn formatted_slug(&self) -> Result<String, Error> {
+        let mut slug = String::new();
+
+        writeln!(&mut slug, "    [\"{}\"] = {{", self.slug)?;
+        writeln!(&mut slug, "      name = [=[{}]=],", self.aura.name)?;
+        writeln!(&mut slug, "      author = [=[{}]=],", self.aura.username)?;
+        writeln!(&mut slug, "      encoded = [=[{}]=],", self.encoded_update)?;
+        writeln!(&mut slug, "      wagoVersion = [=[{}]=],", self.aura.version)?;
+        writeln!(&mut slug, "      wagoSemver = [=[{}]=],", self.aura.version_string)?;
+        // TODO: Proper changelog formatting
+        writeln!(&mut slug, "      versionNote = [=[{}]=],", self.aura.changelog.text)?;
+        writeln!(&mut slug, "    }},")?;
+
+        Ok(slug)
+    }
+
+    #[rustfmt::skip]
+    fn formatted_uid(&self) -> Result<String, Error> {
+        let mut formatted_uid = String::new();
+
+        let uid = self.aura.uid().ok_or(Error::MissingUid {
+            slug: self.slug.clone(),
+        })?;
+
+        writeln!(&mut formatted_uid, "    [\"{}\"] = [=[{}]=],", uid, self.slug)?;
+
+        Ok(formatted_uid)
+    }
+
+    #[rustfmt::skip]
+    fn formatted_ids(&self) -> Result<String, Error> {
+        let mut ids = String::new();
+
+        for display in self.aura.displays.iter() {
+            writeln!(&mut ids, "    [\"{}\"] = [=[{}]=],", display.id, self.slug)?;
+        }
+
+        Ok(ids)
+    }
 }
 
 impl Debug for AuraUpdate {
@@ -135,10 +191,12 @@ impl Debug for AuraUpdate {
                 "encoded_update",
                 &format!("{}...", &self.encoded_update[..30]),
             )
+            .field("aura", &"...")
             .finish()
     }
 }
 
+/// A parsed Aura from SavedVariables along with it's Wago.io metadata
 #[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Aura {
@@ -168,28 +226,64 @@ impl Debug for Aura {
 }
 
 impl Aura {
-    fn parent_display(&self) -> Option<&AuraDisplay> {
-        self.displays.iter().find(|d| d.parent.is_none())
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
-    fn installed_version(&self) -> Option<u16> {
+    pub fn slug(&self) -> &str {
+        &self.slug
+    }
+
+    pub fn installed_version(&self) -> Option<u16> {
         self.parent_display().map(|d| d.version)
+    }
+
+    pub fn remote_version(&self) -> u16 {
+        self.version
+    }
+
+    pub fn installed_symver(&self) -> Option<&str> {
+        self.parent_display().map(|d| d.version_string.as_str())
+    }
+
+    pub fn remote_symver(&self) -> &str {
+        &self.version_string
+    }
+
+    pub fn author(&self) -> &str {
+        &self.username
+    }
+
+    fn parent_display(&self) -> Option<&AuraDisplay> {
+        self.displays.iter().find(|d| d.parent.is_none())
     }
 
     fn uid(&self) -> Option<&str> {
         self.parent_display().map(|d| d.uid.as_str())
     }
 
-    fn ids(&self) -> Vec<&str> {
-        self.displays.iter().map(|d| d.id.as_str()).collect()
+    fn updates_ignored(&self) -> bool {
+        self.parent_display()
+            .map(|d| d.ignore_updates)
+            .unwrap_or_default()
     }
 
-    fn has_update(&self) -> bool {
+    fn ignored_version(&self) -> Option<u16> {
+        self.parent_display().map(|d| d.skip_version).flatten()
+    }
+
+    pub fn has_update(&self) -> bool {
         if let Some(installed) = self.installed_version() {
-            self.version > installed
-        } else {
-            false
+            if !self.updates_ignored() {
+                if let Some(ignored_version) = self.ignored_version() {
+                    return self.version > installed && self.version != ignored_version;
+                } else {
+                    return self.version > installed;
+                }
+            }
         }
+
+        false
     }
 }
 
@@ -203,6 +297,7 @@ struct AuraChangelog {
 struct AuraDisplay {
     slug: String,
     version: u16,
+    version_string: String,
     parent: Option<String>,
     id: String,
     uid: String,
@@ -234,6 +329,7 @@ impl<'lua> FromLua<'lua> for MaybeAuraDisplay {
                         let id = table.get("id")?;
                         let uid = table.get("uid")?;
                         let version = table.get("version")?;
+                        let version_string = table.get("semver")?;
                         let ignore_updates = table
                             .get::<_, Option<bool>>("ignoreWagoUpdate")?
                             .unwrap_or_default();
@@ -242,6 +338,7 @@ impl<'lua> FromLua<'lua> for MaybeAuraDisplay {
                         return Ok(MaybeAuraDisplay(Some(AuraDisplay {
                             slug: slug.to_owned(),
                             version,
+                            version_string,
                             parent,
                             id,
                             uid,

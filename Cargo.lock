@@ -117,6 +117,9 @@ dependencies = [
  "isahc",
  "mlua",
  "serde",
+ "serde_json",
+ "structopt",
+ "thiserror",
 ]
 
 [[package]]
