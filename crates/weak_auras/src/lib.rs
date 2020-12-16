@@ -17,6 +17,12 @@ mod error;
 pub use companion::{ensure_companion_addon_exists, write_updates};
 pub use error::Error;
 
+pub async fn is_weak_auras_installed(addon_dir: impl AsRef<Path>) -> bool {
+    let weak_auras_toc = addon_dir.as_ref().join("WeakAuras").join("WeakAuras.toc");
+
+    weak_auras_toc.is_file().await
+}
+
 /// Return a list of Account names under the specified WTF folder
 pub async fn list_accounts(wtf_path: impl AsRef<Path>) -> Result<Vec<String>, Error> {
     let account_path = wtf_path.as_ref().join("Account");
