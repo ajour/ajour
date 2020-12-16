@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 use std::collections::{HashMap, HashSet};
 use std::env;
+use std::fmt::{self, Display};
 use std::path::PathBuf;
 
 fn main() {
@@ -61,7 +62,9 @@ fn main() {
             a.displays = displays
         });
 
-        dbg!("{:?}", auras);
+        for aura in auras {
+            println!("{}", aura);
+        }
     });
 }
 
@@ -76,6 +79,18 @@ struct Aura {
     changelog: AuraChangelog,
     #[serde(skip_deserializing)]
     displays: Vec<AuraDisplay>,
+}
+
+impl Display for Aura {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Aura")
+            .field("slug", &self.slug)
+            .field("name", &self.name)
+            .field("version", &self.version)
+            .field("number_of_displays", &self.displays.len())
+            .field("update_needed", &self.is_update())
+            .finish()
+    }
 }
 
 impl Aura {
