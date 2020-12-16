@@ -51,6 +51,7 @@ impl Default for State {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Mode {
     MyAddons(Flavor),
+    MyWeakAuras,
     Install,
     Catalog,
     Settings,
@@ -64,6 +65,7 @@ impl std::fmt::Display for Mode {
             "{}",
             match self {
                 Mode::MyAddons(_) => "My Addons",
+                Mode::MyWeakAuras => "My WeakAuras",
                 Mode::Install => "Install",
                 Mode::Catalog => "Catalog",
                 Mode::Settings => "Settings",
@@ -82,10 +84,10 @@ pub enum Interaction {
     SelectDirectory(DirectoryType),
     OpenDirectory(PathBuf),
     OpenLink(String),
-    Refresh,
+    Refresh(Mode),
     Unignore(String),
     Update(String),
-    UpdateAll,
+    UpdateAll(Mode),
     SortColumn(ColumnKey),
     SortCatalogColumn(CatalogColumnKey),
     FlavorSelected(Flavor),
@@ -155,7 +157,9 @@ pub struct Ajour {
     error: Option<anyhow::Error>,
     mode: Mode,
     addons: HashMap<Flavor, Vec<Addon>>,
+    weakauras: Vec<String>, // TODO (casperstorm): Update with proper data model.
     addons_scrollable_state: scrollable::State,
+    weakauras_scrollable_state: scrollable::State,
     settings_scrollable_state: scrollable::State,
     about_scrollable_state: scrollable::State,
     config: Config,
@@ -177,6 +181,7 @@ pub struct Ajour {
     classic_btn_state: button::State,
     classic_ptr_btn_state: button::State,
     addon_mode_btn_state: button::State,
+    weakaura_mode_btn_state: button::State,
     catalog_mode_btn_state: button::State,
     install_mode_btn_state: button::State,
     scale_state: ScaleState,
@@ -204,7 +209,9 @@ impl Default for Ajour {
             error: None,
             mode: Mode::MyAddons(Flavor::Retail),
             addons: HashMap::new(),
+            weakauras: vec!["One".to_owned(), "Two".to_owned()], // TODO (casperstorm): Update with proper data model.
             addons_scrollable_state: Default::default(),
+            weakauras_scrollable_state: Default::default(),
             settings_scrollable_state: Default::default(),
             about_scrollable_state: Default::default(),
             config: Config::default(),
@@ -226,6 +233,7 @@ impl Default for Ajour {
             classic_btn_state: Default::default(),
             classic_ptr_btn_state: Default::default(),
             addon_mode_btn_state: Default::default(),
+            weakaura_mode_btn_state: Default::default(),
             catalog_mode_btn_state: Default::default(),
             install_mode_btn_state: Default::default(),
             scale_state: Default::default(),
@@ -342,6 +350,7 @@ impl Application for Ajour {
             &mut self.settings_btn_state,
             &mut self.about_btn_state,
             &mut self.addon_mode_btn_state,
+            &mut self.weakaura_mode_btn_state,
             &mut self.catalog_mode_btn_state,
             &mut self.install_mode_btn_state,
             &mut self.retail_btn_state,
@@ -438,6 +447,38 @@ impl Application for Ajour {
                         .push(addons_scrollable)
                         .push(bottom_space)
                 }
+            }
+            Mode::MyWeakAuras => {
+                // Menu for WeakAuras.
+                let menu_container = element::my_weakauras::menu_container(
+                    color_palette,
+                    &mut self.update_all_btn_state,
+                    &mut self.refresh_btn_state,
+                    &self.state,
+                    &self.weakauras,
+                );
+
+                content = content.push(menu_container);
+
+                // A scrollable list containing rows.
+                // Each row holds data about a single WeakAura.
+                let mut scrollable = Scrollable::new(&mut self.weakauras_scrollable_state)
+                    .spacing(1)
+                    .height(Length::FillPortion(1))
+                    .style(style::Scrollable(color_palette));
+
+                // TODO (casperstorm): Just temp. for having some GUI.
+                for weakaura in self.weakauras.clone() {
+                    let row = element::my_weakauras::data_row_container(
+                        color_palette,
+                        weakaura,
+                        &column_config,
+                    );
+
+                    scrollable = scrollable.push(row);
+                }
+
+                content = content.push(scrollable)
             }
             Mode::Install => {
                 let query = self
@@ -799,6 +840,7 @@ impl Application for Ajour {
             Mode::Settings => None,
             Mode::About => None,
             Mode::Install => None,
+            Mode::MyWeakAuras => None,
             Mode::Catalog => {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {

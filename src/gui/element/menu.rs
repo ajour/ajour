@@ -25,6 +25,7 @@ pub fn data_container<'a>(
     settings_button_state: &'a mut button::State,
     about_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
+    weakauras_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
     install_mode_btn_state: &'a mut button::State,
     retail_btn_state: &'a mut button::State,
@@ -50,6 +51,12 @@ pub fn data_container<'a>(
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,
         Text::new("My Addons").size(DEFAULT_FONT_SIZE),
+    )
+    .style(style::DisabledDefaultButton(color_palette));
+
+    let mut weakauras_mode_button = Button::new(
+        weakauras_mode_button_state,
+        Text::new("My WeakAuras").size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
@@ -85,6 +92,17 @@ pub fn data_container<'a>(
         Mode::MyAddons(_) => {
             addons_mode_button =
                 addons_mode_button.style(style::SelectedDefaultButton(color_palette));
+            weakauras_mode_button =
+                weakauras_mode_button.style(style::DefaultButton(color_palette));
+            catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
+            install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
+            about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
+            settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
+        }
+        Mode::MyWeakAuras => {
+            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            weakauras_mode_button =
+                weakauras_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
             about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
@@ -92,6 +110,8 @@ pub fn data_container<'a>(
         }
         Mode::Install => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            weakauras_mode_button =
+                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button =
                 install_mode_button.style(style::SelectedDefaultButton(color_palette));
@@ -100,6 +120,8 @@ pub fn data_container<'a>(
         }
         Mode::Catalog => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            weakauras_mode_button =
+                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
@@ -108,6 +130,8 @@ pub fn data_container<'a>(
         }
         Mode::Settings => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            weakauras_mode_button =
+                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
             about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
@@ -116,6 +140,8 @@ pub fn data_container<'a>(
         }
         Mode::About => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
+            weakauras_mode_button =
+                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
             about_mode_button =
@@ -126,6 +152,8 @@ pub fn data_container<'a>(
 
     if matches!(myaddons_state, State::Start) {
         addons_mode_button = addons_mode_button.style(style::DisabledDefaultButton(color_palette));
+        weakauras_mode_button =
+            weakauras_mode_button.style(style::DisabledDefaultButton(color_palette));
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
         install_mode_button =
@@ -133,6 +161,8 @@ pub fn data_container<'a>(
     } else {
         addons_mode_button =
             addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons(flavor)));
+        weakauras_mode_button =
+            weakauras_mode_button.on_press(Interaction::ModeSelected(Mode::MyWeakAuras));
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(Mode::Catalog));
         install_mode_button =
@@ -140,6 +170,7 @@ pub fn data_container<'a>(
     }
 
     let addons_mode_button: Element<Interaction> = addons_mode_button.into();
+    let weakauras_mode_button: Element<Interaction> = weakauras_mode_button.into();
     let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
     let install_mode_button: Element<Interaction> = install_mode_button.into();
     let settings_mode_button: Element<Interaction> = settings_mode_button.into();
@@ -147,6 +178,7 @@ pub fn data_container<'a>(
 
     let segmented_mode_control_row = Row::new()
         .push(addons_mode_button.map(Message::Interaction))
+        .push(weakauras_mode_button.map(Message::Interaction))
         .push(catalog_mode_button.map(Message::Interaction))
         .push(install_mode_button.map(Message::Interaction))
         .spacing(1);

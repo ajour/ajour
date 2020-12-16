@@ -118,20 +118,28 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             return Ok(Command::batch(commands));
         }
-        Message::Interaction(Interaction::Refresh) => {
-            log::debug!("Interaction::Refresh");
+        Message::Interaction(Interaction::Refresh(mode)) => {
+            log::debug!("Interaction::Refresh({})", &mode);
 
-            // Close details if shown.
-            ajour.expanded_type = ExpandType::None;
+            match mode {
+                Mode::MyAddons(flavor) => {
+                    // Close details if shown.
+                    ajour.expanded_type = ExpandType::None;
 
-            // Cleans the addons.
-            ajour.addons = HashMap::new();
+                    // Cleans the addons.
+                    ajour.addons = HashMap::new();
 
-            // Prepare state for loading.
-            let flavor = ajour.config.wow.flavor;
-            ajour.state.insert(Mode::MyAddons(flavor), State::Loading);
+                    // Prepare state for loading.
+                    ajour.state.insert(Mode::MyAddons(flavor), State::Loading);
 
-            return Ok(Command::perform(async {}, Message::Parse));
+                    return Ok(Command::perform(async {}, Message::Parse));
+                }
+                Mode::MyWeakAuras => {
+                    // TODO (casperstorm): Should refresh all weakauras.
+                    println!("Should refresh all weakauras");
+                }
+                _ => {}
+            }
         }
         Message::Interaction(Interaction::Ignore(id)) => {
             log::debug!("Interaction::Ignore({})", &id);
@@ -340,44 +348,52 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::Interaction(Interaction::UpdateAll) => {
-            log::debug!("Interaction::UpdateAll");
+        Message::Interaction(Interaction::UpdateAll(mode)) => {
+            log::debug!("Interaction::UpdateAll({})", &mode);
 
-            // Close details if shown.
-            ajour.expanded_type = ExpandType::None;
+            match mode {
+                Mode::MyAddons(flavor) => {
+                    // Close details if shown.
+                    ajour.expanded_type = ExpandType::None;
 
-            // Update all updatable addons, expect ignored.
-            let flavor = ajour.config.wow.flavor;
-            let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
-            let mut addons: Vec<_> = ajour
-                .addons
-                .entry(flavor)
-                .or_default()
-                .iter_mut()
-                .filter(|a| !ignored_ids.iter().any(|i| i == &a.primary_folder_id))
-                .collect();
+                    // Update all updatable addons, expect ignored.
+                    let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
+                    let mut addons: Vec<_> = ajour
+                        .addons
+                        .entry(flavor)
+                        .or_default()
+                        .iter_mut()
+                        .filter(|a| !ignored_ids.iter().any(|i| i == &a.primary_folder_id))
+                        .collect();
 
-            let mut commands = vec![];
-            for addon in addons.iter_mut() {
-                if addon.state == AddonState::Updatable {
-                    if let Some(to_directory) =
-                        ajour.config.get_download_directory_for_flavor(flavor)
-                    {
-                        addon.state = AddonState::Downloading;
-                        let addon = addon.clone();
-                        commands.push(Command::perform(
-                            perform_download_addon(
-                                DownloadReason::Update,
-                                flavor,
-                                addon,
-                                to_directory,
-                            ),
-                            Message::DownloadedAddon,
-                        ))
+                    let mut commands = vec![];
+                    for addon in addons.iter_mut() {
+                        if addon.state == AddonState::Updatable {
+                            if let Some(to_directory) =
+                                ajour.config.get_download_directory_for_flavor(flavor)
+                            {
+                                addon.state = AddonState::Downloading;
+                                let addon = addon.clone();
+                                commands.push(Command::perform(
+                                    perform_download_addon(
+                                        DownloadReason::Update,
+                                        flavor,
+                                        addon,
+                                        to_directory,
+                                    ),
+                                    Message::DownloadedAddon,
+                                ))
+                            }
+                        }
                     }
+                    return Ok(Command::batch(commands));
                 }
+                Mode::MyWeakAuras => {
+                    // TODO (casperstorm): Should update all weakauras.
+                    println!("Should update all weakauras.");
+                }
+                _ => {}
             }
-            return Ok(Command::batch(commands));
         }
         Message::ParsedAddons((flavor, result)) => {
             // if our selected flavor returns (either ok or error) - we change to idle.
@@ -849,6 +865,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Mode::Install => {}
                 Mode::Settings => {}
                 Mode::About => {}
+                Mode::MyWeakAuras => { // TODO (cacsperstorm): column resizing.
+                }
                 Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
