@@ -15,6 +15,7 @@ name = "parse_lua"
 ajour-core = { version = "0.5.5-rc.1", path = "../core" }
 
 async-std = { version = "1.6", features = ["unstable"] }
+futures = "0.3"
 isahc = { version = "0.9.6", features = ["json"] }
 mlua = { version = "0.4", features = ["lua53", "vendored"] }
 serde = { version = "1", features = ["derive"] }

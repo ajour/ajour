@@ -113,6 +113,7 @@ version = "0.5.5-rc.1"
 dependencies = [
  "ajour-core",
  "async-std",
+ "futures",
  "isahc",
  "mlua",
  "serde",
