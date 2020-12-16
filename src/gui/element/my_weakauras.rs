@@ -1,8 +1,8 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, ColumnKey,  Interaction, Message, Mode, State},
+    crate::gui::{style, ColumnKey, Interaction, Message, Mode, State},
     ajour_core::theme::ColorPalette,
-    ajour_widgets::{ TableRow},
+    ajour_widgets::TableRow,
     iced::{button, Button, Column, Container, Element, Length, Row, Space, Text},
     std::collections::HashMap,
 };
