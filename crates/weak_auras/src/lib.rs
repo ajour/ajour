@@ -94,19 +94,17 @@ pub async fn get_aura_updates(auras: &[Aura]) -> Vec<AuraUpdate> {
         auras
             .iter()
             .filter(|a| a.has_update())
-            .map(|aura| async move { (&aura.slug, get_encoded_update(&aura.slug).await) }),
+            .map(|aura| async move { (aura.slug.clone(), get_encoded_update(&aura.slug).await) }),
     )
     .await;
 
     let mut updates = vec![];
 
     for (slug, encoded_update) in fetched_updates {
-        if let Some(aura) = auras.iter().find(|a| &a.slug == slug).cloned() {
-            updates.push(AuraUpdate {
-                aura,
-                encoded_update,
-            });
-        }
+        updates.push(AuraUpdate {
+            slug,
+            encoded_update,
+        });
     }
 
     updates
@@ -125,17 +123,17 @@ async fn get_encoded_update(slug: &str) -> String {
 
 #[derive(Clone)]
 pub struct AuraUpdate {
-    aura: Aura,
+    slug: String,
     encoded_update: String,
 }
 
 impl Debug for AuraUpdate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("AuraUpdate")
-            .field("aura", &self.aura)
+            .field("slug", &self.slug)
             .field(
                 "encoded_update",
-                &format!("{}...", &self.encoded_update[..10]),
+                &format!("{}...", &self.encoded_update[..30]),
             )
             .finish()
     }
