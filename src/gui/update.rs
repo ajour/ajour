@@ -805,16 +805,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
 
                     // Update config with the newly changed release channel.
-                    ajour
-                        .config
-                        .addons
-                        .release_channels
-                        .entry(flavor)
-                        .or_default()
-                        .insert(addon.primary_folder_id.clone(), release_channel);
+                    // Unless its default, then we dont need it in config.
+                    if release_channel != ReleaseChannel::Default {
+                        ajour
+                            .config
+                            .addons
+                            .release_channels
+                            .entry(flavor)
+                            .or_default()
+                            .insert(addon.primary_folder_id.clone(), release_channel);
 
-                    // Persist the newly updated config.
-                    let _ = &ajour.config.save();
+                        // Persist the newly updated config.
+                        let _ = &ajour.config.save();
+                    }
                 }
             }
         }

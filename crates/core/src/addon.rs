@@ -517,24 +517,13 @@ impl PartialEq for Addon {
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.title().cmp(&other.title()))
-        // TODO (casperstorm): Is this used?
-        // Some(self.title().cmp(&other.title()).then_with(|| {
-        //     self.relevant_release_package()
-        //         .cmp(&other.relevant_release_package())
-        //         .reverse()
-        // }))
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
         self.title().cmp(&other.title())
-        // TODO (casperstorm): Is this used?
-        // self.title().cmp(&other.title()).then_with(|| {
-        //     self.relevant_release_package()
-        //         .cmp(&other.relevant_release_package())
-        //         .reverse()
-        // })
     }
 }
+
 impl Eq for Addon {}
