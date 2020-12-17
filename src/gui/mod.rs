@@ -499,7 +499,8 @@ impl Application for Ajour {
                     .iter()
                     .filter(|a| a.status() == AuraStatus::UpdateQueued)
                     .count()
-                    == num_available;
+                    == num_available
+                    && num_available > 0;
 
                 // Menu for WeakAuras.
                 let menu_container = element::my_weakauras::menu_container(
