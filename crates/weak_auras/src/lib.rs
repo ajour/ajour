@@ -109,7 +109,7 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
         slugs.join(",")
     );
 
-    let mut response = request_async(url, vec![], None).await?;
+    let mut response = request_async(url, vec![], Some(30)).await?;
 
     let mut auras: Vec<Aura> = response.json()?;
 
@@ -161,7 +161,10 @@ pub async fn get_aura_updates(auras: &[Aura]) -> Result<Vec<AuraUpdate>, Error> 
 async fn get_encoded_update(slug: &str) -> Result<String, Error> {
     let url = format!("https://data.wago.io/api/raw/encoded?id={}", slug);
 
-    Ok(request_async(url, vec![], None).await?.text_async().await?)
+    Ok(request_async(url, vec![], Some(30))
+        .await?
+        .text_async()
+        .await?)
 }
 
 /// An Aura that has an update. This stores the [`Aura`] along with the encoded
