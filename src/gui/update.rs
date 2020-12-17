@@ -793,6 +793,29 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     .iter_mut()
                     .find(|a| a.primary_folder_id == expanded_addon.primary_folder_id)
                 {
+                    // Update config with the newly changed release channel.
+                    // if we are selecting Default, we ensure we remove it from config.
+                    if release_channel == ReleaseChannel::Default {
+                        ajour
+                            .config
+                            .addons
+                            .release_channels
+                            .entry(flavor)
+                            .or_default()
+                            .remove(&addon.primary_folder_id);
+                    } else {
+                        ajour
+                            .config
+                            .addons
+                            .release_channels
+                            .entry(flavor)
+                            .or_default()
+                            .insert(addon.primary_folder_id.clone(), release_channel);
+                    }
+
+                    // Persist the newly updated config.
+                    let _ = &ajour.config.save();
+
                     addon.release_channel = release_channel;
 
                     // Check if addon is updatable.
@@ -802,21 +825,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         } else {
                             addon.state = AddonState::Idle;
                         }
-                    }
-
-                    // Update config with the newly changed release channel.
-                    // Unless its default, then we dont need it in config.
-                    if release_channel != ReleaseChannel::Default {
-                        ajour
-                            .config
-                            .addons
-                            .release_channels
-                            .entry(flavor)
-                            .or_default()
-                            .insert(addon.primary_folder_id.clone(), release_channel);
-
-                        // Persist the newly updated config.
-                        let _ = &ajour.config.save();
                     }
                 }
             }
