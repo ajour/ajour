@@ -1,11 +1,12 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
-        style, ColumnKey, ColumnState, Config, ExpandType, Flavor, Interaction, Message, Mode,
+        style, ColumnKey, ColumnState, ExpandType, Flavor, Interaction, Message, Mode,
         ReleaseChannel, SortDirection, State,
     },
     ajour_core::{
         addon::{Addon, AddonState},
+        config::Config,
         theme::ColorPalette,
     },
     ajour_widgets::{header, Header, TableRow},
@@ -100,6 +101,7 @@ pub fn data_row_container<'a, 'b>(
     addon: &'a mut Addon,
     is_addon_expanded: bool,
     expand_type: &'a ExpandType,
+    config: &Config,
     column_config: &'b [(ColumnKey, Length, bool)],
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
@@ -114,6 +116,8 @@ pub fn data_row_container<'a, 'b>(
     let changelog_url = addon.changelog_url().map(str::to_string);
     let repository_kind = addon.repository_kind();
 
+    let global_release_channel = config.addons.global_release_channel;
+
     // Check if current addon is expanded.
     let addon_cloned = addon.clone();
     let addon_cloned_for_row = addon.clone();
@@ -121,7 +125,7 @@ pub fn data_row_container<'a, 'b>(
         .version()
         .map(str::to_string)
         .unwrap_or_else(|| "-".to_string());
-    let release_package = addon_cloned.relevant_release_package();
+    let release_package = addon_cloned.relevant_release_package(global_release_channel);
     let remote_version = if let Some(package) = &release_package {
         package.version.clone()
     } else {
@@ -145,9 +149,9 @@ pub fn data_row_container<'a, 'b>(
 
         if release_package.is_some() {}
 
-        let mut title_row = Row::new().push(title).spacing(3).align_items(Align::Center);
+        let mut title_row = Row::new().push(title).spacing(5).align_items(Align::Center);
 
-        if addon.release_channel != ReleaseChannel::Stable {
+        if addon.release_channel != ReleaseChannel::Default {
             let release_channel =
                 Container::new(Text::new(addon.release_channel.to_string()).size(10))
                     .style(style::ChannelBadge(color_palette))

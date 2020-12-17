@@ -30,6 +30,8 @@ pub fn install_from_source(url: Uri, flavor: Flavor) -> Result<()> {
         let url_hash = hasher.finish();
 
         let config = load_config().await?;
+        let global_release_channel = config.addons.global_release_channel;
+
         let addon_cache = Arc::new(Mutex::new(load_addon_cache().await?));
         let fingerprint_cache = Arc::new(Mutex::new(load_fingerprint_cache().await?));
 
@@ -47,7 +49,7 @@ pub fn install_from_source(url: Uri, flavor: Flavor) -> Result<()> {
         let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
         // Download the addon
-        download_addon(&addon, &download_directory).await?;
+        download_addon(&addon, global_release_channel, &download_directory).await?;
         log::debug!("Addon downloaded");
 
         // Install the addon and update Addon with the unpacked folders

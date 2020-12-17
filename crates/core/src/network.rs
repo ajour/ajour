@@ -1,5 +1,6 @@
 use crate::addon::Addon;
 use crate::error::DownloadError;
+use crate::repository::GlobalReleaseChannel;
 use async_std::{
     fs::{create_dir_all, File},
     io::copy,
@@ -73,14 +74,19 @@ pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
 
 /// Function to download a zip archive for a `Addon`.
 /// Note: Addon needs to have a `remote_url` to the file.
-pub async fn download_addon(addon: &Addon, to_directory: &PathBuf) -> Result<(), DownloadError> {
-    let package = if let Some(relevant_package) = addon.relevant_release_package() {
-        Some(relevant_package)
-    } else if let Some(fallback_package) = addon.fallback_release_package() {
-        Some(fallback_package)
-    } else {
-        None
-    };
+pub async fn download_addon(
+    addon: &Addon,
+    global_release_channel: GlobalReleaseChannel,
+    to_directory: &PathBuf,
+) -> Result<(), DownloadError> {
+    let package =
+        if let Some(relevant_package) = addon.relevant_release_package(global_release_channel) {
+            Some(relevant_package)
+        } else if let Some(fallback_package) = addon.fallback_release_package() {
+            Some(fallback_package)
+        } else {
+            None
+        };
 
     if let Some(package) = package {
         log::debug!(

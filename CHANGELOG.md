@@ -14,6 +14,12 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- A global release channel can now be set in Settings. This makes it easy to set
+  all addons to a certain release channel, instead of going through them one by
+  one. Each addon can still overwrite this setting, if wanted.
+
 ### Changed
 
 - Catalog search now uses a fuzzy match for better searching of the catalog.
