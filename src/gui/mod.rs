@@ -91,6 +91,7 @@ pub enum Interaction {
     UpdateAll(Mode),
     SortColumn(ColumnKey),
     SortCatalogColumn(CatalogColumnKey),
+    SortAuraColumn(AuraColumnKey),
     FlavorSelected(Flavor),
     ResizeColumn(Mode, header::ResizeEvent),
     ScaleUp,
@@ -206,6 +207,7 @@ pub struct Ajour {
     self_update_channel_state: SelfUpdateChannelState,
     weak_auras_is_installed: bool,
     weak_auras_state: HashMap<Flavor, WeakAurasState>,
+    aura_header_state: AuraHeaderState,
 }
 
 impl Default for Ajour {
@@ -262,6 +264,7 @@ impl Default for Ajour {
             },
             weak_auras_is_installed: Default::default(),
             weak_auras_state: Default::default(),
+            aura_header_state: Default::default(),
         }
     }
 }
@@ -350,6 +353,13 @@ impl Application for Ajour {
             !&addons.is_empty()
         };
 
+        // Check if we have any auras.
+        let has_auras = {
+            let aura_state = self.weak_auras_state.entry(flavor).or_default();
+
+            !aura_state.auras.is_empty()
+        };
+
         // Used to display changelog later in the About screen.
         let release_copy = if let Some(release) = &self.self_update_state.latest_release {
             Some(release.clone())
@@ -382,6 +392,7 @@ impl Application for Ajour {
 
         let column_config = self.header_state.column_config();
         let catalog_column_config = self.catalog_header_state.column_config();
+        let aura_column_config = self.aura_header_state.column_config();
 
         // This column gathers all the other elements together.
         let mut content = Column::new().push(menu_container);
@@ -489,6 +500,18 @@ impl Application for Ajour {
 
                 content = content.push(menu_container);
 
+                // Addon row titles is a row of titles above the addon scrollable.
+                // This is to add titles above each section of the addon row, to let
+                // the user easily identify what the value is.
+                let aura_row_titles = element::my_weakauras::titles_row_header(
+                    color_palette,
+                    &weak_auras_state.auras,
+                    &mut self.aura_header_state.state,
+                    &mut self.aura_header_state.columns,
+                    self.aura_header_state.previous_column_key,
+                    self.aura_header_state.previous_sort_direction,
+                );
+
                 // A scrollable list containing rows.
                 // Each row holds data about a single WeakAura.
                 let mut scrollable = Scrollable::new(&mut self.weakauras_scrollable_state)
@@ -500,13 +523,22 @@ impl Application for Ajour {
                     let row = element::my_weakauras::data_row_container(
                         color_palette,
                         aura,
-                        &column_config,
+                        &aura_column_config,
                     );
 
                     scrollable = scrollable.push(row);
                 }
 
-                content = content.push(scrollable)
+                //Bottom space below the scrollable.
+                let bottom_space =
+                    Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
+
+                if num_auras > 0 {
+                    content = content
+                        .push(aura_row_titles)
+                        .push(scrollable)
+                        .push(bottom_space)
+                }
             }
             Mode::Install => {
                 let query = self
@@ -868,7 +900,43 @@ impl Application for Ajour {
             Mode::Settings => None,
             Mode::About => None,
             Mode::Install => None,
-            Mode::MyWeakAuras(flavor) => None,
+            Mode::MyWeakAuras(flavor) => {
+                let state = self
+                    .state
+                    .get(&Mode::MyWeakAuras(flavor))
+                    .cloned()
+                    .unwrap_or_default();
+
+                match state {
+                    State::Start => Some(element::status::data_container(
+                        color_palette,
+                        "Manage your WeakAuras with Ajour!",
+                        "Please select an Account to manage",
+                        None,
+                    )),
+                    State::Loading => Some(element::status::data_container(
+                        color_palette,
+                        "Loading..",
+                        &format!("Currently parsing {} weak auras.", flavor.to_string()),
+                        None,
+                    )),
+                    State::Ready => {
+                        if !has_auras {
+                            Some(element::status::data_container(
+                                color_palette,
+                                "Woops!",
+                                &format!(
+                                    "You have no {} weak auras.",
+                                    flavor.to_string().to_lowercase()
+                                ),
+                                None,
+                            ))
+                        } else {
+                            None
+                        }
+                    }
+                }
+            }
             Mode::Catalog => {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
@@ -1733,6 +1801,140 @@ pub struct WeakAurasState {
     auras: Vec<Aura>,
     updates: Vec<AuraUpdate>,
     applied_updates: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
+pub enum AuraColumnKey {
+    Title,
+    LocalVersion,
+    RemoteVersion,
+    Author,
+    Status,
+}
+
+impl AuraColumnKey {
+    fn title(self) -> String {
+        use AuraColumnKey::*;
+
+        let title = match self {
+            Title => "Addon",
+            LocalVersion => "Local",
+            RemoteVersion => "Remote",
+            Author => "Author",
+            Status => "Status",
+        };
+
+        title.to_string()
+    }
+
+    fn as_string(self) -> String {
+        use AuraColumnKey::*;
+
+        let s = match self {
+            Title => "title",
+            LocalVersion => "local",
+            RemoteVersion => "remote",
+            Author => "author",
+            Status => "status",
+        };
+
+        s.to_string()
+    }
+}
+
+impl From<&str> for AuraColumnKey {
+    fn from(s: &str) -> Self {
+        match s {
+            "title" => AuraColumnKey::Title,
+            "local" => AuraColumnKey::LocalVersion,
+            "remote" => AuraColumnKey::RemoteVersion,
+            "author" => AuraColumnKey::Author,
+            "status" => AuraColumnKey::Status,
+            _ => panic!(format!("Unknown AuraColumnKey for {}", s)),
+        }
+    }
+}
+
+pub struct AuraHeaderState {
+    state: header::State,
+    previous_column_key: Option<AuraColumnKey>,
+    previous_sort_direction: Option<SortDirection>,
+    columns: Vec<AuraColumnState>,
+}
+
+impl AuraHeaderState {
+    fn column_config(&self) -> Vec<(AuraColumnKey, Length, bool)> {
+        self.columns
+            .iter()
+            .map(|c| (c.key, c.width, c.hidden))
+            .collect()
+    }
+}
+
+impl Default for AuraHeaderState {
+    fn default() -> Self {
+        Self {
+            state: Default::default(),
+            previous_column_key: None,
+            previous_sort_direction: None,
+            columns: vec![
+                AuraColumnState {
+                    key: AuraColumnKey::Title,
+                    btn_state: Default::default(),
+                    width: Length::Fill,
+                    hidden: false,
+                },
+                AuraColumnState {
+                    key: AuraColumnKey::LocalVersion,
+                    btn_state: Default::default(),
+                    width: Length::Units(150),
+                    hidden: false,
+                },
+                AuraColumnState {
+                    key: AuraColumnKey::RemoteVersion,
+                    btn_state: Default::default(),
+                    width: Length::Units(150),
+                    hidden: false,
+                },
+                AuraColumnState {
+                    key: AuraColumnKey::Author,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                    hidden: false,
+                },
+                AuraColumnState {
+                    key: AuraColumnKey::Status,
+                    btn_state: Default::default(),
+                    width: Length::Units(95),
+                    hidden: false,
+                },
+            ],
+        }
+    }
+}
+
+pub struct AuraColumnState {
+    key: AuraColumnKey,
+    btn_state: button::State,
+    width: Length,
+    hidden: bool,
+}
+
+impl From<&AuraColumnState> for ColumnConfigV2 {
+    fn from(column: &AuraColumnState) -> Self {
+        // Only `AuraColumnState::Title` should be saved as Length::Fill -> width: None
+        let width = if let Length::Units(width) = column.width {
+            Some(width)
+        } else {
+            None
+        };
+
+        ColumnConfigV2 {
+            key: column.key.as_string(),
+            width,
+            hidden: column.hidden,
+        }
+    }
 }
 
 async fn is_weak_auras_installed(flavor: Flavor, addon_dir: PathBuf) -> (Flavor, bool) {

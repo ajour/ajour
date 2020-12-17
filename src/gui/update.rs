@@ -1,8 +1,9 @@
 use {
     super::{
-        Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow, CatalogSource,
-        ColumnKey, DirectoryType, DownloadReason, ExpandType, InstallAddon, InstallKind,
-        InstallStatus, Interaction, Message, Mode, SelfUpdateStatus, SortDirection, State,
+        Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
+        CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, InstallAddon,
+        InstallKind, InstallStatus, Interaction, Message, Mode, SelfUpdateStatus, SortDirection,
+        State,
     },
     crate::{log_error, Result},
     ajour_core::{
@@ -136,8 +137,25 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     return Ok(Command::perform(async {}, Message::Parse));
                 }
                 Mode::MyWeakAuras(flavor) => {
-                    // TODO (casperstorm): Should refresh all weakauras.
-                    println!("Should refresh all weakauras");
+                    let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                    if let Some(account) = state.chosen_account.clone() {
+                        if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                            state.applied_updates.drain(..);
+                            state.auras.drain(..);
+                            state.updates.drain(..);
+
+                            // Prepare state for loading.
+                            ajour
+                                .state
+                                .insert(Mode::MyWeakAuras(flavor), State::Loading);
+
+                            return Ok(Command::perform(
+                                parse_auras(flavor, wtf_path, account),
+                                Message::ParsedAuras,
+                            ));
+                        }
+                    }
                 }
                 _ => {}
             }
@@ -790,6 +808,44 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
+        Message::Interaction(Interaction::SortAuraColumn(column_key)) => {
+            // First time clicking a column should sort it in Ascending order, otherwise
+            // flip the sort direction.
+            let mut sort_direction = SortDirection::Asc;
+
+            if let Some(previous_column_key) = ajour.aura_header_state.previous_column_key {
+                if column_key == previous_column_key {
+                    if let Some(previous_sort_direction) =
+                        ajour.aura_header_state.previous_sort_direction
+                    {
+                        sort_direction = previous_sort_direction.toggle()
+                    }
+                }
+            }
+
+            // Exception would be first time ever sorting and sorting by title.
+            // Since its already sorting in Asc by default, we should sort Desc.
+            if ajour.aura_header_state.previous_column_key.is_none()
+                && column_key == AuraColumnKey::Title
+            {
+                sort_direction = SortDirection::Desc;
+            }
+
+            log::debug!(
+                "Interaction::SortAuraColumn({:?}, {:?})",
+                column_key,
+                sort_direction
+            );
+
+            ajour.aura_header_state.previous_sort_direction = Some(sort_direction);
+            ajour.aura_header_state.previous_column_key = Some(column_key);
+
+            let flavor = ajour.config.wow.flavor;
+            let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+            sort_auras(&mut state.auras, sort_direction, column_key);
+        }
+
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
 
@@ -1570,6 +1626,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     state.chosen_account = Some(account.clone());
 
                     if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                        state.applied_updates.drain(..);
+                        state.auras.drain(..);
+                        state.updates.drain(..);
+
+                        // Prepare state for loading.
+                        ajour
+                            .state
+                            .insert(Mode::MyWeakAuras(flavor), State::Loading);
+
                         return Ok(Command::perform(
                             parse_auras(flavor, wtf_path, account),
                             Message::ParsedAuras,
@@ -1579,16 +1644,24 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::ParsedAuras((flavor, result)) => match result {
-            Ok(auras) => {
+            Ok(mut auras) => {
                 log::debug!(
                     "Message::ParsedAuras({}, num_auras: {})",
                     flavor,
                     auras.len(),
                 );
 
+                // Sort the addons.
+                sort_auras(&mut auras, SortDirection::Desc, AuraColumnKey::Status);
+                ajour.aura_header_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.aura_header_state.previous_column_key = Some(AuraColumnKey::Status);
+
                 let state = ajour.weak_auras_state.entry(flavor).or_default();
 
                 state.auras = auras;
+
+                // Sets the flavor state to ready.
+                ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
             }
             error @ Err(_) => {
                 let error = error.context("Failed to parse Weak Auras").unwrap_err();
@@ -1927,6 +2000,70 @@ fn sort_catalog_addons(
             let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
             let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
             gv_a.cmp(&gv_b).reverse()
+        }),
+    }
+}
+
+fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: AuraColumnKey) {
+    match (column_key, sort_direction) {
+        (AuraColumnKey::Title, SortDirection::Asc) => {
+            auras.sort_by(|a, b| a.name().to_lowercase().cmp(&b.name().to_lowercase()));
+        }
+        (AuraColumnKey::Title, SortDirection::Desc) => {
+            auras.sort_by(|a, b| {
+                a.name()
+                    .to_lowercase()
+                    .cmp(&b.name().to_lowercase())
+                    .reverse()
+            });
+        }
+        (AuraColumnKey::LocalVersion, SortDirection::Asc) => {
+            auras.sort_by(|a, b| {
+                a.installed_symver()
+                    .cmp(&b.installed_symver())
+                    .then_with(|| a.name().cmp(&b.name()))
+            });
+        }
+        (AuraColumnKey::LocalVersion, SortDirection::Desc) => {
+            auras.sort_by(|a, b| {
+                a.installed_symver()
+                    .cmp(&b.installed_symver())
+                    .reverse()
+                    .then_with(|| a.name().cmp(&b.name()))
+            });
+        }
+        (AuraColumnKey::RemoteVersion, SortDirection::Asc) => {
+            auras.sort_by(|a, b| {
+                a.remote_symver()
+                    .cmp(&b.remote_symver())
+                    .then_with(|| a.name().cmp(&b.name()))
+            });
+        }
+        (AuraColumnKey::RemoteVersion, SortDirection::Desc) => {
+            auras.sort_by(|a, b| {
+                a.remote_symver()
+                    .cmp(&b.remote_symver())
+                    .reverse()
+                    .then_with(|| a.name().cmp(&b.name()))
+            });
+        }
+        (AuraColumnKey::Author, SortDirection::Asc) => {
+            auras.sort_by(|a, b| a.author().cmp(&b.author()))
+        }
+        (AuraColumnKey::Author, SortDirection::Desc) => {
+            auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
+        }
+        // TODO: Add status and sort
+        (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
+            a.status()
+                .cmp(&b.status())
+                .then_with(|| a.name().to_lowercase().cmp(&b.name().to_lowercase()))
+        }),
+        (AuraColumnKey::Status, SortDirection::Desc) => auras.sort_by(|a, b| {
+            a.status()
+                .cmp(&b.status())
+                .reverse()
+                .then_with(|| a.name().to_lowercase().cmp(&b.name().to_lowercase()))
         }),
     }
 }

@@ -9,7 +9,7 @@ use mlua::{prelude::*, Value};
 use serde::Deserialize;
 
 use std::collections::{HashMap, HashSet};
-use std::fmt::{self, Debug, Write};
+use std::fmt::{self, Debug, Display, Write};
 
 mod companion;
 mod error;
@@ -64,6 +64,10 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
         .join("SavedVariables")
         .join("WeakAuras.lua");
 
+    if !lua_path.exists().await {
+        return Ok(vec![]);
+    }
+
     let source = fs::read_to_string(&lua_path).await?;
 
     let displays = async_std::task::spawn_blocking(move || {
@@ -72,16 +76,26 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
         let lua = mlua::Lua::new();
         let table = lua.load(&expression).eval::<mlua::Table>()?.to_owned();
 
-        let displays = table
-            .get::<_, HashMap<String, MaybeAuraDisplay>>("displays")?
-            .values()
-            .cloned()
-            .filter_map(MaybeAuraDisplay::into_inner)
-            .collect::<Vec<_>>();
+        let maybe_table = table.get::<_, Option<HashMap<String, MaybeAuraDisplay>>>("displays")?;
 
-        Ok::<_, Error>(displays)
+        match maybe_table {
+            Some(table) => {
+                let displays = table
+                    .values()
+                    .cloned()
+                    .filter_map(MaybeAuraDisplay::into_inner)
+                    .collect::<Vec<_>>();
+
+                Ok::<_, Error>(displays)
+            }
+            None => Ok::<_, Error>(vec![]),
+        }
     })
     .await?;
+
+    if displays.is_empty() {
+        return Ok(vec![]);
+    }
 
     let slugs = displays
         .iter()
@@ -106,7 +120,11 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
             .cloned()
             .collect();
 
-        a.displays = displays
+        a.displays = displays;
+
+        if a.has_update() {
+            a.status = AuraStatus::UpdateAvailable;
+        }
     });
 
     Ok(auras)
@@ -211,6 +229,32 @@ impl Debug for AuraUpdate {
     }
 }
 
+/// Status used by GUI to track state of the Aura
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+pub enum AuraStatus {
+    Idle,
+    UpdateQueued,
+    UpdateAvailable,
+}
+
+impl Default for AuraStatus {
+    fn default() -> Self {
+        AuraStatus::Idle
+    }
+}
+
+impl Display for AuraStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            AuraStatus::Idle => "",
+            AuraStatus::UpdateAvailable => "Update Available",
+            AuraStatus::UpdateQueued => "Update Queued",
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
 /// A parsed Aura from SavedVariables along with it's Wago.io metadata
 #[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -223,6 +267,8 @@ pub struct Aura {
     changelog: AuraChangelog,
     #[serde(skip_deserializing)]
     displays: Vec<AuraDisplay>,
+    #[serde(skip_deserializing)]
+    status: AuraStatus,
 }
 
 impl Debug for Aura {
@@ -247,6 +293,14 @@ impl Aura {
 
     pub fn slug(&self) -> &str {
         &self.slug
+    }
+
+    pub fn url(&self) -> Option<&str> {
+        self.parent_display().map(|d| d.url.as_str())
+    }
+
+    pub fn status(&self) -> AuraStatus {
+        self.status
     }
 
     pub fn installed_version(&self) -> Option<u16> {
@@ -310,6 +364,7 @@ struct AuraChangelog {
 
 #[derive(Debug, Clone)]
 struct AuraDisplay {
+    url: String,
     slug: String,
     version: u16,
     version_string: String,
@@ -351,6 +406,7 @@ impl<'lua> FromLua<'lua> for MaybeAuraDisplay {
                         let skip_version = table.get("skipWagoUpdate")?;
 
                         return Ok(MaybeAuraDisplay(Some(AuraDisplay {
+                            url,
                             slug: slug.to_owned(),
                             version,
                             version_string,
