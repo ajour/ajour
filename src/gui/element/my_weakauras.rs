@@ -78,7 +78,7 @@ pub fn menu_container<'a>(
                 Text::new("Updates queued. Finish updating in the wow client.")
                     .size(DEFAULT_FONT_SIZE)
             } else {
-                Text::new(format!("{} weakauras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
+                Text::new(format!("{} WeakAuras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
             }
         }
         _ => Text::new(""),
