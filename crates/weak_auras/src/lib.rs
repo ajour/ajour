@@ -185,7 +185,7 @@ impl AuraUpdate {
         writeln!(&mut slug, "      wagoVersion = [=[{}]=],", self.aura.version)?;
         writeln!(&mut slug, "      wagoSemver = [=[{}]=],", self.aura.version_string)?;
         // TODO: Proper changelog formatting
-        writeln!(&mut slug, "      versionNote = [=[{}]=],", self.aura.changelog.text)?;
+        writeln!(&mut slug, "      versionNote = [=[{}]=],", self.aura.changelog.text.as_deref().unwrap_or_default())?;
         writeln!(&mut slug, "    }},")?;
 
         Ok(slug)
@@ -312,7 +312,9 @@ impl Aura {
     }
 
     pub fn installed_symver(&self) -> Option<&str> {
-        self.parent_display().map(|d| d.version_string.as_str())
+        self.parent_display()
+            .map(|d| d.version_string.as_deref())
+            .flatten()
     }
 
     pub fn remote_symver(&self) -> &str {
@@ -358,8 +360,8 @@ impl Aura {
 
 #[derive(Debug, Deserialize, Clone)]
 struct AuraChangelog {
-    text: String,
-    format: String,
+    text: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -367,7 +369,7 @@ struct AuraDisplay {
     url: String,
     slug: String,
     version: u16,
-    version_string: String,
+    version_string: Option<String>,
     parent: Option<String>,
     id: String,
     uid: String,
