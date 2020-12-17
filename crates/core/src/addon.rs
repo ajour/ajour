@@ -20,12 +20,12 @@ pub enum AddonVersionKey {
 #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord)]
 pub enum AddonState {
     Ignored,
+    Unknown,
     Completed,
     Downloading,
     Error(String),
     Fingerprint,
     Idle,
-    Unknown,
     Unpacking,
     Retry,
     Updatable,

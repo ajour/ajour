@@ -27,6 +27,7 @@ and `Removed`.
 - Ignored addons are now sorted correctly again
 - Fingerprint and addon cache entries are now properly deleted when the addon folder
   is missing from the filesystem
+- Unknown addons are now at the botton of the addon list by default instead of top
 
 ## [0.5.4] - 2020-12-07
 
