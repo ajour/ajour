@@ -1,6 +1,7 @@
 use crate::error::FilesystemError;
 use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
@@ -43,6 +44,9 @@ pub struct Config {
 
     #[serde(default)]
     pub self_update_channel: SelfUpdateChannel,
+
+    #[serde(default)]
+    pub weak_auras_account: HashMap<Flavor, String>,
 }
 
 impl Config {
@@ -149,6 +153,8 @@ pub enum ColumnConfig {
     V3 {
         my_addons_columns: Vec<ColumnConfigV2>,
         catalog_columns: Vec<ColumnConfigV2>,
+        #[serde(default)]
+        aura_columns: Vec<ColumnConfigV2>,
     },
 }
 

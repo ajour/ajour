@@ -18,7 +18,7 @@ use ajour_core::{
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
-use ajour_weak_auras::{Aura, AuraUpdate};
+use ajour_weak_auras::{Aura, AuraStatus};
 use ajour_widgets::header;
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -158,6 +158,7 @@ pub enum Message {
     ListWeakAurasAccounts((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
     WeakAurasAccountSelected(String),
     ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
+    AurasUpdated((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
 }
 
 pub struct Ajour {
@@ -487,7 +488,18 @@ impl Application for Ajour {
                 let weak_auras_state = self.weak_auras_state.entry(flavor).or_default();
 
                 let num_auras = weak_auras_state.auras.len();
-                let updates_available = weak_auras_state.auras.iter().any(|a| a.has_update());
+                let num_available = weak_auras_state
+                    .auras
+                    .iter()
+                    .filter(|a| a.has_update())
+                    .count();
+                let is_updating = weak_auras_state.is_updating;
+                let updates_queued = weak_auras_state
+                    .auras
+                    .iter()
+                    .filter(|a| a.status() == AuraStatus::UpdateQueued)
+                    .count()
+                    == num_available;
 
                 // Menu for WeakAuras.
                 let menu_container = element::my_weakauras::menu_container(
@@ -497,7 +509,9 @@ impl Application for Ajour {
                     &mut self.refresh_btn_state,
                     &self.state,
                     num_auras,
-                    updates_available,
+                    num_available > 0,
+                    is_updating,
+                    updates_queued,
                     &mut weak_auras_state.account_picklist,
                     &weak_auras_state.accounts,
                     weak_auras_state.chosen_account.clone(),
@@ -1805,8 +1819,7 @@ pub struct WeakAurasState {
     account_picklist: pick_list::State<String>,
     accounts: Vec<String>,
     auras: Vec<Aura>,
-    updates: Vec<AuraUpdate>,
-    applied_updates: Vec<String>,
+    is_updating: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
@@ -2031,6 +2044,7 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
         ColumnConfig::V3 {
             my_addons_columns,
             catalog_columns,
+            aura_columns,
         } => {
             ajour.header_state.columns.iter_mut().for_each(|a| {
                 if let Some((idx, column)) = my_addons_columns
@@ -2129,6 +2143,33 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
                 }
             });
 
+            ajour.aura_header_state.columns.iter_mut().for_each(|a| {
+                if let Some((_idx, column)) = aura_columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some((idx, column))
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    // Always force "Title" column as Length::Fill
+                    //
+                    // An older version of ajour used a different column as the fill
+                    // column and some users have migration issues when updating to
+                    // a newer version, causing NO columns to be set as Fill and
+                    // making resizing columns work incorrectly
+                    a.width = if a.key == AuraColumnKey::Title {
+                        Length::Fill
+                    } else {
+                        column.width.map_or(Length::Fill, Length::Units)
+                    };
+                }
+            });
+
             // My Addons
             ajour.header_state.columns.sort_by_key(|c| c.order);
             ajour.column_settings.columns.sort_by_key(|c| c.order);
@@ -2139,6 +2180,8 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
                 .catalog_column_settings
                 .columns
                 .sort_by_key(|c| c.order);
+
+            // No sorting on Aura columns currently
         }
     }
 
