@@ -1837,7 +1837,7 @@ impl AuraColumnKey {
         use AuraColumnKey::*;
 
         let title = match self {
-            Title => "Addon",
+            Title => "Aura",
             LocalVersion => "Local",
             RemoteVersion => "Remote",
             Author => "Author",
