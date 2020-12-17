@@ -306,6 +306,10 @@ impl Aura {
         self.status
     }
 
+    pub fn set_status(&mut self, status: AuraStatus) {
+        self.status = status;
+    }
+
     pub fn installed_version(&self) -> Option<u16> {
         self.parent_display().map(|d| d.version)
     }

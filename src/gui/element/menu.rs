@@ -1,6 +1,6 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, Interaction, Message, Mode, SelfUpdateState, State, WeakAurasState},
+    crate::gui::{style, Interaction, Message, Mode, SelfUpdateState, State},
     crate::VERSION,
     ajour_core::{
         config::{Config, Flavor},

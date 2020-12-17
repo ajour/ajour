@@ -24,6 +24,8 @@ pub fn menu_container<'a>(
     state: &HashMap<Mode, State>,
     num_auras: usize,
     updates_available: bool,
+    is_updating: bool,
+    updates_queued: bool,
     accounts_picklist_state: &'a mut pick_list::State<String>,
     accounts: &'a [String],
     chosen_account: Option<String>,
@@ -59,7 +61,7 @@ pub fn menu_container<'a>(
     .width(Length::Units(120))
     .style(style::PickList(color_palette));
 
-    if updates_available {
+    if updates_available && !is_updating && !updates_queued {
         update_all_button =
             update_all_button.on_press(Interaction::UpdateAll(Mode::MyWeakAuras(flavor)));
     }
@@ -72,7 +74,12 @@ pub fn menu_container<'a>(
     let refresh_button: Element<Interaction> = refresh_button.into();
     let status_text = match state {
         State::Ready => {
-            Text::new(format!("{} weakauras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
+            if updates_queued {
+                Text::new("Updates queued. Finish updating in the wow client.")
+                    .size(DEFAULT_FONT_SIZE)
+            } else {
+                Text::new(format!("{} weakauras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
+            }
         }
         _ => Text::new(""),
     };

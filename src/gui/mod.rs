@@ -18,7 +18,7 @@ use ajour_core::{
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
-use ajour_weak_auras::{Aura, AuraUpdate};
+use ajour_weak_auras::{Aura, AuraStatus};
 use ajour_widgets::header;
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -158,6 +158,7 @@ pub enum Message {
     ListWeakAurasAccounts((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
     WeakAurasAccountSelected(String),
     ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
+    AurasUpdated((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
 }
 
 pub struct Ajour {
@@ -487,7 +488,18 @@ impl Application for Ajour {
                 let weak_auras_state = self.weak_auras_state.entry(flavor).or_default();
 
                 let num_auras = weak_auras_state.auras.len();
-                let updates_available = weak_auras_state.auras.iter().any(|a| a.has_update());
+                let num_available = weak_auras_state
+                    .auras
+                    .iter()
+                    .filter(|a| a.has_update())
+                    .count();
+                let is_updating = weak_auras_state.is_updating;
+                let updates_queued = weak_auras_state
+                    .auras
+                    .iter()
+                    .filter(|a| a.status() == AuraStatus::UpdateQueued)
+                    .count()
+                    == num_available;
 
                 // Menu for WeakAuras.
                 let menu_container = element::my_weakauras::menu_container(
@@ -497,7 +509,9 @@ impl Application for Ajour {
                     &mut self.refresh_btn_state,
                     &self.state,
                     num_auras,
-                    updates_available,
+                    num_available > 0,
+                    is_updating,
+                    updates_queued,
                     &mut weak_auras_state.account_picklist,
                     &weak_auras_state.accounts,
                     weak_auras_state.chosen_account.clone(),
@@ -1805,8 +1819,7 @@ pub struct WeakAurasState {
     account_picklist: pick_list::State<String>,
     accounts: Vec<String>,
     auras: Vec<Aura>,
-    updates: Vec<AuraUpdate>,
-    applied_updates: Vec<String>,
+    is_updating: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]

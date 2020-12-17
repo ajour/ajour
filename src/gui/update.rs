@@ -22,7 +22,7 @@ use {
         repository::{RepositoryKind, RepositoryPackage},
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
-    ajour_weak_auras::Aura,
+    ajour_weak_auras::{Aura, AuraStatus},
     ajour_widgets::header::ResizeEvent,
     anyhow::Context,
     async_std::sync::{Arc, Mutex},
@@ -141,9 +141,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     if let Some(account) = state.chosen_account.clone() {
                         if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
-                            state.applied_updates.drain(..);
                             state.auras.drain(..);
-                            state.updates.drain(..);
 
                             // Prepare state for loading.
                             ajour
@@ -387,7 +385,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.expanded_type = ExpandType::None;
 
                     // Update all updatable addons, expect ignored.
-                    let flavor = ajour.config.wow.flavor;
                     let global_release_channel = ajour.config.addons.global_release_channel;
                     let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
                     let mut addons: Vec<_> = ajour
@@ -422,8 +419,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     return Ok(Command::batch(commands));
                 }
                 Mode::MyWeakAuras(flavor) => {
-                    // TODO (casperstorm): Should update all weakauras.
-                    println!("Should update all weakauras.");
+                    if let Some(addon_dir) = ajour.config.get_addon_directory_for_flavor(&flavor) {
+                        let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                        state.is_updating = true;
+
+                        let auras = state.auras.clone();
+
+                        return Ok(Command::perform(
+                            update_auras(flavor, auras, addon_dir),
+                            Message::AurasUpdated,
+                        ));
+                    }
                 }
                 _ => {}
             }
@@ -1658,8 +1665,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 );
 
                 let state = ajour.weak_auras_state.entry(flavor).or_default();
-
                 state.accounts = accounts;
+
+                // If we have an account already selected, use that as the picklist selection
+                // and trigger a parse for this without user interaction
+                if let Some(account) = ajour.config.weak_auras_account.get(&flavor) {
+                    if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                        state.chosen_account = Some(account.clone());
+
+                        return Ok(Command::perform(
+                            parse_auras(flavor, wtf_path, account.clone()),
+                            Message::ParsedAuras,
+                        ));
+                    }
+                }
             }
             error @ Err(_) => {
                 let error = error.context("Failed to get list of Accounts").unwrap_err();
@@ -1677,10 +1696,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if state.chosen_account.as_ref() != Some(&account) {
                     state.chosen_account = Some(account.clone());
 
+                    // Persist to config
+                    ajour
+                        .config
+                        .weak_auras_account
+                        .insert(flavor, account.clone());
+                    let _ = ajour.config.save();
+
                     if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
-                        state.applied_updates.drain(..);
                         state.auras.drain(..);
-                        state.updates.drain(..);
 
                         // Prepare state for loading.
                         ajour
@@ -1716,7 +1740,32 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
             }
             error @ Err(_) => {
-                let error = error.context("Failed to parse Weak Auras").unwrap_err();
+                let error = error.context("Failed to parse WeakAuras").unwrap_err();
+
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
+        Message::AurasUpdated((flavor, result)) => match result {
+            Ok(slugs) => {
+                log::debug!(
+                    "Message::AurasUpdated({}, num_auras: {})",
+                    flavor,
+                    slugs.len(),
+                );
+
+                let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                for slug in slugs.iter() {
+                    if let Some(aura) = state.auras.iter_mut().find(|a| a.slug() == slug) {
+                        aura.set_status(AuraStatus::UpdateQueued);
+                    }
+                }
+
+                state.is_updating = false;
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to update WeakAuras").unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -1894,6 +1943,23 @@ async fn parse_auras(
         flavor,
         ajour_weak_auras::parse_auras(wtf_path, account).await,
     )
+}
+
+async fn update_auras(
+    flavor: Flavor,
+    auras: Vec<Aura>,
+    addon_dir: PathBuf,
+) -> (Flavor, Result<Vec<String>, ajour_weak_auras::Error>) {
+    async fn _update_auras(
+        auras: Vec<Aura>,
+        addon_dir: PathBuf,
+    ) -> Result<Vec<String>, ajour_weak_auras::Error> {
+        let updates = ajour_weak_auras::get_aura_updates(&auras).await?;
+
+        ajour_weak_auras::write_updates(addon_dir, &updates).await
+    }
+
+    (flavor, _update_auras(auras, addon_dir).await)
 }
 
 fn sort_addons(
