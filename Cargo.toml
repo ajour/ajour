@@ -18,6 +18,7 @@ opengl = ["ajour-widgets/opengl", "iced/glow", "iced/glow_default_system_font"]
 
 [dependencies]
 ajour-core = { version = "0.5.5-rc.1", path = "crates/core", features=['gui'] }
+ajour-weak-auras = { version = "0.5.5-rc.1", path = "crates/weak_auras" }
 ajour-widgets = { version = "0.5.5-rc.1", path = "crates/widgets" }
 
 iced = { version = "0.2.0", default-features = false, features = ["debug"] }

@@ -29,6 +29,10 @@ pub async fn list_accounts(wtf_path: impl AsRef<Path>) -> Result<Vec<String>, Er
 
     let mut accounts = vec![];
 
+    if !account_path.exists().await {
+        return Ok(accounts);
+    }
+
     let mut read_dir = fs::read_dir(account_path).await?;
 
     while let Some(entry) = read_dir.next().await {
@@ -60,19 +64,24 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
         .join("SavedVariables")
         .join("WeakAuras.lua");
 
-    let lua = mlua::Lua::new();
-
     let source = fs::read_to_string(&lua_path).await?;
-    let expression = source.replace("WeakAurasSaved = {", "{");
 
-    let table = lua.load(&expression).eval::<mlua::Table>()?;
+    let displays = async_std::task::spawn_blocking(move || {
+        let expression = source.replace("WeakAurasSaved = {", "{");
 
-    let displays = table
-        .get::<_, HashMap<String, MaybeAuraDisplay>>("displays")?
-        .values()
-        .cloned()
-        .filter_map(MaybeAuraDisplay::into_inner)
-        .collect::<Vec<_>>();
+        let lua = mlua::Lua::new();
+        let table = lua.load(&expression).eval::<mlua::Table>()?.to_owned();
+
+        let displays = table
+            .get::<_, HashMap<String, MaybeAuraDisplay>>("displays")?
+            .values()
+            .cloned()
+            .filter_map(MaybeAuraDisplay::into_inner)
+            .collect::<Vec<_>>();
+
+        Ok::<_, Error>(displays)
+    })
+    .await?;
 
     let slugs = displays
         .iter()

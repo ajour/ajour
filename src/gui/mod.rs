@@ -18,6 +18,7 @@ use ajour_core::{
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
+use ajour_weak_auras::{Aura, AuraUpdate};
 use ajour_widgets::header;
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -51,7 +52,7 @@ impl Default for State {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Mode {
     MyAddons(Flavor),
-    MyWeakAuras,
+    MyWeakAuras(Flavor),
     Install,
     Catalog,
     Settings,
@@ -65,7 +66,7 @@ impl std::fmt::Display for Mode {
             "{}",
             match self {
                 Mode::MyAddons(_) => "My Addons",
-                Mode::MyWeakAuras => "My WeakAuras",
+                Mode::MyWeakAuras(_) => "My WeakAuras",
                 Mode::Install => "Install",
                 Mode::Catalog => "Catalog",
                 Mode::Settings => "Settings",
@@ -150,6 +151,10 @@ pub enum Message {
     AddonCacheEntryRemoved(Result<Option<AddonCacheEntry>, CacheError>),
     RefreshCatalog(Instant),
     CheckLatestRelease(Instant),
+    CheckWeakAurasInstalled((Flavor, bool)),
+    ListWeakAurasAccounts((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
+    WeakAurasAccountSelected(String),
+    ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
 }
 
 pub struct Ajour {
@@ -157,7 +162,6 @@ pub struct Ajour {
     error: Option<anyhow::Error>,
     mode: Mode,
     addons: HashMap<Flavor, Vec<Addon>>,
-    weakauras: Vec<String>, // TODO (casperstorm): Update with proper data model.
     addons_scrollable_state: scrollable::State,
     weakauras_scrollable_state: scrollable::State,
     settings_scrollable_state: scrollable::State,
@@ -200,6 +204,8 @@ pub struct Ajour {
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
     self_update_channel_state: SelfUpdateChannelState,
+    weak_auras_is_installed: bool,
+    weak_auras_state: HashMap<Flavor, WeakAurasState>,
 }
 
 impl Default for Ajour {
@@ -209,7 +215,6 @@ impl Default for Ajour {
             error: None,
             mode: Mode::MyAddons(Flavor::Retail),
             addons: HashMap::new(),
-            weakauras: vec!["One".to_owned(), "Two".to_owned()], // TODO (casperstorm): Update with proper data model.
             addons_scrollable_state: Default::default(),
             weakauras_scrollable_state: Default::default(),
             settings_scrollable_state: Default::default(),
@@ -255,6 +260,8 @@ impl Default for Ajour {
                 picklist: Default::default(),
                 options: SelfUpdateChannel::all(),
             },
+            weak_auras_is_installed: Default::default(),
+            weak_auras_state: Default::default(),
         }
     }
 }
@@ -265,7 +272,7 @@ impl Application for Ajour {
     type Flags = Config;
 
     fn new(config: Config) -> (Self, Command<Message>) {
-        let init_commands = vec![
+        let mut init_commands = vec![
             Command::perform(load_caches(), Message::CachesLoaded),
             Command::perform(
                 get_latest_release(config.self_update_channel),
@@ -274,6 +281,17 @@ impl Application for Ajour {
             Command::perform(load_user_themes(), Message::ThemesLoaded),
             Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];
+
+        // Check if Weak Auras is installed for each flavor. If any of them returns
+        // true, we will show the My WeakAuras button
+        for flavor in Flavor::ALL.iter() {
+            if let Some(addon_dir) = config.get_addon_directory_for_flavor(flavor) {
+                init_commands.push(Command::perform(
+                    is_weak_auras_installed(*flavor, addon_dir),
+                    Message::CheckWeakAurasInstalled,
+                ))
+            }
+        }
 
         let mut ajour = Ajour::default();
 
@@ -359,6 +377,7 @@ impl Application for Ajour {
             &mut self.classic_btn_state,
             &mut self.classic_ptr_btn_state,
             &mut self.self_update_state,
+            self.weak_auras_is_installed,
         );
 
         let column_config = self.header_state.column_config();
@@ -448,14 +467,24 @@ impl Application for Ajour {
                         .push(bottom_space)
                 }
             }
-            Mode::MyWeakAuras => {
+            Mode::MyWeakAuras(flavor) => {
+                let weak_auras_state = self.weak_auras_state.entry(flavor).or_default();
+
+                let num_auras = weak_auras_state.auras.len();
+                let updates_available = weak_auras_state.auras.iter().any(|a| a.has_update());
+
                 // Menu for WeakAuras.
                 let menu_container = element::my_weakauras::menu_container(
                     color_palette,
+                    flavor,
                     &mut self.update_all_btn_state,
                     &mut self.refresh_btn_state,
                     &self.state,
-                    &self.weakauras,
+                    num_auras,
+                    updates_available,
+                    &mut weak_auras_state.account_picklist,
+                    &weak_auras_state.accounts,
+                    weak_auras_state.chosen_account.clone(),
                 );
 
                 content = content.push(menu_container);
@@ -467,11 +496,10 @@ impl Application for Ajour {
                     .height(Length::FillPortion(1))
                     .style(style::Scrollable(color_palette));
 
-                // TODO (casperstorm): Just temp. for having some GUI.
-                for weakaura in self.weakauras.clone() {
+                for aura in weak_auras_state.auras.iter() {
                     let row = element::my_weakauras::data_row_container(
                         color_palette,
-                        weakaura,
+                        aura,
                         &column_config,
                     );
 
@@ -840,7 +868,7 @@ impl Application for Ajour {
             Mode::Settings => None,
             Mode::About => None,
             Mode::Install => None,
-            Mode::MyWeakAuras => None,
+            Mode::MyWeakAuras(flavor) => None,
             Mode::Catalog => {
                 let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
                 match state {
@@ -1695,6 +1723,23 @@ pub struct SelfUpdateState {
 pub struct SelfUpdateChannelState {
     picklist: pick_list::State<SelfUpdateChannel>,
     options: [SelfUpdateChannel; 2],
+}
+
+#[derive(Debug, Default)]
+pub struct WeakAurasState {
+    chosen_account: Option<String>,
+    account_picklist: pick_list::State<String>,
+    accounts: Vec<String>,
+    auras: Vec<Aura>,
+    updates: Vec<AuraUpdate>,
+    applied_updates: Vec<String>,
+}
+
+async fn is_weak_auras_installed(flavor: Flavor, addon_dir: PathBuf) -> (Flavor, bool) {
+    (
+        flavor,
+        ajour_weak_auras::is_weak_auras_installed(addon_dir).await,
+    )
 }
 
 async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {

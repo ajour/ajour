@@ -1,22 +1,34 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, ColumnKey, Interaction, Message, Mode, State},
+    crate::gui::{style, ColumnKey, Interaction, Message, Mode, State, WeakAurasState},
+    ajour_core::config::Flavor,
     ajour_core::theme::ColorPalette,
+    ajour_weak_auras::Aura,
     ajour_widgets::TableRow,
-    iced::{button, Button, Column, Container, Element, Length, Row, Space, Text},
+    iced::{
+        button, pick_list, Button, Column, Container, Element, Length, PickList, Row, Space, Text,
+    },
     std::collections::HashMap,
 };
 
 #[allow(clippy::too_many_arguments)]
 pub fn menu_container<'a>(
     color_palette: ColorPalette,
+    flavor: Flavor,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
     state: &HashMap<Mode, State>,
-    weakauras: &[String],
+    num_auras: usize,
+    updates_available: bool,
+    accounts_picklist_state: &'a mut pick_list::State<String>,
+    accounts: &'a [String],
+    chosen_account: Option<String>,
 ) -> Container<'a, Message> {
     // MyWeakAuras state.
-    let state = state.get(&Mode::MyWeakAuras).cloned().unwrap_or_default();
+    let state = state
+        .get(&Mode::MyWeakAuras(flavor))
+        .cloned()
+        .unwrap_or_default();
 
     // A row contain general settings.
     let mut row = Row::new().height(Length::Units(35));
@@ -33,15 +45,28 @@ pub fn menu_container<'a>(
     )
     .style(style::DefaultButton(color_palette));
 
-    // TODO (casperstorm): Should we disable update all at any point?
-    update_all_button = update_all_button.on_press(Interaction::UpdateAll(Mode::MyWeakAuras));
-    refresh_button = refresh_button.on_press(Interaction::Refresh(Mode::MyWeakAuras));
+    let pick_list = PickList::new(
+        accounts_picklist_state,
+        accounts,
+        chosen_account,
+        Message::WeakAurasAccountSelected,
+    )
+    .text_size(14)
+    .width(Length::Units(120))
+    .style(style::PickList(color_palette));
+
+    if updates_available {
+        update_all_button =
+            update_all_button.on_press(Interaction::UpdateAll(Mode::MyWeakAuras(flavor)));
+    }
+
+    refresh_button = refresh_button.on_press(Interaction::Refresh(Mode::MyWeakAuras(flavor)));
 
     let update_all_button: Element<Interaction> = update_all_button.into();
     let refresh_button: Element<Interaction> = refresh_button.into();
     let status_text = match state {
         State::Ready => {
-            Text::new(format!("{} weakauras loaded", weakauras.len(),)).size(DEFAULT_FONT_SIZE)
+            Text::new(format!("{} weakauras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
         }
         _ => Text::new(""),
     };
@@ -57,6 +82,8 @@ pub fn menu_container<'a>(
         .push(Space::new(Length::Units(7), Length::Units(0)))
         .push(update_all_button.map(Message::Interaction))
         .push(Space::new(Length::Units(7), Length::Units(0)))
+        .push(pick_list)
+        .push(Space::new(Length::Units(7), Length::Units(0)))
         .push(status_container)
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
 
@@ -71,12 +98,12 @@ pub fn menu_container<'a>(
 
 pub fn data_row_container<'a, 'b>(
     color_palette: ColorPalette,
-    weakaura: String,
+    aura: &Aura,
     _: &'b [(ColumnKey, Length, bool)],
 ) -> TableRow<'a, Message> {
     let default_height = 26;
 
-    let title = Text::new(weakaura).size(DEFAULT_FONT_SIZE);
+    let title = Text::new(aura.name()).size(DEFAULT_FONT_SIZE);
     let title_container = Container::new(title)
         .height(Length::Units(default_height))
         .center_y();

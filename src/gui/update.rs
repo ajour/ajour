@@ -21,6 +21,7 @@ use {
         repository::{RepositoryKind, RepositoryPackage},
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
+    ajour_weak_auras::Aura,
     ajour_widgets::header::ResizeEvent,
     anyhow::Context,
     async_std::sync::{Arc, Mutex},
@@ -134,7 +135,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     return Ok(Command::perform(async {}, Message::Parse));
                 }
-                Mode::MyWeakAuras => {
+                Mode::MyWeakAuras(flavor) => {
                     // TODO (casperstorm): Should refresh all weakauras.
                     println!("Should refresh all weakauras");
                 }
@@ -246,9 +247,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
             let _ = &ajour.config.save();
-            // Update flavor on MyAddons if thats our current mode.
-            if let Mode::MyAddons(_) = ajour.mode {
-                ajour.mode = Mode::MyAddons(flavor)
+
+            match ajour.mode {
+                Mode::MyAddons(_) => {
+                    // Update flavor on MyAddons if thats our current mode.
+                    ajour.mode = Mode::MyAddons(flavor);
+                }
+                Mode::MyWeakAuras(_) => {
+                    // Update flavor on MyWeakAuras if thats our current mode.
+                    ajour.mode = Mode::MyWeakAuras(flavor);
+                }
+                _ => {}
             }
             // Update catalog
             query_and_sort_catalog(ajour);
@@ -388,7 +397,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                     return Ok(Command::batch(commands));
                 }
-                Mode::MyWeakAuras => {
+                Mode::MyWeakAuras(flavor) => {
                     // TODO (casperstorm): Should update all weakauras.
                     println!("Should update all weakauras.");
                 }
@@ -865,7 +874,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Mode::Install => {}
                 Mode::Settings => {}
                 Mode::About => {}
-                Mode::MyWeakAuras => { // TODO (cacsperstorm): column resizing.
+                Mode::MyWeakAuras(_) => { // TODO (cacsperstorm): column resizing.
                 }
                 Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
@@ -1514,6 +1523,80 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::LatestRelease,
             ));
         }
+        Message::CheckWeakAurasInstalled((flavor, is_installed)) => {
+            log::debug!(
+                "Message::CheckWeakAurasInstalled({}, is_installed: {})",
+                flavor,
+                is_installed
+            );
+
+            if is_installed {
+                ajour.weak_auras_is_installed = true;
+
+                if let Some(wtf_folder) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                    return Ok(Command::perform(
+                        list_accounts(flavor, wtf_folder),
+                        Message::ListWeakAurasAccounts,
+                    ));
+                }
+            }
+        }
+        Message::ListWeakAurasAccounts((flavor, result)) => match result {
+            Ok(accounts) => {
+                log::debug!(
+                    "Message::ListWeakAurasAccounts({}, num_accounts: {})",
+                    flavor,
+                    accounts.len(),
+                );
+
+                let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                state.accounts = accounts;
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to get list of Accounts").unwrap_err();
+
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
+        Message::WeakAurasAccountSelected(account) => {
+            log::debug!("Message::WeakAurasAccountSelected({})", &account,);
+
+            if let Mode::MyWeakAuras(flavor) = ajour.mode {
+                let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                if state.chosen_account.as_ref() != Some(&account) {
+                    state.chosen_account = Some(account.clone());
+
+                    if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                        return Ok(Command::perform(
+                            parse_auras(flavor, wtf_path, account),
+                            Message::ParsedAuras,
+                        ));
+                    }
+                }
+            }
+        }
+        Message::ParsedAuras((flavor, result)) => match result {
+            Ok(auras) => {
+                log::debug!(
+                    "Message::ParsedAuras({}, num_auras: {})",
+                    flavor,
+                    auras.len(),
+                );
+
+                let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                state.auras = auras;
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to parse Weak Auras").unwrap_err();
+
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
         Message::Error(error) => {
             log_error(&error);
             ajour.error = Some(error);
@@ -1666,6 +1749,24 @@ async fn perform_fetch_latest_addon(
         flavor,
         id.clone(),
         fetch_latest_addon(flavor, install_kind, id).await,
+    )
+}
+
+async fn list_accounts(
+    flavor: Flavor,
+    wtf_path: PathBuf,
+) -> (Flavor, Result<Vec<String>, ajour_weak_auras::Error>) {
+    (flavor, ajour_weak_auras::list_accounts(&wtf_path).await)
+}
+
+async fn parse_auras(
+    flavor: Flavor,
+    wtf_path: PathBuf,
+    account: String,
+) -> (Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>) {
+    (
+        flavor,
+        ajour_weak_auras::parse_auras(wtf_path, account).await,
     )
 }
 

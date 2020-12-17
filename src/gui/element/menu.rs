@@ -1,6 +1,6 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, Interaction, Message, Mode, SelfUpdateState, State},
+    crate::gui::{style, Interaction, Message, Mode, SelfUpdateState, State, WeakAurasState},
     crate::VERSION,
     ajour_core::{
         config::{Config, Flavor},
@@ -34,6 +34,7 @@ pub fn data_container<'a>(
     classic_btn_state: &'a mut button::State,
     classic_ptr_btn_state: &'a mut button::State,
     self_update_state: &'a mut SelfUpdateState,
+    weak_auras_is_installed: bool,
 ) -> Container<'a, Message> {
     let flavor = config.wow.flavor;
 
@@ -99,7 +100,7 @@ pub fn data_container<'a>(
             about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
         }
-        Mode::MyWeakAuras => {
+        Mode::MyWeakAuras(_) => {
             addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
             weakauras_mode_button =
                 weakauras_mode_button.style(style::SelectedDefaultButton(color_palette));
@@ -162,7 +163,7 @@ pub fn data_container<'a>(
         addons_mode_button =
             addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons(flavor)));
         weakauras_mode_button =
-            weakauras_mode_button.on_press(Interaction::ModeSelected(Mode::MyWeakAuras));
+            weakauras_mode_button.on_press(Interaction::ModeSelected(Mode::MyWeakAuras(flavor)));
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(Mode::Catalog));
         install_mode_button =
@@ -176,12 +177,16 @@ pub fn data_container<'a>(
     let settings_mode_button: Element<Interaction> = settings_mode_button.into();
     let about_mode_button: Element<Interaction> = about_mode_button.into();
 
-    let segmented_mode_control_row = Row::new()
+    let mut segmented_mode_control_row = Row::new()
         .push(addons_mode_button.map(Message::Interaction))
-        .push(weakauras_mode_button.map(Message::Interaction))
         .push(catalog_mode_button.map(Message::Interaction))
         .push(install_mode_button.map(Message::Interaction))
         .spacing(1);
+
+    if weak_auras_is_installed {
+        segmented_mode_control_row =
+            segmented_mode_control_row.push(weakauras_mode_button.map(Message::Interaction));
+    }
 
     let segmented_mode_control_container = Container::new(segmented_mode_control_row)
         .padding(2)

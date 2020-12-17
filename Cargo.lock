@@ -51,6 +51,7 @@ name = "ajour"
 version = "0.5.5-rc.1"
 dependencies = [
  "ajour-core",
+ "ajour-weak-auras",
  "ajour-widgets",
  "anyhow",
  "async-std",
