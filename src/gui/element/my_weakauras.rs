@@ -72,7 +72,7 @@ pub fn menu_container<'a>(
     let refresh_button: Element<Interaction> = refresh_button.into();
     let status_text = match state {
         State::Ready => {
-            Text::new(format!("{} weakauras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
+            Text::new(format!("{} WeakAuras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
         }
         _ => Text::new(""),
     };
