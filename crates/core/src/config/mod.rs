@@ -153,6 +153,8 @@ pub enum ColumnConfig {
     V3 {
         my_addons_columns: Vec<ColumnConfigV2>,
         catalog_columns: Vec<ColumnConfigV2>,
+        #[serde(default)]
+        aura_columns: Vec<ColumnConfigV2>,
     },
 }
 

@@ -958,7 +958,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Mode::Install => {}
                 Mode::Settings => {}
                 Mode::About => {}
-                Mode::MyWeakAuras(_) => { // TODO (cacsperstorm): column resizing.
+                Mode::MyWeakAuras(_) => {
+                    let left_key = AuraColumnKey::from(left_name.as_str());
+                    let right_key = AuraColumnKey::from(right_name.as_str());
+
+                    if let Some(column) = ajour
+                        .aura_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == left_key && left_key != AuraColumnKey::Title)
+                    {
+                        column.width = Length::Units(left_width);
+                    }
+
+                    if let Some(column) = ajour
+                        .aura_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == right_key && right_key != AuraColumnKey::Title)
+                    {
+                        column.width = Length::Units(right_width);
+                    }
                 }
                 Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
@@ -2320,9 +2340,17 @@ fn save_column_configs(ajour: &mut Ajour) {
         .map(ColumnConfigV2::from)
         .collect();
 
+    let aura_columns: Vec<_> = ajour
+        .aura_header_state
+        .columns
+        .iter()
+        .map(ColumnConfigV2::from)
+        .collect();
+
     ajour.config.column_config = ColumnConfig::V3 {
         my_addons_columns,
         catalog_columns,
+        aura_columns,
     };
 
     let _ = ajour.config.save();

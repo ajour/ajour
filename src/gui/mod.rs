@@ -2044,6 +2044,7 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
         ColumnConfig::V3 {
             my_addons_columns,
             catalog_columns,
+            aura_columns,
         } => {
             ajour.header_state.columns.iter_mut().for_each(|a| {
                 if let Some((idx, column)) = my_addons_columns
@@ -2142,6 +2143,33 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
                 }
             });
 
+            ajour.aura_header_state.columns.iter_mut().for_each(|a| {
+                if let Some((_idx, column)) = aura_columns
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(idx, column)| {
+                        if column.key == a.key.as_string() {
+                            Some((idx, column))
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+                {
+                    // Always force "Title" column as Length::Fill
+                    //
+                    // An older version of ajour used a different column as the fill
+                    // column and some users have migration issues when updating to
+                    // a newer version, causing NO columns to be set as Fill and
+                    // making resizing columns work incorrectly
+                    a.width = if a.key == AuraColumnKey::Title {
+                        Length::Fill
+                    } else {
+                        column.width.map_or(Length::Fill, Length::Units)
+                    };
+                }
+            });
+
             // My Addons
             ajour.header_state.columns.sort_by_key(|c| c.order);
             ajour.column_settings.columns.sort_by_key(|c| c.order);
@@ -2152,6 +2180,8 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
                 .catalog_column_settings
                 .columns
                 .sort_by_key(|c| c.order);
+
+            // No sorting on Aura columns currently
         }
     }
 
