@@ -83,7 +83,7 @@ and `Removed`.
 
 - Sorted themes alphabetically in the picker
 - Better human readable errors in Ajour gui. Errors and underlying causes
-are still logged.
+  are still logged.
 
 ### Fixed
 

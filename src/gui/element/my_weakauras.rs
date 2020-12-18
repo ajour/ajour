@@ -75,8 +75,7 @@ pub fn menu_container<'a>(
     let status_text = match state {
         State::Ready => {
             if updates_queued {
-                Text::new("Updates queued. Finish updating in the wow client.")
-                    .size(DEFAULT_FONT_SIZE)
+                Text::new("Updates queued. Finish them in-game.").size(DEFAULT_FONT_SIZE)
             } else {
                 Text::new(format!("{} WeakAuras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
             }
