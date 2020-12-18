@@ -183,7 +183,7 @@ pub fn data_row_container<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::HoverableBrightForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, local_version_container));
     }
@@ -211,7 +211,7 @@ pub fn data_row_container<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::HoverableBrightForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -239,7 +239,7 @@ pub fn data_row_container<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::HoverableBrightForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, author_container));
     }
@@ -267,7 +267,7 @@ pub fn data_row_container<'a, 'b>(
             .height(default_height)
             .width(*width)
             .center_y()
-            .style(style::HoverableBrightForegroundContainer(color_palette));
+            .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, status_container));
     }
