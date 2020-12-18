@@ -936,7 +936,7 @@ impl Application for Ajour {
                                 color_palette,
                                 "Woops!",
                                 &format!(
-                                    "You have no {} WeakAuras.",
+                                    "You have no known {} WeakAuras.",
                                     flavor.to_string().to_lowercase()
                                 ),
                                 None,
