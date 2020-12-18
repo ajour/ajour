@@ -67,8 +67,8 @@ and `Removed`.
 - Fixed issue where some Tukui addons wouldn't get matched correctly.
 - Fixed a bug in backup where the zip archive created on Windows didn't open
   properly
-  on Linux and Macos. Fixed by converting Windows `\` path separators to `/` before
-  writing to the zip file.
+  on Linux and Macos. Fixed by converting Windows `\` path separators to `/`
+  before writing to the zip file.
 
 ## [0.5.3] - 2020-11-23
 
