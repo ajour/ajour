@@ -154,7 +154,7 @@ pub fn data_row_container<'a, 'b>(
             .align_x(Align::Center);
 
         let mut install_button = Button::new(install_button_state, install_wrapper)
-            .style(style::DefaultButton(color_palette))
+            .style(style::SecondaryButton(color_palette))
             .width(*width);
 
         if flavor_exists_for_addon

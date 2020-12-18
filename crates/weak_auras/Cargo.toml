@@ -1,0 +1,30 @@
+[package]
+name = "ajour-weak-auras"
+description = "Weak Auras library for Ajour"
+version = "0.5.5-rc.1"
+authors = ["Casper Rogild Storm", "tarkah <admin@tarkah.dev>"]
+license = "MIT"
+homepage = "https://github.com/casperstorm/ajour"
+repository = "https://github.com/casperstorm/ajour"
+edition = "2018"
+
+[features]
+default = []
+cli = ["structopt"]
+
+[[bin]]
+name = "cli"
+required-features = ["cli"]
+
+[dependencies]
+ajour-core = { version = "0.5.5-rc.1", path = "../core" }
+
+async-std = { version = "1.6", features = ["unstable"] }
+futures = "0.3"
+isahc = { version = "0.9.6", features = ["json"] }
+mlua = { version = "0.4", features = ["lua53", "vendored"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1.0"
+
+structopt = { version = "0.3", optional = true }

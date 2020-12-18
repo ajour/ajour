@@ -66,6 +66,8 @@ or `stable` for each addon
   - [Ability to add your own custom themes](./THEMES.md)
 - Ability to backup your whole UI, including all settings from WTF
 - Ability to run as a [command line application](#command-line) for advanced users
+- WeakAuras import strings from [Wago.io](https://wago.io/weakauras) will automatically
+  be parsed
 
 ## Install
 

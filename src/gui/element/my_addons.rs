@@ -691,14 +691,15 @@ pub fn menu_container<'a>(
     //   - No addon is performing any task.
     //   - We have updatable addons.
     if !addons.is_empty() && !addons_performing_actions && any_addon_updatable {
-        update_all_button = update_all_button.on_press(Interaction::UpdateAll);
+        update_all_button =
+            update_all_button.on_press(Interaction::UpdateAll(Mode::MyAddons(flavor)));
     }
 
     // Enable refresh_button if:
     //   - No addon is performing any task.
     //   - Mode state isn't start or loading
     if !addons_performing_actions && !matches!(state, State::Start | State::Loading) {
-        refresh_button = refresh_button.on_press(Interaction::Refresh);
+        refresh_button = refresh_button.on_press(Interaction::Refresh(Mode::MyAddons(flavor)));
     }
 
     let update_all_button: Element<Interaction> = update_all_button.into();

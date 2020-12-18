@@ -22,7 +22,7 @@ fn user_agent() -> String {
 }
 
 /// Generic request function.
-pub(crate) async fn request_async<T: ToString>(
+pub async fn request_async<T: ToString>(
     url: T,
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,

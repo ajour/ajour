@@ -140,6 +140,9 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     // Any remaining addon folders are unknown, we will show them 1:1 in Ajour
     let unknown_addons = addon_folders
         .into_iter()
+        // Blacklist this addon since it's created by Ajour / Companion app and
+        // doesn't need to be managed
+        .filter(|f| f.id != "WeakAurasCompanion")
         .map(|f| {
             let mut addon = Addon::empty(&f.id);
             addon.folders = vec![f];

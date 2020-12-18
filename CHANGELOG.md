@@ -16,6 +16,9 @@ and `Removed`.
 
 ### Added
 
+- Support for updating WeakAuras from [Wago.io](https://wago.io/weakauras).
+  You will find a new button in the menu called `My WeakAuras` if you have
+  the WeakAura addon installed.
 - A global release channel can now be set in Settings. This makes it easy to set
   all addons to a certain release channel, instead of going through them one by
   one. Each addon can still overwrite this setting, if wanted.
@@ -33,6 +36,7 @@ and `Removed`.
 - Ignored addons are now sorted correctly again
 - Fingerprint and addon cache entries are now properly deleted when the addon folder
   is missing from the filesystem
+- Unknown addons are now at the botton of the addon list by default instead of top
 - Padding was added back on My Addon and Catalog title columns, which was unintentionally
   removed when implementing highlightable rows
 
@@ -61,9 +65,10 @@ and `Removed`.
 ### Fixed
 
 - Fixed issue where some Tukui addons wouldn't get matched correctly.
-- Fixed a bug in backup where the zip archive created on Windows didn't open properly
-  on Linux and Macos. Fixed by converting Windows `\` path separators to `/` before
-  writing to the zip file.
+- Fixed a bug in backup where the zip archive created on Windows didn't open
+  properly
+  on Linux and Macos. Fixed by converting Windows `\` path separators to `/`
+  before writing to the zip file.
 
 ## [0.5.3] - 2020-11-23
 
@@ -79,7 +84,7 @@ and `Removed`.
 
 - Sorted themes alphabetically in the picker
 - Better human readable errors in Ajour gui. Errors and underlying causes
-are still logged.
+  are still logged.
 
 ### Fixed
 

@@ -2,6 +2,7 @@ pub mod about;
 pub mod catalog;
 pub mod menu;
 pub mod my_addons;
+pub mod my_weakauras;
 pub mod settings;
 pub mod status;
 
