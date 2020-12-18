@@ -1946,7 +1946,6 @@ impl From<&AuraColumnState> for ColumnConfigV2 {
     }
 }
 
-
 async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {
     let fingerprint_cache = load_fingerprint_cache().await?;
     let addon_cache = load_addon_cache().await?;
