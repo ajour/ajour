@@ -280,7 +280,7 @@ impl Application for Ajour {
     type Flags = Config;
 
     fn new(config: Config) -> (Self, Command<Message>) {
-        let mut init_commands = vec![
+        let init_commands = vec![
             Command::perform(load_caches(), Message::CachesLoaded),
             Command::perform(
                 get_latest_release(config.self_update_channel),
