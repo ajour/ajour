@@ -150,6 +150,7 @@ pub fn data_row_container<'a, 'b>(
         let title_row = Row::new().push(title).spacing(3).align_items(Align::Center);
 
         let title_container = Container::new(title_row)
+            .padding(5)
             .height(default_height)
             .width(*width)
             .center_y()
