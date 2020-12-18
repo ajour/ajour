@@ -938,7 +938,7 @@ impl Application for Ajour {
                     State::Loading => Some(element::status::data_container(
                         color_palette,
                         "Loading..",
-                        &format!("Currently parsing {} weak auras.", flavor.to_string()),
+                        &format!("Currently parsing {} WeakAuras.", flavor.to_string()),
                         None,
                     )),
                     State::Ready => {
@@ -947,7 +947,7 @@ impl Application for Ajour {
                                 color_palette,
                                 "Woops!",
                                 &format!(
-                                    "You have no {} weak auras.",
+                                    "You have no {} WeakAuras.",
                                     flavor.to_string().to_lowercase()
                                 ),
                                 None,
@@ -1907,13 +1907,13 @@ impl Default for AuraHeaderState {
                 AuraColumnState {
                     key: AuraColumnKey::LocalVersion,
                     btn_state: Default::default(),
-                    width: Length::Units(150),
+                    width: Length::Units(120),
                     hidden: false,
                 },
                 AuraColumnState {
                     key: AuraColumnKey::RemoteVersion,
                     btn_state: Default::default(),
-                    width: Length::Units(150),
+                    width: Length::Units(120),
                     hidden: false,
                 },
                 AuraColumnState {
@@ -1925,7 +1925,7 @@ impl Default for AuraHeaderState {
                 AuraColumnState {
                     key: AuraColumnKey::Status,
                     btn_state: Default::default(),
-                    width: Length::Units(95),
+                    width: Length::Units(110),
                     hidden: false,
                 },
             ],
