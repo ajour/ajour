@@ -19,6 +19,8 @@ and `Removed`.
 - Support for updating WeakAuras from [Wago.io](https://wago.io/weakauras).
   You will find a new button in the menu called `My WeakAuras` if you have
   the WeakAura addon installed.
+  - Once setup in Ajour, WeakAuras updates can also be checked on the CLI with
+    `ajour update-weakauras`.
 - A global release channel can now be set in Settings. This makes it easy to set
   all addons to a certain release channel, instead of going through them one by
   one. Each addon can still overwrite this setting, if wanted.
