@@ -290,17 +290,6 @@ impl Application for Ajour {
             Command::perform(get_catalog(), Message::CatalogDownloaded),
         ];
 
-        // Check if Weak Auras is installed for each flavor. If any of them returns
-        // true, we will show the My WeakAuras button
-        for flavor in Flavor::ALL.iter() {
-            if let Some(addon_dir) = config.get_addon_directory_for_flavor(flavor) {
-                init_commands.push(Command::perform(
-                    is_weak_auras_installed(*flavor, addon_dir),
-                    Message::CheckWeakAurasInstalled,
-                ))
-            }
-        }
-
         let mut ajour = Ajour::default();
 
         apply_config(&mut ajour, config);
@@ -1957,12 +1946,6 @@ impl From<&AuraColumnState> for ColumnConfigV2 {
     }
 }
 
-async fn is_weak_auras_installed(flavor: Flavor, addon_dir: PathBuf) -> (Flavor, bool) {
-    (
-        flavor,
-        ajour_weak_auras::is_weak_auras_installed(addon_dir).await,
-    )
-}
 
 async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {
     let fingerprint_cache = load_fingerprint_cache().await?;

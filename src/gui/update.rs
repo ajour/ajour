@@ -93,6 +93,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ),
                         Message::ParsedAddons,
                     ));
+
+                    // Check if Weak Auras is installed for each flavor. If any of them returns
+                    // true, we will show the My WeakAuras button
+                    commands.push(Command::perform(
+                        is_weak_auras_installed(*flavor, addon_directory),
+                        Message::CheckWeakAurasInstalled,
+                    ));
                 } else {
                     log::debug!("addon directory is not set, showing welcome screen");
 
@@ -1988,6 +1995,13 @@ async fn update_auras(
     }
 
     (flavor, _update_auras(auras, addon_dir).await)
+}
+
+async fn is_weak_auras_installed(flavor: Flavor, addon_dir: PathBuf) -> (Flavor, bool) {
+    (
+        flavor,
+        ajour_weak_auras::is_weak_auras_installed(addon_dir).await,
+    )
 }
 
 fn sort_addons(
