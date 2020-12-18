@@ -73,13 +73,12 @@ pub fn main() {
                     destination,
                     flavors,
                 } => command::backup(backup_folder, destination, flavors),
-                cli::Command::Update => command::update_all_addons(),
+                cli::Command::Update => command::update_both(),
+                cli::Command::UpdateAddons => command::update_all_addons(),
                 cli::Command::UpdateWeakauras => command::update_all_weakauras(),
                 cli::Command::Install { url, flavor } => command::install_from_source(url, flavor),
             } {
                 log_error(&e);
-
-                std::process::exit(1);
             }
         }
         None => {
