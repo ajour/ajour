@@ -147,8 +147,6 @@ pub fn data_row_container<'a, 'b>(
     {
         let title = Text::new(addon.title()).size(DEFAULT_FONT_SIZE);
 
-        if release_package.is_some() {}
-
         let mut title_row = Row::new().push(title).spacing(5).align_items(Align::Center);
 
         if addon.release_channel != ReleaseChannel::Default {
@@ -161,6 +159,7 @@ pub fn data_row_container<'a, 'b>(
         }
 
         let mut title_container = Container::new(title_row)
+            .padding(5)
             .height(default_height)
             .width(*width)
             .center_y();

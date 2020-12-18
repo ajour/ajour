@@ -33,6 +33,8 @@ and `Removed`.
 - Ignored addons are now sorted correctly again
 - Fingerprint and addon cache entries are now properly deleted when the addon folder
   is missing from the filesystem
+- Padding was added back on My Addon and Catalog title columns, which was unintentionally
+  removed when implementing highlightable rows
 
 ## [0.5.4] - 2020-12-07
 
