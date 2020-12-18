@@ -303,13 +303,9 @@ impl button::StyleSheet for SecondaryButton {
 
     fn disabled(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(Color {
-                a: 0.7,
-                ..self.0.normal.secondary
-            })),
             text_color: Color {
-                a: 0.7,
-                ..self.0.normal.secondary
+                a: 0.25,
+                ..self.0.normal.surface
             },
             ..self.active()
         }
