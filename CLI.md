@@ -23,7 +23,9 @@ OPTIONS:
 SUBCOMMANDS:
     backup     Backup your WTF and/or AddOns folders
     install    Install an addon from the command line
-    update     Update all addons from the command line then exit
+    update              Update all addons and WeakAuras
+    update-addons       Update all addons from the command line then exit
+    update-weakauras    Update all WeakAuras from the command line then exit`
 ```
 
 ## Options
@@ -116,17 +118,27 @@ ajour install retail https://github.com/Hekili/hekili
 
 ### Update
 
-Update all addons from the command line then exit.
+Update all addons and/or WeakAuras from the command line then exit.
 
 ```sh
 USAGE:
     ajour update
+    ajour update-addons
+    ajour update-weakauras
 ```
 
 #### Example
 
 ```sh
-# Update all addons
+# Update all addons and WeakAuras
 
 ajour update
+
+# Update all addons
+
+ajour update-addons
+
+# Update all WeakAuras
+
+ajour update-weakauras
 ```
