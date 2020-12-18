@@ -195,6 +195,7 @@ pub fn data_row_container<'a, 'b>(
         let title = Text::new(&addon_data.name).size(DEFAULT_FONT_SIZE);
 
         let title_container = Container::new(title)
+            .padding(5)
             .height(default_height)
             .width(*width)
             .center_y()
