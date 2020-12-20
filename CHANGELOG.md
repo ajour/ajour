@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.6.0] - 2020-12-20
+
 ### Added
 
 - Support for updating WeakAuras from [Wago.io](https://wago.io/weakauras).
