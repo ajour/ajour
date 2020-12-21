@@ -107,6 +107,8 @@ pub enum RepositoryError {
     Download(#[from] DownloadError),
     #[error(transparent)]
     Filesystem(#[from] FilesystemError),
+    #[error(transparent)]
+    Uri(#[from] isahc::http::uri::InvalidUri),
 }
 
 impl From<std::io::Error> for RepositoryError {

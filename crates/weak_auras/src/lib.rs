@@ -183,7 +183,7 @@ impl AuraUpdate {
 
         writeln!(&mut slug, "    [\"{}\"] = {{", self.slug)?;
         writeln!(&mut slug, "      name = [=[{}]=],", self.aura.name)?;
-        writeln!(&mut slug, "      author = [=[{}]=],", self.aura.username)?;
+        writeln!(&mut slug, "      author = [=[{}]=],", self.aura.author())?;
         writeln!(&mut slug, "      encoded = [=[{}]=],", self.encoded_update)?;
         writeln!(&mut slug, "      wagoVersion = [=[{}]=],", self.aura.version)?;
         writeln!(&mut slug, "      wagoSemver = [=[{}]=],", self.aura.version_string)?;
@@ -264,7 +264,7 @@ impl Display for AuraStatus {
 pub struct Aura {
     slug: String,
     name: String,
-    username: String,
+    username: Option<String>,
     version: u16,
     version_string: String,
     changelog: AuraChangelog,
@@ -329,7 +329,10 @@ impl Aura {
     }
 
     pub fn author(&self) -> &str {
-        &self.username
+        match &self.username {
+            Some(username) => username,
+            None => "Unknown",
+        }
     }
 
     fn parent_display(&self) -> Option<&AuraDisplay> {

@@ -114,7 +114,7 @@ pub fn data_row_container<'a, 'b>(
     let game_version = addon.game_version().map(str::to_string);
     let notes = addon.notes().map(str::to_string);
     let website_url = addon.website_url().map(str::to_string);
-    let changelog_url = addon.changelog_url().map(str::to_string);
+    let changelog_url = addon.changelog_url(config.addons.global_release_channel);
     let repository_kind = addon.repository_kind();
 
     let global_release_channel = config.addons.global_release_channel;

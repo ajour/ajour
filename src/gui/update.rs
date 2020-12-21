@@ -1085,8 +1085,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if ajour.config.backup_addons {
                     let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
 
-                    if addon_dir.exists() {
-                        src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
+                    // Backup starting with `Interface` folder as some users save
+                    // custom data here that they would like retained
+                    if let Some(interface_dir) = addon_dir.parent() {
+                        if interface_dir.exists() {
+                            src_folders.push(BackupFolder::new(interface_dir, wow_dir));
+                        }
                     }
                 }
 
