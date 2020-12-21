@@ -127,12 +127,6 @@ pub fn data_row_container<'a, 'b>(
         .map(str::to_string)
         .unwrap_or_else(|| "-".to_string());
     let release_package = addon_cloned.relevant_release_package(global_release_channel);
-    let remote_version = if let Some(package) = &release_package {
-        package.version.clone()
-    } else {
-        String::from("-")
-    };
-    let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
 
     if let Some((idx, width)) = column_config
         .iter()
@@ -211,12 +205,30 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
-        let remote_version_container = Container::new(remote_version)
-            .padding(5)
-            .height(default_height)
-            .width(*width)
-            .center_y()
-            .style(style::HoverableForegroundContainer(color_palette));
+        let remote_version = if let Some(package) = &release_package {
+            package.version.clone()
+        } else {
+            String::from("-")
+        };
+        let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
+
+        let mut remote_version_button =
+            Button::new(&mut addon.remote_version_btn_state, remote_version)
+                .style(style::BrightTextButton(color_palette));
+
+        if let Some(link) = &changelog_url {
+            remote_version_button =
+                remote_version_button.on_press(Interaction::OpenLink(link.clone()));
+        }
+
+        let remote_version_button: Element<Interaction> = remote_version_button.into();
+
+        let remote_version_container =
+            Container::new(remote_version_button.map(Message::Interaction))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }

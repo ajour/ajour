@@ -21,6 +21,7 @@ and `Removed`.
   "Beta" or "Alpha". Releases not marked as "pre-release" will show up for "Stable".
 - Row colors now alternate by default for better accessibility. This can be turned
   off in settings under the UI section's "Alternate Row Colors" checkbox.
+- Remote version can be clicked to directly open the changelog webpage.
 
 ### Changed
 

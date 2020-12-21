@@ -139,6 +139,8 @@ pub struct Addon {
     pub pick_release_channel_state: iced_native::pick_list::State<ReleaseChannel>,
     #[cfg(feature = "gui")]
     pub changelog_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub remote_version_btn_state: iced_native::button::State,
 }
 
 impl Addon {
@@ -168,6 +170,8 @@ impl Addon {
             pick_release_channel_state: Default::default(),
             #[cfg(feature = "gui")]
             changelog_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            remote_version_btn_state: Default::default(),
         }
     }
 
@@ -339,6 +343,18 @@ impl Addon {
 
                 if let Some(tag) = tag {
                     url.map(|url| format!("{}/tag/{}", url, tag))
+                } else {
+                    url
+                }
+            }
+            Some(RepositoryKind::Curse) => {
+                let file = self
+                    .relevant_release_package(default_release_channel)
+                    .map(|r| r.file_id)
+                    .flatten();
+
+                if let Some(file) = file {
+                    url.map(|url| format!("{}/{}", url, file))
                 } else {
                     url
                 }
