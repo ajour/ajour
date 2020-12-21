@@ -1085,8 +1085,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if ajour.config.backup_addons {
                     let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
 
-                    if addon_dir.exists() {
-                        src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
+                    // Backup starting with `Interface` folder as some users save
+                    // custom data here that they would like retained
+                    if let Some(interface_dir) = addon_dir.parent() {
+                        if interface_dir.exists() {
+                            src_folders.push(BackupFolder::new(interface_dir, wow_dir));
+                        }
                     }
                 }
 
@@ -1806,6 +1810,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.error = Some(error);
             }
         },
+        Message::Interaction(Interaction::AlternatingRowColorToggled(is_set)) => {
+            log::debug!(
+                "Interaction::AlternatingRowColorToggled(is_set: {})",
+                is_set,
+            );
+
+            ajour.config.alternating_row_colors = is_set;
+            let _ = ajour.config.save();
+        }
         Message::Error(error) => {
             log_error(&error);
             ajour.error = Some(error);

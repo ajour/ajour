@@ -103,6 +103,7 @@ pub fn data_row_container<'a, 'b>(
     expand_type: &'a ExpandType,
     config: &Config,
     column_config: &'b [(ColumnKey, Length, bool)],
+    is_odd: Option<bool>,
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
     let default_row_height = 26;
@@ -113,7 +114,7 @@ pub fn data_row_container<'a, 'b>(
     let game_version = addon.game_version().map(str::to_string);
     let notes = addon.notes().map(str::to_string);
     let website_url = addon.website_url().map(str::to_string);
-    let changelog_url = addon.changelog_url().map(str::to_string);
+    let changelog_url = addon.changelog_url(config.addons.global_release_channel);
     let repository_kind = addon.repository_kind();
 
     let global_release_channel = config.addons.global_release_channel;
@@ -126,12 +127,6 @@ pub fn data_row_container<'a, 'b>(
         .map(str::to_string)
         .unwrap_or_else(|| "-".to_string());
     let release_package = addon_cloned.relevant_release_package(global_release_channel);
-    let remote_version = if let Some(package) = &release_package {
-        package.version.clone()
-    } else {
-        String::from("-")
-    };
-    let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
 
     if let Some((idx, width)) = column_config
         .iter()
@@ -210,12 +205,30 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
-        let remote_version_container = Container::new(remote_version)
-            .padding(5)
-            .height(default_height)
-            .width(*width)
-            .center_y()
-            .style(style::HoverableForegroundContainer(color_palette));
+        let remote_version = if let Some(package) = &release_package {
+            package.version.clone()
+        } else {
+            String::from("-")
+        };
+        let remote_version = Text::new(remote_version).size(DEFAULT_FONT_SIZE);
+
+        let mut remote_version_button =
+            Button::new(&mut addon.remote_version_btn_state, remote_version)
+                .style(style::BrightTextButton(color_palette));
+
+        if let Some(link) = &changelog_url {
+            remote_version_button =
+                remote_version_button.on_press(Interaction::OpenLink(link.clone()));
+        }
+
+        let remote_version_button: Element<Interaction> = remote_version_button.into();
+
+        let remote_version_container =
+            Container::new(remote_version_button.map(Message::Interaction))
+                .height(default_height)
+                .width(*width)
+                .center_y()
+                .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, remote_version_container));
     }
@@ -634,15 +647,22 @@ pub fn data_row_container<'a, 'b>(
         }
     }
 
-    return TableRow::new(addon_column)
+    let mut table_row = TableRow::new(addon_column)
         .width(Length::Fill)
         .inner_row_height(default_row_height)
-        .style(style::TableRow(color_palette))
         .on_press(move |_| {
             Message::Interaction(Interaction::Expand(ExpandType::Details(
                 addon_cloned_for_row.clone(),
             )))
         });
+
+    if is_odd == Some(true) {
+        table_row = table_row.style(style::TableRowAlternate(color_palette))
+    } else {
+        table_row = table_row.style(style::TableRow(color_palette))
+    }
+
+    table_row
 }
 
 #[allow(clippy::too_many_arguments)]
