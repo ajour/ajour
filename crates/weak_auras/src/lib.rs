@@ -183,7 +183,7 @@ impl AuraUpdate {
 
         writeln!(&mut slug, "    [\"{}\"] = {{", self.slug)?;
         writeln!(&mut slug, "      name = [=[{}]=],", self.aura.name)?;
-        writeln!(&mut slug, "      author = [=[{}]=],", self.aura.author().to_owned())?;
+        writeln!(&mut slug, "      author = [=[{}]=],", self.aura.author())?;
         writeln!(&mut slug, "      encoded = [=[{}]=],", self.encoded_update)?;
         writeln!(&mut slug, "      wagoVersion = [=[{}]=],", self.aura.version)?;
         writeln!(&mut slug, "      wagoSemver = [=[{}]=],", self.aura.version_string)?;
