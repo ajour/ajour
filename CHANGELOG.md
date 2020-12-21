@@ -14,6 +14,12 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Changes
+
+- `Interface` folder root is included in the zip backup when `AddOns` is selected.
+  Some users store proprietary data alongside the `AddOns` folder that they'd like
+  included during backup.
+
 ## [0.6.0] - 2020-12-20
 
 ### Added
