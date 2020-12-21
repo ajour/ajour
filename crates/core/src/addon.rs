@@ -1,8 +1,8 @@
 use crate::{
     error::ParseError,
     repository::{
-        GlobalReleaseChannel, ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind,
-        RepositoryMetadata, RepositoryPackage,
+        GitKind, GlobalReleaseChannel, ReleaseChannel, RemotePackage, RepositoryIdentifiers,
+        RepositoryKind, RepositoryMetadata, RepositoryPackage,
     },
     utility::strip_non_digits,
 };
@@ -328,10 +328,24 @@ impl Addon {
     }
 
     /// Returns the changelog url of the addon.
-    pub fn changelog_url(&self) -> Option<&str> {
-        self.metadata()
-            .map(|m| m.changelog_url.as_deref())
-            .flatten()
+    pub fn changelog_url(&self, default_release_channel: GlobalReleaseChannel) -> Option<String> {
+        let url = self.metadata().map(|m| m.changelog_url.clone()).flatten();
+
+        match self.repository_kind() {
+            Some(RepositoryKind::Git(GitKind::Github)) => {
+                let tag = self
+                    .relevant_release_package(default_release_channel)
+                    .map(|r| r.version);
+
+                if let Some(tag) = tag {
+                    url.map(|url| format!("{}/tag/{}", url, tag))
+                } else {
+                    url
+                }
+            }
+            Some(_) => url,
+            None => None,
+        }
     }
 
     /// Returns the curse id of the addon, if applicable.
