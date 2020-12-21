@@ -14,6 +14,11 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Removed minimum window size on Linux. This fixed a issue where the application
+  would not be resizable.
+
 ## [0.6.0] - 2020-12-20
 
 ### Added
@@ -33,8 +38,6 @@ and `Removed`.
 
 ### Fixed
 
-- Removed minimum window size on Linux. This fixed a issue where the application
-  would not be resizable.
 - Certain CF addons weren't fingerprinted correctly due to a bug in the fingerprinting
   logic for splitting on lines.
 - Fix a bug where users upgrading from an older version of Ajour might have incorrect
