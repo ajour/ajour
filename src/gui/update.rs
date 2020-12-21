@@ -1085,7 +1085,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if ajour.config.backup_addons {
                     let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
 
-                    // Backup starting with `Interface` fodler as some users save
+                    // Backup starting with `Interface` folder as some users save
                     // custom data here that they would like retained
                     if let Some(interface_dir) = addon_dir.parent() {
                         if interface_dir.exists() {
