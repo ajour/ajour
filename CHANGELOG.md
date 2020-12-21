@@ -14,9 +14,17 @@ and `Removed`.
 
 ## [Unreleased]
 
-### Fix
+### Added
+
+- Added "Beta / Alpha" release channel support for GitHub addons. Releases marked
+  as "pre-release" on GitHub will show as an update when the addon is marked as
+  "Beta" or "Alpha". Releases not marked as "pre-release" will show up for "Stable".
+
+### Fixed
 
 - Now correctly parses WeakAuars uploaded to Wago as a guest.
+- Fixed addon title letter casing for GitHub addons by using the actual repository
+  name instead of parsed repo from the user inputted URL
 
 ## [0.6.0] - 2020-12-20
 
