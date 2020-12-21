@@ -103,6 +103,7 @@ pub fn data_row_container<'a, 'b>(
     expand_type: &'a ExpandType,
     config: &Config,
     column_config: &'b [(ColumnKey, Length, bool)],
+    is_odd: Option<bool>,
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
     let default_row_height = 26;
@@ -634,15 +635,22 @@ pub fn data_row_container<'a, 'b>(
         }
     }
 
-    return TableRow::new(addon_column)
+    let mut table_row = TableRow::new(addon_column)
         .width(Length::Fill)
         .inner_row_height(default_row_height)
-        .style(style::TableRow(color_palette))
         .on_press(move |_| {
             Message::Interaction(Interaction::Expand(ExpandType::Details(
                 addon_cloned_for_row.clone(),
             )))
         });
+
+    if is_odd == Some(true) {
+        table_row = table_row.style(style::TableRowAlternate(color_palette))
+    } else {
+        table_row = table_row.style(style::TableRow(color_palette))
+    }
+
+    table_row
 }
 
 #[allow(clippy::too_many_arguments)]

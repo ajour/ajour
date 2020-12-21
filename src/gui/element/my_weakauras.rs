@@ -126,6 +126,7 @@ pub fn data_row_container<'a, 'b>(
     color_palette: ColorPalette,
     aura: &'a Aura,
     column_config: &'b [(AuraColumnKey, Length, bool)],
+    is_odd: Option<bool>,
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
     let default_row_height = 26;
@@ -286,12 +287,17 @@ pub fn data_row_container<'a, 'b>(
 
     let mut table_row = TableRow::new(row)
         .width(Length::Fill)
-        .inner_row_height(default_row_height)
-        .style(style::TableRow(color_palette));
+        .inner_row_height(default_row_height);
 
     if let Some(url) = aura.url() {
         table_row = table_row
             .on_press(move |_| Message::Interaction(Interaction::OpenLink(url.to_string())));
+    }
+
+    if is_odd == Some(true) {
+        table_row = table_row.style(style::TableRowAlternate(color_palette))
+    } else {
+        table_row = table_row.style(style::TableRow(color_palette))
     }
 
     table_row
