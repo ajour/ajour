@@ -22,6 +22,7 @@ and `Removed`.
 
 ### Fixed
 
+- Now correctly parses WeakAuars uploaded to Wago as a guest.
 - Fixed addon title letter casing for GitHub addons by using the actual repository
   name instead of parsed repo from the user inputted URL
 
