@@ -216,6 +216,6 @@ pub async fn load_config() -> Result<Config, FilesystemError> {
     Ok(Config::load_or_default()?)
 }
 
-fn default_true() -> bool {
+const fn default_true() -> bool {
     true
 }
