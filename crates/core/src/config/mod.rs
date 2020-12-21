@@ -47,6 +47,9 @@ pub struct Config {
 
     #[serde(default)]
     pub weak_auras_account: HashMap<Flavor, String>,
+
+    #[serde(default = "default_true")]
+    pub alternating_row_colors: bool,
 }
 
 impl Config {
@@ -211,4 +214,8 @@ pub async fn load_config() -> Result<Config, FilesystemError> {
     log::debug!("loading config");
 
     Ok(Config::load_or_default()?)
+}
+
+const fn default_true() -> bool {
+    true
 }
