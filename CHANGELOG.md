@@ -20,6 +20,12 @@ and `Removed`.
   as "pre-release" on GitHub will show as an update when the addon is marked as
   "Beta" or "Alpha". Releases not marked as "pre-release" will show up for "Stable".
 
+### Changed
+
+- `Interface` folder root is included in the zip backup when `AddOns` is selected.
+  Some users store proprietary data alongside the `AddOns` folder that they'd like
+  included during backup.
+
 ### Fixed
 
 - Now correctly parses WeakAuars uploaded to Wago as a guest.
