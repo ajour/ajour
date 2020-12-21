@@ -97,12 +97,15 @@ pub fn data_container<'a, 'b>(
             Some(theme_state.current_theme_name.clone()),
             Message::ThemeSelected,
         )
-        .text_size(14)
+        .text_size(DEFAULT_FONT_SIZE)
         .width(Length::Units(120))
         .style(style::PickList(color_palette));
 
         // Data row for theme picker list.
-        let theme_data_row = Row::new().push(theme_pick_list);
+        let theme_data_row = Row::new()
+            .push(theme_pick_list)
+            .align_items(Align::Center)
+            .height(Length::Units(26));
 
         Column::new()
             .push(title_container)
@@ -136,7 +139,7 @@ pub fn data_container<'a, 'b>(
             .size(DEFAULT_FONT_SIZE)
             .vertical_alignment(VerticalAlignment::Center);
         let current_scale_container = Container::new(current_scale_text)
-            .height(Length::Units(25))
+            .height(Length::Fill)
             .center_y()
             .style(style::BrightBackgroundContainer(color_palette));
 
@@ -144,7 +147,9 @@ pub fn data_container<'a, 'b>(
         let scale_buttons_row = Row::new()
             .push(scale_down_button.map(Message::Interaction))
             .push(current_scale_container)
-            .push(scale_up_button.map(Message::Interaction));
+            .push(scale_up_button.map(Message::Interaction))
+            .align_items(Align::Center)
+            .height(Length::Units(26));
 
         Column::new()
             .push(scale_title_row)
@@ -372,6 +377,32 @@ pub fn data_container<'a, 'b>(
         Column::new().push(open_config_row)
     };
 
+    let alternate_row_color_column = {
+        let title_container =
+            Container::new(Text::new("Alternate Row Colors").size(DEFAULT_FONT_SIZE))
+                .style(style::NormalBackgroundContainer(color_palette));
+
+        let checkbox = Checkbox::new(
+            config.alternating_row_colors,
+            "",
+            Interaction::AlternatingRowColorToggled,
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE);
+
+        let checkbox: Element<Interaction> = checkbox.into();
+
+        let data_row = Row::new()
+            .push(checkbox.map(Message::Interaction))
+            .align_items(Align::Center)
+            .height(Length::Units(26));
+
+        Column::new()
+            .push(title_container)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(data_row)
+    };
+
     let ui_title = Text::new("UI").size(DEFAULT_FONT_SIZE);
     let ui_title_container =
         Container::new(ui_title).style(style::BrightBackgroundContainer(color_palette));
@@ -387,6 +418,7 @@ pub fn data_container<'a, 'b>(
     let ui_row = Row::new()
         .push(theme_column)
         .push(scale_column)
+        .push(alternate_row_color_column)
         .spacing(DEFAULT_PADDING);
 
     let self_update_channel_container = {

@@ -101,6 +101,7 @@ pub fn data_row_container<'a, 'b>(
     column_config: &'b [(CatalogColumnKey, Length, bool)],
     installed_for_flavor: bool,
     install_addon: Option<&InstallAddon>,
+    is_odd: Option<bool>,
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
     let default_row_height = 26;
@@ -360,11 +361,18 @@ pub fn data_row_container<'a, 'b>(
 
     row = row.push(right_spacer);
 
-    return TableRow::new(row)
+    let mut table_row = TableRow::new(row)
         .width(Length::Fill)
-        .style(style::TableRow(color_palette))
         .inner_row_height(default_row_height)
         .on_press(move |_| {
             Message::Interaction(Interaction::OpenLink(addon_data.website_url.clone()))
         });
+
+    if is_odd == Some(true) {
+        table_row = table_row.style(style::TableRowAlternate(color_palette))
+    } else {
+        table_row = table_row.style(style::TableRow(color_palette))
+    }
+
+    table_row
 }

@@ -1810,6 +1810,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.error = Some(error);
             }
         },
+        Message::Interaction(Interaction::AlternatingRowColorToggled(is_set)) => {
+            log::debug!(
+                "Interaction::AlternatingRowColorToggled(is_set: {})",
+                is_set,
+            );
+
+            ajour.config.alternating_row_colors = is_set;
+            let _ = ajour.config.save();
+        }
         Message::Error(error) => {
             log_error(&error);
             ajour.error = Some(error);

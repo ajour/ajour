@@ -476,6 +476,31 @@ impl table_row::StyleSheet for TableRow {
     }
 }
 
+pub struct TableRowAlternate(pub ColorPalette);
+impl table_row::StyleSheet for TableRowAlternate {
+    fn style(&self) -> table_row::Style {
+        let default = TableRow(self.0).style();
+
+        table_row::Style {
+            background: Some(Background::Color(Color {
+                a: 0.50,
+                ..self.0.base.foreground
+            })),
+            ..default
+        }
+    }
+    fn hovered(&self) -> table_row::Style {
+        let style = self.style();
+        table_row::Style {
+            background: Some(Background::Color(Color {
+                a: 0.15,
+                ..self.0.normal.primary
+            })),
+            ..style
+        }
+    }
+}
+
 pub struct ForegroundScrollable(pub ColorPalette);
 impl scrollable::StyleSheet for ForegroundScrollable {
     fn active(&self) -> scrollable::Scrollbar {

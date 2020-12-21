@@ -116,6 +116,7 @@ pub enum Interaction {
     ToggleBackupFolder(bool, BackupFolderKind),
     PickSelfUpdateChannel(SelfUpdateChannel),
     PickGlobalReleaseChannel(GlobalReleaseChannel),
+    AlternatingRowColorToggled(bool),
 }
 
 #[derive(Debug)]
@@ -434,7 +435,7 @@ impl Application for Ajour {
                     .style(style::Scrollable(color_palette));
 
                 // Loops though the addons.
-                for addon in addons {
+                for (idx, addon) in addons.iter_mut().enumerate() {
                     // If hiding ignored addons, we will skip it.
                     if addon.state == AddonState::Ignored && self.config.hide_ignored_addons {
                         continue;
@@ -446,6 +447,12 @@ impl Application for Ajour {
                         ExpandType::None => false,
                     };
 
+                    let is_odd = if self.config.alternating_row_colors {
+                        Some(idx % 2 != 0)
+                    } else {
+                        None
+                    };
+
                     // A container cell which has all data about the current addon.
                     // If the addon is expanded, then this is also included in this container.
                     let addon_data_cell = element::my_addons::data_row_container(
@@ -455,6 +462,7 @@ impl Application for Ajour {
                         &self.expanded_type,
                         &self.config,
                         &column_config,
+                        is_odd,
                     );
 
                     // Adds the addon data cell to the scrollable.
@@ -528,11 +536,18 @@ impl Application for Ajour {
                     .height(Length::FillPortion(1))
                     .style(style::Scrollable(color_palette));
 
-                for aura in weak_auras_state.auras.iter() {
+                for (idx, aura) in weak_auras_state.auras.iter().enumerate() {
+                    let is_odd = if self.config.alternating_row_colors {
+                        Some(idx % 2 != 0)
+                    } else {
+                        None
+                    };
+
                     let row = element::my_weakauras::data_row_container(
                         color_palette,
                         aura,
                         &aura_column_config,
+                        is_odd,
                     );
 
                     scrollable = scrollable.push(row);
@@ -800,7 +815,18 @@ impl Application for Ajour {
 
                     let install_addons = self.install_addons.entry(flavor).or_default();
 
-                    for addon in self.catalog_search_state.catalog_rows.iter_mut() {
+                    for (idx, addon) in self
+                        .catalog_search_state
+                        .catalog_rows
+                        .iter_mut()
+                        .enumerate()
+                    {
+                        let is_odd = if self.config.alternating_row_colors {
+                            Some(idx % 2 != 0)
+                        } else {
+                            None
+                        };
+
                         // TODO (tarkah): We should make this prettier with new sources coming in.
                         let installed_for_flavor = addons.iter().any(|a| {
                             a.curse_id() == Some(addon.addon.id)
@@ -820,6 +846,7 @@ impl Application for Ajour {
                             &catalog_column_config,
                             installed_for_flavor,
                             install_addon,
+                            is_odd,
                         );
 
                         catalog_scrollable = catalog_scrollable.push(catalog_data_cell);
