@@ -21,6 +21,7 @@ and `Removed`.
   "Beta" or "Alpha". Releases not marked as "pre-release" will show up for "Stable".
 
 ### Fixed
+
 - Fixed addon title letter casing for GitHub addons by using the actual repository
   name instead of parsed repo from the user inputted URL
 
