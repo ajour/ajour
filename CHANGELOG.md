@@ -14,6 +14,11 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Row colors now alternate by default for better accessibility. This can be turned
+  off in settings under the UI section's "Alternate Row Colors" checkbox.
+
 ## [0.6.0] - 2020-12-20
 
 ### Added
