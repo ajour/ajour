@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fix
+
+- Now correctly parses WeakAuars uploaded to Wago as a guest.
+
 ## [0.6.0] - 2020-12-20
 
 ### Added
