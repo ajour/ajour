@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Remote version can be clicked to directly open the changelog webpage.
+
 ### Fixed
 
 - Added "Beta / Alpha" release channel support for GitHub addons. Releases marked
