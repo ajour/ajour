@@ -224,7 +224,6 @@ pub fn data_row_container<'a, 'b>(
 
         let remote_version_container =
             Container::new(remote_version_button.map(Message::Interaction))
-                //.padding(5)
                 .height(default_height)
                 .width(*width)
                 .center_y()

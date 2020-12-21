@@ -347,6 +347,18 @@ impl Addon {
                     url
                 }
             }
+            Some(RepositoryKind::Curse) => {
+                let file = self
+                    .relevant_release_package(default_release_channel)
+                    .map(|r| r.file_id)
+                    .flatten();
+
+                if let Some(file) = file {
+                    url.map(|url| format!("{}/{}", url, file))
+                } else {
+                    url
+                }
+            }
             Some(_) => url,
             None => None,
         }
