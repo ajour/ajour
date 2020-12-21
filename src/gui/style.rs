@@ -160,6 +160,25 @@ impl button::StyleSheet for BrightTextButton {
     }
 }
 
+pub struct NormalTextButton(pub ColorPalette);
+impl button::StyleSheet for NormalTextButton {
+    fn active(&self) -> button::Style {
+        button::Style {
+            text_color: self.0.normal.surface,
+            border_radius: 2.0,
+            ..button::Style::default()
+        }
+    }
+
+    fn hovered(&self) -> button::Style {
+        button::Style {
+            background: Some(Background::Color(Color::TRANSPARENT)),
+            text_color: self.0.bright.primary,
+            ..self.active()
+        }
+    }
+}
+
 pub struct SelectedBrightTextButton(pub ColorPalette);
 impl button::StyleSheet for SelectedBrightTextButton {
     fn active(&self) -> button::Style {

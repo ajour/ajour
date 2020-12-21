@@ -214,7 +214,7 @@ pub fn data_row_container<'a, 'b>(
 
         let mut remote_version_button =
             Button::new(&mut addon.remote_version_btn_state, remote_version)
-                .style(style::BrightTextButton(color_palette));
+                .style(style::NormalTextButton(color_palette));
 
         if let Some(link) = &changelog_url {
             remote_version_button =
