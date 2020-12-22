@@ -1011,7 +1011,14 @@ pub fn run(opts: Opts) {
 
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
-    settings.window.min_size = Some((600, 300));
+
+    #[cfg(not(target_os = "linux"))]
+    // TODO (casperstorm): Due to an upstream bug, min_size causes the window to become unresizable
+    // on Linux.
+    // @see: https://github.com/casperstorm/ajour/issues/427
+    {
+        settings.window.min_size = Some((600, 300));
+    }
 
     #[cfg(feature = "wgpu")]
     {

@@ -34,6 +34,8 @@ and `Removed`.
 - Now correctly parses WeakAuars uploaded to Wago as a guest.
 - Fixed addon title letter casing for GitHub addons by using the actual repository
   name instead of parsed repo from the user inputted URL
+- Removed minimum window size on Linux. This fixed a issue where the application
+  would not be resizable.
 
 ## [0.6.0] - 2020-12-20
 
