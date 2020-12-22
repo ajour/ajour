@@ -5,7 +5,7 @@
 ### Cargo
 
 ```sh
-cargo install ajour --git https://github.com/casperstorm/ajour.git
+cargo install ajour
 ```
 
 ### [Homebrew](https://brew.sh/)
