@@ -19,7 +19,7 @@ pub fn data_container<'a>(
     color_palette: ColorPalette,
     mode: &Mode,
     state: &HashMap<Mode, State>,
-    error: &Option<anyhow::Error>,
+    error: Option<&eyre::Report>,
     config: &Config,
     valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,

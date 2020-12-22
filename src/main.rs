@@ -11,13 +11,13 @@ use ajour_core::fs::CONFIG_DIR;
 use ajour_core::utility::{remove_file, rename};
 
 #[cfg(target_os = "linux")]
-use anyhow::Context;
+use eyre::WrapErr;
 use std::env;
 use std::path::PathBuf;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub type Result<T, E = anyhow::Error> = std::result::Result<T, E>;
+pub type Result<T, E = eyre::Report> = std::result::Result<T, E>;
 
 pub fn main() {
     let opts_result = cli::get_opts();
@@ -89,7 +89,7 @@ pub fn main() {
 }
 
 /// Log any errors
-pub fn log_error(error: &anyhow::Error) {
+pub fn log_error(error: &eyre::Report) {
     log::error!("{}", error);
 
     let mut causes = error.chain();

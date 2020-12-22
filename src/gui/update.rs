@@ -24,9 +24,9 @@ use {
     },
     ajour_weak_auras::{Aura, AuraStatus},
     ajour_widgets::header::ResizeEvent,
-    anyhow::Context,
     async_std::sync::{Arc, Mutex},
     chrono::{NaiveTime, Utc},
+    eyre::WrapErr,
     fuzzy_matcher::{
         skim::{SkimMatcherV2, SkimScoreConfig},
         FuzzyMatcher,
@@ -1494,10 +1494,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ));
                     }
                     Err(error) => {
-                        // Dont use `context` here to convert to anyhow::Error since
+                        // Dont use `context` here to convert to eyre::Report since
                         // we actually want to show the underlying RepositoryError
                         // message
-                        let error = anyhow::Error::new(error);
+                        let error = eyre::Report::new(error);
 
                         log_error(&error);
 

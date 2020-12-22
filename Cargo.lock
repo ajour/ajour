@@ -53,10 +53,10 @@ dependencies = [
  "ajour-core",
  "ajour-weak-auras",
  "ajour-widgets",
- "anyhow",
  "async-std",
  "chrono",
  "embed-resource",
+ "eyre",
  "fern",
  "futures",
  "fuzzy-matcher",
@@ -161,12 +161,6 @@ checksum = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b"
 dependencies = [
  "winapi 0.3.9",
 ]
-
-[[package]]
-name = "anyhow"
-version = "1.0.34"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf8dcb5b4bbaa28653b647d8c77bd4ed40183b48882e130c1f1ffb73de069fd7"
 
 [[package]]
 name = "approx"
@@ -1132,6 +1126,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "eyre"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f29abf4740a4778632fe27a4f681ef5b7a6f659aeba3330ac66f48e20cfa3b7"
+dependencies = [
+ "indenter",
+ "once_cell",
+]
+
+[[package]]
 name = "fancy-regex"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1966,6 +1970,12 @@ dependencies = [
  "scoped_threadpool",
  "tiff",
 ]
+
+[[package]]
+name = "indenter"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68b772bb6a163b53b7e02b2d4735e0b399df6fc68e74374dbea85cd22a36e9db"
 
 [[package]]
 name = "inplace_it"

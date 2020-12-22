@@ -10,9 +10,9 @@ use ajour_core::network::download_addon;
 use ajour_core::parse::update_addon_fingerprint;
 use ajour_core::repository::RepositoryPackage;
 
-use anyhow::{format_err, Context};
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
+use eyre::{eyre, WrapErr};
 use futures::future::join_all;
 use isahc::http::Uri;
 
@@ -45,8 +45,8 @@ pub fn install_from_source(url: Uri, flavor: Flavor) -> Result<()> {
 
         log::debug!("Installing {} for {:?}", addon.title(), flavor);
 
-        let download_directory = config.get_download_directory_for_flavor(flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-        let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+        let download_directory = config.get_download_directory_for_flavor(flavor).ok_or_else(|| eyre!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+        let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| eyre!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
         // Download the addon
         download_addon(&addon, global_release_channel, &download_directory).await?;

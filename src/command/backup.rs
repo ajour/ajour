@@ -3,7 +3,7 @@ use crate::Result;
 
 use ajour_core::backup::{self, backup_folders};
 use ajour_core::config::{load_config, Flavor};
-use anyhow::format_err;
+use eyre::eyre;
 
 use async_std::task;
 use std::path::PathBuf;
@@ -23,10 +23,10 @@ pub fn backup(
         };
 
         if !destination.is_dir() {
-            return Err(format_err!("destination must be a folder, not a file"));
+            return Err(eyre!("destination must be a folder, not a file"));
         }
 
-        let wow_dir = config.wow.directory.as_ref().ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+        let wow_dir = config.wow.directory.as_ref().ok_or_else(|| eyre!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
         log::info!(
             "Backing up:\n\tbackup folders: {:?}\n\tflavors: {:?}\n\tdestination: {:?}",
@@ -38,8 +38,8 @@ pub fn backup(
         let mut src_folders = vec![];
 
         for flavor in flavors {
-            let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-            let wtf_directory = config.get_wtf_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+            let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| eyre!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+            let wtf_directory = config.get_wtf_directory_for_flavor(&flavor).ok_or_else(|| eyre!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
             let addons_folder = backup::BackupFolder::new(&addon_directory, &wow_dir);
             let wtf_folder = backup::BackupFolder::new(&wtf_directory, &wow_dir);

@@ -3,8 +3,8 @@ use crate::Result;
 use ajour_core::config::{load_config, Flavor};
 use ajour_weak_auras::{get_aura_updates, parse_auras, write_updates};
 
-use anyhow::{bail, format_err, Context};
 use async_std::task;
+use eyre::{bail, eyre, WrapErr};
 
 pub fn update_all_weakauras() -> Result<()> {
     log::info!("Checking for WeakAura updates...");
@@ -20,8 +20,8 @@ pub fn update_all_weakauras() -> Result<()> {
 
                 log::info!("{} - Parsing WeakAuras for account {}", flavor, &account);
 
-                let wtf_path = config.get_wtf_directory_for_flavor(flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-                let addon_dir = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+                let wtf_path = config.get_wtf_directory_for_flavor(flavor).ok_or_else(|| eyre!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+                let addon_dir = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| eyre!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
 
                 let auras = parse_auras(wtf_path, account.clone())
                     .await
