@@ -22,6 +22,8 @@ and `Removed`.
 - Row colors now alternate by default for better accessibility. This can be turned
   off in settings under the UI section's "Alternate Row Colors" checkbox.
 - Remote version can be clicked to directly open the changelog webpage.
+- Added a new button in settings under Column configuration to "Reset Columns".
+  Pressing this button will reset columns to their default size, sort & visibility.
 
 ### Changed
 
