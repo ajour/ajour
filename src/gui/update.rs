@@ -230,6 +230,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             return Ok(Command::perform(select_directory(), message));
         }
+        Message::Interaction(Interaction::ResetColumns) => {
+            log::debug!("Interaction::ResetColumns");
+
+            ajour.column_settings = Default::default();
+            ajour.catalog_column_settings = Default::default();
+
+            ajour.header_state = Default::default();
+            ajour.catalog_header_state = Default::default();
+            ajour.aura_header_state = Default::default();
+
+            save_column_configs(ajour);
+        }
         Message::Interaction(Interaction::OpenLink(link)) => {
             log::debug!("Interaction::OpenLink({})", &link);
 

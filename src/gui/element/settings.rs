@@ -29,6 +29,7 @@ pub fn data_container<'a, 'b>(
     open_config_dir_button_state: &'a mut button::State,
     self_update_channel_state: &'a mut SelfUpdateChannelState,
     default_addon_release_channel_picklist_state: &'a mut pick_list::State<GlobalReleaseChannel>,
+    reset_columns_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -660,6 +661,25 @@ pub fn data_container<'a, 'b>(
     scrollable = scrollable
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(catalog_rows);
+
+    // Reset columns button
+    let reset_columns_button_title_container =
+        Container::new(Text::new("Reset Columns").size(DEFAULT_FONT_SIZE))
+            .width(Length::FillPortion(1))
+            .center_x()
+            .align_x(Align::Center);
+    let reset_columns_button: Element<Interaction> = Button::new(
+        reset_columns_button_state,
+        reset_columns_button_title_container,
+    )
+    .width(Length::Units(120))
+    .style(style::DefaultBoxedButton(color_palette))
+    .on_press(Interaction::ResetColumns)
+    .into();
+
+    scrollable = scrollable
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(reset_columns_button.map(Message::Interaction));
 
     // Colum wrapping all the settings content.
     scrollable = scrollable.height(Length::Fill).width(Length::Fill);
