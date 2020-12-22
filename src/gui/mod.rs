@@ -1991,7 +1991,7 @@ async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {
     Ok((fingerprint_cache, addon_cache))
 }
 
-pub fn apply_config(ajour: &mut Ajour, config: Config) {
+fn apply_config(ajour: &mut Ajour, config: Config) {
     // Set column widths from the config
     match &config.column_config {
         ColumnConfig::V1 {
