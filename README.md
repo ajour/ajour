@@ -42,10 +42,10 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 <p align="center">
   <img width="410"
        alt="Ajour with default Dark theme"
-       src="./resources/screenshots/ajour-0.3.0a.png">
+       src="./resources/screenshots/ajour-0.6.0a.png">
     <img width="410"
-       alt="Ajour with Solarized Light theme"
-       src="./resources/screenshots/ajour-0.3.0b.png">
+       alt="Ajour with Light theme"
+       src="./resources/screenshots/ajour-0.6.0b.png">
 </p>
 
 ## Features
@@ -109,12 +109,6 @@ but please tell me why.
 **_What features are planned?_**
 
 We have a roadmap [here](https://github.com/casperstorm/ajour/projects/2).
-
-**_What should I do if some addon isn't showing or updating correctly?_**
-
-We encourage you to raise an issue and tell us all about it! We want Ajour to
-support as many addons as possible. This means a lot of edge cases. A list of addons
-with known issues can be found in the [wiki](https://github.com/casperstorm/ajour/wiki/Addons-with-known-issues).
 
 **_macOS won't let me open the app, what should I do?_**
 
