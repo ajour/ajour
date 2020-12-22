@@ -117,6 +117,7 @@ pub enum Interaction {
     PickSelfUpdateChannel(SelfUpdateChannel),
     PickGlobalReleaseChannel(GlobalReleaseChannel),
     AlternatingRowColorToggled(bool),
+    ResetColumns,
 }
 
 #[derive(Debug)]
@@ -213,6 +214,7 @@ pub struct Ajour {
     weak_auras_is_installed: bool,
     weak_auras_state: HashMap<Flavor, WeakAurasState>,
     aura_header_state: AuraHeaderState,
+    reset_columns_btn_state: button::State,
 }
 
 impl Default for Ajour {
@@ -271,6 +273,7 @@ impl Default for Ajour {
             weak_auras_is_installed: Default::default(),
             weak_auras_state: Default::default(),
             aura_header_state: Default::default(),
+            reset_columns_btn_state: Default::default(),
         }
     }
 }
@@ -880,6 +883,7 @@ impl Application for Ajour {
                     &mut self.open_config_dir_btn_state,
                     &mut self.self_update_channel_state,
                     &mut self.default_addon_release_channel_picklist_state,
+                    &mut self.reset_columns_btn_state,
                 );
 
                 content = content.push(settings_container)
@@ -1987,7 +1991,7 @@ async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {
     Ok((fingerprint_cache, addon_cache))
 }
 
-fn apply_config(ajour: &mut Ajour, config: Config) {
+pub fn apply_config(ajour: &mut Ajour, config: Config) {
     // Set column widths from the config
     match &config.column_config {
         ColumnConfig::V1 {

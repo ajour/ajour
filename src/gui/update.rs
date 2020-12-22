@@ -1,9 +1,9 @@
 use {
     super::{
-        Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
-        CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel,
-        InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
-        SelfUpdateStatus, SortDirection, State,
+        apply_config, Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey,
+        CatalogRow, CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType,
+        GlobalReleaseChannel, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
+        ReleaseChannel, SelfUpdateStatus, SortDirection, State,
     },
     crate::{log_error, Result},
     ajour_core::{
@@ -229,6 +229,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             };
 
             return Ok(Command::perform(select_directory(), message));
+        }
+        Message::Interaction(Interaction::ResetColumns) => {
+            log::debug!("Interaction::ResetColumns");
+
+            ajour.config.column_config = Default::default();
+            apply_config(ajour, ajour.config.clone());
+            let _ = &ajour.config.save();
         }
         Message::Interaction(Interaction::OpenLink(link)) => {
             log::debug!("Interaction::OpenLink({})", &link);
