@@ -1630,6 +1630,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.hide_ignored_addons = is_checked;
             let _ = ajour.config.save();
         }
+        Message::Interaction(Interaction::ToggleDeleteSavedVariables(is_checked)) => {
+            log::debug!("Interaction::ToggleDeleteSavedVariables({})", is_checked);
+
+            ajour.config.addons.delete_saved_variables = is_checked;
+            let _ = ajour.config.save();
+        }
         Message::CatalogDownloaded(error @ Err(_)) => {
             let error = error.context("Failed to download catalog").unwrap_err();
             log_error(&error);

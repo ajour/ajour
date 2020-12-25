@@ -15,6 +15,9 @@ pub struct Addons {
 
     #[serde(default)]
     pub release_channels: HashMap<Flavor, HashMap<String, ReleaseChannel>>,
+
+    #[serde(default)]
+    pub delete_saved_variables: bool,
 }
 
 impl Default for Addons {
@@ -23,6 +26,7 @@ impl Default for Addons {
             global_release_channel: GlobalReleaseChannel::Stable,
             ignored: HashMap::new(),
             release_channels: HashMap::new(),
+            delete_saved_variables: Default::default(),
         }
     }
 }

@@ -30,6 +30,7 @@ pub fn data_container<'a, 'b>(
     self_update_channel_state: &'a mut SelfUpdateChannelState,
     default_addon_release_channel_picklist_state: &'a mut pick_list::State<GlobalReleaseChannel>,
     reset_columns_button_state: &'a mut button::State,
+    delete_saved_variables_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -319,6 +320,20 @@ pub fn data_container<'a, 'b>(
         Column::new().push(checkbox_container)
     };
 
+    let delete_saved_variables_column = {
+        let delete_saved_variables = config.addons.delete_saved_variables;
+        let title = "Delete SavedVariables when deleting addons".to_owned();
+        let checkbox = Checkbox::new(delete_saved_variables, title, move |is_checked| {
+            Message::Interaction(Interaction::ToggleDeleteSavedVariables(is_checked))
+        })
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+        let checkbox_container =
+            Container::new(checkbox).style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
+
     let global_release_channel_column = {
         let title_container =
             Container::new(Text::new("Global Release Channel").size(DEFAULT_FONT_SIZE))
@@ -460,6 +475,8 @@ pub fn data_container<'a, 'b>(
         .push(global_release_channel_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(delete_saved_variables_column)
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(ui_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
