@@ -216,7 +216,6 @@ pub struct Ajour {
     weak_auras_state: HashMap<Flavor, WeakAurasState>,
     aura_header_state: AuraHeaderState,
     reset_columns_btn_state: button::State,
-    delete_saved_variables_btn_state: button::State,
 }
 
 impl Default for Ajour {
@@ -276,7 +275,6 @@ impl Default for Ajour {
             weak_auras_state: Default::default(),
             aura_header_state: Default::default(),
             reset_columns_btn_state: Default::default(),
-            delete_saved_variables_btn_state: Default::default(),
         }
     }
 }
@@ -887,7 +885,6 @@ impl Application for Ajour {
                     &mut self.self_update_channel_state,
                     &mut self.default_addon_release_channel_picklist_state,
                     &mut self.reset_columns_btn_state,
-                    &mut self.delete_saved_variables_btn_state,
                 );
 
                 content = content.push(settings_container)
