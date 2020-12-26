@@ -1,11 +1,13 @@
 use super::Result;
 use crate::{
     addon::{Addon, AddonFolder},
+    config::Config,
     parse::parse_toc_path,
 };
 use std::collections::HashSet;
 use std::fs::remove_dir_all;
 use std::path::PathBuf;
+use walkdir::WalkDir;
 
 /// Deletes an Addon and all dependencies from disk.
 pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
@@ -13,6 +15,38 @@ pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
         let path = &folder.path;
         if path.exists() {
             remove_dir_all(path)?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn delete_saved_variables(addon_folders: &[AddonFolder], config: &Config) -> Result<()> {
+    let flavor = config.wow.flavor;
+    // TODO: Remove unwrap.
+    let wtf_path = config.get_wtf_directory_for_flavor(&flavor).unwrap();
+
+    for folder in addon_folders {
+        for entry in WalkDir::new(&wtf_path)
+            .into_iter()
+            .filter_map(std::result::Result::ok)
+        {
+            // TODO: Remove unwrap.
+            let path = entry.path();
+            let parent = path.parent().unwrap();
+
+            // TODO: Remove unwrap.
+            let file_name = parent.file_name().unwrap();
+            if file_name == "SavedVariables" {
+                // TODO: Remove unwrap.
+                let file_name = path.file_name().unwrap();
+
+                // TODO: Remove unwrap.
+                let file_name_str = file_name.to_str().unwrap();
+                if file_name_str.contains(&folder.id) {
+                    println!("path: {:?}", path);
+                }
+            }
         }
     }
 
