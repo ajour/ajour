@@ -23,28 +23,29 @@ pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
 
 pub fn delete_saved_variables(addon_folders: &[AddonFolder], config: &Config) -> Result<()> {
     let flavor = config.wow.flavor;
-    // TODO: Remove unwrap.
-    let wtf_path = config.get_wtf_directory_for_flavor(&flavor).unwrap();
+    let wtf_path = config
+        .get_wtf_directory_for_flavor(&flavor)
+        .expect("No World of Warcraft directory set.");
 
-    for folder in addon_folders {
-        for entry in WalkDir::new(&wtf_path)
-            .into_iter()
-            .filter_map(std::result::Result::ok)
-        {
-            // TODO: Remove unwrap.
-            let path = entry.path();
-            let parent = path.parent().unwrap();
+    for entry in WalkDir::new(&wtf_path)
+        .into_iter()
+        .filter_map(std::result::Result::ok)
+    {
+        let path = entry.path();
+        let file_name = path
+            .parent()
+            .and_then(|a| a.file_name())
+            .and_then(|a| a.to_str());
 
-            // TODO: Remove unwrap.
-            let file_name = parent.file_name().unwrap();
-            if file_name == "SavedVariables" {
-                // TODO: Remove unwrap.
-                let file_name = path.file_name().unwrap();
+        if file_name == Some("SavedVariables") {
+            let file_name = path.file_name().and_then(|f| f.to_str());
 
-                // TODO: Remove unwrap.
-                let file_name_str = file_name.to_str().unwrap();
-                if file_name_str.contains(&folder.id) {
-                    println!("path: {:?}", path);
+            // NOTE: Will reject "Foobar_<invalid utf8>".
+            if let Some(file_name_str) = file_name {
+                for folder in addon_folders {
+                    if file_name_str.contains(&folder.id) {
+                        println!("path: {:?}", path);
+                    }
                 }
             }
         }
