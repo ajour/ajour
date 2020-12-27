@@ -335,43 +335,46 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Delete(id)) => {
             log::debug!("Interaction::Delete({})", &id);
 
+            // Close details if shown.
+            ajour.expanded_type = ExpandType::None;
+
             let flavor = ajour.config.wow.flavor;
             let addons = ajour.addons.entry(flavor).or_default();
+
             if let Some(addon) = addons.iter().find(|a| a.primary_folder_id == id).cloned() {
-                let _ = delete_saved_variables(&addon.folders, &ajour.config);
+                // Remove from local state.
+                addons.retain(|a| a.primary_folder_id != addon.primary_folder_id);
+
+                // Delete addon(s) from disk.
+                let _ = delete_addons(&addon.folders);
+
+                // Delete SavedVariable(s) if enabled.
+                if ajour.config.addons.delete_saved_variables {
+                    let wtf_path = &ajour
+                        .config
+                        .get_wtf_directory_for_flavor(&flavor)
+                        .expect("No World of Warcraft directory set.");
+                    let _ = delete_saved_variables(&addon.folders, wtf_path);
+                }
+
+                // Remove addon from cache
+                if let Some(addon_cache) = &ajour.addon_cache {
+                    if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
+                        match addon.repository_kind() {
+                            // Delete the entry for this cached addon
+                            Some(RepositoryKind::Tukui)
+                            | Some(RepositoryKind::WowI)
+                            | Some(RepositoryKind::Git(_)) => {
+                                return Ok(Command::perform(
+                                    remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
+                                    Message::AddonCacheEntryRemoved,
+                                ));
+                            }
+                            _ => {}
+                        }
+                    }
+                }
             }
-
-            // Close details if shown.
-            // ajour.expanded_type = ExpandType::None;
-
-            // let flavor = ajour.config.wow.flavor;
-            // let addons = ajour.addons.entry(flavor).or_default();
-
-            // if let Some(addon) = addons.iter().find(|a| a.primary_folder_id == id).cloned() {
-            //     // Remove from local state.
-            //     addons.retain(|a| a.primary_folder_id != addon.primary_folder_id);
-
-            //     // Delete addon(s) from disk.
-            //     let _ = delete_addons(&addon.folders);
-
-            //     // Remove addon from cache
-            //     if let Some(addon_cache) = &ajour.addon_cache {
-            //         if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
-            //             match addon.repository_kind() {
-            //                 // Delete the entry for this cached addon
-            //                 Some(RepositoryKind::Tukui)
-            //                 | Some(RepositoryKind::WowI)
-            //                 | Some(RepositoryKind::Git(_)) => {
-            //                     return Ok(Command::perform(
-            //                         remove_addon_cache_entry(addon_cache.clone(), entry, flavor),
-            //                         Message::AddonCacheEntryRemoved,
-            //                     ));
-            //                 }
-            //                 _ => {}
-            //             }
-            //         }
-            //     }
-            // }
         }
         Message::Interaction(Interaction::Update(id)) => {
             log::debug!("Interaction::Update({})", &id);

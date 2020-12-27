@@ -1,11 +1,10 @@
 use super::Result;
 use crate::{
     addon::{Addon, AddonFolder},
-    config::Config,
     parse::parse_toc_path,
 };
 use std::collections::HashSet;
-use std::fs::remove_dir_all;
+use std::fs::{remove_dir_all, remove_file};
 use std::path::PathBuf;
 use walkdir::WalkDir;
 
@@ -21,12 +20,8 @@ pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
     Ok(())
 }
 
-pub fn delete_saved_variables(addon_folders: &[AddonFolder], config: &Config) -> Result<()> {
-    let flavor = config.wow.flavor;
-    let wtf_path = config
-        .get_wtf_directory_for_flavor(&flavor)
-        .expect("No World of Warcraft directory set.");
-
+/// Deletes all saved varaible files correlating to `[AddonFolder]`.
+pub fn delete_saved_variables(addon_folders: &[AddonFolder], wtf_path: &PathBuf) -> Result<()> {
     for entry in WalkDir::new(&wtf_path)
         .into_iter()
         .filter_map(std::result::Result::ok)
@@ -44,7 +39,7 @@ pub fn delete_saved_variables(addon_folders: &[AddonFolder], config: &Config) ->
             if let Some(file_name_str) = file_name {
                 for folder in addon_folders {
                     if file_name_str.contains(&folder.id) {
-                        println!("path: {:?}", path);
+                        remove_file(path)?;
                     }
                 }
             }
