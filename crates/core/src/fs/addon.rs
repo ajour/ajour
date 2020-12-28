@@ -33,12 +33,10 @@ pub fn delete_saved_variables(addon_folders: &[AddonFolder], wtf_path: &PathBuf)
             .and_then(|a| a.to_str());
 
         if parent_name == Some("SavedVariables") {
-            // Running `file_stem` twice to catch both `.lua` and `.lua.bak` files.
             let file_name = path
                 .file_stem()
-                .map(|a| Path::new(a))
-                .and_then(|a| a.file_stem())
-                .and_then(|a| a.to_str());
+                .and_then(|a| a.to_str())
+                .map(|a| a.trim_end_matches(".bak"));
 
             // NOTE: Will reject "Foobar_<invalid utf8>".
             if let Some(file_name_str) = file_name {
