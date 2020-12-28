@@ -5,7 +5,7 @@ use crate::{
 };
 use std::collections::HashSet;
 use std::fs::{remove_dir_all, remove_file};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 /// Deletes an Addon and all dependencies from disk.
@@ -27,18 +27,23 @@ pub fn delete_saved_variables(addon_folders: &[AddonFolder], wtf_path: &PathBuf)
         .filter_map(std::result::Result::ok)
     {
         let path = entry.path();
-        let file_name = path
+        let parent_name = path
             .parent()
             .and_then(|a| a.file_name())
             .and_then(|a| a.to_str());
 
-        if file_name == Some("SavedVariables") {
-            let file_name = path.file_name().and_then(|f| f.to_str());
+        if parent_name == Some("SavedVariables") {
+            // Running `file_stem` twice to catch both `.lua` and `.lua.bak` files.
+            let file_name = path
+                .file_stem()
+                .map(|a| Path::new(a))
+                .and_then(|a| a.file_stem())
+                .and_then(|a| a.to_str());
 
             // NOTE: Will reject "Foobar_<invalid utf8>".
             if let Some(file_name_str) = file_name {
                 for folder in addon_folders {
-                    if file_name_str.contains(&folder.id) {
+                    if file_name_str == folder.id {
                         remove_file(path)?;
                     }
                 }
