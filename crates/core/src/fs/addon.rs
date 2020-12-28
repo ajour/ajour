@@ -5,7 +5,7 @@ use crate::{
 };
 use std::collections::HashSet;
 use std::fs::{remove_dir_all, remove_file};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use walkdir::WalkDir;
 
 /// Deletes an Addon and all dependencies from disk.
