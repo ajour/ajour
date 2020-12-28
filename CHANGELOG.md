@@ -38,7 +38,8 @@ and `Removed`.
   name instead of parsed repo from the user inputted URL
 - Removed minimum window size on Linux. This fixed a issue where the application
   would not be resizable.
-- Fixed bug where log file didn't respect custom `--data` path. Log is now created under the supplied `--data` path.
+- Fixed bug where log file didn't respect custom `--data` path. Log is now created
+  under the supplied `--data` path.
 
 ## [0.6.0] - 2020-12-20
 
