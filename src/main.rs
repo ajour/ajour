@@ -43,6 +43,12 @@ pub fn main() {
     // fix that allows us to print to the console when not using the GUI.
     let opts = cli::validate_opts_or_exit(opts_result, is_cli, is_debug);
 
+    if let Some(data_dir) = &opts.data_directory {
+        let mut config_dir = CONFIG_DIR.lock().unwrap();
+
+        *config_dir = data_dir.clone();
+    }
+
     setup_logger(is_cli, is_debug).expect("setup logging");
 
     // Called when we launch from the temp (new release) binary during the self update
@@ -52,12 +58,6 @@ pub fn main() {
             log_error(&e);
             std::process::exit(1);
         }
-    }
-
-    if let Some(data_dir) = &opts.data_directory {
-        let mut config_dir = CONFIG_DIR.lock().unwrap();
-
-        *config_dir = data_dir.clone();
     }
 
     log_panics::init();
