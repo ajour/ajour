@@ -4,8 +4,9 @@ use crate::{
     parse::parse_toc_path,
 };
 use std::collections::HashSet;
-use std::fs::remove_dir_all;
+use std::fs::{remove_dir_all, remove_file};
 use std::path::PathBuf;
+use walkdir::WalkDir;
 
 /// Deletes an Addon and all dependencies from disk.
 pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
@@ -13,6 +14,38 @@ pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
         let path = &folder.path;
         if path.exists() {
             remove_dir_all(path)?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Deletes all saved varaible files correlating to `[AddonFolder]`.
+pub fn delete_saved_variables(addon_folders: &[AddonFolder], wtf_path: &PathBuf) -> Result<()> {
+    for entry in WalkDir::new(&wtf_path)
+        .into_iter()
+        .filter_map(std::result::Result::ok)
+    {
+        let path = entry.path();
+        let parent_name = path
+            .parent()
+            .and_then(|a| a.file_name())
+            .and_then(|a| a.to_str());
+
+        if parent_name == Some("SavedVariables") {
+            let file_name = path
+                .file_stem()
+                .and_then(|a| a.to_str())
+                .map(|a| a.trim_end_matches(".bak"));
+
+            // NOTE: Will reject "Foobar_<invalid utf8>".
+            if let Some(file_name_str) = file_name {
+                for folder in addon_folders {
+                    if file_name_str == folder.id {
+                        remove_file(path)?;
+                    }
+                }
+            }
         }
     }
 

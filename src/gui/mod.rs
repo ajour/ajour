@@ -118,6 +118,7 @@ pub enum Interaction {
     PickGlobalReleaseChannel(GlobalReleaseChannel),
     AlternatingRowColorToggled(bool),
     ResetColumns,
+    ToggleDeleteSavedVariables(bool),
 }
 
 #[derive(Debug)]

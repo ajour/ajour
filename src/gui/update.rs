@@ -16,7 +16,7 @@ use {
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
         error::{DownloadError, FilesystemError, ParseError, RepositoryError},
-        fs::{delete_addons, install_addon, PersistentData},
+        fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
         repository::{RepositoryKind, RepositoryPackage},
@@ -334,6 +334,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Delete(id)) => {
             log::debug!("Interaction::Delete({})", &id);
+
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -346,6 +347,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 // Delete addon(s) from disk.
                 let _ = delete_addons(&addon.folders);
+
+                // Delete SavedVariable(s) if enabled.
+                if ajour.config.addons.delete_saved_variables {
+                    let wtf_path = &ajour
+                        .config
+                        .get_wtf_directory_for_flavor(&flavor)
+                        .expect("No World of Warcraft directory set.");
+                    let _ = delete_saved_variables(&addon.folders, wtf_path);
+                }
 
                 // Remove addon from cache
                 if let Some(addon_cache) = &ajour.addon_cache {
@@ -1628,6 +1638,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::ToggleHideIgnoredAddons({})", is_checked);
 
             ajour.config.hide_ignored_addons = is_checked;
+            let _ = ajour.config.save();
+        }
+        Message::Interaction(Interaction::ToggleDeleteSavedVariables(is_checked)) => {
+            log::debug!("Interaction::ToggleDeleteSavedVariables({})", is_checked);
+
+            ajour.config.addons.delete_saved_variables = is_checked;
             let _ = ajour.config.save();
         }
         Message::CatalogDownloaded(error @ Err(_)) => {

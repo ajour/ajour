@@ -24,6 +24,8 @@ and `Removed`.
 - Remote version can be clicked to directly open the changelog webpage.
 - Added a new button in settings under Column configuration to "Reset Columns".
   Pressing this button will reset columns to their default size, sort & visibility.
+- SavedVariables can now be deleted along side the addon if you enable it from
+  Settings.
 
 ### Changed
 
