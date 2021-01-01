@@ -541,20 +541,6 @@ pub fn data_row_container<'a, 'b>(
 
             let website_button: Element<Interaction> = website_button.into();
 
-            let mut force_download_button = Button::new(
-                &mut addon.force_btn_state,
-                Text::new("Force update").size(DEFAULT_FONT_SIZE),
-            )
-            .style(style::DefaultButton(color_palette));
-
-            // If we have a release package on addon, enable force update.
-            if release_package.is_some() {
-                force_download_button = force_download_button
-                    .on_press(Interaction::Update(addon.primary_folder_id.clone()));
-            }
-
-            let force_download_button: Element<Interaction> = force_download_button.into();
-
             let is_ignored = addon.state == AddonState::Ignored;
             let ignore_button_text = if is_ignored {
                 Text::new("Unignore").size(DEFAULT_FONT_SIZE)
@@ -605,8 +591,6 @@ pub fn data_row_container<'a, 'b>(
                 .push(website_button.map(Message::Interaction))
                 .push(Space::new(Length::Units(5), Length::Units(0)))
                 .push(changelog_button.map(Message::Interaction))
-                .push(Space::new(Length::Units(5), Length::Units(0)))
-                .push(force_download_button.map(Message::Interaction))
                 .push(Space::new(Length::Units(5), Length::Units(0)))
                 .push(ignore_button.map(Message::Interaction))
                 .push(Space::new(Length::Units(5), Length::Units(0)))
