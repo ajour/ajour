@@ -42,6 +42,7 @@ and `Removed`.
   would not be resizable.
 - Fixed bug where log file didn't respect custom `--data` path. Log is now created
   under the supplied `--data` path.
+- Small height difference in Catalog search menu.
 
 ## [0.6.0] - 2020-12-20
 

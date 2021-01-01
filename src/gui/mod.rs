@@ -799,7 +799,7 @@ impl Application for Ajour {
 
                     let catalog_query_container = Container::new(catalog_query_row)
                         .width(Length::Fill)
-                        .height(Length::Units(35))
+                        .height(Length::Units(34))
                         .center_y();
 
                     let catalog_row_titles = element::catalog::titles_row_header(
