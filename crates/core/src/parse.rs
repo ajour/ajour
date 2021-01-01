@@ -1180,7 +1180,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
 
 /// Helper function to split a comma separated string into `Vec<String>`.
 fn split_dependencies_into_vec(value: &str) -> Vec<String> {
-    if value == "" {
+    if value.is_empty() {
         return vec![];
     }
 
