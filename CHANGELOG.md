@@ -32,6 +32,7 @@ and `Removed`.
 - `Interface` folder root is included in the zip backup when `AddOns` is selected.
   Some users store proprietary data alongside the `AddOns` folder that they'd like
   included during backup.
+- Removed `Force install` as it had no value.
 
 ### Fixed
 
