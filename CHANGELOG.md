@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.6.1] - 2021-01-02
+
 ### Added
 
 - Added "Beta / Alpha" release channel support for GitHub addons. Releases marked
