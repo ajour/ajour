@@ -6,6 +6,7 @@ use futures::future;
 use isahc::http;
 use isahc::ResponseExt;
 use mlua::{prelude::*, Value};
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::Deserialize;
 
 use std::collections::{HashMap, HashSet};
@@ -97,16 +98,16 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
         return Ok(vec![]);
     }
 
-    let slugs = displays
+    let encoded_slugs = displays
         .iter()
-        .map(|a| a.slug.clone())
+        .map(|a| utf8_percent_encode(&a.slug, NON_ALPHANUMERIC).to_string())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
 
     let url = format!(
         "https://data.wago.io/api/check/weakauras?ids={}",
-        slugs.join(",")
+        encoded_slugs.join(",")
     );
 
     let mut response = request_async(url, vec![], Some(30)).await?;
@@ -159,7 +160,8 @@ pub async fn get_aura_updates(auras: &[Aura]) -> Result<Vec<AuraUpdate>, Error> 
 }
 
 async fn get_encoded_update(slug: &str) -> Result<String, Error> {
-    let url = format!("https://data.wago.io/api/raw/encoded?id={}", slug);
+    let encoded_slug = utf8_percent_encode(slug, NON_ALPHANUMERIC);
+    let url = format!("https://data.wago.io/api/raw/encoded?id={}", encoded_slug);
 
     Ok(request_async(url, vec![], Some(30))
         .await?

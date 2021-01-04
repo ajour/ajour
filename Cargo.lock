@@ -117,6 +117,7 @@ dependencies = [
  "futures",
  "isahc",
  "mlua",
+ "percent-encoding",
  "serde",
  "serde_json",
  "structopt",
