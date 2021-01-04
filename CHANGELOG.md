@@ -14,6 +14,11 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Parsing error causing WeakAuras to fail parsing due to missing "version" field
+- Incorrect percent encoding in WeakAuras API calls causing auras to not display
+
 ## [0.6.1] - 2021-01-02
 
 ### Added
