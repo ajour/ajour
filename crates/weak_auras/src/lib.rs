@@ -6,6 +6,7 @@ use futures::future;
 use isahc::http;
 use isahc::ResponseExt;
 use mlua::{prelude::*, Value};
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::Deserialize;
 
 use std::collections::{HashMap, HashSet};
@@ -97,16 +98,16 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
         return Ok(vec![]);
     }
 
-    let slugs = displays
+    let encoded_slugs = displays
         .iter()
-        .map(|a| a.slug.clone())
+        .map(|a| utf8_percent_encode(&a.slug, NON_ALPHANUMERIC).to_string())
         .collect::<HashSet<_>>()
         .into_iter()
         .collect::<Vec<_>>();
 
     let url = format!(
         "https://data.wago.io/api/check/weakauras?ids={}",
-        slugs.join(",")
+        encoded_slugs.join(",")
     );
 
     let mut response = request_async(url, vec![], Some(30)).await?;
@@ -159,7 +160,8 @@ pub async fn get_aura_updates(auras: &[Aura]) -> Result<Vec<AuraUpdate>, Error> 
 }
 
 async fn get_encoded_update(slug: &str) -> Result<String, Error> {
-    let url = format!("https://data.wago.io/api/raw/encoded?id={}", slug);
+    let encoded_slug = utf8_percent_encode(slug, NON_ALPHANUMERIC);
+    let url = format!("https://data.wago.io/api/raw/encoded?id={}", encoded_slug);
 
     Ok(request_async(url, vec![], Some(30))
         .await?
@@ -311,7 +313,7 @@ impl Aura {
     }
 
     pub fn installed_version(&self) -> Option<u16> {
-        self.parent_display().map(|d| d.version)
+        self.parent_display().and_then(|d| d.version)
     }
 
     pub fn remote_version(&self) -> u16 {
@@ -378,7 +380,7 @@ struct AuraChangelog {
 struct AuraDisplay {
     url: String,
     slug: String,
-    version: u16,
+    version: Option<u16>,
     version_string: Option<String>,
     parent: Option<String>,
     id: String,
@@ -405,12 +407,15 @@ impl<'lua> FromLua<'lua> for MaybeAuraDisplay {
                     path.next();
 
                     let slug = path.next();
+                    let version = path.next().map(str::parse::<u16>).and_then(Result::ok);
 
                     if let Some(slug) = slug {
                         let parent = table.get("parent")?;
                         let id = table.get("id")?;
                         let uid = table.get("uid")?;
-                        let version = table.get("version")?;
+                        let version = table
+                            .get::<_, Option<u16>>("version")?
+                            .map_or(version, Option::Some);
                         let version_string = table.get("semver")?;
                         let ignore_updates = table
                             .get::<_, Option<bool>>("ignoreWagoUpdate")?
