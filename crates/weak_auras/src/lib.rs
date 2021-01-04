@@ -311,7 +311,7 @@ impl Aura {
     }
 
     pub fn installed_version(&self) -> Option<u16> {
-        self.parent_display().map(|d| d.version)
+        self.parent_display().and_then(|d| d.version)
     }
 
     pub fn remote_version(&self) -> u16 {
@@ -378,7 +378,7 @@ struct AuraChangelog {
 struct AuraDisplay {
     url: String,
     slug: String,
-    version: u16,
+    version: Option<u16>,
     version_string: Option<String>,
     parent: Option<String>,
     id: String,
@@ -405,12 +405,15 @@ impl<'lua> FromLua<'lua> for MaybeAuraDisplay {
                     path.next();
 
                     let slug = path.next();
+                    let version = path.next().map(str::parse::<u16>).and_then(Result::ok);
 
                     if let Some(slug) = slug {
                         let parent = table.get("parent")?;
                         let id = table.get("id")?;
                         let uid = table.get("uid")?;
-                        let version = table.get("version")?;
+                        let version = table
+                            .get::<_, Option<u16>>("version")?
+                            .map_or(version, Option::Some);
                         let version_string = table.get("semver")?;
                         let ignore_updates = table
                             .get::<_, Option<bool>>("ignoreWagoUpdate")?
