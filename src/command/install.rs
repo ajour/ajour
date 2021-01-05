@@ -1,4 +1,4 @@
-use crate::{log_error, Result};
+use crate::log_error;
 
 use ajour_core::addon::Addon;
 use ajour_core::cache::{
@@ -12,7 +12,7 @@ use ajour_core::repository::RepositoryPackage;
 
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
-use eyre::{eyre, WrapErr};
+use color_eyre::eyre::{eyre, Result, WrapErr};
 use futures::future::join_all;
 use isahc::http::Uri;
 
@@ -87,7 +87,8 @@ pub fn install_from_source(url: Uri, flavor: Flavor) -> Result<()> {
         ))
         .await
         {
-            if let Err(e) = result.context(format!("failed to fingerprint folder: {:?}", addon_dir))
+            if let Err(e) =
+                result.wrap_err(format!("failed to fingerprint folder: {:?}", addon_dir))
             {
                 // Log any errors fingerprinting the folder
                 log_error(&e);

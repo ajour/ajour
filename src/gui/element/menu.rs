@@ -6,6 +6,7 @@ use {
         config::{Config, Flavor},
         theme::ColorPalette,
     },
+    color_eyre::eyre::Report,
     iced::{
         button, Align, Button, Column, Container, Element, HorizontalAlignment, Length, Row, Space,
         Text,
@@ -19,7 +20,7 @@ pub fn data_container<'a>(
     color_palette: ColorPalette,
     mode: &Mode,
     state: &HashMap<Mode, State>,
-    error: Option<&eyre::Report>,
+    error: Option<&Report>,
     config: &Config,
     valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,

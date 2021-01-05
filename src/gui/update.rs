@@ -5,7 +5,7 @@ use {
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
         SelfUpdateStatus, SortDirection, State,
     },
-    crate::{log_error, Result},
+    crate::log_error,
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
@@ -26,7 +26,7 @@ use {
     ajour_widgets::header::ResizeEvent,
     async_std::sync::{Arc, Mutex},
     chrono::{NaiveTime, Utc},
-    eyre::WrapErr,
+    color_eyre::eyre::{Report, Result, WrapErr},
     fuzzy_matcher::{
         skim::{SkimMatcherV2, SkimScoreConfig},
         FuzzyMatcher,
@@ -470,7 +470,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // if our selected flavor returns (either ok or error) - we change to idle.
             ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
-            match result.context("Failed to parse addons") {
+            match result.wrap_err("Failed to parse addons") {
                 Ok(addons) => {
                     log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
 
@@ -548,7 +548,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let mut addon = None;
 
-            match result.context("Failed to download addon") {
+            match result.wrap_err("Failed to download addon") {
                 Ok(_) => match reason {
                     DownloadReason::Update => {
                         if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
@@ -631,7 +631,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let mut addon = None;
             let mut folders = None;
 
-            match result.context("Failed to unpack addon") {
+            match result.wrap_err("Failed to unpack addon") {
                 Ok(_folders) => match reason {
                     DownloadReason::Update => {
                         if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
@@ -1160,7 +1160,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.backup_state.last_backup = Some(as_of);
         }
         Message::BackupFinished(error @ Err(_)) => {
-            let error = error.context("Failed to backup folders").unwrap_err();
+            let error = error.wrap_err("Failed to backup folders").unwrap_err();
 
             log_error(&error);
             ajour.error = Some(error);
@@ -1494,10 +1494,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ));
                     }
                     Err(error) => {
-                        // Dont use `context` here to convert to eyre::Report since
+                        // Dont use `wrap_err` here to convert to eyre::Report since
                         // we actually want to show the underlying RepositoryError
                         // message
-                        let error = eyre::Report::new(error);
+                        let error = Report::new(error);
 
                         log_error(&error);
 
@@ -1530,7 +1530,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::AjourUpdateDownloaded(result) => {
             log::debug!("Message::AjourUpdateDownloaded");
 
-            match result.context("Failed to update Ajour") {
+            match result.wrap_err("Failed to update Ajour") {
                 Ok((relaunch_path, cleanup_path)) => {
                     // Remove first arg, which is path to binary. We don't use this first
                     // arg as binary path because it's not reliable, per the docs.
@@ -1552,7 +1552,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         .arg("--self-update-temp")
                         .arg(&cleanup_path)
                         .spawn()
-                        .context("Failed to update Ajour")
+                        .wrap_err("Failed to update Ajour")
                     {
                         Ok(_) => std::process::exit(0),
                         Err(error) => {
@@ -1573,7 +1573,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Message::AddonCacheUpdated({})", entry.title);
         }
         Message::AddonCacheEntryRemoved(maybe_entry) => {
-            match maybe_entry.context("Failed to remove cache entry") {
+            match maybe_entry.wrap_err("Failed to remove cache entry") {
                 Ok(Some(entry)) => log::debug!("Message::AddonCacheEntryRemoved({})", entry.title),
                 Ok(None) => {}
                 Err(e) => {
@@ -1647,12 +1647,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let _ = ajour.config.save();
         }
         Message::CatalogDownloaded(error @ Err(_)) => {
-            let error = error.context("Failed to download catalog").unwrap_err();
+            let error = error.wrap_err("Failed to download catalog").unwrap_err();
             log_error(&error);
             ajour.error = Some(error);
         }
         Message::AddonCacheUpdated(error @ Err(_)) => {
-            let error = error.context("Failed to update addon cache").unwrap_err();
+            let error = error.wrap_err("Failed to update addon cache").unwrap_err();
             log_error(&error);
             ajour.error = Some(error);
         }
@@ -1748,7 +1748,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
             error @ Err(_) => {
-                let error = error.context("Failed to get list of Accounts").unwrap_err();
+                let error = error
+                    .wrap_err("Failed to get list of Accounts")
+                    .unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -1807,7 +1809,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
             }
             error @ Err(_) => {
-                let error = error.context("Failed to parse WeakAuras").unwrap_err();
+                let error = error.wrap_err("Failed to parse WeakAuras").unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -1832,7 +1834,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 state.is_updating = false;
             }
             error @ Err(_) => {
-                let error = error.context("Failed to update WeakAuras").unwrap_err();
+                let error = error.wrap_err("Failed to update WeakAuras").unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);

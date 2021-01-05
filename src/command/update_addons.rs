@@ -1,7 +1,6 @@
 #![allow(clippy::type_complexity)]
 
 use crate::log_error;
-use crate::Result;
 
 use ajour_core::addon::Addon;
 use ajour_core::cache::{
@@ -16,7 +15,7 @@ use ajour_core::repository::{GlobalReleaseChannel, RepositoryKind};
 
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
-use eyre::{eyre, WrapErr};
+use color_eyre::eyre::{eyre, Result, WrapErr};
 
 use futures::future::join_all;
 
@@ -202,7 +201,7 @@ async fn update_addon(
     ))
     .await
     {
-        if let Err(e) = result.context(format!("failed to fingerprint folder: {:?}", addon_dir)) {
+        if let Err(e) = result.wrap_err(format!("failed to fingerprint folder: {:?}", addon_dir)) {
             // Log any errors fingerprinting the folder
             log_error(&e);
         }

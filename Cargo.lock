@@ -55,8 +55,8 @@ dependencies = [
  "ajour-widgets",
  "async-std",
  "chrono",
+ "color-eyre",
  "embed-resource",
- "eyre",
  "fern",
  "futures",
  "fuzzy-matcher",
@@ -658,6 +658,19 @@ dependencies = [
  "foreign-types",
  "libc",
  "objc",
+]
+
+[[package]]
+name = "color-eyre"
+version = "0.5.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b29030875fd8376e4a28ef497790d5b4a7843d8d1396bf08ce46f5eec562c5c"
+dependencies = [
+ "backtrace",
+ "eyre",
+ "indenter",
+ "once_cell",
+ "owo-colors",
 ]
 
 [[package]]
@@ -2712,6 +2725,12 @@ checksum = "fb477c7fd2a3a6e04e1dc6ca2e4e9b04f2df702021dc5a5d1cf078c587dc59f7"
 dependencies = [
  "ttf-parser 0.8.2",
 ]
+
+[[package]]
+name = "owo-colors"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13370dae44474229701bb69b90b4f4dca6404cb0357a2d50d635f1171dc3aa7b"
 
 [[package]]
 name = "parking"

@@ -3,7 +3,6 @@ mod style;
 mod update;
 
 use crate::cli::Opts;
-use crate::Result;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
     cache::{
@@ -22,6 +21,7 @@ use ajour_weak_auras::{Aura, AuraStatus};
 use ajour_widgets::header;
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
+use color_eyre::eyre::{Report, Result};
 use iced::{
     button, pick_list, scrollable, text_input, Align, Application, Button, Column, Command,
     Container, Element, HorizontalAlignment, Length, PickList, Row, Scrollable, Settings, Space,
@@ -126,7 +126,7 @@ pub enum Interaction {
 pub enum Message {
     CachesLoaded(Result<(FingerprintCache, AddonCache)>),
     DownloadedAddon((DownloadReason, Flavor, String, Result<(), DownloadError>)),
-    Error(eyre::Report),
+    Error(Report),
     Interaction(Interaction),
     LatestRelease(Option<utility::Release>),
     None(()),
@@ -166,7 +166,7 @@ pub enum Message {
 
 pub struct Ajour {
     state: HashMap<Mode, State>,
-    error: Option<eyre::Report>,
+    error: Option<Report>,
     mode: Mode,
     addons: HashMap<Flavor, Vec<Addon>>,
     addons_scrollable_state: scrollable::State,
@@ -840,7 +840,7 @@ impl Application for Ajour {
 
                         let install_addon = install_addons.iter().find(|a| {
                             addon.addon.id.to_string() == a.id
-                                && matches!(a.kind, InstallKind::Catalog {..})
+                                && matches!(a.kind, InstallKind::Catalog { .. })
                         });
 
                         let catalog_data_cell = element::catalog::data_row_container(

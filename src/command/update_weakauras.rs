@@ -1,10 +1,8 @@
-use crate::Result;
-
 use ajour_core::config::{load_config, Flavor};
 use ajour_weak_auras::{get_aura_updates, parse_auras, write_updates};
 
 use async_std::task;
-use eyre::{bail, eyre, WrapErr};
+use color_eyre::eyre::{bail, eyre, Result, WrapErr};
 
 pub fn update_all_weakauras() -> Result<()> {
     log::info!("Checking for WeakAura updates...");
@@ -25,7 +23,7 @@ pub fn update_all_weakauras() -> Result<()> {
 
                 let auras = parse_auras(wtf_path, account.clone())
                     .await
-                    .context(format!(
+                    .wrap_err(format!(
                         "{} - Failed to parse WeakAuras for account {}",
                         flavor, &account
                     ))?;
@@ -37,7 +35,7 @@ pub fn update_all_weakauras() -> Result<()> {
                     log::info!("{} - {} auras installed", flavor, auras.len());
                 }
 
-                let updates = get_aura_updates(&auras).await.context(format!(
+                let updates = get_aura_updates(&auras).await.wrap_err(format!(
                     "{} - Failed to fetch updates for account {}",
                     flavor, &account
                 ))?;
@@ -49,7 +47,7 @@ pub fn update_all_weakauras() -> Result<()> {
                     log::info!("{} - {} updates available", flavor, updates.len());
                 }
 
-                let updated_slugs = write_updates(addon_dir, &updates).await.context(format!(
+                let updated_slugs = write_updates(addon_dir, &updates).await.wrap_err(format!(
                     "{} - Failed to queue updates for account {}",
                     flavor, &account
                 ))?;

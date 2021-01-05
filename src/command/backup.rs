@@ -1,9 +1,8 @@
 use crate::cli::BackupFolder;
-use crate::Result;
 
 use ajour_core::backup::{self, backup_folders};
 use ajour_core::config::{load_config, Flavor};
-use eyre::eyre;
+use color_eyre::eyre::{eyre, Result};
 
 use async_std::task;
 use std::path::PathBuf;

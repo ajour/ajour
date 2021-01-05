@@ -1,4 +1,4 @@
-use super::Result;
+use color_eyre::eyre::Result;
 
 mod backup;
 pub use backup::backup;

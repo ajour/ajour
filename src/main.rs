@@ -9,33 +9,25 @@ mod gui;
 
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::utility::{remove_file, rename};
+use color_eyre::eyre::{Report, Result, WrapErr};
 
 #[cfg(target_os = "linux")]
-use eyre::WrapErr;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub type Result<T, E = eyre::Report> = std::result::Result<T, E>;
-
-pub fn main() {
+pub fn main() -> color_eyre::eyre::Result<()> {
+    color_eyre::install()?;
     let opts_result = cli::get_opts();
 
-    #[cfg(debug_assertions)]
-    let is_debug = true;
-    #[cfg(not(debug_assertions))]
-    let is_debug = false;
+    let is_debug = cfg!(debug_assertions);
 
     // If this is a clap error, we map to None since we are going to exit and display
     // an error message anyway and this value won't matter. If it's not an error,
     // the underlying `command` will drive this variable. If a `command` is passed
     // on the command line, Ajour functions as a CLI instead of launching the GUI.
-    let is_cli = opts_result
-        .as_ref()
-        .map(|o| &o.command)
-        .unwrap_or(&None)
-        .is_some();
+    let is_cli = opts_result.as_ref().map(|o| &o.command).is_ok();
 
     // This function validates whether or not we need to exit and print any message
     // due to arguments passed on the command line. If not, it will return a
@@ -54,20 +46,19 @@ pub fn main() {
     // Called when we launch from the temp (new release) binary during the self update
     // process. We will rename the temp file (running process) to the original binary
     if let Some(cleanup_path) = &opts.self_update_temp {
-        if let Err(e) = handle_self_update_temp(cleanup_path) {
+        let self_update_status = handle_self_update_temp(cleanup_path);
+        if let Err(e) = &self_update_status {
             log_error(&e);
-            std::process::exit(1);
         }
+        self_update_status?; // exit if error with error message from self update
     }
-
-    log_panics::init();
 
     log::info!("Ajour {} has started.", VERSION);
 
     match opts.command {
         Some(command) => {
             // Process the command and exit
-            if let Err(e) = match command {
+            match command {
                 cli::Command::Backup {
                     backup_folder,
                     destination,
@@ -77,19 +68,21 @@ pub fn main() {
                 cli::Command::UpdateAddons => command::update_all_addons(),
                 cli::Command::UpdateWeakauras => command::update_all_weakauras(),
                 cli::Command::Install { url, flavor } => command::install_from_source(url, flavor),
-            } {
-                log_error(&e);
-            }
+            }?
         }
         None => {
+            // We only log panics in gui mode as we let eyre report them strait to std_err in cli cases
+            log_panics::init(); // TODO: Check if this is correct
+
             // Start the GUI
             gui::run(opts);
         }
-    }
+    };
+    Ok(())
 }
 
 /// Log any errors
-pub fn log_error(error: &eyre::Report) {
+pub fn log_error(error: &Report) {
     log::error!("{}", error);
 
     let mut causes = error.chain();
@@ -121,36 +114,32 @@ fn setup_logger(is_cli: bool, is_debug: bool) -> Result<()> {
         logger = logger.level_for("ajour_core", log::LevelFilter::Trace);
     }
 
-    if is_cli || is_debug {
+    if !is_cli && is_debug {
         logger = logger.chain(std::io::stdout());
     }
 
-    if !is_cli && !is_debug {
-        use std::fs::OpenOptions;
+    let config_dir = ajour_core::fs::config_dir();
 
-        let config_dir = ajour_core::fs::config_dir();
+    let log_file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(false)
+        .truncate(true)
+        .open(config_dir.join("ajour.log"))?;
 
-        let log_file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .append(false)
-            .truncate(true)
-            .open(config_dir.join("ajour.log"))?;
-
-        logger = logger.chain(log_file);
-    };
+    logger = logger.chain(log_file);
 
     logger.apply()?;
     Ok(())
 }
 
-fn handle_self_update_temp(cleanup_path: &PathBuf) -> Result<()> {
+fn handle_self_update_temp(cleanup_path: &Path) -> Result<()> {
     #[cfg(not(target_os = "linux"))]
     let current_bin = env::current_exe()?;
 
     #[cfg(target_os = "linux")]
     let current_bin =
-        PathBuf::from(env::var("APPIMAGE").context("error getting APPIMAGE env variable")?);
+        PathBuf::from(env::var("APPIMAGE").wrap_err("error getting APPIMAGE env variable")?);
 
     // Fix for self updating pre 0.5.4 to >= 0.5.4
     //
@@ -160,8 +149,7 @@ fn handle_self_update_temp(cleanup_path: &PathBuf) -> Result<()> {
     // name, so we want to make an actual full path out of it first.
     if current_bin
         .file_name()
-        .unwrap_or_default()
-        .to_str()
+        .and_then(|name| name.to_str())
         .unwrap_or_default()
         .starts_with("tmp_")
     {
