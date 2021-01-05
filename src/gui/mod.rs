@@ -29,6 +29,7 @@ use iced::{
 };
 use image::ImageFormat;
 use isahc::http::Uri;
+use json_gettext::{get_text, static_json_gettext_build, JSONGetText};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -116,6 +117,7 @@ pub enum Interaction {
     ToggleBackupFolder(bool, BackupFolderKind),
     PickSelfUpdateChannel(SelfUpdateChannel),
     PickGlobalReleaseChannel(GlobalReleaseChannel),
+    PickLocalizationLanguage(String),
     AlternatingRowColorToggled(bool),
     ResetColumns,
     ToggleDeleteSavedVariables(bool),
@@ -216,6 +218,7 @@ pub struct Ajour {
     weak_auras_state: HashMap<Flavor, WeakAurasState>,
     aura_header_state: AuraHeaderState,
     reset_columns_btn_state: button::State,
+    localization_state: LocalizationState,
 }
 
 impl Default for Ajour {
@@ -275,6 +278,7 @@ impl Default for Ajour {
             weak_auras_state: Default::default(),
             aura_header_state: Default::default(),
             reset_columns_btn_state: Default::default(),
+            localization_state: Default::default(),
         }
     }
 }
@@ -885,6 +889,7 @@ impl Application for Ajour {
                     &mut self.self_update_channel_state,
                     &mut self.default_addon_release_channel_picklist_state,
                     &mut self.reset_columns_btn_state,
+                    &mut self.localization_state,
                 );
 
                 content = content.push(settings_container)
@@ -1773,6 +1778,27 @@ impl Default for ThemeState {
             themes,
             current_theme_name: "Dark".to_string(),
             pick_list_state: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct LocalizationState {
+    picklist: pick_list::State<String>,
+    languages: HashMap<String, String>,
+}
+
+impl Default for LocalizationState {
+    fn default() -> Self {
+        Self {
+            picklist: Default::default(),
+            languages: [
+                ("Danish".to_owned(), "da_DK".to_owned()),
+                ("English".to_owned(), "en_US".to_owned()),
+            ]
+            .iter()
+            .cloned()
+            .collect(),
         }
     }
 }

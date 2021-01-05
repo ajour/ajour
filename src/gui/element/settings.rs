@@ -1,11 +1,12 @@
 #![allow(clippy::too_many_arguments)]
-
+#[macro_use]
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
+    json_gettext::{get_text, static_json_gettext_build},
     crate::gui::{
-        style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
-        ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Message, ScaleState,
-        SelfUpdateChannelState, ThemeState,
+        LocalizationState, style, BackupFolderKind, BackupState, CatalogColumnKey,
+        CatalogColumnSettings, ColumnKey, ColumnSettings, DirectoryType, GlobalReleaseChannel,
+        Interaction, Message, ScaleState, SelfUpdateChannelState, ThemeState,
     },
     ajour_core::{config::Config, theme::ColorPalette},
     iced::{
@@ -30,14 +31,26 @@ pub fn data_container<'a, 'b>(
     self_update_channel_state: &'a mut SelfUpdateChannelState,
     default_addon_release_channel_picklist_state: &'a mut pick_list::State<GlobalReleaseChannel>,
     reset_columns_button_state: &'a mut button::State,
+    localization_state: &'a mut LocalizationState,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
         .height(Length::FillPortion(1))
         .style(style::Scrollable(color_palette));
 
+    let ctx = static_json_gettext_build!(
+        "en_US",
+        "en_US",
+        "locale/en_US.json",
+        "da_DK",
+        "locale/da_DK.json"
+    )
+    .unwrap();
+    let val = localization_state.languages.get(&config.language).unwrap();
+    let a = get_text!(ctx, val, "hello").unwrap();
+
     // Title for the World of Warcraft directory selection.
-    let directory_info_text = Text::new("World of Warcraft directory").size(DEFAULT_FONT_SIZE);
+    let directory_info_text = Text::new(a.to_string()).size(DEFAULT_FONT_SIZE);
     let direction_info_text_container =
         Container::new(directory_info_text).style(style::BrightBackgroundContainer(color_palette));
 
@@ -461,6 +474,35 @@ pub fn data_container<'a, 'b>(
             .push(channel_container)
     };
 
+    let language_container = {
+        let title = Container::new(Text::new("Language").size(DEFAULT_FONT_SIZE))
+            .style(style::NormalBackgroundContainer(color_palette));
+        let langs = localization_state
+            .languages
+            .keys()
+            .cloned()
+            .collect::<Vec<String>>();
+        let pick_list: Element<_> = PickList::new(
+            &mut localization_state.picklist,
+            langs,
+            Some(config.language.clone()),
+            Interaction::PickLocalizationLanguage,
+        )
+        .text_size(14)
+        .width(Length::Units(120))
+        .style(style::PickList(color_palette))
+        .into();
+        let container = Container::new(pick_list.map(Message::Interaction))
+            .center_y()
+            .width(Length::Units(120))
+            .style(style::NormalForegroundContainer(color_palette));
+
+        Column::new()
+            .push(title)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(container)
+    };
+
     scrollable = scrollable
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(backup_title_row)
@@ -483,6 +525,8 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(ajour_settings_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(language_container)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(self_update_channel_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(config_column);

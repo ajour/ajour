@@ -65,6 +65,7 @@ dependencies = [
  "iced_native",
  "image",
  "isahc",
+ "json-gettext",
  "log",
  "log-panics",
  "native-dialog",
@@ -2066,6 +2067,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca059e81d9486668f12d455a4ea6daa600bd408134cd17e3d3fb5a32d1f016f8"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "json-gettext"
+version = "3.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f39bd009d790e52df2738e2445b2d507f80c7a7502f2b8d9fec94412340753eb"
+dependencies = [
+ "regex",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

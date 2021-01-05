@@ -1668,6 +1668,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::LatestRelease,
             ));
         }
+        Message::Interaction(Interaction::PickLocalizationLanguage(lang)) => {
+            log::debug!("Interaction::PickLocalizationLanguage({:?})", lang);
+
+            ajour.config.language = lang;
+
+            let _ = ajour.config.save();
+        }
         Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
             log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
 

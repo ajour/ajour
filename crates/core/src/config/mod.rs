@@ -50,6 +50,9 @@ pub struct Config {
 
     #[serde(default = "default_true")]
     pub alternating_row_colors: bool,
+
+    #[serde(default = "default_language")]
+    pub language: String,
 }
 
 impl Config {
@@ -218,4 +221,8 @@ pub async fn load_config() -> Result<Config, FilesystemError> {
 
 const fn default_true() -> bool {
     true
+}
+
+fn default_language() -> String {
+    "English".to_owned()
 }
