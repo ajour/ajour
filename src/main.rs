@@ -23,11 +23,19 @@ pub fn main() -> color_eyre::eyre::Result<()> {
 
     let is_debug = cfg!(debug_assertions);
 
-    // If this is a clap error, we map to None since we are going to exit and display
-    // an error message anyway and this value won't matter. If it's not an error,
-    // the underlying `command` will drive this variable. If a `command` is passed
-    // on the command line, Ajour functions as a CLI instead of launching the GUI.
-    let is_cli = opts_result.as_ref().map(|o| &o.command).is_ok();
+    // Determens what mode ajour run in.
+    //
+    // Note: On Windows this determens if there should be an attatched console
+    // to ajour.
+    //
+    // Chart:
+    // | ******************* | clap_ok | clap_err |
+    // | arguments_found     | true    | true     |
+    // | arguments_not_found | false   | N/A      |
+    let is_cli = opts_result
+        .as_ref()
+        .map(|o| o.command.is_some())
+        .unwrap_or(true);
 
     // This function validates whether or not we need to exit and print any message
     // due to arguments passed on the command line. If not, it will return a

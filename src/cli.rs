@@ -23,15 +23,11 @@ pub fn validate_opts_or_exit(
     is_cli: bool,
     is_debug: bool,
 ) -> Opts {
-    // If an error, we need to setup the AttachConsole fix for Windows release
-    // so we can exit and display the error message to the user.
-    let is_opts_error = opts_result.is_err();
-
     // Workaround to output to console even though we compile with windows_subsystem = "windows"
     // in release mode
     #[cfg(target_os = "windows")]
     {
-        if (is_cli || is_opts_error) && !is_debug {
+        if is_cli && !is_debug {
             use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
 
             unsafe {
