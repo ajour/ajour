@@ -1,18 +1,17 @@
 #![allow(clippy::too_many_arguments)]
-#[macro_use]
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    json_gettext::{get_text, static_json_gettext_build},
     crate::gui::{
-        LocalizationState, style, BackupFolderKind, BackupState, CatalogColumnKey,
-        CatalogColumnSettings, ColumnKey, ColumnSettings, DirectoryType, GlobalReleaseChannel,
-        Interaction, Message, ScaleState, SelfUpdateChannelState, ThemeState,
+        style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
+        ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, LocalizationState,
+        Message, ScaleState, SelfUpdateChannelState, ThemeState,
     },
     ajour_core::{config::Config, theme::ColorPalette},
     iced::{
         button, pick_list, scrollable, Align, Button, Checkbox, Column, Container, Element, Length,
         PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
+    json_gettext::get_text,
 };
 
 pub fn data_container<'a, 'b>(
@@ -33,33 +32,33 @@ pub fn data_container<'a, 'b>(
     reset_columns_button_state: &'a mut button::State,
     localization_state: &'a mut LocalizationState,
 ) -> Container<'a, Message> {
+    // TODO (casperstorm): Maybe do fallback rather than `unwrap`.
+    let ctx = &localization_state.ctx;
+    let lang = localization_state.languages.get(&config.language).unwrap();
+
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
         .height(Length::FillPortion(1))
         .style(style::Scrollable(color_palette));
 
-    let ctx = static_json_gettext_build!(
-        "en_US",
-        "en_US",
-        "locale/en_US.json",
-        "da_DK",
-        "locale/da_DK.json"
-    )
-    .unwrap();
-    let val = localization_state.languages.get(&config.language).unwrap();
-    let a = get_text!(ctx, val, "hello").unwrap();
-
     // Title for the World of Warcraft directory selection.
-    let directory_info_text = Text::new(a.to_string()).size(DEFAULT_FONT_SIZE);
+    let directory_info_text = Text::new(get_text!(ctx, lang, "wow-directory").unwrap().to_string())
+        .size(DEFAULT_FONT_SIZE);
     let direction_info_text_container =
         Container::new(directory_info_text).style(style::BrightBackgroundContainer(color_palette));
 
     // Directory button for World of Warcraft directory selection.
-    let directory_button_title_container =
-        Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
-            .width(Length::FillPortion(1))
-            .center_x()
-            .align_x(Align::Center);
+    let directory_button_title_container = Container::new(
+        Text::new(
+            get_text!(ctx, lang, "select-directory")
+                .unwrap()
+                .to_string(),
+        )
+        .size(DEFAULT_FONT_SIZE),
+    )
+    .width(Length::FillPortion(1))
+    .center_x()
+    .align_x(Align::Center);
 
     let directory_button: Element<Interaction> =
         Button::new(directory_button_state, directory_button_title_container)
@@ -75,7 +74,7 @@ pub fn data_container<'a, 'b>(
         .directory
         .as_ref()
         .and_then(|p| p.to_str())
-        .unwrap_or("No directory is set");
+        .unwrap_or("no-directory");
     let directory_data_text = Text::new(path_str)
         .size(14)
         .vertical_alignment(VerticalAlignment::Center);

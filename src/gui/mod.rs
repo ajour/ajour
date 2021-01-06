@@ -3,6 +3,7 @@ mod style;
 mod update;
 
 use crate::cli::Opts;
+use crate::localization;
 use crate::Result;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
@@ -29,7 +30,7 @@ use iced::{
 };
 use image::ImageFormat;
 use isahc::http::Uri;
-use json_gettext::{get_text, static_json_gettext_build, JSONGetText};
+use json_gettext::JSONGetText;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -1786,19 +1787,15 @@ impl Default for ThemeState {
 pub struct LocalizationState {
     picklist: pick_list::State<String>,
     languages: HashMap<String, String>,
+    ctx: JSONGetText<'static>,
 }
 
 impl Default for LocalizationState {
     fn default() -> Self {
         Self {
             picklist: Default::default(),
-            languages: [
-                ("Danish".to_owned(), "da_DK".to_owned()),
-                ("English".to_owned(), "en_US".to_owned()),
-            ]
-            .iter()
-            .cloned()
-            .collect(),
+            languages: localization::suported_langauges(), 
+            ctx: localization::build_ctx(),
         }
     }
 }
