@@ -314,10 +314,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Expand(expand_type)) => {
             // An addon can be exanded in two ways.
             match &expand_type {
-                ExpandType::Details(a) => {
-                    log::debug!("Interaction::Expand(Details({:?}))", &a.primary_folder_id);
+                ExpandType::Details(addon) => {
+                    log::debug!(
+                        "Interaction::Expand(Details({:?}))",
+                        &addon.primary_folder_id
+                    );
                     let should_close = match &ajour.expanded_type {
-                        ExpandType::Details(ea) => a.primary_folder_id == ea.primary_folder_id,
+                        ExpandType::Details(a) => addon.primary_folder_id == a.primary_folder_id,
+                        ExpandType::Changelog { addon: a, .. } => {
+                            addon.primary_folder_id == a.primary_folder_id
+                        }
                         _ => false,
                     };
 
