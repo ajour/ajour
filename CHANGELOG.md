@@ -14,6 +14,11 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Added back inline changelogs for remote version. Clicking on the remote version
+  will show the changelog inline instead of opening a browser window.
+
 ### Fixed
 
 - Parsing error causing WeakAuras to fail parsing due to missing "version" field
