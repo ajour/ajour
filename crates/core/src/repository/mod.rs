@@ -148,6 +148,45 @@ impl RepositoryPackage {
 
         Ok(())
     }
+
+    /// Get changelog from the repository
+    ///
+    /// `channel` is only used for the Curse & GitHub repository since
+    /// we can get unique changelogs for each version
+    pub(crate) async fn get_changelog(
+        &self,
+        release_channel: ReleaseChannel,
+        default_release_channel: GlobalReleaseChannel,
+    ) -> Result<Option<String>, RepositoryError> {
+        let release_channel = if release_channel == ReleaseChannel::Default {
+            default_release_channel.convert_to_release_channel()
+        } else {
+            release_channel
+        };
+
+        let file_id = if self.kind == RepositoryKind::Curse {
+            self.metadata
+                .remote_packages
+                .get(&release_channel)
+                .and_then(|p| p.file_id)
+        } else {
+            None
+        };
+
+        let tag_name = if self.kind.is_git() {
+            let remote_package = self.metadata.remote_packages.get(&release_channel).ok_or(
+                RepositoryError::MissingPackageChannel {
+                    channel: release_channel,
+                },
+            )?;
+
+            Some(remote_package.version.clone())
+        } else {
+            None
+        };
+
+        self.backend.get_changelog(file_id, tag_name).await
+    }
 }
 
 /// Metadata from one of the repository APIs
@@ -305,4 +344,9 @@ pub struct RepositoryIdentifiers {
     pub tukui: Option<String>,
     pub curse: Option<i32>,
     pub git: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Changelog {
+    pub text: Option<String>,
 }

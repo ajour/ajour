@@ -36,6 +36,14 @@ impl Backend for WowI {
 
         Ok(metadata)
     }
+
+    async fn get_changelog(
+        &self,
+        _file_id: Option<i64>,
+        _tag_name: Option<String>,
+    ) -> Result<Option<String>, RepositoryError> {
+        Ok(None)
+    }
 }
 
 pub(crate) fn metadata_from_wowi_package(package: WowIPackage) -> RepositoryMetadata {

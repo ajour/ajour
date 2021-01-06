@@ -1,8 +1,8 @@
 use crate::{
-    error::ParseError,
+    error::{ParseError, RepositoryError},
     repository::{
-        GitKind, GlobalReleaseChannel, ReleaseChannel, RemotePackage, RepositoryIdentifiers,
-        RepositoryKind, RepositoryMetadata, RepositoryPackage,
+        Changelog, GitKind, GlobalReleaseChannel, ReleaseChannel, RemotePackage,
+        RepositoryIdentifiers, RepositoryKind, RepositoryMetadata, RepositoryPackage,
     },
     utility::strip_non_digits,
 };
@@ -358,6 +358,20 @@ impl Addon {
             Some(_) => url,
             None => None,
         }
+    }
+
+    pub async fn changelog(
+        &self,
+        default_release_channel: GlobalReleaseChannel,
+    ) -> Result<Changelog, RepositoryError> {
+        let text = if let Some(repo) = self.repository.as_ref() {
+            repo.get_changelog(self.release_channel, default_release_channel)
+                .await?
+        } else {
+            None
+        };
+
+        Ok(Changelog { text })
     }
 
     /// Returns the curse id of the addon, if applicable.

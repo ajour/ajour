@@ -19,7 +19,7 @@ use {
         fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
-        repository::{RepositoryKind, RepositoryPackage},
+        repository::{Changelog, RepositoryKind, RepositoryPackage},
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
     ajour_weak_auras::{Aura, AuraStatus},
@@ -314,10 +314,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Expand(expand_type)) => {
             // An addon can be exanded in two ways.
             match &expand_type {
-                ExpandType::Details(a) => {
-                    log::debug!("Interaction::Expand(Details({:?}))", &a.primary_folder_id);
+                ExpandType::Details(addon) => {
+                    log::debug!(
+                        "Interaction::Expand(Details({:?}))",
+                        &addon.primary_folder_id
+                    );
                     let should_close = match &ajour.expanded_type {
-                        ExpandType::Details(ea) => a.primary_folder_id == ea.primary_folder_id,
+                        ExpandType::Details(a) => addon.primary_folder_id == a.primary_folder_id,
+                        ExpandType::Changelog { addon: a, .. } => {
+                            addon.primary_folder_id == a.primary_folder_id
+                        }
                         _ => false,
                     };
 
@@ -327,11 +333,57 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.expanded_type = expand_type.clone();
                     }
                 }
+                ExpandType::Changelog { addon, .. } => {
+                    log::debug!(
+                        "Interaction::Expand(Changelog({:?}))",
+                        &addon.primary_folder_id
+                    );
+                    let should_close = match &ajour.expanded_type {
+                        ExpandType::Changelog { addon: a, .. } => {
+                            addon.primary_folder_id == a.primary_folder_id
+                        }
+                        _ => false,
+                    };
+
+                    if should_close {
+                        ajour.expanded_type = ExpandType::None;
+                    } else {
+                        ajour.expanded_type = expand_type.clone();
+
+                        return Ok(Command::perform(
+                            perform_fetch_changelog(
+                                addon.clone(),
+                                ajour.config.addons.global_release_channel,
+                            ),
+                            Message::FetchedChangelog,
+                        ));
+                    }
+                }
                 ExpandType::None => {
                     log::debug!("Interaction::Expand(ExpandType::None)");
                 }
             }
         }
+        Message::FetchedChangelog((addon, result)) => match result {
+            Ok(changelog) => {
+                log::debug!("Message::FetchedChangelog({})", &addon.primary_folder_id);
+
+                if let ExpandType::Changelog {
+                    addon: a,
+                    changelog: c,
+                } = &mut ajour.expanded_type
+                {
+                    if a.primary_folder_id == addon.primary_folder_id {
+                        *c = Some(changelog);
+                    }
+                }
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to fetch changelog").unwrap_err();
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
         Message::Interaction(Interaction::Delete(id)) => {
             log::debug!("Interaction::Delete({})", &id);
 
@@ -2043,6 +2095,15 @@ async fn is_weak_auras_installed(flavor: Flavor, addon_dir: PathBuf) -> (Flavor,
         flavor,
         ajour_weak_auras::is_weak_auras_installed(addon_dir).await,
     )
+}
+
+async fn perform_fetch_changelog(
+    addon: Addon,
+    default_release_channel: GlobalReleaseChannel,
+) -> (Addon, Result<Changelog, RepositoryError>) {
+    let changelog = addon.changelog(default_release_channel).await;
+
+    (addon, changelog)
 }
 
 fn sort_addons(
