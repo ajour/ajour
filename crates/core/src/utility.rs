@@ -269,6 +269,21 @@ where
     })
 }
 
+pub(crate) fn truncate(s: &str, max_chars: usize) -> &str {
+    match s.char_indices().nth(max_chars) {
+        None => s,
+        Some((idx, _)) => &s[..idx],
+    }
+}
+
+pub(crate) fn regex_html_tags_to_newline() -> Regex {
+    regex::Regex::new(r"<br ?/?>|#.\s").unwrap()
+}
+
+pub(crate) fn regex_html_tags_to_space() -> Regex {
+    regex::Regex::new(r"<[^>]*>|&#?\w+;|[gl]t;").unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
