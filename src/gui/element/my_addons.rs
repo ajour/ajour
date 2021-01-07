@@ -1,9 +1,10 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
-        style, ColumnKey, ColumnState, ExpandType, Flavor, Interaction, Message, Mode,
-        ReleaseChannel, SortDirection, State,
+        style, ColumnKey, ColumnState, ExpandType, Flavor, Interaction, LocalizationState, Message,
+        Mode, ReleaseChannel, SortDirection, State,
     },
+    crate::localization::localized_string,
     ajour_core::{
         addon::{Addon, AddonState},
         config::Config,
@@ -96,6 +97,7 @@ pub fn titles_row_header<'a>(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn data_row_container<'a, 'b>(
     color_palette: ColorPalette,
     addon: &'a mut Addon,
@@ -104,7 +106,14 @@ pub fn data_row_container<'a, 'b>(
     config: &Config,
     column_config: &'b [(ColumnKey, Length, bool)],
     is_odd: Option<bool>,
+    localization_state: &LocalizationState,
 ) -> TableRow<'a, Message> {
+    let ctx = &localization_state.ctx;
+    let lang = localization_state
+        .languages
+        .get(&config.language)
+        .expect("language not found");
+
     let default_height = Length::Units(26);
     let default_row_height = 26;
 
@@ -315,6 +324,8 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
+        // TODO (casperstorm): localization timeago.
+        // @see: https://docs.rs/timeago/0.2.1/timeago/
         let release_date_text: String = if let Some(package) = &release_package {
             let f = timeago::Formatter::new();
             let now = Local::now();
@@ -350,8 +361,8 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
-        let source_text =
-            repository_kind.map_or_else(|| String::from("Unknown"), |a| a.to_string());
+        let source_text = repository_kind
+            .map_or_else(|| localized_string(ctx, lang, "unknown"), |a| a.to_string());
         let source = Text::new(source_text).size(DEFAULT_FONT_SIZE);
         let source_container = Container::new(source)
             .height(default_height)
@@ -382,14 +393,14 @@ pub fn data_row_container<'a, 'b>(
                 .center_y()
                 .center_x()
                 .style(style::HoverableForegroundContainer(color_palette)),
-            AddonState::Completed => {
-                Container::new(Text::new("Completed".to_string()).size(DEFAULT_FONT_SIZE))
-                    .height(default_height)
-                    .width(*width)
-                    .center_y()
-                    .center_x()
-                    .style(style::HoverableForegroundContainer(color_palette))
-            }
+            AddonState::Completed => Container::new(
+                Text::new(localized_string(ctx, lang, "completed")).size(DEFAULT_FONT_SIZE),
+            )
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .center_x()
+            .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Error(message) => {
                 Container::new(Text::new(message).size(DEFAULT_FONT_SIZE))
                     .height(default_height)
@@ -402,9 +413,9 @@ pub fn data_row_container<'a, 'b>(
                 let id = addon.primary_folder_id.clone();
 
                 let text = match addon.state {
-                    AddonState::Updatable => "Update",
-                    AddonState::Retry => "Retry",
-                    _ => "",
+                    AddonState::Updatable => localized_string(ctx, lang, "update"),
+                    AddonState::Retry => localized_string(ctx, lang, "retry"),
+                    _ => "".to_owned(),
                 };
 
                 let update_wrapper = Container::new(Text::new(text).size(DEFAULT_FONT_SIZE))
@@ -425,36 +436,42 @@ pub fn data_row_container<'a, 'b>(
                     .center_x()
                     .style(style::HoverableBrightForegroundContainer(color_palette))
             }
-            AddonState::Downloading => {
-                Container::new(Text::new("Downloading").size(DEFAULT_FONT_SIZE))
-                    .height(default_height)
-                    .width(*width)
-                    .center_y()
-                    .center_x()
-                    .padding(5)
-                    .style(style::HoverableForegroundContainer(color_palette))
-            }
-            AddonState::Unpacking => Container::new(Text::new("Unpacking").size(DEFAULT_FONT_SIZE))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .center_x()
-                .padding(5)
-                .style(style::HoverableForegroundContainer(color_palette)),
-            AddonState::Fingerprint => Container::new(Text::new("Hashing").size(DEFAULT_FONT_SIZE))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .center_x()
-                .padding(5)
-                .style(style::HoverableForegroundContainer(color_palette)),
-            AddonState::Ignored => Container::new(Text::new("Ignored").size(DEFAULT_FONT_SIZE))
-                .height(default_height)
-                .width(*width)
-                .center_y()
-                .center_x()
-                .padding(5)
-                .style(style::HoverableForegroundContainer(color_palette)),
+            AddonState::Downloading => Container::new(
+                Text::new(localized_string(ctx, lang, "downloading")).size(DEFAULT_FONT_SIZE),
+            )
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .center_x()
+            .padding(5)
+            .style(style::HoverableForegroundContainer(color_palette)),
+            AddonState::Unpacking => Container::new(
+                Text::new(localized_string(ctx, lang, "unpacking")).size(DEFAULT_FONT_SIZE),
+            )
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .center_x()
+            .padding(5)
+            .style(style::HoverableForegroundContainer(color_palette)),
+            AddonState::Fingerprint => Container::new(
+                Text::new(localized_string(ctx, lang, "hashing")).size(DEFAULT_FONT_SIZE),
+            )
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .center_x()
+            .padding(5)
+            .style(style::HoverableForegroundContainer(color_palette)),
+            AddonState::Ignored => Container::new(
+                Text::new(localized_string(ctx, lang, "ignored")).size(DEFAULT_FONT_SIZE),
+            )
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .center_x()
+            .padding(5)
+            .style(style::HoverableForegroundContainer(color_palette)),
             AddonState::Unknown => Container::new(Text::new("").size(DEFAULT_FONT_SIZE))
                 .height(default_height)
                 .width(*width)
@@ -484,15 +501,18 @@ pub fn data_row_container<'a, 'b>(
 
     if is_addon_expanded {
         if let ExpandType::Details(_) = expand_type {
-            let notes = notes.unwrap_or_else(|| "No description for addon.".to_string());
+            let notes =
+                notes.unwrap_or_else(|| localized_string(ctx, lang, "no-addon-description"));
             let author = author.unwrap_or_else(|| "-".to_string());
             let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
             let space = Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING * 2));
             let bottom_space = Space::new(Length::Units(0), Length::Units(4));
-            let notes_title_text = Text::new("Summary").size(DEFAULT_FONT_SIZE);
+            let notes_title_text =
+                Text::new(localized_string(ctx, lang, "summary")).size(DEFAULT_FONT_SIZE);
             let notes_text = Text::new(notes).size(DEFAULT_FONT_SIZE);
             let author_text = Text::new(author).size(DEFAULT_FONT_SIZE);
-            let author_title_text = Text::new("Author(s)").size(DEFAULT_FONT_SIZE);
+            let author_title_text =
+                Text::new(localized_string(ctx, lang, "authors")).size(DEFAULT_FONT_SIZE);
             let author_title_container = Container::new(author_title_text)
                 .style(style::HoverableBrightForegroundContainer(color_palette));
             let notes_title_container = Container::new(notes_title_text)
@@ -503,12 +523,12 @@ pub fn data_row_container<'a, 'b>(
                 let now = Local::now();
 
                 if let Some(time) = package.date_time.as_ref() {
-                    format!("is {}", f.convert_chrono(*time, now))
+                    format!("{}", f.convert_chrono(*time, now))
                 } else {
                     "".to_string()
                 }
             } else {
-                "has no avaiable release".to_string()
+                localized_string(ctx, lang, "release-channel-no-release")
             };
             let release_date_text = Text::new(release_date_text).size(DEFAULT_FONT_SIZE);
             let release_date_text_container = Container::new(release_date_text)
@@ -516,7 +536,9 @@ pub fn data_row_container<'a, 'b>(
                 .padding(5)
                 .style(style::FadedBrightForegroundContainer(color_palette));
 
-            let release_channel_title = Text::new("Remote release channel").size(DEFAULT_FONT_SIZE);
+            let release_channel_title =
+                Text::new(localized_string(ctx, lang, "remote-release-channel"))
+                    .size(DEFAULT_FONT_SIZE);
             let release_channel_title_container = Container::new(release_channel_title)
                 .style(style::FadedBrightForegroundContainer(color_palette));
             let release_channel_list = PickList::new(
@@ -531,7 +553,7 @@ pub fn data_row_container<'a, 'b>(
 
             let mut website_button = Button::new(
                 &mut addon.website_btn_state,
-                Text::new("Website").size(DEFAULT_FONT_SIZE),
+                Text::new(localized_string(ctx, lang, "website")).size(DEFAULT_FONT_SIZE),
             )
             .style(style::DefaultButton(color_palette));
 
@@ -543,9 +565,9 @@ pub fn data_row_container<'a, 'b>(
 
             let is_ignored = addon.state == AddonState::Ignored;
             let ignore_button_text = if is_ignored {
-                Text::new("Unignore").size(DEFAULT_FONT_SIZE)
+                Text::new(localized_string(ctx, lang, "unignore")).size(DEFAULT_FONT_SIZE)
             } else {
-                Text::new("Ignore").size(DEFAULT_FONT_SIZE)
+                Text::new(localized_string(ctx, lang, "ignore")).size(DEFAULT_FONT_SIZE)
             };
 
             let mut ignore_button = Button::new(&mut addon.ignore_btn_state, ignore_button_text)
@@ -564,7 +586,7 @@ pub fn data_row_container<'a, 'b>(
 
             let delete_button: Element<Interaction> = Button::new(
                 &mut addon.delete_btn_state,
-                Text::new("Delete").size(DEFAULT_FONT_SIZE),
+                Text::new(localized_string(ctx, lang, "delete")).size(DEFAULT_FONT_SIZE),
             )
             .on_press(Interaction::Delete(addon.primary_folder_id.clone()))
             .style(style::DefaultDeleteButton(color_palette))
@@ -572,7 +594,7 @@ pub fn data_row_container<'a, 'b>(
 
             let mut changelog_button = Button::new(
                 &mut addon.changelog_btn_state,
-                Text::new("Changelog").size(DEFAULT_FONT_SIZE),
+                Text::new(localized_string(ctx, lang, "changelog")).size(DEFAULT_FONT_SIZE),
             )
             .style(style::DefaultButton(color_palette));
 
@@ -658,7 +680,14 @@ pub fn menu_container<'a>(
     state: &HashMap<Mode, State>,
     addons: &[Addon],
     config: &Config,
+    localization_state: &LocalizationState,
 ) -> Container<'a, Message> {
+    let ctx = &localization_state.ctx;
+    let lang = localization_state
+        .languages
+        .get(&config.language)
+        .expect("language not found");
+
     // MyAddons state.
     let state = state
         .get(&Mode::MyAddons(flavor))
@@ -670,13 +699,13 @@ pub fn menu_container<'a>(
 
     let mut update_all_button = Button::new(
         update_all_button_state,
-        Text::new("Update All").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string(ctx, lang, "update-all")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultButton(color_palette));
 
     let mut refresh_button = Button::new(
         refresh_button_state,
-        Text::new("Refresh").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string(ctx, lang, "refresh")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultButton(color_palette));
 
@@ -719,9 +748,10 @@ pub fn menu_container<'a>(
 
     let status_text = match state {
         State::Ready => Text::new(format!(
-            "{} {} addons loaded",
+            "{} {} {}",
             parent_addons_count,
-            config.wow.flavor.to_string()
+            config.wow.flavor.to_string(),
+            localized_string(ctx, lang, "addons-loaded")
         ))
         .size(DEFAULT_FONT_SIZE),
         _ => Text::new(""),

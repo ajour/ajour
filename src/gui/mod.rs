@@ -4,6 +4,7 @@ mod update;
 
 use crate::cli::Opts;
 use crate::localization;
+use crate::localization::localized_string;
 use crate::Result;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
@@ -339,6 +340,13 @@ impl Application for Ajour {
     }
 
     fn view(&mut self) -> Element<Message> {
+        let ctx = &self.localization_state.ctx;
+        let lang = self
+            .localization_state
+            .languages
+            .get(&self.config.language)
+            .expect("language not found");
+
         // Get color palette of chosen theme.
         let color_palette = self
             .theme_state
@@ -424,6 +432,7 @@ impl Application for Ajour {
                     &self.state,
                     addons,
                     &self.config,
+                    &self.localization_state,
                 );
                 content = content.push(menu_addons_container);
 
@@ -475,6 +484,7 @@ impl Application for Ajour {
                         &self.config,
                         &column_config,
                         is_odd,
+                        &self.localization_state,
                     );
 
                     // Adds the addon data cell to the scrollable.
@@ -525,6 +535,8 @@ impl Application for Ajour {
                     &mut weak_auras_state.account_picklist,
                     &weak_auras_state.accounts,
                     weak_auras_state.chosen_account.clone(),
+                    &self.config,
+                    &self.localization_state,
                 );
 
                 content = content.push(menu_container);
@@ -622,16 +634,25 @@ impl Application for Ajour {
                     .find(|a| a.kind == InstallKind::Source)
                     .map(|a| a.status.clone());
 
-                let install_for_flavor = format!("Install for {}", self.config.wow.flavor);
+                let install_for_flavor = format!(
+                    "{} {}",
+                    localized_string(ctx, lang, "install-for-flavor"),
+                    self.config.wow.flavor
+                )
+                .to_string();
                 let install_text = Text::new(if installed {
-                    "Installed"
+                    localized_string(ctx, lang, "installed")
                 } else {
                     match install_status {
-                        Some(InstallStatus::Downloading) => "Downloading",
-                        Some(InstallStatus::Unpacking) => "Unpacking",
-                        Some(InstallStatus::Retry) => "Retry",
-                        Some(InstallStatus::Unavilable) => "Unavilable",
-                        Some(InstallStatus::Error(_)) | None => &install_for_flavor,
+                        Some(InstallStatus::Downloading) => {
+                            localized_string(ctx, lang, "downloading")
+                        }
+                        Some(InstallStatus::Unpacking) => localized_string(ctx, lang, "unpacking"),
+                        Some(InstallStatus::Retry) => localized_string(ctx, lang, "retry"),
+                        Some(InstallStatus::Unavilable) => {
+                            localized_string(ctx, lang, "unavilable")
+                        }
+                        Some(InstallStatus::Error(_)) | None => install_for_flavor,
                     }
                 })
                 .size(DEFAULT_FONT_SIZE);
@@ -656,7 +677,7 @@ impl Application for Ajour {
 
                 let mut install_scm_query = TextInput::new(
                     &mut self.install_from_scm_state.query_state,
-                    "E.g.: https://github.com/author/repository",
+                    &localized_string(ctx, lang, "install-from-url-example")[..],
                     query,
                     Interaction::InstallSCMQuery,
                 )
@@ -674,10 +695,11 @@ impl Application for Ajour {
 
                 let install_scm_query: Element<Interaction> = install_scm_query.into();
 
-                let description = Text::new("Install an addon directly from either GitHub or GitLab\nThe addon must be published as a release asset")
-                    .size(DEFAULT_FONT_SIZE)
-                    .width(Length::Fill)
-                    .horizontal_alignment(HorizontalAlignment::Center);
+                let description =
+                    Text::new(localized_string(ctx, lang, "install-from-url-description"))
+                        .size(DEFAULT_FONT_SIZE)
+                        .width(Length::Fill)
+                        .horizontal_alignment(HorizontalAlignment::Center);
                 let description_container = Container::new(description)
                     .width(Length::Fill)
                     .style(style::NormalBackgroundContainer(color_palette));
@@ -728,7 +750,7 @@ impl Application for Ajour {
 
                     let catalog_query = TextInput::new(
                         &mut self.catalog_search_state.query_state,
-                        "Search for an addon...",
+                        &localized_string(ctx, lang, "search-for-addon")[..],
                         query,
                         Interaction::CatalogQuery,
                     )
@@ -859,6 +881,7 @@ impl Application for Ajour {
                             installed_for_flavor,
                             install_addon,
                             is_odd,
+                            &self.localization_state,
                         );
 
                         catalog_scrollable = catalog_scrollable.push(catalog_data_cell);
@@ -922,26 +945,34 @@ impl Application for Ajour {
                 match state {
                     State::Start => Some(element::status::data_container(
                         color_palette,
-                        "Welcome to Ajour!",
-                        "Please select your World of Warcraft directory",
+                        &localized_string(ctx, lang, "setup-to-ajour-title")[..],
+                        &localized_string(ctx, lang, "setup-to-ajour-description")[..],
                         Some(&mut self.onboarding_directory_btn_state),
+                        &self.config,
+                        &self.localization_state,
                     )),
                     State::Loading => Some(element::status::data_container(
                         color_palette,
-                        "Loading..",
+                        &localized_string(ctx, lang, "loading")[..],
+                        // TODO (casperstorm): Localization with format!
                         &format!("Currently parsing {} addons.", flavor.to_string()),
                         None,
+                        &self.config,
+                        &self.localization_state,
                     )),
                     State::Ready => {
                         if !has_addons {
                             Some(element::status::data_container(
                                 color_palette,
-                                "Woops!",
+                                &localized_string(ctx, lang, "woops")[..],
+                                // TODO (casperstorm): Localization with format!
                                 &format!(
                                     "You have no {} addons.",
                                     flavor.to_string().to_lowercase()
                                 ),
                                 None,
+                                &self.config,
+                                &self.localization_state,
                             ))
                         } else {
                             None
@@ -962,26 +993,34 @@ impl Application for Ajour {
                 match state {
                     State::Start => Some(element::status::data_container(
                         color_palette,
-                        "Manage your WeakAuras with Ajour!",
-                        "Please select an Account to manage",
+                        &localized_string(ctx, lang, "setup-weakauras-title")[..],
+                        &localized_string(ctx, lang, "setup-weakauras-description")[..],
                         None,
+                        &self.config,
+                        &self.localization_state,
                     )),
                     State::Loading => Some(element::status::data_container(
                         color_palette,
-                        "Loading..",
+                        &localized_string(ctx, lang, "loading")[..],
+                        // TODO (casperstorm): Localization with format!
                         &format!("Currently parsing {} WeakAuras.", flavor.to_string()),
                         None,
+                        &self.config,
+                        &self.localization_state,
                     )),
                     State::Ready => {
                         if !has_auras {
                             Some(element::status::data_container(
                                 color_palette,
-                                "Woops!",
+                                &localized_string(ctx, lang, "woops")[..],
+                                // TODO (casperstorm): Localization with format!
                                 &format!(
                                     "You have no known {} WeakAuras.",
                                     flavor.to_string().to_lowercase()
                                 ),
                                 None,
+                                &self.config,
+                                &self.localization_state,
                             ))
                         } else {
                             None
@@ -995,9 +1034,11 @@ impl Application for Ajour {
                     State::Start => None,
                     State::Loading => Some(element::status::data_container(
                         color_palette,
-                        "Loading..",
-                        "Currently loading catalog.",
+                        &localized_string(ctx, lang, "loading")[..],
+                        &localized_string(ctx, lang, "loading-catalog")[..],
                         None,
+                        &self.config,
+                        &self.localization_state,
                     )),
                     State::Ready => None,
                 }
@@ -1108,6 +1149,7 @@ impl ColumnKey {
     fn title(self) -> String {
         use ColumnKey::*;
 
+        // TODO (casperstorm): Localization missing.
         let title = match self {
             Title => "Addon",
             LocalVersion => "Local",
@@ -1126,6 +1168,7 @@ impl ColumnKey {
     fn as_string(self) -> String {
         use ColumnKey::*;
 
+        // TODO (casperstorm): Localization missing.
         let s = match self {
             Title => "title",
             LocalVersion => "local",
@@ -1381,6 +1424,7 @@ impl CatalogColumnKey {
     fn title(self) -> String {
         use CatalogColumnKey::*;
 
+        // TODO (casperstorm): Localization missing.
         let title = match self {
             Title => "Addon",
             Description => "Description",
@@ -1397,6 +1441,7 @@ impl CatalogColumnKey {
     fn as_string(self) -> String {
         use CatalogColumnKey::*;
 
+        // TODO (casperstorm): Localization missing.
         let s = match self {
             Title => "addon",
             Description => "description",
@@ -1674,6 +1719,7 @@ pub enum CatalogCategory {
 impl std::fmt::Display for CatalogCategory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            // TODO (casperstorm): Localization missing.
             CatalogCategory::All => write!(f, "All Categories"),
             CatalogCategory::Choice(name) => write!(f, "{}", name),
         }
@@ -1847,6 +1893,7 @@ pub enum SelfUpdateStatus {
 impl std::fmt::Display for SelfUpdateStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
+            // TODO (casperstorm): Localization missing.
             SelfUpdateStatus::InProgress => "Updating",
             SelfUpdateStatus::Failed => "Failed",
         };
@@ -1889,6 +1936,7 @@ impl AuraColumnKey {
     fn title(self) -> String {
         use AuraColumnKey::*;
 
+        // TODO (casperstorm): Localization missing.
         let title = match self {
             Title => "Aura",
             LocalVersion => "Local",
@@ -1903,6 +1951,7 @@ impl AuraColumnKey {
     fn as_string(self) -> String {
         use AuraColumnKey::*;
 
+        // TODO (casperstorm): Localization missing.
         let s = match self {
             Title => "title",
             LocalVersion => "local",

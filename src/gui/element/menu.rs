@@ -343,7 +343,9 @@ pub fn data_container<'a>(
 
             format!(
                 "{} {} -> {}",
-                localized_string(ctx, lang, "new-update_available"), VERSION, &release.tag_name
+                localized_string(ctx, lang, "new-update_available"),
+                VERSION,
+                &release.tag_name
             )
         } else {
             VERSION.to_owned()

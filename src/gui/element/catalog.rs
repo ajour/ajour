@@ -2,8 +2,9 @@ use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, Catalog, CatalogColumnKey, CatalogColumnState, CatalogRow, InstallAddon,
-        InstallKind, InstallStatus, Interaction, Message, Mode, SortDirection,
+        InstallKind, InstallStatus, Interaction, LocalizationState, Message, Mode, SortDirection,
     },
+    crate::localization::localized_string,
     ajour_core::{config::Config, theme::ColorPalette},
     ajour_widgets::{header, Header, TableRow},
     chrono::prelude::*,
@@ -94,6 +95,7 @@ pub fn titles_row_header<'a>(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn data_row_container<'a, 'b>(
     color_palette: ColorPalette,
     config: &Config,
@@ -102,7 +104,14 @@ pub fn data_row_container<'a, 'b>(
     installed_for_flavor: bool,
     install_addon: Option<&InstallAddon>,
     is_odd: Option<bool>,
+    localization_state: &LocalizationState,
 ) -> TableRow<'a, Message> {
+    let ctx = &localization_state.ctx;
+    let lang = localization_state
+        .languages
+        .get(&config.language)
+        .expect("language not found");
+
     let default_height = Length::Units(26);
     let default_row_height = 26;
 
@@ -131,18 +140,20 @@ pub fn data_row_container<'a, 'b>(
         let status = install_addon.map(|a| a.status.clone());
 
         let install_text = Text::new(if !flavor_exists_for_addon {
-            "N/A"
+            localized_string(ctx, lang, "not-available-abbreviation")
         } else {
             match status {
-                Some(InstallStatus::Downloading) => "Downloading",
-                Some(InstallStatus::Unpacking) => "Unpacking",
-                Some(InstallStatus::Retry) => "Retry",
-                Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => "Unavailable",
+                Some(InstallStatus::Downloading) => localized_string(ctx, lang, "downloading"),
+                Some(InstallStatus::Unpacking) => localized_string(ctx, lang, "unpacking"),
+                Some(InstallStatus::Retry) => localized_string(ctx, lang, "retry"),
+                Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => {
+                    localized_string(ctx, lang, "unavilable")
+                }
                 None => {
                     if installed_for_flavor {
-                        "Installed"
+                        localized_string(ctx, lang, "installed")
                     } else {
-                        "Install"
+                        localized_string(ctx, lang, "install")
                     }
                 }
             }
@@ -302,6 +313,8 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
+        // TODO (casperstorm): localization timeago.
+        // @see: https://docs.rs/timeago/0.2.1/timeago/
         let release_date_text: String = if let Some(date_released) = addon_data.date_released {
             let f = timeago::Formatter::new();
             let now = Local::now();
