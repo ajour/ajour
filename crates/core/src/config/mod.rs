@@ -232,10 +232,10 @@ impl std::fmt::Display for Language {
 impl Language {
     pub const ALL: [Language; 2] = [Language::English, Language::Danish];
 
-    pub fn language_code(self) -> String {
+    pub const fn language_code(self) -> &'static str {
         match self {
-            Language::English => "en_US".to_owned(),
-            Language::Danish => "da_DK".to_owned(),
+            Language::English => "en_US",
+            Language::Danish => "da_DK",
         }
     }
 }
