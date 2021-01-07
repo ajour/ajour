@@ -1,7 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    strfmt::strfmt,
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
         ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Language, Message,
@@ -14,6 +13,7 @@ use {
         PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
     std::collections::HashMap,
+    strfmt::strfmt,
 };
 
 pub fn data_container<'a, 'b>(
