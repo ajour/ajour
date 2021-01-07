@@ -1,6 +1,7 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, Interaction, Message, Mode, SelfUpdateState, State},
+    crate::gui::{style, Interaction, LocalizationState, Message, Mode, SelfUpdateState, State},
+    crate::localization::localized_string,
     crate::VERSION,
     ajour_core::{
         config::{Config, Flavor},
@@ -35,7 +36,14 @@ pub fn data_container<'a>(
     classic_ptr_btn_state: &'a mut button::State,
     self_update_state: &'a mut SelfUpdateState,
     weak_auras_is_installed: bool,
+    localization_state: &LocalizationState,
 ) -> Container<'a, Message> {
+    let ctx = &localization_state.ctx;
+    let lang = localization_state
+        .languages
+        .get(&config.language)
+        .expect("language not found");
+
     let flavor = config.wow.flavor;
 
     // State.
@@ -51,31 +59,31 @@ pub fn data_container<'a>(
 
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,
-        Text::new("My Addons").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string(ctx, lang, "my-addons")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
     let mut weakauras_mode_button = Button::new(
         weakauras_mode_button_state,
-        Text::new("My WeakAuras").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string(ctx, lang, "my-weakauras")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
     let mut catalog_mode_button = Button::new(
         catalog_mode_btn_state,
-        Text::new("Catalog").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string(ctx, lang, "catalog")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
     let mut install_mode_button = Button::new(
         install_mode_btn_state,
-        Text::new("Install from URL").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string(ctx, lang, "install-from-url")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
     let mut settings_mode_button = Button::new(
         settings_button_state,
-        Text::new("Settings")
+        Text::new(localized_string(ctx, lang, "settings"))
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
@@ -83,7 +91,7 @@ pub fn data_container<'a>(
 
     let mut about_mode_button = Button::new(
         about_button_state,
-        Text::new("About")
+        Text::new(localized_string(ctx, lang, "about"))
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
@@ -334,8 +342,8 @@ pub fn data_container<'a>(
             needs_update = true;
 
             format!(
-                "New Ajour version available {} -> {}",
-                VERSION, &release.tag_name
+                "{} {} -> {}",
+                localized_string(ctx, lang, "new-update_available"), VERSION, &release.tag_name
             )
         } else {
             VERSION.to_owned()
@@ -369,7 +377,7 @@ pub fn data_container<'a>(
             .status
             .as_ref()
             .map(|s| s.to_string())
-            .unwrap_or_else(|| "Update".to_string());
+            .unwrap_or_else(|| localized_string(ctx, lang, "update"));
 
         let mut new_release_button = Button::new(
             &mut self_update_state.btn_state,

@@ -3,10 +3,11 @@
   "ajour": "Ajour",
   "alternate-row-colors": "Alternate Row Colors",
   "backup": "Backup",
-  "backup-information": "Back up your AddOns and WTF folder to the chosen directory",
+  "backup-description": "Back up your AddOns and WTF folder to the chosen directory",
   "backup-never": "Never",
   "backup-now": "Backup Now",
   "backup-progress": "Backing up...",
+  "backup-latest": "Last backup:",
   "catalog": "Catalog",
   "columns": "Columns",
   "delete-saved-variables": "Delete SavedVariables when deleting addons",
@@ -15,6 +16,7 @@
   "language": "Language",
   "last-backup": "Last backup: {}",
   "my-addons": "My Addons",
+  "my-weakauras": "My WeakAuras",
   "no-directory": "No directory is set",
   "open-data-directory": "Open data Directory",
   "reset-columns": "Reset Columns",
@@ -24,5 +26,10 @@
   "ui": "UI",
   "update-channel": "Update Channel",
   "wow-directory": "World of Warcraft directory",
-  "wtf": "WTF"
+  "wtf": "WTF",
+  "install-from-url": "Install from URL",
+  "settings": "Settings",
+  "about": "About",
+  "update": "Update",
+  "new-update-available": "New Ajour version available"
 }

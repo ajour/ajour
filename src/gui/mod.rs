@@ -219,6 +219,7 @@ pub struct Ajour {
     weak_auras_state: HashMap<Flavor, WeakAurasState>,
     aura_header_state: AuraHeaderState,
     reset_columns_btn_state: button::State,
+    localization_picklist_state: pick_list::State<String>,
     localization_state: LocalizationState,
 }
 
@@ -279,6 +280,7 @@ impl Default for Ajour {
             weak_auras_state: Default::default(),
             aura_header_state: Default::default(),
             reset_columns_btn_state: Default::default(),
+            localization_picklist_state: Default::default(),
             localization_state: Default::default(),
         }
     }
@@ -392,6 +394,7 @@ impl Application for Ajour {
             &mut self.classic_ptr_btn_state,
             &mut self.self_update_state,
             self.weak_auras_is_installed,
+            &self.localization_state,
         );
 
         let column_config = self.header_state.column_config();
@@ -890,7 +893,8 @@ impl Application for Ajour {
                     &mut self.self_update_channel_state,
                     &mut self.default_addon_release_channel_picklist_state,
                     &mut self.reset_columns_btn_state,
-                    &mut self.localization_state,
+                    &mut self.localization_picklist_state,
+                    &self.localization_state,
                 );
 
                 content = content.push(settings_container)
@@ -1785,7 +1789,6 @@ impl Default for ThemeState {
 
 #[derive(Debug)]
 pub struct LocalizationState {
-    picklist: pick_list::State<String>,
     languages: HashMap<String, String>,
     ctx: JSONGetText<'static>,
 }
@@ -1793,8 +1796,7 @@ pub struct LocalizationState {
 impl Default for LocalizationState {
     fn default() -> Self {
         Self {
-            picklist: Default::default(),
-            languages: localization::suported_langauges(), 
+            languages: localization::suported_langauges(),
             ctx: localization::build_ctx(),
         }
     }
