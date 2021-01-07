@@ -3,7 +3,7 @@ mod style;
 mod update;
 
 use crate::cli::Opts;
-use crate::localization::localized_string;
+use crate::localization::{localized_string, LANG};
 use crate::Result;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
@@ -1043,8 +1043,12 @@ pub fn run(opts: Opts) {
     let config: Config = Config::load_or_default().expect("loading config on application startup");
 
     // Update global localization lazy_static.
-    // let mut lang = LANG.lock().unwrap();
-    // *lang = config.language.clone();
+    //
+    // Execute inside block so mutexguard gets dropped
+    {
+        let mut lang = LANG.lock().unwrap();
+        *lang = config.language.language_code();
+    }
 
     log::debug!("config loaded:\n{:#?}", &config);
 
