@@ -1,6 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
+    strfmt::strfmt,
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
         ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Language, Message,
@@ -12,6 +13,7 @@ use {
         button, pick_list, scrollable, Align, Button, Checkbox, Column, Container, Element, Length,
         PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
+    std::collections::HashMap,
 };
 
 pub fn data_container<'a, 'b>(
@@ -275,8 +277,11 @@ pub fn data_container<'a, 'b>(
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
                     .unwrap_or_else(|| localized_string("backup-never"));
 
-                let latest_backup = &localized_string("backup-latest")[..];
-                Text::new(&format!("{} {}", latest_backup, as_of))
+                let mut vars = HashMap::new();
+                vars.insert("time".to_string(), &as_of);
+                let fmt = localized_string("backup-latest");
+
+                Text::new(strfmt(&fmt, &vars).unwrap())
                     .size(DEFAULT_FONT_SIZE)
                     .vertical_alignment(VerticalAlignment::Center)
             };
