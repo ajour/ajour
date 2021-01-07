@@ -1,8 +1,7 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
-        style, AuraColumnKey, AuraColumnState, Config, Interaction, LocalizationState, Message,
-        Mode, SortDirection, State,
+        style, AuraColumnKey, AuraColumnState, Interaction, Message, Mode, SortDirection, State,
     },
     crate::localization::localized_string,
     ajour_core::config::Flavor,
@@ -15,6 +14,7 @@ use {
         Text,
     },
     std::collections::HashMap,
+    strfmt::strfmt,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -31,14 +31,7 @@ pub fn menu_container<'a>(
     accounts_picklist_state: &'a mut pick_list::State<String>,
     accounts: &'a [String],
     chosen_account: Option<String>,
-    config: &Config,
-    localization_state: &LocalizationState,
 ) -> Container<'a, Message> {
-    let ctx = &localization_state.ctx;
-    let lang = localization_state
-        .languages
-        .get(&config.language)
-        .expect("language not found");
     //
     // MyWeakAuras state.
     let state = state
@@ -51,13 +44,13 @@ pub fn menu_container<'a>(
 
     let mut update_all_button = Button::new(
         update_all_button_state,
-        Text::new(localized_string(ctx, lang, "update-all")).size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("update-all")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultButton(color_palette));
 
     let mut refresh_button = Button::new(
         refresh_button_state,
-        Text::new(localized_string(ctx, lang, "refresh")).size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("refresh")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultButton(color_palette));
 
@@ -85,15 +78,13 @@ pub fn menu_container<'a>(
     let status_text = match state {
         State::Ready => {
             if updates_queued {
-                Text::new(localized_string(ctx, lang, "weakaura-updates-queued"))
-                    .size(DEFAULT_FONT_SIZE)
+                Text::new(localized_string("weakaura-updates-queued")).size(DEFAULT_FONT_SIZE)
             } else {
-                Text::new(format!(
-                    "{} {}",
-                    num_auras,
-                    localized_string(ctx, lang, "weakauras-loaded")
-                ))
-                .size(DEFAULT_FONT_SIZE)
+                let mut vars = HashMap::new();
+                vars.insert("number".to_string(), &num_auras);
+                let fmt = localized_string("weakauras-loaded");
+
+                Text::new(strfmt(&fmt, &vars).unwrap()).size(DEFAULT_FONT_SIZE)
             }
         }
         _ => Text::new(""),
@@ -108,7 +99,7 @@ pub fn menu_container<'a>(
         Text::new(if chosen_account.is_some() {
             "".to_owned()
         } else {
-            localized_string(ctx, lang, "select-account")
+            localized_string("select-account")
         })
         .size(DEFAULT_FONT_SIZE),
     )

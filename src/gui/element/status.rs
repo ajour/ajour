@@ -1,6 +1,6 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, Config, DirectoryType, Interaction, LocalizationState, Message, State},
+    crate::gui::{style, DirectoryType, Interaction, Message, State},
     crate::localization::localized_string,
     ajour_core::theme::ColorPalette,
     iced::{
@@ -13,15 +13,7 @@ pub fn data_container<'a>(
     title: &str,
     description: &str,
     onboarding_directory_btn_state: Option<&'a mut button::State>,
-    config: &Config,
-    localization_state: &LocalizationState,
 ) -> Container<'a, Message> {
-    let ctx = &localization_state.ctx;
-    let lang = localization_state
-        .languages
-        .get(&config.language)
-        .expect("language not found");
-
     let title = Text::new(title)
         .size(DEFAULT_FONT_SIZE)
         .width(Length::Fill)
@@ -44,12 +36,11 @@ pub fn data_container<'a>(
         .push(description_container);
 
     if let (_, Some(btn_state)) = (State::Start, onboarding_directory_btn_state) {
-        let onboarding_button_title_container = Container::new(
-            Text::new(localized_string(ctx, lang, "select-directory")).size(DEFAULT_FONT_SIZE),
-        )
-        .width(Length::Units(120))
-        .center_x()
-        .align_x(Align::Center);
+        let onboarding_button_title_container =
+            Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
+                .width(Length::Units(120))
+                .center_x()
+                .align_x(Align::Center);
         let onboarding_button: Element<Interaction> =
             Button::new(btn_state, onboarding_button_title_container)
                 .width(Length::Units(120))

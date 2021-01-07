@@ -3,7 +3,7 @@ use {
         Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
         CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel,
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
-        SelfUpdateStatus, SortDirection, State,
+        SelfUpdateStatus, SortDirection, State, LANG,
     },
     crate::{log_error, Result},
     ajour_core::{
@@ -1671,9 +1671,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::PickLocalizationLanguage(lang)) => {
             log::debug!("Interaction::PickLocalizationLanguage({:?})", lang);
 
+            // Update config.
             ajour.config.language = lang;
-
             let _ = ajour.config.save();
+
+            // Update global localization lazy_static.
+            let mut code = LANG.lock().unwrap();
+            *code = lang.language_code();
         }
         Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
             log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
@@ -2273,7 +2277,6 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
         (AuraColumnKey::Author, SortDirection::Desc) => {
             auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
         }
-        // TODO: Add status and sort
         (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
             a.status()
                 .cmp(&b.status())

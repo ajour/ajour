@@ -51,8 +51,8 @@ pub struct Config {
     #[serde(default = "default_true")]
     pub alternating_row_colors: bool,
 
-    #[serde(default = "default_language")]
-    pub language: String,
+    #[serde(default)]
+    pub language: Language,
 }
 
 impl Config {
@@ -210,6 +210,42 @@ impl Display for SelfUpdateChannel {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
+pub enum Language {
+    English,
+    Danish,
+}
+
+impl std::fmt::Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Language::English => "English",
+                Language::Danish => "Danish",
+            }
+        )
+    }
+}
+
+impl Language {
+    pub const ALL: [Language; 2] = [Language::English, Language::Danish];
+
+    pub fn language_code(self) -> String {
+        match self {
+            Language::English => "en_US".to_owned(),
+            Language::Danish => "da_DK".to_owned(),
+        }
+    }
+}
+
+impl Default for Language {
+    fn default() -> Language {
+        Language::English
+    }
+}
+
 /// Returns a Config.
 ///
 /// This functions handles the initialization of a Config.
@@ -221,8 +257,4 @@ pub async fn load_config() -> Result<Config, FilesystemError> {
 
 const fn default_true() -> bool {
     true
-}
-
-fn default_language() -> String {
-    "English".to_owned()
 }

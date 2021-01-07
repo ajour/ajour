@@ -2,7 +2,7 @@ use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, Catalog, CatalogColumnKey, CatalogColumnState, CatalogRow, InstallAddon,
-        InstallKind, InstallStatus, Interaction, LocalizationState, Message, Mode, SortDirection,
+        InstallKind, InstallStatus, Interaction, Message, Mode, SortDirection,
     },
     crate::localization::localized_string,
     ajour_core::{config::Config, theme::ColorPalette},
@@ -104,14 +104,7 @@ pub fn data_row_container<'a, 'b>(
     installed_for_flavor: bool,
     install_addon: Option<&InstallAddon>,
     is_odd: Option<bool>,
-    localization_state: &LocalizationState,
 ) -> TableRow<'a, Message> {
-    let ctx = &localization_state.ctx;
-    let lang = localization_state
-        .languages
-        .get(&config.language)
-        .expect("language not found");
-
     let default_height = Length::Units(26);
     let default_row_height = 26;
 
@@ -140,20 +133,20 @@ pub fn data_row_container<'a, 'b>(
         let status = install_addon.map(|a| a.status.clone());
 
         let install_text = Text::new(if !flavor_exists_for_addon {
-            localized_string(ctx, lang, "not-available-abbreviation")
+            localized_string("not-available-abbreviation")
         } else {
             match status {
-                Some(InstallStatus::Downloading) => localized_string(ctx, lang, "downloading"),
-                Some(InstallStatus::Unpacking) => localized_string(ctx, lang, "unpacking"),
-                Some(InstallStatus::Retry) => localized_string(ctx, lang, "retry"),
+                Some(InstallStatus::Downloading) => localized_string("downloading"),
+                Some(InstallStatus::Unpacking) => localized_string("unpacking"),
+                Some(InstallStatus::Retry) => localized_string("retry"),
                 Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => {
-                    localized_string(ctx, lang, "unavilable")
+                    localized_string("unavilable")
                 }
                 None => {
                     if installed_for_flavor {
-                        localized_string(ctx, lang, "installed")
+                        localized_string("installed")
                     } else {
-                        localized_string(ctx, lang, "install")
+                        localized_string("install")
                     }
                 }
             }
