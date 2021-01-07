@@ -30,28 +30,13 @@ use iced::{
 };
 use image::ImageFormat;
 use isahc::http::Uri;
-use json_gettext::{static_json_gettext_build, JSONGetText};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync;
 use std::time::{Duration, Instant};
 use strfmt::strfmt;
 
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
-
-lazy_static::lazy_static! {
-    pub static ref LOCALIZATION_CTX: JSONGetText<'static> = {
-        static_json_gettext_build!(
-            "en_US",
-            "en_US",
-            "locale/en_US.json",
-            "da_DK",
-            "locale/da_DK.json"
-        ).unwrap()
-    };
-    pub static ref LANG: sync::Mutex<String> = sync::Mutex::new("en_US".to_owned());
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum State {

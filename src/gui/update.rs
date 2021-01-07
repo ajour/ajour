@@ -3,8 +3,9 @@ use {
         Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
         CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel,
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
-        SelfUpdateStatus, SortDirection, State, LANG,
+        SelfUpdateStatus, SortDirection, State,
     },
+    crate::localization::LANG,
     crate::{log_error, Result},
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
