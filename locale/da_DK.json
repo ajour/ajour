@@ -39,7 +39,6 @@
   "install-from-url-example": "E.g.: https://github.com/author/repository",
   "installed": "Installed",
   "language": "Language",
-  "last-backup": "Last backup: {time}",
   "latest-release": "Latest Release",
   "loading": "Loading..",
   "loading-catalog": "Currently loading catalog",
