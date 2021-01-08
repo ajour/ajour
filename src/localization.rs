@@ -144,5 +144,9 @@ mod test {
         woops: String,
         wow_directory: String,
         wtf: String,
+        channel_default: String,
+        channel_stable: String,
+        channel_beta: String,
+        channel_alpha: String,
     }
 }
