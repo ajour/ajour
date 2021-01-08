@@ -627,7 +627,7 @@ impl Application for Ajour {
                         Some(InstallStatus::Downloading) => localized_string("downloading"),
                         Some(InstallStatus::Unpacking) => localized_string("unpacking"),
                         Some(InstallStatus::Retry) => localized_string("retry"),
-                        Some(InstallStatus::Unavilable) => localized_string("unavilable"),
+                        Some(InstallStatus::Unavailable) => localized_string("unavailable"),
                         Some(InstallStatus::Error(_)) | None => {
                             let flavor = self.config.wow.flavor;
                             let mut vars = HashMap::new();
@@ -1676,7 +1676,7 @@ pub enum InstallStatus {
     Downloading,
     Unpacking,
     Retry,
-    Unavilable,
+    Unavailable,
     Error(String),
 }
 

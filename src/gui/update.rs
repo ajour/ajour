@@ -1504,7 +1504,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         match install_addon.kind {
                             InstallKind::Catalog { .. } => {
-                                install_addon.status = InstallStatus::Unavilable;
+                                install_addon.status = InstallStatus::Unavailable;
                             }
                             InstallKind::Source => {
                                 install_addon.status = InstallStatus::Error(error.to_string());

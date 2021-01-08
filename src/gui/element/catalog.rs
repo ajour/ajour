@@ -136,8 +136,8 @@ pub fn data_row_container<'a, 'b>(
             Some(InstallStatus::Downloading) => localized_string("downloading"),
             Some(InstallStatus::Unpacking) => localized_string("unpacking"),
             Some(InstallStatus::Retry) => localized_string("retry"),
-            Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => {
-                localized_string("unavilable")
+            Some(InstallStatus::Unavailable) | Some(InstallStatus::Error(_)) => {
+                localized_string("unavailable")
             }
             None => {
                 if installed_for_flavor {
