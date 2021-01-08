@@ -14,6 +14,14 @@ and `Removed`.
 
 ## [Unreleased]
 
+## Added
+
+- Ajour has been localized. Currently we support the following languages:
+  - English
+  - Danish
+  - German
+  - French (thanks @Nelfym)
+
 ## [0.6.1] - 2021-01-02
 
 ### Added
