@@ -1,22 +1,24 @@
 use json_gettext::{get_text, static_json_gettext_build, JSONGetText};
+use once_cell::sync::{Lazy, OnceCell};
 
-use std::sync;
+use std::sync::RwLock;
 
-lazy_static::lazy_static! {
-    pub static ref LOCALIZATION_CTX: JSONGetText<'static> = {
-        static_json_gettext_build!(
-            "en_US",
-            "en_US",
-            "locale/en_US.json",
-            "da_DK",
-            "locale/da_DK.json"
-        ).unwrap()
-    };
-    pub static ref LANG: sync::Mutex<&'static str> = sync::Mutex::new("en_US");
-}
+pub static LOCALIZATION_CTX: Lazy<JSONGetText<'static>> = Lazy::new(|| {
+    static_json_gettext_build!(
+        "en_US",
+        "en_US",
+        "locale/en_US.json",
+        "da_DK",
+        "locale/da_DK.json"
+    )
+    .unwrap()
+});
+
+pub static LANG: OnceCell<RwLock<&'static str>> = OnceCell::new();
 
 pub fn localized_string(key: &str) -> String {
-    let lang = LANG.lock().unwrap();
+    let lang = LANG.get().expect("LANG not set").read().unwrap();
+
     get_text!(LOCALIZATION_CTX, *lang, key)
         .expect("no localization found")
         .to_string()

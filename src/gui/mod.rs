@@ -32,6 +32,7 @@ use image::ImageFormat;
 use isahc::http::Uri;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::RwLock;
 use std::time::{Duration, Instant};
 use strfmt::strfmt;
 
@@ -1042,13 +1043,9 @@ impl Application for Ajour {
 pub fn run(opts: Opts) {
     let config: Config = Config::load_or_default().expect("loading config on application startup");
 
-    // Update global localization lazy_static.
-    //
-    // Execute inside block so mutexguard gets dropped
-    {
-        let mut lang = LANG.lock().unwrap();
-        *lang = config.language.language_code();
-    }
+    // Set LANG using config (defaults to "en_US")
+    LANG.set(RwLock::new(config.language.language_code()))
+        .expect("setting LANG from config");
 
     log::debug!("config loaded:\n{:#?}", &config);
 

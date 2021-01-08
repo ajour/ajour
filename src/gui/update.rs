@@ -1676,9 +1676,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.language = lang;
             let _ = ajour.config.save();
 
-            // Update global localization lazy_static.
-            let mut code = LANG.lock().unwrap();
-            *code = lang.language_code();
+            // Update global LANG refcell.
+            *LANG.get().expect("LANG not set").write().unwrap() = lang.language_code();
         }
         Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
             log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
