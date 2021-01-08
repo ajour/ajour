@@ -15,7 +15,7 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, Language, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
-    repository::{GlobalReleaseChannel, ReleaseChannel},
+    repository::{Changelog, GlobalReleaseChannel, ReleaseChannel},
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
@@ -166,6 +166,7 @@ pub enum Message {
     WeakAurasAccountSelected(String),
     ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
     AurasUpdated((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
+    FetchedChangelog((Addon, Result<Changelog, RepositoryError>)),
 }
 
 pub struct Ajour {
@@ -454,6 +455,9 @@ impl Application for Ajour {
                     // Checks if the current addon is expanded.
                     let is_addon_expanded = match &self.expanded_type {
                         ExpandType::Details(a) => a.primary_folder_id == addon.primary_folder_id,
+                        ExpandType::Changelog { addon: a, .. } => {
+                            addon.primary_folder_id == a.primary_folder_id
+                        }
                         ExpandType::None => false,
                     };
 
@@ -1107,6 +1111,10 @@ impl Default for InstallFromSCMState {
 #[derive(Debug, Clone)]
 pub enum ExpandType {
     Details(Addon),
+    Changelog {
+        addon: Addon,
+        changelog: Option<Changelog>,
+    },
     None,
 }
 
