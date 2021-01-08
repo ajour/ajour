@@ -132,22 +132,18 @@ pub fn data_row_container<'a, 'b>(
     {
         let status = install_addon.map(|a| a.status.clone());
 
-        let install_text = Text::new(if !flavor_exists_for_addon {
-            localized_string("not-available-abbreviation")
-        } else {
-            match status {
-                Some(InstallStatus::Downloading) => localized_string("downloading"),
-                Some(InstallStatus::Unpacking) => localized_string("unpacking"),
-                Some(InstallStatus::Retry) => localized_string("retry"),
-                Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => {
-                    localized_string("unavilable")
-                }
-                None => {
-                    if installed_for_flavor {
-                        localized_string("installed")
-                    } else {
-                        localized_string("install")
-                    }
+        let install_text = Text::new(match status {
+            Some(InstallStatus::Downloading) => localized_string("downloading"),
+            Some(InstallStatus::Unpacking) => localized_string("unpacking"),
+            Some(InstallStatus::Retry) => localized_string("retry"),
+            Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => {
+                localized_string("unavilable")
+            }
+            None => {
+                if installed_for_flavor {
+                    localized_string("installed")
+                } else {
+                    localized_string("install")
                 }
             }
         })
