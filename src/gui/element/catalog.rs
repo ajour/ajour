@@ -4,6 +4,7 @@ use {
         style, Catalog, CatalogColumnKey, CatalogColumnState, CatalogRow, InstallAddon,
         InstallKind, InstallStatus, Interaction, Message, Mode, SortDirection,
     },
+    crate::localization::localized_string,
     ajour_core::{config::Config, theme::ColorPalette},
     ajour_widgets::{header, Header, TableRow},
     chrono::prelude::*,
@@ -94,6 +95,7 @@ pub fn titles_row_header<'a>(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn data_row_container<'a, 'b>(
     color_palette: ColorPalette,
     config: &Config,
@@ -130,20 +132,18 @@ pub fn data_row_container<'a, 'b>(
     {
         let status = install_addon.map(|a| a.status.clone());
 
-        let install_text = Text::new(if !flavor_exists_for_addon {
-            "N/A"
-        } else {
-            match status {
-                Some(InstallStatus::Downloading) => "Downloading",
-                Some(InstallStatus::Unpacking) => "Unpacking",
-                Some(InstallStatus::Retry) => "Retry",
-                Some(InstallStatus::Unavilable) | Some(InstallStatus::Error(_)) => "Unavailable",
-                None => {
-                    if installed_for_flavor {
-                        "Installed"
-                    } else {
-                        "Install"
-                    }
+        let install_text = Text::new(match status {
+            Some(InstallStatus::Downloading) => localized_string("downloading"),
+            Some(InstallStatus::Unpacking) => localized_string("unpacking"),
+            Some(InstallStatus::Retry) => localized_string("retry"),
+            Some(InstallStatus::Unavailable) | Some(InstallStatus::Error(_)) => {
+                localized_string("unavailable")
+            }
+            None => {
+                if installed_for_flavor {
+                    localized_string("installed")
+                } else {
+                    localized_string("install")
                 }
             }
         })
@@ -302,6 +302,8 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
+        // TODO (casperstorm): localization timeago.
+        // @see: https://docs.rs/timeago/0.2.1/timeago/
         let release_date_text: String = if let Some(date_released) = addon_data.date_released {
             let f = timeago::Formatter::new();
             let now = Local::now();

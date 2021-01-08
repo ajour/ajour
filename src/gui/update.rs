@@ -5,6 +5,7 @@ use {
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
         SelfUpdateStatus, SortDirection, State,
     },
+    crate::localization::LANG,
     crate::{log_error, Result},
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
@@ -1555,7 +1556,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         match install_addon.kind {
                             InstallKind::Catalog { .. } => {
-                                install_addon.status = InstallStatus::Unavilable;
+                                install_addon.status = InstallStatus::Unavailable;
                             }
                             InstallKind::Source => {
                                 install_addon.status = InstallStatus::Error(error.to_string());
@@ -1719,6 +1720,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 get_latest_release(ajour.config.self_update_channel),
                 Message::LatestRelease,
             ));
+        }
+        Message::Interaction(Interaction::PickLocalizationLanguage(lang)) => {
+            log::debug!("Interaction::PickLocalizationLanguage({:?})", lang);
+
+            // Update config.
+            ajour.config.language = lang;
+            let _ = ajour.config.save();
+
+            // Update global LANG refcell.
+            *LANG.get().expect("LANG not set").write().unwrap() = lang.language_code();
         }
         Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
             log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
@@ -2327,7 +2338,6 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
         (AuraColumnKey::Author, SortDirection::Desc) => {
             auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
         }
-        // TODO: Add status and sort
         (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
             a.status()
                 .cmp(&b.status())

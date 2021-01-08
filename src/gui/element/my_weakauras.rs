@@ -3,6 +3,7 @@ use {
     crate::gui::{
         style, AuraColumnKey, AuraColumnState, Interaction, Message, Mode, SortDirection, State,
     },
+    crate::localization::localized_string,
     ajour_core::config::Flavor,
     ajour_core::theme::ColorPalette,
     ajour_weak_auras::Aura,
@@ -13,6 +14,7 @@ use {
         Text,
     },
     std::collections::HashMap,
+    strfmt::strfmt,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -30,6 +32,7 @@ pub fn menu_container<'a>(
     accounts: &'a [String],
     chosen_account: Option<String>,
 ) -> Container<'a, Message> {
+    //
     // MyWeakAuras state.
     let state = state
         .get(&Mode::MyWeakAuras(flavor))
@@ -41,13 +44,13 @@ pub fn menu_container<'a>(
 
     let mut update_all_button = Button::new(
         update_all_button_state,
-        Text::new("Update All").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("update-all")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultButton(color_palette));
 
     let mut refresh_button = Button::new(
         refresh_button_state,
-        Text::new("Refresh").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("refresh")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultButton(color_palette));
 
@@ -75,9 +78,13 @@ pub fn menu_container<'a>(
     let status_text = match state {
         State::Ready => {
             if updates_queued {
-                Text::new("Updates queued. Finish them in-game.").size(DEFAULT_FONT_SIZE)
+                Text::new(localized_string("weakaura-updates-queued")).size(DEFAULT_FONT_SIZE)
             } else {
-                Text::new(format!("{} WeakAuras loaded", num_auras,)).size(DEFAULT_FONT_SIZE)
+                let mut vars = HashMap::new();
+                vars.insert("number".to_string(), &num_auras);
+                let fmt = localized_string("weakauras-loaded");
+
+                Text::new(strfmt(&fmt, &vars).unwrap()).size(DEFAULT_FONT_SIZE)
             }
         }
         _ => Text::new(""),
@@ -90,9 +97,9 @@ pub fn menu_container<'a>(
 
     let account_info_container = Container::new(
         Text::new(if chosen_account.is_some() {
-            ""
+            "".to_owned()
         } else {
-            "Select an Account"
+            localized_string("select-account")
         })
         .size(DEFAULT_FONT_SIZE),
     )

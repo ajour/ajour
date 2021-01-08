@@ -18,6 +18,11 @@ and `Removed`.
 
 - Added back inline changelogs for remote version. Clicking on the remote version
   will show the changelog inline instead of opening a browser window.
+- Ajour has been localized. Currently we support the following languages:
+  - 🇺🇸 English
+  - 🇩🇰 Danish
+  - 🇩🇪 German
+  - 🇫🇷 French (thanks @Nelfym)
 
 ### Fixed
 

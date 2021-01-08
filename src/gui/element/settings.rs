@@ -1,17 +1,19 @@
 #![allow(clippy::too_many_arguments)]
-
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
-        ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Message, ScaleState,
-        SelfUpdateChannelState, ThemeState,
+        ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Language, Message,
+        ScaleState, SelfUpdateChannelState, ThemeState,
     },
+    crate::localization::localized_string,
     ajour_core::{config::Config, theme::ColorPalette},
     iced::{
         button, pick_list, scrollable, Align, Button, Checkbox, Column, Container, Element, Length,
         PickList, Row, Scrollable, Space, Text, VerticalAlignment,
     },
+    std::collections::HashMap,
+    strfmt::strfmt,
 };
 
 pub fn data_container<'a, 'b>(
@@ -30,6 +32,7 @@ pub fn data_container<'a, 'b>(
     self_update_channel_state: &'a mut SelfUpdateChannelState,
     default_addon_release_channel_picklist_state: &'a mut pick_list::State<GlobalReleaseChannel>,
     reset_columns_button_state: &'a mut button::State,
+    localization_picklist_state: &'a mut pick_list::State<Language>,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -37,32 +40,32 @@ pub fn data_container<'a, 'b>(
         .style(style::Scrollable(color_palette));
 
     // Title for the World of Warcraft directory selection.
-    let directory_info_text = Text::new("World of Warcraft directory").size(DEFAULT_FONT_SIZE);
+    let directory_info_text = Text::new(localized_string("wow-directory")).size(DEFAULT_FONT_SIZE);
     let direction_info_text_container =
         Container::new(directory_info_text).style(style::BrightBackgroundContainer(color_palette));
 
     // Directory button for World of Warcraft directory selection.
     let directory_button_title_container =
-        Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
+        Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
             .width(Length::FillPortion(1))
             .center_x()
             .align_x(Align::Center);
 
     let directory_button: Element<Interaction> =
         Button::new(directory_button_state, directory_button_title_container)
-            .width(Length::Units(120))
             .style(style::DefaultBoxedButton(color_palette))
             .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
             .into();
 
     // Directory text, written next to directory button to let the user
     // know what has been selected..
+    let no_directory_str = &localized_string("no-directory")[..];
     let path_str = config
         .wow
         .directory
         .as_ref()
         .and_then(|p| p.to_str())
-        .unwrap_or("No directory is set");
+        .unwrap_or(no_directory_str);
     let directory_data_text = Text::new(path_str)
         .size(14)
         .vertical_alignment(VerticalAlignment::Center);
@@ -83,8 +86,9 @@ pub fn data_container<'a, 'b>(
         .push(directory_data_row);
 
     let theme_column = {
-        let title_container = Container::new(Text::new("Theme").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalBackgroundContainer(color_palette));
+        let title_container =
+            Container::new(Text::new(localized_string("theme")).size(DEFAULT_FONT_SIZE))
+                .style(style::NormalBackgroundContainer(color_palette));
 
         let theme_names = theme_state
             .themes
@@ -116,8 +120,9 @@ pub fn data_container<'a, 'b>(
 
     // Scale buttons for application scale factoring.
     let scale_column = {
-        let title_container = Container::new(Text::new("Scale").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalBackgroundContainer(color_palette));
+        let title_container =
+            Container::new(Text::new(localized_string("scale")).size(DEFAULT_FONT_SIZE))
+                .style(style::NormalBackgroundContainer(color_palette));
         let scale_title_row = Row::new().push(title_container);
 
         let scale_down_button: Element<Interaction> = Button::new(
@@ -160,12 +165,13 @@ pub fn data_container<'a, 'b>(
 
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
-        let backup_title_text = Text::new("Backup").size(DEFAULT_FONT_SIZE);
+        let backup_title_text = Text::new(localized_string("backup")).size(DEFAULT_FONT_SIZE);
         let backup_title_text_container = Container::new(backup_title_text)
             .style(style::BrightBackgroundContainer(color_palette));
 
+        let checkbox_title = &localized_string("addons")[..];
         let addon_folder_checkbox: Element<_> = Container::new(
-            Checkbox::new(config.backup_addons, "AddOns", move |is_checked| {
+            Checkbox::new(config.backup_addons, checkbox_title, move |is_checked| {
                 Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::AddOns)
             })
             .text_size(DEFAULT_FONT_SIZE)
@@ -175,8 +181,9 @@ pub fn data_container<'a, 'b>(
         .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
+        let checkbox_title = &localized_string("wtf")[..];
         let wtf_folder_checkbox: Element<_> = Container::new(
-            Checkbox::new(config.backup_wtf, "WTF", move |is_checked| {
+            Checkbox::new(config.backup_wtf, checkbox_title, move |is_checked| {
                 Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::WTF)
             })
             .text_size(DEFAULT_FONT_SIZE)
@@ -188,7 +195,7 @@ pub fn data_container<'a, 'b>(
 
         // Directory button for Backup directory selection.
         let directory_button_title_container =
-            Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
+            Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
                 .width(Length::FillPortion(1))
                 .center_x()
                 .align_x(Align::Center);
@@ -196,18 +203,18 @@ pub fn data_container<'a, 'b>(
             &mut backup_state.directory_btn_state,
             directory_button_title_container,
         )
-        .width(Length::Units(120))
         .style(style::DefaultBoxedButton(color_palette))
         .on_press(Interaction::SelectDirectory(DirectoryType::Backup))
         .into();
 
         // Directory text, written next to directory button to let the user
         // know what has been selected.
+        let no_directory_str = &localized_string("no-directory")[..];
         let path_str = config
             .backup_directory
             .as_ref()
             .and_then(|p| p.to_str())
-            .unwrap_or("No directory is set");
+            .unwrap_or(no_directory_str);
         let directory_data_text = Text::new(path_str)
             .size(DEFAULT_FONT_SIZE)
             .vertical_alignment(VerticalAlignment::Center);
@@ -237,7 +244,7 @@ pub fn data_container<'a, 'b>(
         // show description about the backup process
         if config.backup_directory.is_some() {
             let backup_button_title_container =
-                Container::new(Text::new("Backup Now").size(DEFAULT_FONT_SIZE))
+                Container::new(Text::new(localized_string("backup-now")).size(DEFAULT_FONT_SIZE))
                     .width(Length::FillPortion(1))
                     .center_x()
                     .align_x(Align::Center);
@@ -245,7 +252,6 @@ pub fn data_container<'a, 'b>(
                 &mut backup_state.backup_now_btn_state,
                 backup_button_title_container,
             )
-            .width(Length::Units(120))
             .style(style::DefaultBoxedButton(color_palette));
 
             // Only show button as clickable if it's not currently backing up and
@@ -259,16 +265,20 @@ pub fn data_container<'a, 'b>(
             }
 
             let backup_status_text = if backup_state.backing_up {
-                Text::new("Backing up...")
+                Text::new(localized_string("backup-progress"))
                     .size(DEFAULT_FONT_SIZE)
                     .vertical_alignment(VerticalAlignment::Center)
             } else {
                 let as_of = backup_state
                     .last_backup
                     .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string())
-                    .unwrap_or_else(|| "Never".to_string());
+                    .unwrap_or_else(|| localized_string("backup-never"));
 
-                Text::new(&format!("Last backup: {}", as_of))
+                let mut vars = HashMap::new();
+                vars.insert("time".to_string(), &as_of);
+                let fmt = localized_string("backup-latest");
+
+                Text::new(strfmt(&fmt, &vars).unwrap())
                     .size(DEFAULT_FONT_SIZE)
                     .vertical_alignment(VerticalAlignment::Center)
             };
@@ -285,10 +295,9 @@ pub fn data_container<'a, 'b>(
                 .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                 .push(backup_status_text_container);
         } else {
-            let backup_status_text =
-                Text::new("Back up your AddOns and WTF folder to the chosen directory")
-                    .size(DEFAULT_FONT_SIZE)
-                    .vertical_alignment(VerticalAlignment::Center);
+            let backup_status_text = Text::new(localized_string("backup-description"))
+                .size(DEFAULT_FONT_SIZE)
+                .vertical_alignment(VerticalAlignment::Center);
 
             let backup_status_text_container = Container::new(backup_status_text)
                 .height(Length::Units(25))
@@ -307,10 +316,13 @@ pub fn data_container<'a, 'b>(
 
     let hide_addons_column = {
         let hide_ignored_addons = config.hide_ignored_addons;
-        let title = "Hide ignored Addons".to_owned();
-        let checkbox = Checkbox::new(hide_ignored_addons, title, move |is_checked| {
-            Message::Interaction(Interaction::ToggleHideIgnoredAddons(is_checked))
-        })
+        let checkbox = Checkbox::new(
+            hide_ignored_addons,
+            localized_string("hide-addons"),
+            move |is_checked| {
+                Message::Interaction(Interaction::ToggleHideIgnoredAddons(is_checked))
+            },
+        )
         .style(style::DefaultCheckbox(color_palette))
         .text_size(DEFAULT_FONT_SIZE)
         .spacing(5);
@@ -321,10 +333,13 @@ pub fn data_container<'a, 'b>(
 
     let delete_saved_variables_column = {
         let delete_saved_variables = config.addons.delete_saved_variables;
-        let title = "Delete SavedVariables when deleting addons".to_owned();
-        let checkbox = Checkbox::new(delete_saved_variables, title, move |is_checked| {
-            Message::Interaction(Interaction::ToggleDeleteSavedVariables(is_checked))
-        })
+        let checkbox = Checkbox::new(
+            delete_saved_variables,
+            localized_string("delete-saved-variables"),
+            move |is_checked| {
+                Message::Interaction(Interaction::ToggleDeleteSavedVariables(is_checked))
+            },
+        )
         .style(style::DefaultCheckbox(color_palette))
         .text_size(DEFAULT_FONT_SIZE)
         .spacing(5);
@@ -334,9 +349,10 @@ pub fn data_container<'a, 'b>(
     };
 
     let global_release_channel_column = {
-        let title_container =
-            Container::new(Text::new("Global Release Channel").size(DEFAULT_FONT_SIZE))
-                .style(style::NormalBackgroundContainer(color_palette));
+        let title_container = Container::new(
+            Text::new(localized_string("global-release-channel")).size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::NormalBackgroundContainer(color_palette));
 
         let pick_list: Element<_> = PickList::new(
             default_addon_release_channel_picklist_state,
@@ -362,16 +378,15 @@ pub fn data_container<'a, 'b>(
         let config_dir = ajour_core::fs::config_dir();
         let config_dir_string = config_dir.as_path().display().to_string();
 
-        let open_config_button_title_container =
-            Container::new(Text::new("Open data directory").size(DEFAULT_FONT_SIZE))
-                .width(Length::Units(150))
-                .center_x()
-                .align_x(Align::Center);
+        let open_config_button_title_container = Container::new(
+            Text::new(localized_string("open-data-directory")).size(DEFAULT_FONT_SIZE),
+        )
+        .center_x()
+        .align_x(Align::Center);
         let open_config_button: Element<Interaction> = Button::new(
             open_config_dir_button_state,
             open_config_button_title_container,
         )
-        .width(Length::Units(150))
         .style(style::DefaultBoxedButton(color_palette))
         .on_press(Interaction::OpenDirectory(config_dir))
         .into();
@@ -393,9 +408,10 @@ pub fn data_container<'a, 'b>(
     };
 
     let alternate_row_color_column = {
-        let title_container =
-            Container::new(Text::new("Alternate Row Colors").size(DEFAULT_FONT_SIZE))
-                .style(style::NormalBackgroundContainer(color_palette));
+        let title_container = Container::new(
+            Text::new(localized_string("alternate-row-colors")).size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::NormalBackgroundContainer(color_palette));
 
         let checkbox = Checkbox::new(
             config.alternating_row_colors,
@@ -418,15 +434,15 @@ pub fn data_container<'a, 'b>(
             .push(data_row)
     };
 
-    let ui_title = Text::new("UI").size(DEFAULT_FONT_SIZE);
+    let ui_title = Text::new(localized_string("ui")).size(DEFAULT_FONT_SIZE);
     let ui_title_container =
         Container::new(ui_title).style(style::BrightBackgroundContainer(color_palette));
 
-    let addon_title = Text::new("Addons").size(DEFAULT_FONT_SIZE);
+    let addon_title = Text::new(localized_string("addons")).size(DEFAULT_FONT_SIZE);
     let addon_title_container =
         Container::new(addon_title).style(style::BrightBackgroundContainer(color_palette));
 
-    let ajour_settings_title = Text::new("Ajour").size(DEFAULT_FONT_SIZE);
+    let ajour_settings_title = Text::new(localized_string("ajour")).size(DEFAULT_FONT_SIZE);
     let ajour_settings_title_container =
         Container::new(ajour_settings_title).style(style::BrightBackgroundContainer(color_palette));
 
@@ -437,8 +453,10 @@ pub fn data_container<'a, 'b>(
         .spacing(DEFAULT_PADDING);
 
     let self_update_channel_container = {
-        let channel_title = Container::new(Text::new("Update Channel").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalBackgroundContainer(color_palette));
+        let channel_title = Container::new(
+            Text::new(localized_string("ajour-update-channel")).size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::NormalBackgroundContainer(color_palette));
         let channel_picklist: Element<_> = PickList::new(
             &mut self_update_channel_state.picklist,
             &self_update_channel_state.options[..],
@@ -459,6 +477,30 @@ pub fn data_container<'a, 'b>(
             .push(channel_title)
             .push(Space::new(Length::Units(0), Length::Units(5)))
             .push(channel_container)
+    };
+
+    let language_container = {
+        let title = Container::new(Text::new(localized_string("language")).size(DEFAULT_FONT_SIZE))
+            .style(style::NormalBackgroundContainer(color_palette));
+        let pick_list: Element<_> = PickList::new(
+            localization_picklist_state,
+            &Language::ALL[..],
+            Some(config.language),
+            Interaction::PickLocalizationLanguage,
+        )
+        .text_size(14)
+        .width(Length::Units(120))
+        .style(style::PickList(color_palette))
+        .into();
+        let container = Container::new(pick_list.map(Message::Interaction))
+            .center_y()
+            .width(Length::Units(120))
+            .style(style::NormalForegroundContainer(color_palette));
+
+        Column::new()
+            .push(title)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(container)
     };
 
     scrollable = scrollable
@@ -483,11 +525,13 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(20)))
         .push(ajour_settings_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(language_container)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(self_update_channel_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(config_column);
 
-    let columns_title_text = Text::new("Columns").size(DEFAULT_FONT_SIZE);
+    let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_FONT_SIZE);
     let columns_title_text_container =
         Container::new(columns_title_text).style(style::BrightBackgroundContainer(color_palette));
     scrollable = scrollable
@@ -495,8 +539,9 @@ pub fn data_container<'a, 'b>(
         .push(columns_title_text_container);
 
     let my_addons_columns_container = {
-        let title_container = Container::new(Text::new("My Addons").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalBackgroundContainer(color_palette));
+        let title_container =
+            Container::new(Text::new(localized_string("my-addons")).size(DEFAULT_FONT_SIZE))
+                .style(style::NormalBackgroundContainer(color_palette));
         let mut my_addons_column = Column::new()
             .push(title_container)
             .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
@@ -583,8 +628,9 @@ pub fn data_container<'a, 'b>(
     let catalog_columns_container = {
         // Title for the Columns section.
 
-        let title_container = Container::new(Text::new("Catalog").size(DEFAULT_FONT_SIZE))
-            .style(style::NormalBackgroundContainer(color_palette));
+        let title_container =
+            Container::new(Text::new(localized_string("catalog")).size(DEFAULT_FONT_SIZE))
+                .style(style::NormalBackgroundContainer(color_palette));
         let mut catalog_column = Column::new()
             .push(title_container)
             .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)));
@@ -680,7 +726,7 @@ pub fn data_container<'a, 'b>(
 
     // Reset columns button
     let reset_columns_button_title_container =
-        Container::new(Text::new("Reset Columns").size(DEFAULT_FONT_SIZE))
+        Container::new(Text::new(localized_string("reset-columns")).size(DEFAULT_FONT_SIZE))
             .width(Length::FillPortion(1))
             .center_x()
             .align_x(Align::Center);
@@ -688,7 +734,6 @@ pub fn data_container<'a, 'b>(
         reset_columns_button_state,
         reset_columns_button_title_container,
     )
-    .width(Length::Units(120))
     .style(style::DefaultBoxedButton(color_palette))
     .on_press(Interaction::ResetColumns)
     .into();

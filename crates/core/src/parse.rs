@@ -11,6 +11,7 @@ use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use futures::future::join_all;
 use isahc::http::Uri;
+use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -19,10 +20,6 @@ use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::SystemTime;
-
-lazy_static::lazy_static! {
-    static ref CACHED_GAME_INFO: Mutex<Option<curse::GameInfo>> = Mutex::new(None);
-}
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Fingerprint {
@@ -1066,29 +1063,35 @@ where
     Some(current)
 }
 
-lazy_static::lazy_static! {
-    static ref RE_TOC_LINE: regex::Regex = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
-    static ref RE_TOC_TITLE: regex::Regex = regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)").unwrap();
-    static ref RE_PARSING_PATTERNS: ParsingPatterns = {
-        let mut file_parsing_regex = HashMap::new();
-        file_parsing_regex.insert(".xml".to_string(), (
+static RE_TOC_LINE: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap());
+static RE_TOC_TITLE: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)").unwrap());
+static RE_PARSING_PATTERNS: Lazy<ParsingPatterns> = Lazy::new(|| {
+    let mut file_parsing_regex = HashMap::new();
+    file_parsing_regex.insert(
+        ".xml".to_string(),
+        (
             regex::Regex::new("(?s)<!--.*?-->").unwrap(),
-            Regex::new("(?i)<(?:Include|Script)\\s+file=[\"\"']((?:(?<!\\.\\.).)+)[\"\"']\\s*/>").unwrap(),
-        ));
+            Regex::new("(?i)<(?:Include|Script)\\s+file=[\"\"']((?:(?<!\\.\\.).)+)[\"\"']\\s*/>")
+                .unwrap(),
+        ),
+    );
 
-
-        file_parsing_regex.insert(".toc".to_string(), (
+    file_parsing_regex.insert(
+        ".toc".to_string(),
+        (
             regex::Regex::new("(?m)\\s*#.*$").unwrap(),
             Regex::new("(?mi)^\\s*((?:(?<!\\.\\.).)+\\.(?:xml|lua))\\s*$").unwrap(),
-        ));
+        ),
+    );
 
-        ParsingPatterns {
-            extra_inclusion_regex: Regex::new("(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
-            initial_inclusion_regex: Regex::new("(?i)^([^/]+)[\\\\/]\\1\\.toc$").unwrap(),
-            file_parsing_regex,
-        }
-    };
-}
+    ParsingPatterns {
+        extra_inclusion_regex: Regex::new("(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
+        initial_inclusion_regex: Regex::new("(?i)^([^/]+)[\\\\/]\\1\\.toc$").unwrap(),
+        file_parsing_regex,
+    }
+});
 
 /// Helper function to parse a given TOC file
 /// (`DirEntry`) into a `Addon` struct.
