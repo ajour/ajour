@@ -92,5 +92,9 @@
   "welcome-to-ajour-description": "Please select your World of Warcraft directory",
   "woops": "Woops!",
   "wow-directory": "World of Warcraft directory",
-  "wtf": "WTF"
+  "wtf": "WTF",
+  "channel-default": "Default",
+  "channel-stable": "Stable",
+  "channel-beta": "Beta",
+  "channel-alpha": "Alpha"
 }
