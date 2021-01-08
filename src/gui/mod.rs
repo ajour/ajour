@@ -925,8 +925,8 @@ impl Application for Ajour {
                 match state {
                     State::Start => Some(element::status::data_container(
                         color_palette,
-                        &localized_string("setup-to-ajour-title")[..],
-                        &localized_string("setup-to-ajour-description")[..],
+                        &localized_string("setup-ajour-title")[..],
+                        &localized_string("setup-ajour-description")[..],
                         Some(&mut self.onboarding_directory_btn_state),
                     )),
                     State::Loading => {
