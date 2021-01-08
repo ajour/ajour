@@ -214,6 +214,7 @@ impl Display for SelfUpdateChannel {
 pub enum Language {
     English,
     Danish,
+    German,
 }
 
 impl std::fmt::Display for Language {
@@ -224,18 +225,20 @@ impl std::fmt::Display for Language {
             match self {
                 Language::English => "English",
                 Language::Danish => "Danish",
+                Language::German => "German",
             }
         )
     }
 }
 
 impl Language {
-    pub const ALL: [Language; 2] = [Language::English, Language::Danish];
+    pub const ALL: [Language; 3] = [Language::English, Language::Danish, Language::German];
 
     pub const fn language_code(self) -> &'static str {
         match self {
             Language::English => "en_US",
             Language::Danish => "da_DK",
+            Language::German => "de_DE",
         }
     }
 }

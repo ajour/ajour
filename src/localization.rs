@@ -9,7 +9,9 @@ pub static LOCALIZATION_CTX: Lazy<JSONGetText<'static>> = Lazy::new(|| {
         "en_US",
         "locale/en_US.json",
         "da_DK",
-        "locale/da_DK.json"
+        "locale/da_DK.json",
+        "de_DE",
+        "locale/de_DE.json"
     )
     .unwrap()
 });
