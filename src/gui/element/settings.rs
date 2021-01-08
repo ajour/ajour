@@ -53,7 +53,6 @@ pub fn data_container<'a, 'b>(
 
     let directory_button: Element<Interaction> =
         Button::new(directory_button_state, directory_button_title_container)
-            .width(Length::Units(120))
             .style(style::DefaultBoxedButton(color_palette))
             .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
             .into();
@@ -204,7 +203,6 @@ pub fn data_container<'a, 'b>(
             &mut backup_state.directory_btn_state,
             directory_button_title_container,
         )
-        .width(Length::Units(120))
         .style(style::DefaultBoxedButton(color_palette))
         .on_press(Interaction::SelectDirectory(DirectoryType::Backup))
         .into();
@@ -254,7 +252,6 @@ pub fn data_container<'a, 'b>(
                 &mut backup_state.backup_now_btn_state,
                 backup_button_title_container,
             )
-            .width(Length::Units(120))
             .style(style::DefaultBoxedButton(color_palette));
 
             // Only show button as clickable if it's not currently backing up and
@@ -384,14 +381,12 @@ pub fn data_container<'a, 'b>(
         let open_config_button_title_container = Container::new(
             Text::new(localized_string("open-data-directory")).size(DEFAULT_FONT_SIZE),
         )
-        .width(Length::Units(150))
         .center_x()
         .align_x(Align::Center);
         let open_config_button: Element<Interaction> = Button::new(
             open_config_dir_button_state,
             open_config_button_title_container,
         )
-        .width(Length::Units(150))
         .style(style::DefaultBoxedButton(color_palette))
         .on_press(Interaction::OpenDirectory(config_dir))
         .into();
@@ -739,7 +734,6 @@ pub fn data_container<'a, 'b>(
         reset_columns_button_state,
         reset_columns_button_title_container,
     )
-    .width(Length::Units(120))
     .style(style::DefaultBoxedButton(color_palette))
     .on_press(Interaction::ResetColumns)
     .into();
