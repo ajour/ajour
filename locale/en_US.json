@@ -11,7 +11,7 @@
   "authors": "Author(s)",
   "backup": "Backup",
   "backup-description": "Back up your AddOns and WTF folder to the chosen directory",
-  "backup-latest": "Last backup:",
+  "backup-latest": "Last backup: {time}",
   "backup-never": "Never",
   "backup-now": "Backup Now",
   "backup-progress": "Backing up...",
