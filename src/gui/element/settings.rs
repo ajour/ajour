@@ -458,9 +458,10 @@ pub fn data_container<'a, 'b>(
         .spacing(DEFAULT_PADDING);
 
     let self_update_channel_container = {
-        let channel_title =
-            Container::new(Text::new(localized_string("update-channel")).size(DEFAULT_FONT_SIZE))
-                .style(style::NormalBackgroundContainer(color_palette));
+        let channel_title = Container::new(
+            Text::new(localized_string("ajour-update-channel")).size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::NormalBackgroundContainer(color_palette));
         let channel_picklist: Element<_> = PickList::new(
             &mut self_update_channel_state.picklist,
             &self_update_channel_state.options[..],
