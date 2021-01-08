@@ -54,8 +54,8 @@ mod test {
     #[derive(Debug, Deserialize)]
     #[serde(rename_all = "kebab-case")]
     struct Locale {
-        about: String,
         addon: String,
+        about: String,
         addons: String,
         addons_loaded: String,
         ajour: String,
@@ -73,6 +73,7 @@ mod test {
         catalog: String,
         changelog: String,
         changelog_for: String,
+        changelog_press_full_changelog: String,
         channel: String,
         columns: String,
         completed: String,
@@ -80,8 +81,9 @@ mod test {
         delete_saved_variables: String,
         description: String,
         downloading: String,
-        failed: String,
         game_version: String,
+        failed: String,
+        full_changelog: String,
         global_release_channel: String,
         hashing: String,
         hide_addons: String,
@@ -118,8 +120,8 @@ mod test {
         remote_release_channel: String,
         reset_columns: String,
         retry: String,
-        scale: String,
         search_for_addon: String,
+        scale: String,
         select_account: String,
         select_directory: String,
         settings: String,
