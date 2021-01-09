@@ -4,7 +4,7 @@ use {
         style, Catalog, CatalogColumnKey, CatalogColumnState, CatalogRow, InstallAddon,
         InstallKind, InstallStatus, Interaction, Message, Mode, SortDirection,
     },
-    crate::localization::localized_string,
+    crate::localization::{localized_string, localized_timeago_formatter},
     ajour_core::{config::Config, theme::ColorPalette},
     ajour_widgets::{header, Header, TableRow},
     chrono::prelude::*,
@@ -302,10 +302,8 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
-        // TODO (casperstorm): localization timeago.
-        // @see: https://docs.rs/timeago/0.2.1/timeago/
         let release_date_text: String = if let Some(date_released) = addon_data.date_released {
-            let f = timeago::Formatter::new();
+            let f = localized_timeago_formatter();
             let now = Local::now();
             f.convert_chrono(date_released, now)
         } else {

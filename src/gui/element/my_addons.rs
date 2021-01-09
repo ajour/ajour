@@ -4,7 +4,7 @@ use {
         style, ColumnKey, ColumnState, ExpandType, Flavor, Interaction, Message, Mode,
         ReleaseChannel, SortDirection, State,
     },
-    crate::localization::localized_string,
+    crate::localization::{localized_string, localized_timeago_formatter},
     ajour_core::{
         addon::{Addon, AddonState},
         config::Config,
@@ -321,10 +321,8 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
-        // TODO (casperstorm): localization timeago.
-        // @see: https://docs.rs/timeago/0.2.1/timeago/
         let release_date_text: String = if let Some(package) = &release_package {
-            let f = timeago::Formatter::new();
+            let f = localized_timeago_formatter();
             let now = Local::now();
 
             if let Some(time) = package.date_time.as_ref() {
@@ -516,7 +514,7 @@ pub fn data_row_container<'a, 'b>(
                     .style(style::HoverableBrightForegroundContainer(color_palette));
 
                 let release_date_text: String = if let Some(package) = &release_package {
-                    let f = timeago::Formatter::new();
+                    let f = localized_timeago_formatter();
                     let now = Local::now();
 
                     if let Some(time) = package.date_time.as_ref() {
