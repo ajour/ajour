@@ -28,6 +28,21 @@ pub fn localized_string(key: &str) -> String {
         .to_string()
 }
 
+/// Returns a localized `timeago::Formatter`.
+/// If user has chosen a language whic his not supported by `timeago` we fallback to english.
+pub fn localized_timeago_formatter() -> timeago::Formatter<Box<dyn timeago::Language>> {
+    let lang = LANG.get().expect("LANG not set").read().unwrap();
+    let isolang = isolang::Language::from_locale(&lang).unwrap();
+
+    // this step might fail if timeago does not support the chosen language.
+    // In that case we fallback to `en_US`.
+    if let Some(timeago_lang) = timeago::from_isolang(isolang) {
+        timeago::Formatter::with_language(timeago_lang)
+    } else {
+        timeago::Formatter::with_language(Box::new(timeago::English))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use serde::Deserialize;

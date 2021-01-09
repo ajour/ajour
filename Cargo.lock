@@ -65,6 +65,7 @@ dependencies = [
  "iced_native",
  "image",
  "isahc",
+ "isolang",
  "json-gettext",
  "log",
  "log-panics",
