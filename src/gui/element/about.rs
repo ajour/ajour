@@ -24,6 +24,7 @@ pub fn data_container<'a>(
 
     let changelog_title_text = Text::new(if let Some(release) = release {
         let mut vars = HashMap::new();
+        // TODO (casperstorm): change "addon" to "tag" or "version".
         vars.insert("addon".to_string(), &release.tag_name);
         let fmt = localized_string("changelog-for");
         strfmt(&fmt, &vars).unwrap()
