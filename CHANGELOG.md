@@ -23,6 +23,7 @@ and `Removed`.
   - 🇩🇰 Danish
   - 🇩🇪 German (thanks Subduck)
   - 🇫🇷 French (thanks Nelfym)
+  - 🇷🇺 Russia
 
 ### Fixed
 
