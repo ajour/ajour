@@ -19,7 +19,7 @@ use ajour_core::{
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
-use ajour_weak_auras::{Aura, AuraStatus};
+use ajour_weak_auras::Aura;
 use ajour_widgets::header;
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -508,7 +508,7 @@ impl Application for Ajour {
                 let updates_queued = weak_auras_state
                     .auras
                     .iter()
-                    .filter(|a| a.status() == AuraStatus::UpdateQueued)
+                    .filter(|a| a.status() == ajour_weak_auras::AuraStatus::UpdateQueued)
                     .count()
                     == num_available
                     && num_available > 0;
@@ -2022,6 +2022,27 @@ impl From<&AuraColumnState> for ColumnConfigV2 {
             width,
             hidden: column.hidden,
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+pub struct AuraStatus(pub ajour_weak_auras::AuraStatus);
+
+impl std::fmt::Display for AuraStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use ajour_weak_auras::AuraStatus::*;
+
+        let s = if let Some(key) = match self.0 {
+            Idle => None,
+            UpdateAvailable => Some("weakaura-update-available"),
+            UpdateQueued => Some("weakaura-update-queued"),
+        } {
+            localized_string(key)
+        } else {
+            "".to_string()
+        };
+
+        write!(f, "{}", s)
     }
 }
 
