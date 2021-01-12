@@ -217,7 +217,7 @@ pub enum Language {
     German,
     French,
     Russian,
-    Swedish
+    Swedish,
 }
 
 impl std::fmt::Display for Language {
@@ -232,7 +232,6 @@ impl std::fmt::Display for Language {
                 Language::Swedish => "Svenska",
                 Language::French => "Français",
                 Language::Russian => "Pусский",
-
             }
         )
     }
