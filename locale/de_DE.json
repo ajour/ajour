@@ -61,7 +61,7 @@
     "patreon-http": "https://patreon.com/getajour",
     "refresh": "Aktualisieren",
     "release-channel-no-release": "Keine verfügbaren Veröffentlichungen",
-    "remote": "Fern",
+    "remote": "Aktuell",
     "remote-release-channel": "Veröffentlichungskanal",
     "reset-columns": "Setze Spalten zurück",
     "retry": "Erneut versuchen",
@@ -99,6 +99,6 @@
     "channel-stable": "Stabil",
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
-    "weakaura-update-available": "Update für WeakAura verfügbar",
-    "weakaura-update-queued": "WeakAura update in warteschlange"
+    "weakaura-update-available": "Update verfügbar",
+    "weakaura-update-queued": "Update in Warteschlange"
 }
