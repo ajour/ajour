@@ -56,7 +56,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
   - [WoWInterface](https://www.wowinterface.com/)
 - Install new addons from the catalog or directly from a GitHub/GitLab URL
 - Support for release channels, so it's possible to select either `alpha`, `beta`
-or `stable` for each addon
+  or `stable` for each addon
 - View changelogs for each addon
 - Bulk addon update without any limitations
 - Remove addons and their dependencies
@@ -68,6 +68,7 @@ or `stable` for each addon
 - Ability to run as a [command line application](#command-line) for advanced users
 - WeakAuras import strings from [Wago.io](https://wago.io/weakauras) will automatically
   be parsed
+- Localized in multiple languages
 
 ## Install
 
@@ -91,12 +92,13 @@ Find instructions for using the command line interface [here](./CLI.md)
 Ajour wouldn't be here without your help.
 I welcome contributions of any kind, because together we can make Ajour even better.
 
-+ [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=)
-if you are missing a vital feature.
-+ I love [pull requests](https://github.com/casperstorm/ajour/pulls) and [bug reports](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
-+ Don't hesitate to [tell me my Rust programming is bad](https://github.com/casperstorm/ajour/issues/new)
-but please tell me why.
-+ Join our [Discord server](https://discord.gg/4838t9R) and say hey.
+- [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=)
+  if you are missing a vital feature.
+- I love [pull requests](https://github.com/casperstorm/ajour/pulls) and [bug reports](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
+- Don't hesitate to [tell me my Rust programming is bad](https://github.com/casperstorm/ajour/issues/new)
+  but please tell me why.
+- Help translating Ajour on [POEditor](https://poeditor.com/join/project?hash=gjghTR7d0Z).
+- Join our [Discord server](https://discord.gg/4838t9R) and say hey.
 
 ## FAQ
 

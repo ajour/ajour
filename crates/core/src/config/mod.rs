@@ -216,6 +216,8 @@ pub enum Language {
     Danish,
     German,
     French,
+    Russian,
+    Swedish,
 }
 
 impl std::fmt::Display for Language {
@@ -227,18 +229,22 @@ impl std::fmt::Display for Language {
                 Language::English => "English",
                 Language::Danish => "Dansk",
                 Language::German => "Deutch",
+                Language::Swedish => "Svenska",
                 Language::French => "Français",
+                Language::Russian => "Pусский",
             }
         )
     }
 }
 
 impl Language {
-    pub const ALL: [Language; 4] = [
+    pub const ALL: [Language; 6] = [
         Language::English,
         Language::Danish,
         Language::German,
         Language::French,
+        Language::Russian,
+        Language::Swedish,
     ];
 
     pub const fn language_code(self) -> &'static str {
@@ -247,6 +253,8 @@ impl Language {
             Language::Danish => "da_DK",
             Language::German => "de_DE",
             Language::French => "fr_FR",
+            Language::Russian => "ru_RU",
+            Language::Swedish => "se_SE",
         }
     }
 }

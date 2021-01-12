@@ -98,5 +98,7 @@
   "channel-default": "Par défaut",
   "channel-stable": "Stable",
   "channel-beta": "Beta",
-  "channel-alpha": "Alpha"
+  "channel-alpha": "Alpha",
+  "weakaura-update-available": "",
+  "weakaura-update-queued": ""
 }

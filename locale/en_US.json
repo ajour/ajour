@@ -56,7 +56,7 @@
   "num-downloads": "# Downloads",
   "open-data-directory": "Open data Directory",
   "parsing-addons": "Currently parsing {flavor} AddOns",
-  "parsing-weakauras": "Curently parsing {flavor} WeakAuras",
+  "parsing-weakauras": "Currently parsing {flavor} WeakAuras",
   "patreon": "Patreon",
   "patreon-http": "https://patreon.com/getajour",
   "refresh": "Refresh",
@@ -98,5 +98,7 @@
   "channel-default": "Default",
   "channel-stable": "Stable",
   "channel-beta": "Beta",
-  "channel-alpha": "Alpha"
+  "channel-alpha": "Alpha",
+  "weakaura-update-available": "Update Available",
+  "weakaura-update-queued": "Update Queued"
 }

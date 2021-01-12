@@ -1,7 +1,8 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
-        style, AuraColumnKey, AuraColumnState, Interaction, Message, Mode, SortDirection, State,
+        style, AuraColumnKey, AuraColumnState, AuraStatus, Interaction, Message, Mode,
+        SortDirection, State,
     },
     crate::localization::localized_string,
     ajour_core::config::Flavor,
@@ -263,7 +264,7 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
-        let status = Text::new(aura.status().to_string()).size(DEFAULT_FONT_SIZE);
+        let status = Text::new(AuraStatus(aura.status()).to_string()).size(DEFAULT_FONT_SIZE);
 
         let status_row = Row::new()
             .push(status)
