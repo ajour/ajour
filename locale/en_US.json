@@ -85,7 +85,7 @@
   "unpacking": "Unpacking",
   "update": "Update",
   "update-all": "Update All",
-  "ajour-update-channel": "Update Channel",
+  "ajour-update-channel": "Ajour Update Channel",
   "updating": "Updating",
   "weakaura-updates-queued": "Updates queued. Finish them in-game.",
   "weakauras-loaded": "{number} WeakAuras loaded",
@@ -100,5 +100,6 @@
   "channel-beta": "Beta",
   "channel-alpha": "Alpha",
   "weakaura-update-available": "Update Available",
-  "weakaura-update-queued": "Update Queued"
+  "weakaura-update-queued": "Update Queued",
+  "settings-general": "General"
 }

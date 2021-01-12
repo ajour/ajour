@@ -85,7 +85,7 @@
   "unpacking": "Pakker ud",
   "update": "Opdater",
   "update-all": "Opdater Alle",
-  "ajour-update-channel": "Opdaterings kanal",
+  "ajour-update-channel": "Ajour Opdaterings kanal",
   "updating": "Opdaterer",
   "weakaura-updates-queued": "Opdateringer gjort klar. Færdiggør inde i spillet.",
   "weakauras-loaded": "{number} WeakAuras indlæst",
@@ -100,5 +100,6 @@
   "channel-beta": "Beta",
   "channel-alpha": "Alpha",
   "weakaura-update-available": "Opdatering tilgængelig",
-  "weakaura-update-queued": "Opdatering klargjort"
+  "weakaura-update-queued": "Opdatering klargjort",
+  "settings-general": "Generelt"
 }

@@ -85,7 +85,7 @@
     "unpacking": "Packar upp",
     "update": "Uppdatera",
     "update-all": "Uppdatera alla",
-    "ajour-update-channel": "Uppdatera kanal",
+    "ajour-update-channel": "Ajour Uppdatera kanal",
     "updating": "Uppdaterar",
     "weakaura-updates-queued": "Uppdateringar köade, gör klart processen i spelet.",
     "weakauras-loaded": "{number} WeakAuras laddade",
@@ -100,5 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Uppdateringar tillgängliga",
-    "weakaura-update-queued": "Uppdateringar köade"
+    "weakaura-update-queued": "Uppdateringar köade",
+    "settings-general": "Generella"
 }

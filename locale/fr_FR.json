@@ -85,7 +85,7 @@
     "unpacking": "Décompression",
     "update": "Mettre à jour",
     "update-all": "Tout mettre à jour",
-    "ajour-update-channel": "Canal de mise à jour",
+    "ajour-update-channel": "Ajour Canal de mise à jour",
     "updating": "Mise à jour",
     "weakaura-updates-queued": "Mise à jour en attente. Terminez-les en jeu.",
     "weakauras-loaded": "{number} WeakAuras chargés",
@@ -100,5 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Mise à jour disponible",
-    "weakaura-update-queued": "Mise à jour en attente"
+    "weakaura-update-queued": "Mise à jour en attente",
+    "settings-general": "Paramètres généraux"
 }
