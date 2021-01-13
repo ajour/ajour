@@ -514,7 +514,9 @@ pub fn data_container<'a, 'b>(
     // Backup
     scrollable = scrollable
         .push(backup_title_row)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_now_row)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row)
         .push(Space::new(Length::Units(0), Length::Units(20)));
 
