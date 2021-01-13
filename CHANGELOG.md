@@ -22,6 +22,7 @@ and `Removed`.
   - 🇺🇸 English
   - 🇩🇰 Danish
   - 🇷🇺 Russian
+  - 🇪🇸 Spanish
   - 🇩🇪 German (thanks Subduck)
   - 🇫🇷 French (thanks Nelfym)
   - 🇸🇪 Swedish (thanks Zee)
