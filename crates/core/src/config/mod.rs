@@ -241,13 +241,13 @@ impl std::fmt::Display for Language {
 
 impl Language {
     pub const ALL: [Language; 7] = [
-        Language::English,
         Language::Danish,
-        Language::German,
+        Language::English,
         Language::French,
+        Language::German,
         Language::Russian,
-        Language::Swedish,
         Language::Spanish,
+        Language::Swedish,
     ];
 
     pub const fn language_code(self) -> &'static str {
