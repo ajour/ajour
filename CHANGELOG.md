@@ -21,8 +21,8 @@ and `Removed`.
 - Ajour has been localized. Currently we support the following languages:
   - 🇺🇸 English
   - 🇩🇰 Danish
-  - 🇷🇺 Russian
-  - 🇪🇸 Spanish
+  - 🇷🇺 Russian (thanks Ruslan)
+  - 🇪🇸 Spanish (thanks El Empresario and Boryana)
   - 🇩🇪 German (thanks Subduck)
   - 🇫🇷 French (thanks Nelfym)
   - 🇸🇪 Swedish (thanks Zee)
