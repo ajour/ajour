@@ -100,5 +100,6 @@
     "channel-beta": "Бета",
     "channel-alpha": "Альфа",
     "weakaura-update-available": "Доступны обновления",
-    "weakaura-update-queued": "Обновления поставлены в очередь"
+    "weakaura-update-queued": "Обновления поставлены в очередь",
+    "settings-general": "Общие"
 }

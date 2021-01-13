@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 use {
-    super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
+    super::{DEFAULT_FONT_SIZE, DEFAULT_HEADER_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
         ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Language, Message,
@@ -39,51 +39,55 @@ pub fn data_container<'a, 'b>(
         .height(Length::FillPortion(1))
         .style(style::Scrollable(color_palette));
 
-    // Title for the World of Warcraft directory selection.
-    let directory_info_text = Text::new(localized_string("wow-directory")).size(DEFAULT_FONT_SIZE);
-    let direction_info_text_container =
-        Container::new(directory_info_text).style(style::BrightBackgroundContainer(color_palette));
+    let wow_directory_column = {
+        // Title for the World of Warcraft directory selection.
+        let directory_info_text =
+            Text::new(localized_string("wow-directory")).size(DEFAULT_FONT_SIZE);
+        let direction_info_text_container = Container::new(directory_info_text)
+            .style(style::NormalBackgroundContainer(color_palette));
 
-    // Directory button for World of Warcraft directory selection.
-    let directory_button_title_container =
-        Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
-            .width(Length::FillPortion(1))
-            .center_x()
-            .align_x(Align::Center);
+        // Directory button for World of Warcraft directory selection.
 
-    let directory_button: Element<Interaction> =
-        Button::new(directory_button_state, directory_button_title_container)
-            .style(style::DefaultBoxedButton(color_palette))
-            .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
-            .into();
+        let directory_button_title_container =
+            Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
+                .width(Length::FillPortion(1))
+                .center_x()
+                .align_x(Align::Center);
 
-    // Directory text, written next to directory button to let the user
-    // know what has been selected..
-    let no_directory_str = &localized_string("no-directory")[..];
-    let path_str = config
-        .wow
-        .directory
-        .as_ref()
-        .and_then(|p| p.to_str())
-        .unwrap_or(no_directory_str);
-    let directory_data_text = Text::new(path_str)
-        .size(14)
-        .vertical_alignment(VerticalAlignment::Center);
-    let directory_data_text_container = Container::new(directory_data_text)
-        .height(Length::Units(25))
-        .center_y()
-        .style(style::NormalBackgroundContainer(color_palette));
+        let directory_button: Element<Interaction> =
+            Button::new(directory_button_state, directory_button_title_container)
+                .style(style::DefaultBoxedButton(color_palette))
+                .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
+                .into();
 
-    // Data row for the World of Warcraft directory selection.
-    let directory_data_row = Row::new()
-        .push(directory_button.map(Message::Interaction))
-        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-        .push(directory_data_text_container);
+        // Directory text, written next to directory button to let the user
+        // know what has been selected..
+        let no_directory_str = &localized_string("no-directory")[..];
+        let path_str = config
+            .wow
+            .directory
+            .as_ref()
+            .and_then(|p| p.to_str())
+            .unwrap_or(no_directory_str);
+        let directory_data_text = Text::new(path_str)
+            .size(14)
+            .vertical_alignment(VerticalAlignment::Center);
+        let directory_data_text_container = Container::new(directory_data_text)
+            .height(Length::Units(25))
+            .center_y()
+            .style(style::NormalBackgroundContainer(color_palette));
 
-    scrollable = scrollable
-        .push(direction_info_text_container)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(directory_data_row);
+        // Data row for the World of Warcraft directory selection.
+        let directory_data_row = Row::new()
+            .push(directory_button.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(directory_data_text_container);
+
+        Column::new()
+            .push(direction_info_text_container)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(directory_data_row)
+    };
 
     let theme_column = {
         let title_container =
@@ -165,7 +169,8 @@ pub fn data_container<'a, 'b>(
 
     let (backup_title_row, backup_directory_row, backup_now_row) = {
         // Title for the Backup section.
-        let backup_title_text = Text::new(localized_string("backup")).size(DEFAULT_FONT_SIZE);
+        let backup_title_text =
+            Text::new(localized_string("backup")).size(DEFAULT_HEADER_FONT_SIZE);
         let backup_title_text_container = Container::new(backup_title_text)
             .style(style::BrightBackgroundContainer(color_palette));
 
@@ -407,50 +412,36 @@ pub fn data_container<'a, 'b>(
         Column::new().push(open_config_row)
     };
 
-    let alternate_row_color_column = {
-        let title_container = Container::new(
-            Text::new(localized_string("alternate-row-colors")).size(DEFAULT_FONT_SIZE),
-        )
-        .style(style::NormalBackgroundContainer(color_palette));
-
-        let checkbox = Checkbox::new(
-            config.alternating_row_colors,
-            "",
-            Interaction::AlternatingRowColorToggled,
-        )
-        .style(style::DefaultCheckbox(color_palette))
-        .text_size(DEFAULT_FONT_SIZE);
-
-        let checkbox: Element<Interaction> = checkbox.into();
-
-        let data_row = Row::new()
-            .push(checkbox.map(Message::Interaction))
-            .align_items(Align::Center)
-            .height(Length::Units(26));
-
-        Column::new()
-            .push(title_container)
-            .push(Space::new(Length::Units(0), Length::Units(5)))
-            .push(data_row)
-    };
-
-    let ui_title = Text::new(localized_string("ui")).size(DEFAULT_FONT_SIZE);
-    let ui_title_container =
-        Container::new(ui_title).style(style::BrightBackgroundContainer(color_palette));
-
-    let addon_title = Text::new(localized_string("addons")).size(DEFAULT_FONT_SIZE);
+    let addon_title = Text::new(localized_string("addons")).size(DEFAULT_HEADER_FONT_SIZE);
     let addon_title_container =
         Container::new(addon_title).style(style::BrightBackgroundContainer(color_palette));
 
-    let ajour_settings_title = Text::new(localized_string("ajour")).size(DEFAULT_FONT_SIZE);
-    let ajour_settings_title_container =
-        Container::new(ajour_settings_title).style(style::BrightBackgroundContainer(color_palette));
+    let general_settings_title =
+        Text::new(localized_string("settings-general")).size(DEFAULT_HEADER_FONT_SIZE);
+    let general_settings_title_container = Container::new(general_settings_title)
+        .style(style::BrightBackgroundContainer(color_palette));
 
-    let ui_row = Row::new()
+    let theme_scale_row = Row::new()
         .push(theme_column)
         .push(scale_column)
-        .push(alternate_row_color_column)
         .spacing(DEFAULT_PADDING);
+
+    let alternate_row_color_column = {
+        let checkbox = Checkbox::new(
+            config.alternating_row_colors,
+            localized_string("alternate-row-colors"),
+            Interaction::AlternatingRowColorToggled,
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        let checkbox: Element<Interaction> = checkbox.into();
+
+        let checkbox_container = Container::new(checkbox.map(Message::Interaction))
+            .style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
 
     let self_update_channel_container = {
         let channel_title = Container::new(
@@ -503,35 +494,41 @@ pub fn data_container<'a, 'b>(
             .push(container)
     };
 
+    // General
     scrollable = scrollable
-        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(general_settings_title_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(language_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(wow_directory_column)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(theme_scale_row)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(alternate_row_color_column)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(self_update_channel_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(config_column)
+        .push(Space::new(Length::Units(0), Length::Units(20)));
+
+    // Backup
+    scrollable = scrollable
         .push(backup_title_row)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_now_row)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row)
-        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(Space::new(Length::Units(0), Length::Units(20)));
+
+    // Addons
+    scrollable = scrollable
         .push(addon_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(global_release_channel_column)
-        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(hide_addons_column)
-        .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(delete_saved_variables_column)
-        .push(Space::new(Length::Units(0), Length::Units(20)))
-        .push(ui_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(ui_row)
-        .push(Space::new(Length::Units(0), Length::Units(20)))
-        .push(ajour_settings_title_container)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(language_container)
-        .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(self_update_channel_container)
-        .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(config_column);
+        .push(delete_saved_variables_column);
 
-    let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_FONT_SIZE);
+    let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_HEADER_FONT_SIZE);
     let columns_title_text_container =
         Container::new(columns_title_text).style(style::BrightBackgroundContainer(color_palette));
     scrollable = scrollable

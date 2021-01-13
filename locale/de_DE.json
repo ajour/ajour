@@ -85,7 +85,7 @@
     "unpacking": "Entpacken",
     "update": "Aktualisieren",
     "update-all": "Aktualisiere alle",
-    "ajour-update-channel": "Aktualisierungskanal",
+    "ajour-update-channel": "Ajour Aktualisierungskanal",
     "updating": "Aktualisiert",
     "weakaura-updates-queued": "Aktualisierung in Warteschlange. Neustart erforderlich.",
     "weakauras-loaded": "{number} WeakAuras geladen",
@@ -100,5 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Update verfügbar",
-    "weakaura-update-queued": "Update in Warteschlange"
+    "weakaura-update-queued": "Update in Warteschlange",
+    "settings-general": "Allgemein"
 }
