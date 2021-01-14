@@ -32,7 +32,7 @@ pub fn localized_string(key: &str) -> String {
     if let Some(text) = get_text!(LOCALIZATION_CTX, *lang, key) {
         text.to_string()
     } else {
-        return key.to_owned();
+        key.to_owned()
     }
 }
 
