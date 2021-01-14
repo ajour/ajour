@@ -29,9 +29,11 @@ pub static LANG: OnceCell<RwLock<&'static str>> = OnceCell::new();
 pub fn localized_string(key: &str) -> String {
     let lang = LANG.get().expect("LANG not set").read().unwrap();
 
-    get_text!(LOCALIZATION_CTX, *lang, key)
-        .expect("no localization found")
-        .to_string()
+    if let Some(text) = get_text!(LOCALIZATION_CTX, *lang, key) {
+        text.to_string()
+    } else {
+        return key.to_owned();
+    }
 }
 
 /// Returns a localized `timeago::Formatter`.
