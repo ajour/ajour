@@ -336,7 +336,7 @@ pub fn data_container<'a>(
 
             format!(
                 "{} {} -> {}",
-                localized_string("new-update_available"),
+                localized_string("new-update-available"),
                 VERSION,
                 &release.tag_name
             )
