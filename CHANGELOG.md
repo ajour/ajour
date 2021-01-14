@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.6.2] - 2021-01-14
+
 ### Added
 
 - Added back inline changelogs for remote version. Clicking on the remote version
