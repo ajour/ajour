@@ -1,6 +1,7 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{style, DirectoryType, Interaction, Message, State},
+    crate::localization::localized_string,
     ajour_core::theme::ColorPalette,
     iced::{
         button, Align, Button, Column, Container, Element, HorizontalAlignment, Length, Space, Text,
@@ -36,13 +37,11 @@ pub fn data_container<'a>(
 
     if let (_, Some(btn_state)) = (State::Start, onboarding_directory_btn_state) {
         let onboarding_button_title_container =
-            Container::new(Text::new("Select Directory").size(DEFAULT_FONT_SIZE))
-                .width(Length::Units(120))
+            Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
                 .center_x()
                 .align_x(Align::Center);
         let onboarding_button: Element<Interaction> =
             Button::new(btn_state, onboarding_button_title_container)
-                .width(Length::Units(120))
                 .style(style::DefaultButton(color_palette))
                 .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
                 .into();

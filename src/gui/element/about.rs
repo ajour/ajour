@@ -1,11 +1,14 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{style, Interaction, Message},
+    crate::localization::localized_string,
     ajour_core::{theme::ColorPalette, utility::Release},
     iced::{
         button, scrollable, Button, Column, Container, Element, Length, Row, Scrollable, Space,
         Text,
     },
+    std::collections::HashMap,
+    strfmt::strfmt,
 };
 
 pub fn data_container<'a>(
@@ -15,40 +18,42 @@ pub fn data_container<'a>(
     website_button_state: &'a mut button::State,
     patreon_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
-    let ajour_title = Text::new("Ajour").size(50);
+    let ajour_title = Text::new(localized_string("ajour")).size(50);
     let ajour_title_container =
         Container::new(ajour_title).style(style::BrightBackgroundContainer(color_palette));
 
     let changelog_title_text = Text::new(if let Some(release) = release {
-        format!("Changelog for {}", release.tag_name)
+        let mut vars = HashMap::new();
+        // TODO (casperstorm): change "addon" to "tag" or "version".
+        vars.insert("addon".to_string(), &release.tag_name);
+        let fmt = localized_string("changelog-for");
+        strfmt(&fmt, &vars).unwrap()
     } else {
-        "Changelog".to_owned()
+        localized_string("changelog")
     })
     .size(DEFAULT_FONT_SIZE);
 
     let changelog_text = Text::new(if let Some(release) = release {
         release.body.clone()
     } else {
-        "No changelog found.".to_owned()
+        localized_string("no-changelog")
     })
     .size(DEFAULT_FONT_SIZE);
 
     let website_button: Element<Interaction> = Button::new(
         website_button_state,
-        Text::new("Website").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("website")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultBoxedButton(color_palette))
-    .on_press(Interaction::OpenLink("https://getajour.com".to_owned()))
+    .on_press(Interaction::OpenLink(localized_string("website-http")))
     .into();
 
     let patreon_button: Element<Interaction> = Button::new(
         patreon_button_state,
-        Text::new("Patreon").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("patreon")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultBoxedButton(color_palette))
-    .on_press(Interaction::OpenLink(
-        "https://patreon.com/getajour".to_owned(),
-    ))
+    .on_press(Interaction::OpenLink(localized_string("patreon-http")))
     .into();
 
     let button_row = Row::new()

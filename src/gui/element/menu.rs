@@ -1,6 +1,7 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{style, Interaction, Message, Mode, SelfUpdateState, State},
+    crate::localization::localized_string,
     crate::VERSION,
     ajour_core::{
         config::{Config, Flavor},
@@ -51,31 +52,31 @@ pub fn data_container<'a>(
 
     let mut addons_mode_button = Button::new(
         addon_mode_button_state,
-        Text::new("My Addons").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("my-addons")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
     let mut weakauras_mode_button = Button::new(
         weakauras_mode_button_state,
-        Text::new("My WeakAuras").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("my-weakauras")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
     let mut catalog_mode_button = Button::new(
         catalog_mode_btn_state,
-        Text::new("Catalog").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("catalog")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
     let mut install_mode_button = Button::new(
         install_mode_btn_state,
-        Text::new("Install from URL").size(DEFAULT_FONT_SIZE),
+        Text::new(localized_string("install-from-url")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DisabledDefaultButton(color_palette));
 
     let mut settings_mode_button = Button::new(
         settings_button_state,
-        Text::new("Settings")
+        Text::new(localized_string("settings"))
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
@@ -83,7 +84,7 @@ pub fn data_container<'a>(
 
     let mut about_mode_button = Button::new(
         about_button_state,
-        Text::new("About")
+        Text::new(localized_string("about"))
             .horizontal_alignment(HorizontalAlignment::Center)
             .size(DEFAULT_FONT_SIZE),
     )
@@ -334,8 +335,10 @@ pub fn data_container<'a>(
             needs_update = true;
 
             format!(
-                "New Ajour version available {} -> {}",
-                VERSION, &release.tag_name
+                "{} {} -> {}",
+                localized_string("new-update_available"),
+                VERSION,
+                &release.tag_name
             )
         } else {
             VERSION.to_owned()
@@ -369,7 +372,7 @@ pub fn data_container<'a>(
             .status
             .as_ref()
             .map(|s| s.to_string())
-            .unwrap_or_else(|| "Update".to_string());
+            .unwrap_or_else(|| localized_string("update"));
 
         let mut new_release_button = Button::new(
             &mut self_update_state.btn_state,

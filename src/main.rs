@@ -6,6 +6,7 @@
 mod cli;
 mod command;
 mod gui;
+mod localization;
 
 use ajour_core::fs::CONFIG_DIR;
 use ajour_core::utility::{remove_file, rename};

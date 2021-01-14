@@ -14,6 +14,26 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.6.2] - 2021-01-14
+
+### Added
+
+- Added back inline changelogs for remote version. Clicking on the remote version
+  will show the changelog inline instead of opening a browser window.
+- Ajour has been localized. Currently we support the following languages:
+  - 🇺🇸 English
+  - 🇩🇰 Danish
+  - 🇷🇺 Russian (thanks Ruslan)
+  - 🇪🇸 Spanish (thanks El Empresario and Boryana)
+  - 🇩🇪 German (thanks Subduck)
+  - 🇫🇷 French (thanks Nelfym)
+  - 🇸🇪 Swedish (thanks Zee)
+
+### Fixed
+
+- Parsing error causing WeakAuras to fail parsing due to missing "version" field
+- Incorrect percent encoding in WeakAuras API calls causing auras to not display
+
 ## [0.6.1] - 2021-01-02
 
 ### Added

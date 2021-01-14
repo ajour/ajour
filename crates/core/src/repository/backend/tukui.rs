@@ -3,6 +3,7 @@ use crate::config::Flavor;
 use crate::error::{DownloadError, RepositoryError};
 use crate::network::request_async;
 use crate::repository::{ReleaseChannel, RemotePackage};
+use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, TimeZone, Utc};
@@ -25,6 +26,39 @@ impl Backend for Tukui {
         let metadata = metadata_from_tukui_package(package);
 
         Ok(metadata)
+    }
+
+    async fn get_changelog(
+        &self,
+        _file_id: Option<i64>,
+        _tag_name: Option<String>,
+    ) -> Result<Option<String>, RepositoryError> {
+        let url = changelog_endpoint(&self.id, &self.flavor);
+
+        match self.flavor {
+            Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPTR => {
+                // Only TukUI and ElvUI main addons has changelog which can be fetched.
+                // The others is embeded into a page.
+                if &self.id == "-1" || &self.id == "-2" {
+                    let mut resp = request_async(&url, vec![], None).await?;
+
+                    if resp.status().is_success() {
+                        let changelog: String = resp.text()?;
+
+                        let c = regex_html_tags_to_newline()
+                            .replace_all(&changelog, "\n")
+                            .to_string();
+                        let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
+                        let c = truncate(&c, 2500).to_string();
+
+                        return Ok(Some(c));
+                    }
+                }
+            }
+            Flavor::Classic | Flavor::ClassicPTR => {}
+        }
+
+        Ok(None)
     }
 }
 
@@ -90,6 +124,20 @@ fn api_endpoint(id: &str, flavor: &Flavor) -> String {
         format_flavor(flavor),
         id
     )
+}
+
+fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
+    match flavor {
+        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
+            "-1" => "https://www.tukui.org/ui/tukui/changelog".to_owned(),
+            "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
+            _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
+        },
+        Flavor::Classic | Flavor::ClassicPTR => format!(
+            "https://www.tukui.org/classic-addons.php?id={}&changelog",
+            id
+        ),
+    }
 }
 
 /// Function to fetch a remote addon package which contains

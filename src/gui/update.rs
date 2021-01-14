@@ -5,6 +5,7 @@ use {
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
         SelfUpdateStatus, SortDirection, State,
     },
+    crate::localization::LANG,
     crate::{log_error, Result},
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
@@ -19,7 +20,7 @@ use {
         fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
-        repository::{RepositoryKind, RepositoryPackage},
+        repository::{Changelog, RepositoryKind, RepositoryPackage},
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
     ajour_weak_auras::{Aura, AuraStatus},
@@ -314,10 +315,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Expand(expand_type)) => {
             // An addon can be exanded in two ways.
             match &expand_type {
-                ExpandType::Details(a) => {
-                    log::debug!("Interaction::Expand(Details({:?}))", &a.primary_folder_id);
+                ExpandType::Details(addon) => {
+                    log::debug!(
+                        "Interaction::Expand(Details({:?}))",
+                        &addon.primary_folder_id
+                    );
                     let should_close = match &ajour.expanded_type {
-                        ExpandType::Details(ea) => a.primary_folder_id == ea.primary_folder_id,
+                        ExpandType::Details(a) => addon.primary_folder_id == a.primary_folder_id,
+                        ExpandType::Changelog { addon: a, .. } => {
+                            addon.primary_folder_id == a.primary_folder_id
+                        }
                         _ => false,
                     };
 
@@ -327,11 +334,57 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.expanded_type = expand_type.clone();
                     }
                 }
+                ExpandType::Changelog { addon, .. } => {
+                    log::debug!(
+                        "Interaction::Expand(Changelog({:?}))",
+                        &addon.primary_folder_id
+                    );
+                    let should_close = match &ajour.expanded_type {
+                        ExpandType::Changelog { addon: a, .. } => {
+                            addon.primary_folder_id == a.primary_folder_id
+                        }
+                        _ => false,
+                    };
+
+                    if should_close {
+                        ajour.expanded_type = ExpandType::None;
+                    } else {
+                        ajour.expanded_type = expand_type.clone();
+
+                        return Ok(Command::perform(
+                            perform_fetch_changelog(
+                                addon.clone(),
+                                ajour.config.addons.global_release_channel,
+                            ),
+                            Message::FetchedChangelog,
+                        ));
+                    }
+                }
                 ExpandType::None => {
                     log::debug!("Interaction::Expand(ExpandType::None)");
                 }
             }
         }
+        Message::FetchedChangelog((addon, result)) => match result {
+            Ok(changelog) => {
+                log::debug!("Message::FetchedChangelog({})", &addon.primary_folder_id);
+
+                if let ExpandType::Changelog {
+                    addon: a,
+                    changelog: c,
+                } = &mut ajour.expanded_type
+                {
+                    if a.primary_folder_id == addon.primary_folder_id {
+                        *c = Some(changelog);
+                    }
+                }
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to fetch changelog").unwrap_err();
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
         Message::Interaction(Interaction::Delete(id)) => {
             log::debug!("Interaction::Delete({})", &id);
 
@@ -1503,7 +1556,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         match install_addon.kind {
                             InstallKind::Catalog { .. } => {
-                                install_addon.status = InstallStatus::Unavilable;
+                                install_addon.status = InstallStatus::Unavailable;
                             }
                             InstallKind::Source => {
                                 install_addon.status = InstallStatus::Error(error.to_string());
@@ -1667,6 +1720,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 get_latest_release(ajour.config.self_update_channel),
                 Message::LatestRelease,
             ));
+        }
+        Message::Interaction(Interaction::PickLocalizationLanguage(lang)) => {
+            log::debug!("Interaction::PickLocalizationLanguage({:?})", lang);
+
+            // Update config.
+            ajour.config.language = lang;
+            let _ = ajour.config.save();
+
+            // Update global LANG refcell.
+            *LANG.get().expect("LANG not set").write().unwrap() = lang.language_code();
         }
         Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
             log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
@@ -2045,6 +2108,15 @@ async fn is_weak_auras_installed(flavor: Flavor, addon_dir: PathBuf) -> (Flavor,
     )
 }
 
+async fn perform_fetch_changelog(
+    addon: Addon,
+    default_release_channel: GlobalReleaseChannel,
+) -> (Addon, Result<Changelog, RepositoryError>) {
+    let changelog = addon.changelog(default_release_channel).await;
+
+    (addon, changelog)
+}
+
 fn sort_addons(
     addons: &mut [Addon],
     global_release_channel: GlobalReleaseChannel,
@@ -2266,7 +2338,6 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
         (AuraColumnKey::Author, SortDirection::Desc) => {
             auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
         }
-        // TODO: Add status and sort
         (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
             a.status()
                 .cmp(&b.status())

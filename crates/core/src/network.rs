@@ -8,13 +8,18 @@ use async_std::{
 use isahc::config::RedirectPolicy;
 use isahc::http::header::CONTENT_LENGTH;
 use isahc::prelude::*;
+use once_cell::sync::Lazy;
 use serde::Serialize;
 use std::path::PathBuf;
 
-lazy_static::lazy_static! {
-    /// Shared `HttpClient`.
-    static ref HTTP_CLIENT: HttpClient = HttpClient::builder().redirect_policy(RedirectPolicy::Follow).max_connections_per_host(6).build().unwrap();
-}
+/// Shared `HttpClient`.
+static HTTP_CLIENT: Lazy<HttpClient> = Lazy::new(|| {
+    HttpClient::builder()
+        .redirect_policy(RedirectPolicy::Follow)
+        .max_connections_per_host(6)
+        .build()
+        .unwrap()
+});
 
 /// Ajour user-agent.
 fn user_agent() -> String {

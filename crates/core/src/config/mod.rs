@@ -50,6 +50,9 @@ pub struct Config {
 
     #[serde(default = "default_true")]
     pub alternating_row_colors: bool,
+
+    #[serde(default)]
+    pub language: Language,
 }
 
 impl Config {
@@ -204,6 +207,65 @@ impl Display for SelfUpdateChannel {
         };
 
         write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
+pub enum Language {
+    English,
+    Danish,
+    German,
+    French,
+    Russian,
+    Swedish,
+    Spanish,
+}
+
+impl std::fmt::Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Language::English => "English",
+                Language::Danish => "Dansk",
+                Language::German => "Deutch",
+                Language::Swedish => "Svenska",
+                Language::French => "Français",
+                Language::Russian => "Pусский",
+                Language::Spanish => "Español",
+            }
+        )
+    }
+}
+
+impl Language {
+    pub const ALL: [Language; 7] = [
+        Language::Danish,
+        Language::English,
+        Language::French,
+        Language::German,
+        Language::Russian,
+        Language::Spanish,
+        Language::Swedish,
+    ];
+
+    pub const fn language_code(self) -> &'static str {
+        match self {
+            Language::English => "en_US",
+            Language::Danish => "da_DK",
+            Language::German => "de_DE",
+            Language::French => "fr_FR",
+            Language::Russian => "ru_RU",
+            Language::Swedish => "se_SE",
+            Language::Spanish => "es_ES",
+        }
+    }
+}
+
+impl Default for Language {
+    fn default() -> Language {
+        Language::English
     }
 }
 
