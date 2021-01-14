@@ -229,7 +229,7 @@ impl std::fmt::Display for Language {
             match self {
                 Language::English => "English",
                 Language::Danish => "Dansk",
-                Language::German => "Deutch",
+                Language::German => "Deutsch",
                 Language::Swedish => "Svenska",
                 Language::French => "Français",
                 Language::Russian => "Pусский",

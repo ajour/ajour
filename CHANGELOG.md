@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Various spelling errors corrected.
+
 ## [0.6.2] - 2021-01-14
 
 ### Added
