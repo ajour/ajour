@@ -14,7 +14,9 @@ and `Removed`.
 
 ## [Unreleased]
 
-### Fixed
+### Changed
+
+- Refreshed the menu with a more simple and uncluttered look.
 
 ## [0.6.3] - 2021-01-14
 
