@@ -191,11 +191,6 @@ pub struct Ajour {
     theme_state: ThemeState,
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
-    retail_btn_state: button::State,
-    retail_ptr_btn_state: button::State,
-    retail_beta_btn_state: button::State,
-    classic_btn_state: button::State,
-    classic_ptr_btn_state: button::State,
     addon_mode_btn_state: button::State,
     weakaura_mode_btn_state: button::State,
     catalog_mode_btn_state: button::State,
@@ -222,6 +217,7 @@ pub struct Ajour {
     aura_header_state: AuraHeaderState,
     reset_columns_btn_state: button::State,
     localization_picklist_state: pick_list::State<Language>,
+    flavor_picklist_state: pick_list::State<Flavor>,
 }
 
 impl Default for Ajour {
@@ -248,11 +244,6 @@ impl Default for Ajour {
             theme_state: Default::default(),
             fingerprint_cache: None,
             addon_cache: None,
-            retail_btn_state: Default::default(),
-            retail_ptr_btn_state: Default::default(),
-            retail_beta_btn_state: Default::default(),
-            classic_btn_state: Default::default(),
-            classic_ptr_btn_state: Default::default(),
             addon_mode_btn_state: Default::default(),
             weakaura_mode_btn_state: Default::default(),
             catalog_mode_btn_state: Default::default(),
@@ -282,6 +273,7 @@ impl Default for Ajour {
             aura_header_state: Default::default(),
             reset_columns_btn_state: Default::default(),
             localization_picklist_state: Default::default(),
+            flavor_picklist_state: Default::default(),
         }
     }
 }
@@ -387,12 +379,8 @@ impl Application for Ajour {
             &mut self.weakaura_mode_btn_state,
             &mut self.catalog_mode_btn_state,
             &mut self.install_mode_btn_state,
-            &mut self.retail_btn_state,
-            &mut self.retail_ptr_btn_state,
-            &mut self.retail_beta_btn_state,
-            &mut self.classic_btn_state,
-            &mut self.classic_ptr_btn_state,
             &mut self.self_update_state,
+            &mut self.flavor_picklist_state,
             self.weak_auras_is_installed,
         );
 

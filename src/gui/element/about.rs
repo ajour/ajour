@@ -1,5 +1,5 @@
 use {
-    super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
+    super::{DEFAULT_FONT_SIZE, DEFAULT_HEADER_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{style, Interaction, Message},
     crate::localization::localized_string,
     ajour_core::{theme::ColorPalette, utility::Release},
@@ -18,7 +18,7 @@ pub fn data_container<'a>(
     website_button_state: &'a mut button::State,
     patreon_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
-    let ajour_title = Text::new(localized_string("ajour")).size(50);
+    let ajour_title = Text::new(localized_string("ajour")).size(DEFAULT_HEADER_FONT_SIZE);
     let ajour_title_container =
         Container::new(ajour_title).style(style::BrightBackgroundContainer(color_palette));
 
@@ -75,8 +75,9 @@ pub fn data_container<'a>(
         .push(ajour_title_container)
         .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(button_row)
-        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(Space::new(Length::Units(0), Length::Units(DEFAULT_PADDING)))
         .push(changelog_title_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(changelog_text_container);
 
     let col = Column::new().push(scrollable);
