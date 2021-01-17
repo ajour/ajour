@@ -177,5 +177,6 @@ mod test {
         channel_stable: String,
         channel_beta: String,
         channel_alpha: String,
+        catalog_results: String,
     }
 }
