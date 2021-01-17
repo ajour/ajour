@@ -1754,7 +1754,12 @@ impl CatalogResultSize {
 
 impl std::fmt::Display for CatalogResultSize {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", &localized_string("catalog-results"), self.as_usize())
+        write!(
+            f,
+            "{}: {}",
+            &localized_string("catalog-results"),
+            self.as_usize()
+        )
     }
 }
 
