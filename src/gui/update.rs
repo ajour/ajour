@@ -2364,8 +2364,10 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
 
-        // Use default, can tweak if needed in future
+        // Increase penalty for gaps between matching characters
         let fuzzy_match_config = SkimScoreConfig {
+            gap_start: -12,
+            gap_extension: -6,
             ..Default::default()
         };
         let fuzzy_matcher = SkimMatcherV2::default().score_config(fuzzy_match_config);
@@ -2384,9 +2386,11 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                         None
                     }
                 } else {
-                    Some((a, 0))
+                    Some((a, 1))
                 }
             })
+            // Only return positive scores
+            .filter(|(_, s)| *s > 0)
             .filter(|(a, _)| {
                 a.game_versions
                     .iter()
