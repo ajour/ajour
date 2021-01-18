@@ -1742,12 +1742,11 @@ impl CatalogResultSize {
 
 impl std::fmt::Display for CatalogResultSize {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}: {}",
-            &localized_string("catalog-results"),
-            self.as_usize()
-        )
+        let mut vars = HashMap::new();
+        vars.insert("number".to_string(), self.as_usize());
+        let fmt = localized_string("catalog-results");
+
+        write!(f, "{}", strfmt(&fmt, &vars).unwrap())
     }
 }
 
