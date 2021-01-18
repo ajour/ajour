@@ -2364,7 +2364,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
 
-        // Use default, can tweak if needed in future
+        // Increase penalty for gaps between matching characters
         let fuzzy_match_config = SkimScoreConfig {
             gap_start: -12,
             gap_extension: -6,
