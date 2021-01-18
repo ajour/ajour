@@ -17,6 +17,8 @@ and `Removed`.
 ### Changed
 
 - Refreshed the menu with a more simple and uncluttered look.
+- Catalog fuzzy matching better removes unrelated results while retaining relevant
+  results
 
 ## [0.6.3] - 2021-01-14
 
