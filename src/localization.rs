@@ -40,7 +40,12 @@ pub fn localized_string(key: &str) -> String {
     let lang = LANG.get().expect("LANG not set").read().unwrap();
 
     if let Some(text) = get_text!(LOCALIZATION_CTX, *lang, key) {
-        text.to_string()
+        let text = text.to_string();
+        if text.is_empty() {
+            key.to_owned()
+        } else {
+            text
+        }
     } else {
         key.to_owned()
     }
