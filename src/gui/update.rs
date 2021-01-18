@@ -2366,6 +2366,8 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
 
         // Use default, can tweak if needed in future
         let fuzzy_match_config = SkimScoreConfig {
+            gap_start: -12,
+            gap_extension: -6,
             ..Default::default()
         };
         let fuzzy_matcher = SkimMatcherV2::default().score_config(fuzzy_match_config);
@@ -2384,9 +2386,11 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                         None
                     }
                 } else {
-                    Some((a, 0))
+                    Some((a, 1))
                 }
             })
+            // Only return positive scores
+            .filter(|(_, s)| *s > 0)
             .filter(|(a, _)| {
                 a.game_versions
                     .iter()
