@@ -19,7 +19,19 @@ pub static LOCALIZATION_CTX: Lazy<JSONGetText<'static>> = Lazy::new(|| {
         "se_SE",
         "locale/se_SE.json",
         "es_ES",
-        "locale/es_ES.json"
+        "locale/es_ES.json",
+        "cs_CZ",
+        "locale/cs_CZ.json",
+        "hu_HU",
+        "locale/hu_HU.json",
+        "nb_NO",
+        "locale/nb_NO.json",
+        "sk_SK",
+        "locale/sk_SK.json",
+        "tr_TR",
+        "locale/tr_TR.json",
+        "pt_PT",
+        "locale/pt_PT.json"
     )
     .unwrap()
 });
@@ -30,7 +42,12 @@ pub fn localized_string(key: &str) -> String {
     let lang = LANG.get().expect("LANG not set").read().unwrap();
 
     if let Some(text) = get_text!(LOCALIZATION_CTX, *lang, key) {
-        text.to_string()
+        let text = text.to_string();
+        if text.is_empty() {
+            key.to_owned()
+        } else {
+            text
+        }
     } else {
         key.to_owned()
     }
