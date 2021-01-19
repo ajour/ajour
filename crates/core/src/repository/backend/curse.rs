@@ -49,18 +49,18 @@ impl Backend for Curse {
         &self,
         file_id: Option<i64>,
         _tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError> {
+    ) -> Result<Option<String>, RepositoryError> {
         let file_id = file_id.ok_or(RepositoryError::CurseChangelogFileId)?;
 
         let url = format!(
             "{}/addon/{}/file/{}/changelog",
             API_ENDPOINT, self.id, file_id
         );
-        let client = HttpClient::builder().build().unwrap();
-        let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
+
+        let mut resp = request_async(&url, vec![], None).await?;
 
         if resp.status().is_success() {
-            let changelog: String = resp.text()?;
+            let changelog: String = resp.text_async().await?;
 
             let c = regex_html_tags_to_newline()
                 .replace_all(&changelog, "\n")
@@ -68,10 +68,10 @@ impl Backend for Curse {
             let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
             let c = truncate(&c, 2500).to_string();
 
-            return Ok((c, url));
+            return Ok(Some(c));
         }
 
-        Ok(("No changelog found.".to_owned(), url))
+        Ok(None)
     }
 }
 
@@ -114,7 +114,8 @@ pub(crate) fn metadata_from_curse_package(flavor: Flavor, package: Package) -> R
     let mut metadata = RepositoryMetadata::empty();
     metadata.remote_packages = remote_packages;
     metadata.title = Some(package.name.clone());
-    metadata.website_url = Some(package.website_url);
+    metadata.website_url = Some(package.website_url.clone());
+    metadata.changelog_url = Some(format!("{}/files", package.website_url));
 
     metadata
 }
@@ -218,6 +219,9 @@ pub struct Package {
     pub name: String,
     pub website_url: String,
     pub latest_files: Vec<File>,
+    pub date_created: DateTime<Utc>,
+    pub date_modified: DateTime<Utc>,
+    pub date_released: DateTime<Utc>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

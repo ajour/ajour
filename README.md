@@ -42,10 +42,10 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 <p align="center">
   <img width="410"
        alt="Ajour with default Dark theme"
-       src="./resources/screenshots/ajour-0.3.0a.png">
+       src="./resources/screenshots/ajour-0.6.0a.png">
     <img width="410"
-       alt="Ajour with Solarized Light theme"
-       src="./resources/screenshots/ajour-0.3.0b.png">
+       alt="Ajour with Light theme"
+       src="./resources/screenshots/ajour-0.6.0b.png">
 </p>
 
 ## Features
@@ -56,7 +56,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
   - [WoWInterface](https://www.wowinterface.com/)
 - Install new addons from the catalog or directly from a GitHub/GitLab URL
 - Support for release channels, so it's possible to select either `alpha`, `beta`
-or `stable` for each addon
+  or `stable` for each addon
 - View changelogs for each addon
 - Bulk addon update without any limitations
 - Remove addons and their dependencies
@@ -66,6 +66,9 @@ or `stable` for each addon
   - [Ability to add your own custom themes](./THEMES.md)
 - Ability to backup your whole UI, including all settings from WTF
 - Ability to run as a [command line application](#command-line) for advanced users
+- WeakAuras import strings from [Wago.io](https://wago.io/weakauras) will automatically
+  be parsed
+- Localized in multiple languages
 
 ## Install
 
@@ -80,11 +83,7 @@ Find instructions for building your own themes [here](./THEMES.md).
 
 ## Command Line
 
-Ajour accepts arguments and can even run certain operations on the command line
-without launching the GUI, such as updating all addons. This makes it possible to
-manage your addon collection through scripts and scheduling.
-
-You can pass `--help` to see a full list of supported flags, options and commands.
+Find instructions for using the command line interface [here](./CLI.md)
 
 ## Contribute
 
@@ -93,24 +92,19 @@ You can pass `--help` to see a full list of supported flags, options and command
 Ajour wouldn't be here without your help.
 I welcome contributions of any kind, because together we can make Ajour even better.
 
-+ [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=)
-if you are missing a vital feature.
-+ I love [pull requests](https://github.com/casperstorm/ajour/pulls) and [bug reports](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
-+ Don't hesitate to [tell me my Rust programming is bad](https://github.com/casperstorm/ajour/issues/new)
-but please tell me why.
-+ Join our [Discord server](https://discord.gg/4838t9R) and say hey.
+- [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=)
+  if you are missing a vital feature.
+- I love [pull requests](https://github.com/casperstorm/ajour/pulls) and [bug reports](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
+- Don't hesitate to [tell me my Rust programming is bad](https://github.com/casperstorm/ajour/issues/new)
+  but please tell me why.
+- Help translating Ajour on [POEditor](https://poeditor.com/join/project?hash=gjghTR7d0Z).
+- Join our [Discord server](https://discord.gg/4838t9R) and say hey.
 
 ## FAQ
 
 **_What features are planned?_**
 
 We have a roadmap [here](https://github.com/casperstorm/ajour/projects/2).
-
-**_What should I do if some addon isn't showing or updating correctly?_**
-
-We encourage you to raise an issue and tell us all about it! We want Ajour to
-support as many addons as possible. This means a lot of edge cases. A list of addons
-with known issues can be found in the [wiki](https://github.com/casperstorm/ajour/wiki/Addons-with-known-issues).
 
 **_macOS won't let me open the app, what should I do?_**
 

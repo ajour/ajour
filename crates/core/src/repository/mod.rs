@@ -11,7 +11,7 @@ use std::collections::HashMap;
 mod backend;
 use backend::Backend;
 
-pub(crate) use backend::{curse, tukui, wowi};
+pub use backend::{curse, tukui, wowi};
 use backend::{Curse, Github, Gitlab, Tukui, WowI};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]
@@ -151,33 +151,34 @@ impl RepositoryPackage {
 
     /// Get changelog from the repository
     ///
-    /// `channel` and `is_remote` are only used for the Curse repository since
+    /// `channel` is only used for the Curse & GitHub repository since
     /// we can get unique changelogs for each version
     pub(crate) async fn get_changelog(
         &self,
-        channel: ReleaseChannel,
-        is_remote: bool,
-    ) -> Result<(String, String), RepositoryError> {
+        release_channel: ReleaseChannel,
+        default_release_channel: GlobalReleaseChannel,
+    ) -> Result<Option<String>, RepositoryError> {
+        let release_channel = if release_channel == ReleaseChannel::Default {
+            default_release_channel.convert_to_release_channel()
+        } else {
+            release_channel
+        };
+
         let file_id = if self.kind == RepositoryKind::Curse {
-            if is_remote {
-                self.metadata
-                    .remote_packages
-                    .get(&channel)
-                    .map(|p| p.file_id)
-                    .flatten()
-            } else {
-                self.metadata.file_id
-            }
+            self.metadata
+                .remote_packages
+                .get(&release_channel)
+                .and_then(|p| p.file_id)
         } else {
             None
         };
 
         let tag_name = if self.kind.is_git() {
-            let remote_package = self
-                .metadata
-                .remote_packages
-                .get(&channel)
-                .ok_or(RepositoryError::MissingPackageChannel { channel })?;
+            let remote_package = self.metadata.remote_packages.get(&release_channel).ok_or(
+                RepositoryError::MissingPackageChannel {
+                    channel: release_channel,
+                },
+            )?;
 
             Some(remote_package.version.clone())
         } else {
@@ -202,6 +203,10 @@ pub struct RepositoryMetadata {
     pub(crate) website_url: Option<String>,
     pub(crate) game_version: Option<String>,
     pub(crate) file_id: Option<i64>,
+
+    // todo (casperstorm): better description here.
+    // This is constructed, and is different for each repo.
+    pub(crate) changelog_url: Option<String>,
 
     /// Remote packages available from the Repository
     pub(crate) remote_packages: HashMap<ReleaseChannel, RemotePackage>,
@@ -245,15 +250,66 @@ impl Ord for RemotePackage {
     }
 }
 
+/// This is the global channel used.
+/// If an addon has chosen `Default` as `ReleaseChannel`, we will `GlobalReleaseChannel`
+/// instead, which is saved in the config.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
+pub enum GlobalReleaseChannel {
+    Stable,
+    Beta,
+    Alpha,
+}
+
+impl GlobalReleaseChannel {
+    pub const ALL: [GlobalReleaseChannel; 3] = [
+        GlobalReleaseChannel::Stable,
+        GlobalReleaseChannel::Beta,
+        GlobalReleaseChannel::Alpha,
+    ];
+
+    pub fn convert_to_release_channel(&self) -> ReleaseChannel {
+        match self {
+            GlobalReleaseChannel::Stable => ReleaseChannel::Stable,
+            GlobalReleaseChannel::Beta => ReleaseChannel::Beta,
+            GlobalReleaseChannel::Alpha => ReleaseChannel::Alpha,
+        }
+    }
+}
+
+impl Default for GlobalReleaseChannel {
+    fn default() -> GlobalReleaseChannel {
+        GlobalReleaseChannel::Stable
+    }
+}
+
+impl std::fmt::Display for GlobalReleaseChannel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                GlobalReleaseChannel::Stable => "Stable",
+                GlobalReleaseChannel::Beta => "Beta",
+                GlobalReleaseChannel::Alpha => "Alpha",
+            }
+        )
+    }
+}
+
+/// This is the channel used on an addon level.
+/// If `Default` is chosen, we will use the value from `GlobalReleaseChannel` which
+/// is saved in the config.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
 pub enum ReleaseChannel {
+    Default,
     Stable,
     Beta,
     Alpha,
 }
 
 impl ReleaseChannel {
-    pub const ALL: [ReleaseChannel; 3] = [
+    pub const ALL: [ReleaseChannel; 4] = [
+        ReleaseChannel::Default,
         ReleaseChannel::Stable,
         ReleaseChannel::Beta,
         ReleaseChannel::Alpha,
@@ -262,7 +318,7 @@ impl ReleaseChannel {
 
 impl Default for ReleaseChannel {
     fn default() -> ReleaseChannel {
-        ReleaseChannel::Stable
+        ReleaseChannel::Default
     }
 }
 
@@ -272,6 +328,7 @@ impl std::fmt::Display for ReleaseChannel {
             f,
             "{}",
             match self {
+                ReleaseChannel::Default => "Default",
                 ReleaseChannel::Stable => "Stable",
                 ReleaseChannel::Beta => "Beta",
                 ReleaseChannel::Alpha => "Alpha",
@@ -287,4 +344,9 @@ pub struct RepositoryIdentifiers {
     pub tukui: Option<String>,
     pub curse: Option<i32>,
     pub git: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Changelog {
+    pub text: Option<String>,
 }

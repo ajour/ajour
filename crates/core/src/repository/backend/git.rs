@@ -10,7 +10,7 @@ mod github {
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
     use isahc::http::Uri;
-    use isahc::prelude::*;
+    use isahc::ResponseExt;
     use serde::Deserialize;
 
     use std::collections::HashMap;
@@ -24,8 +24,6 @@ mod github {
     #[async_trait]
     impl Backend for Github {
         async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
-            let client = HttpClient::new()?;
-
             let mut path = self.url.path().split('/');
             // Get rid of leading slash
             path.next();
@@ -37,79 +35,71 @@ mod github {
                 url: self.url.to_string(),
             })?;
 
-            let url = format!(
-                "https://api.github.com/repos/{}/{}/releases/latest",
-                author, repo
-            );
+            let url = format!("https://api.github.com/repos/{}/{}/releases", author, repo);
 
-            let mut resp = request_async(&client, &url, vec![], None).await?;
+            let mut resp = request_async(&url, vec![], None).await?;
 
-            let release: Release = resp
+            let releases: Vec<Release> = resp
                 .json()
                 .map_err(|_| RepositoryError::GitMissingRelease { url: url.clone() })?;
 
-            let num_non_classic = release
-                .assets
-                .iter()
-                .filter(|a| a.name.ends_with("zip"))
-                .filter(|a| !a.name.to_lowercase().contains("classic"))
-                .count();
-            let num_classic = release
-                .assets
-                .iter()
-                .filter(|a| a.name.ends_with("zip"))
-                .filter(|a| a.name.to_lowercase().contains("classic"))
-                .count();
+            let stable_release = releases.iter().find(|r| !r.prerelease);
+            let beta_release = releases.iter().find(|r| r.prerelease);
 
-            if self.flavor.base_flavor() == Flavor::Retail && num_non_classic > 1
-                || self.flavor.base_flavor() == Flavor::Classic
-                    && num_classic == 0
-                    && num_non_classic > 1
-            {
-                return Err(RepositoryError::GitIndeterminableZip {
-                    count: num_non_classic,
-                    url: url.clone(),
-                });
-            } else if self.flavor.base_flavor() == Flavor::Classic && num_classic > 1 {
-                return Err(RepositoryError::GitIndeterminableZipClassic {
-                    count: num_classic,
-                    url,
-                });
+            if stable_release.is_none() && beta_release.is_none() {
+                return Err(RepositoryError::GitMissingRelease { url: url.clone() });
             }
 
-            let asset = release
-                .assets
-                .iter()
-                .find(|a| {
-                    if self.flavor.base_flavor() == Flavor::Retail {
-                        a.name.ends_with("zip") && !a.name.to_lowercase().contains("classic")
-                    } else if num_classic > 0 {
-                        a.name.ends_with("zip") && a.name.to_lowercase().contains("classic")
-                    } else {
-                        a.name.ends_with("zip")
-                    }
-                })
-                .ok_or(RepositoryError::GitNoZip { url })?;
-
-            let version = release.tag_name.clone();
-            let download_url = asset.browser_download_url.clone();
-            let date_time = Some(release.published_at);
-
             let mut remote_packages = HashMap::new();
-            let remote_package = RemotePackage {
-                version,
-                download_url,
-                date_time,
-                file_id: None,
-                modules: vec![],
-            };
 
-            remote_packages.insert(ReleaseChannel::Stable, remote_package);
+            if let Some(release) = stable_release {
+                set_remote_package(
+                    self.flavor,
+                    &url,
+                    &mut remote_packages,
+                    ReleaseChannel::Stable,
+                    release,
+                )?;
+            }
+
+            if let Some(release) = beta_release {
+                set_remote_package(
+                    self.flavor,
+                    &url,
+                    &mut remote_packages,
+                    ReleaseChannel::Beta,
+                    release,
+                )?;
+            }
+
+            // URL passed in by user might not be the correct letter casing. Let's
+            // use the url from the API response instead to ensure the title we
+            // use for the addon has the correct letter casing.
+            let title = {
+                let release = if stable_release.is_some() {
+                    stable_release.unwrap()
+                } else {
+                    beta_release.unwrap()
+                };
+
+                let html_url = release.html_url.parse::<Uri>()?;
+
+                let mut path = html_url.path().split('/');
+                path.next();
+                path.next();
+
+                path.next()
+                    .ok_or(RepositoryError::GitMissingRepo {
+                        url: self.url.to_string(),
+                    })?
+                    .to_string()
+            };
 
             let metadata = RepositoryMetadata {
                 website_url: Some(self.url.to_string()),
+                changelog_url: Some(format!("{}/releases", self.url)),
                 remote_packages,
-                title: Some(repo.to_string()),
+                title: Some(title),
                 ..Default::default()
             };
 
@@ -120,10 +110,8 @@ mod github {
             &self,
             _file_id: Option<i64>,
             tag_name: Option<String>,
-        ) -> Result<(String, String), RepositoryError> {
+        ) -> Result<Option<String>, RepositoryError> {
             let tag_name = tag_name.ok_or(RepositoryError::GitChangelogTagName)?;
-
-            let client = HttpClient::new()?;
 
             let mut path = self.url.path().split('/');
             // Get rid of leading slash
@@ -141,14 +129,82 @@ mod github {
                 author, repo, tag_name
             );
 
-            let mut resp = request_async(&client, &url, vec![], None).await?;
+            let mut resp = request_async(&url, vec![], None).await?;
 
             let release: Release = resp
                 .json()
                 .map_err(|_| RepositoryError::GitMissingRelease { url })?;
 
-            Ok((release.body, release.html_url))
+            Ok(Some(release.body))
         }
+    }
+
+    fn set_remote_package(
+        flavor: Flavor,
+        url: &str,
+        remote_packages: &mut HashMap<ReleaseChannel, RemotePackage>,
+        release_channel: ReleaseChannel,
+        release: &Release,
+    ) -> Result<(), RepositoryError> {
+        let num_non_classic = release
+            .assets
+            .iter()
+            .filter(|a| a.name.ends_with("zip"))
+            .filter(|a| !a.name.to_lowercase().contains("classic"))
+            .count();
+
+        let num_classic = release
+            .assets
+            .iter()
+            .filter(|a| a.name.ends_with("zip"))
+            .filter(|a| a.name.to_lowercase().contains("classic"))
+            .count();
+
+        if flavor.base_flavor() == Flavor::Retail && num_non_classic > 1
+            || flavor.base_flavor() == Flavor::Classic && num_classic == 0 && num_non_classic > 1
+        {
+            return Err(RepositoryError::GitIndeterminableZip {
+                count: num_non_classic,
+                url: url.to_string(),
+            });
+        } else if flavor.base_flavor() == Flavor::Classic && num_classic > 1 {
+            return Err(RepositoryError::GitIndeterminableZipClassic {
+                count: num_classic,
+                url: url.to_string(),
+            });
+        }
+
+        let asset = release
+            .assets
+            .iter()
+            .find(|a| {
+                if flavor.base_flavor() == Flavor::Retail {
+                    a.name.ends_with("zip") && !a.name.to_lowercase().contains("classic")
+                } else if num_classic > 0 {
+                    a.name.ends_with("zip") && a.name.to_lowercase().contains("classic")
+                } else {
+                    a.name.ends_with("zip")
+                }
+            })
+            .ok_or(RepositoryError::GitNoZip {
+                url: url.to_string(),
+            })?;
+
+        let version = release.tag_name.clone();
+        let download_url = asset.browser_download_url.clone();
+        let date_time = Some(release.published_at);
+
+        let remote_package = RemotePackage {
+            version,
+            download_url,
+            date_time,
+            file_id: None,
+            modules: vec![],
+        };
+
+        remote_packages.insert(release_channel, remote_package);
+
+        Ok(())
     }
 
     #[derive(Debug, Deserialize, Clone)]
@@ -177,7 +233,7 @@ mod gitlab {
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
     use isahc::http::Uri;
-    use isahc::prelude::*;
+    use isahc::ResponseExt;
     use serde::Deserialize;
 
     use std::collections::HashMap;
@@ -191,8 +247,6 @@ mod gitlab {
     #[async_trait]
     impl Backend for Gitlab {
         async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
-            let client = HttpClient::new()?;
-
             let mut path = self.url.path().split('/');
             // Get rid of leading slash
             path.next();
@@ -209,7 +263,7 @@ mod gitlab {
                 author, repo
             );
 
-            let mut resp = request_async(&client, &url, vec![], None).await?;
+            let mut resp = request_async(&url, vec![], None).await?;
 
             let releases: Vec<Release> = resp
                 .json()
@@ -271,7 +325,7 @@ mod gitlab {
 
             let mut remote_packages = HashMap::new();
             let remote_package = RemotePackage {
-                version,
+                version: version.clone(),
                 download_url,
                 date_time,
                 file_id: None,
@@ -282,6 +336,7 @@ mod gitlab {
 
             let metadata = RepositoryMetadata {
                 website_url: Some(self.url.to_string()),
+                changelog_url: Some(format!("{}/-/tags/{}", self.url, version)),
                 remote_packages,
                 title: Some(repo.to_string()),
                 ..Default::default()
@@ -294,10 +349,8 @@ mod gitlab {
             &self,
             _file_id: Option<i64>,
             tag_name: Option<String>,
-        ) -> Result<(String, String), RepositoryError> {
+        ) -> Result<Option<String>, RepositoryError> {
             let tag_name = tag_name.ok_or(RepositoryError::GitChangelogTagName)?;
-
-            let client = HttpClient::new()?;
 
             let mut path = self.url.path().split('/');
             // Get rid of leading slash
@@ -315,15 +368,13 @@ mod gitlab {
                 author, repo, tag_name
             );
 
-            let mut resp = request_async(&client, &url, vec![], None).await?;
+            let mut resp = request_async(&url, vec![], None).await?;
 
             let release: Release = resp
                 .json()
                 .map_err(|_| RepositoryError::GitMissingRelease { url })?;
 
-            let release_url = format!("https://gitlab.com{}", &release.tag_path);
-
-            Ok((release.description, release_url))
+            Ok(Some(release.description))
         }
     }
 

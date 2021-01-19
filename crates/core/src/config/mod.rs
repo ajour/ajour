@@ -1,6 +1,8 @@
 use crate::error::FilesystemError;
 use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fmt::{self, Display, Formatter};
 use std::path::PathBuf;
 
 mod addons;
@@ -39,6 +41,18 @@ pub struct Config {
 
     #[serde(default)]
     pub hide_ignored_addons: bool,
+
+    #[serde(default)]
+    pub self_update_channel: SelfUpdateChannel,
+
+    #[serde(default)]
+    pub weak_auras_account: HashMap<Flavor, String>,
+
+    #[serde(default = "default_true")]
+    pub alternating_row_colors: bool,
+
+    #[serde(default)]
+    pub language: Language,
 }
 
 impl Config {
@@ -145,6 +159,8 @@ pub enum ColumnConfig {
     V3 {
         my_addons_columns: Vec<ColumnConfigV2>,
         catalog_columns: Vec<ColumnConfigV2>,
+        #[serde(default)]
+        aura_columns: Vec<ColumnConfigV2>,
     },
 }
 
@@ -165,6 +181,118 @@ impl Default for ColumnConfig {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SelfUpdateChannel {
+    Stable,
+    Beta,
+}
+
+impl SelfUpdateChannel {
+    pub const fn all() -> [Self; 2] {
+        [SelfUpdateChannel::Stable, SelfUpdateChannel::Beta]
+    }
+}
+
+impl Default for SelfUpdateChannel {
+    fn default() -> Self {
+        SelfUpdateChannel::Stable
+    }
+}
+
+impl Display for SelfUpdateChannel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            SelfUpdateChannel::Stable => "Stable",
+            SelfUpdateChannel::Beta => "Beta",
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
+pub enum Language {
+    Czech,
+    Norwegian,
+    English,
+    Danish,
+    German,
+    French,
+    Hungarian,
+    Portuguese,
+    Russian,
+    Slovak,
+    Swedish,
+    Spanish,
+    Turkish,
+}
+
+impl std::fmt::Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Language::Czech => "Čeština",
+                Language::English => "English",
+                Language::Danish => "Dansk",
+                Language::German => "Deutsch",
+                Language::Swedish => "Svenska",
+                Language::French => "Français",
+                Language::Russian => "Pусский",
+                Language::Spanish => "Español",
+                Language::Hungarian => "Magyar",
+                Language::Norwegian => "Bokmål",
+                Language::Slovak => "Slovenčina",
+                Language::Turkish => "Türkçe",
+                Language::Portuguese => "Português",
+            }
+        )
+    }
+}
+
+impl Language {
+    pub const ALL: [Language; 13] = [
+        Language::Czech,
+        Language::Danish,
+        Language::English,
+        Language::French,
+        Language::German,
+        Language::Russian,
+        Language::Spanish,
+        Language::Swedish,
+        Language::Hungarian,
+        Language::Norwegian,
+        Language::Slovak,
+        Language::Turkish,
+        Language::Portuguese,
+    ];
+
+    pub const fn language_code(self) -> &'static str {
+        match self {
+            Language::Czech => "cs_CZ",
+            Language::English => "en_US",
+            Language::Danish => "da_DK",
+            Language::German => "de_DE",
+            Language::French => "fr_FR",
+            Language::Russian => "ru_RU",
+            Language::Swedish => "se_SE",
+            Language::Spanish => "es_ES",
+            Language::Hungarian => "hu_HU",
+            Language::Norwegian => "nb_NO",
+            Language::Slovak => "sk_SK",
+            Language::Turkish => "tr_TR",
+            Language::Portuguese => "pt_PT",
+        }
+    }
+}
+
+impl Default for Language {
+    fn default() -> Language {
+        Language::English
+    }
+}
+
 /// Returns a Config.
 ///
 /// This functions handles the initialization of a Config.
@@ -172,4 +300,8 @@ pub async fn load_config() -> Result<Config, FilesystemError> {
     log::debug!("loading config");
 
     Ok(Config::load_or_default()?)
+}
+
+const fn default_true() -> bool {
+    true
 }

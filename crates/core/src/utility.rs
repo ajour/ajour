@@ -1,9 +1,10 @@
+use crate::config::SelfUpdateChannel;
 use crate::error::DownloadError;
 #[cfg(target_os = "macos")]
 use crate::error::FilesystemError;
 use crate::network::{download_file, request_async};
 
-use isahc::prelude::*;
+use isahc::ResponseExt;
 use regex::Regex;
 use retry::delay::Fibonacci;
 use retry::{retry, Error as RetryError, OperationResult};
@@ -25,24 +26,10 @@ pub(crate) fn strip_non_digits(string: &str) -> Option<String> {
     Some(stripped)
 }
 
-pub(crate) fn truncate(s: &str, max_chars: usize) -> &str {
-    match s.char_indices().nth(max_chars) {
-        None => s,
-        Some((idx, _)) => &s[..idx],
-    }
-}
-
-pub(crate) fn regex_html_tags_to_newline() -> Regex {
-    regex::Regex::new(r"<br ?/?>|#.\s").unwrap()
-}
-
-pub(crate) fn regex_html_tags_to_space() -> Regex {
-    regex::Regex::new(r"<[^>]*>|&#?\w+;|[gl]t;").unwrap()
-}
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct Release {
     pub tag_name: String,
+    pub prerelease: bool,
     pub assets: Vec<ReleaseAsset>,
     pub body: String,
 }
@@ -54,46 +41,58 @@ pub struct ReleaseAsset {
     pub download_url: String,
 }
 
-pub async fn get_latest_release() -> Option<Release> {
+pub async fn get_latest_release(channel: SelfUpdateChannel) -> Option<Release> {
     log::debug!("checking for application update");
 
-    let client = HttpClient::new().ok()?;
-
     let mut resp = request_async(
-        &client,
-        "https://api.github.com/repos/casperstorm/ajour/releases/latest",
+        "https://api.github.com/repos/casperstorm/ajour/releases",
         vec![],
         None,
     )
     .await
     .ok()?;
 
-    Some(resp.json().ok()?)
+    let releases: Vec<Release> = resp.json().ok()?;
+
+    releases.into_iter().find(|r| {
+        if channel == SelfUpdateChannel::Beta {
+            // If beta, always want latest release
+            true
+        } else {
+            // Otherwise ONLY non-prereleases
+            !r.prerelease
+        }
+    })
 }
 
-/// Downloads the latest release file that matches `bin_name` and saves it as
-/// `tmp_bin_name`. Will return the temp file as pathbuf.
+/// Downloads the latest release file that matches `bin_name`, renames the current
+/// executable to a temp path, renames the new version as the original file name,
+/// then returns both the original file name (new version) and temp path (old version)
 pub async fn download_update_to_temp_file(
     bin_name: String,
     release: Release,
-) -> Result<(String, PathBuf), DownloadError> {
+) -> Result<(PathBuf, PathBuf), DownloadError> {
     #[cfg(not(target_os = "linux"))]
     let current_bin_path = std::env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let current_bin_path = PathBuf::from(std::env::var("APPIMAGE")?);
+    let current_bin_path = PathBuf::from(
+        std::env::var("APPIMAGE").map_err(|_| DownloadError::SelfUpdateLinuxNonAppImage)?,
+    );
 
-    let current_bin_name = current_bin_path
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .to_owned();
-
-    let new_bin_path = current_bin_path
+    // Path to download the new version to
+    let download_path = current_bin_path
         .parent()
         .unwrap()
         .join(&format!("tmp_{}", bin_name));
+
+    // Path to temporarily force rename current process to, se we can then
+    // rename `download_path` to `current_bin_path` and then launch new version
+    // cleanly as `current_bin_path`
+    let tmp_path = current_bin_path
+        .parent()
+        .unwrap()
+        .join(&format!("tmp2_{}", bin_name));
 
     // On macos, we actually download an archive with the new binary inside. Let's extract
     // that file and remove the archive.
@@ -112,7 +111,7 @@ pub async fn download_update_to_temp_file(
 
         download_file(&asset.download_url, &archive_path).await?;
 
-        extract_binary_from_tar(&archive_path, &new_bin_path, "ajour")?;
+        extract_binary_from_tar(&archive_path, &download_path, "ajour")?;
 
         std::fs::remove_file(&archive_path)?;
     }
@@ -127,7 +126,7 @@ pub async fn download_update_to_temp_file(
             .cloned()
             .ok_or(DownloadError::MissingSelfUpdateRelease { bin_name })?;
 
-        download_file(&asset.download_url, &new_bin_path).await?;
+        download_file(&asset.download_url, &download_path).await?;
     }
 
     // Make executable
@@ -136,12 +135,16 @@ pub async fn download_update_to_temp_file(
         use async_std::fs;
         use std::os::unix::fs::PermissionsExt;
 
-        let mut permissions = fs::metadata(&new_bin_path).await?.permissions();
+        let mut permissions = fs::metadata(&download_path).await?.permissions();
         permissions.set_mode(0o755);
-        fs::set_permissions(&new_bin_path, permissions).await?;
+        fs::set_permissions(&download_path, permissions).await?;
     }
 
-    Ok((current_bin_name, new_bin_path))
+    rename(&current_bin_path, &tmp_path)?;
+
+    rename(&download_path, &current_bin_path)?;
+
+    Ok((current_bin_path, tmp_path))
 }
 
 /// Extracts the Ajour binary from a `tar.gz` archive to temp_file path
@@ -235,6 +238,50 @@ where
         RetryError::Operation { error, .. } => error,
         RetryError::Internal(message) => io::Error::new(io::ErrorKind::Other, message),
     })
+}
+
+/// Remove a file, retrying if the operation fails because of permissions
+///
+/// Will retry for ~30 seconds with longer and longer delays between each, to allow for virus scan
+/// and other automated operations to complete.
+pub fn remove_file<P>(path: P) -> io::Result<()>
+where
+    P: AsRef<Path>,
+{
+    // 21 Fibonacci steps starting at 1 ms is ~28 seconds total
+    // See https://github.com/rust-lang/rustup/pull/1873 where this was used by Rustup to work around
+    // virus scanning file locks
+    let path = path.as_ref();
+
+    retry(
+        Fibonacci::from_millis(1).take(21),
+        || match fs::remove_file(path) {
+            Ok(_) => OperationResult::Ok(()),
+            Err(e) => match e.kind() {
+                io::ErrorKind::PermissionDenied => OperationResult::Retry(e),
+                _ => OperationResult::Err(e),
+            },
+        },
+    )
+    .map_err(|e| match e {
+        RetryError::Operation { error, .. } => error,
+        RetryError::Internal(message) => io::Error::new(io::ErrorKind::Other, message),
+    })
+}
+
+pub(crate) fn truncate(s: &str, max_chars: usize) -> &str {
+    match s.char_indices().nth(max_chars) {
+        None => s,
+        Some((idx, _)) => &s[..idx],
+    }
+}
+
+pub(crate) fn regex_html_tags_to_newline() -> Regex {
+    regex::Regex::new(r"<br ?/?>|#.\s").unwrap()
+}
+
+pub(crate) fn regex_html_tags_to_space() -> Regex {
+    regex::Regex::new(r"<[^>]*>|&#?\w+;|[gl]t;").unwrap()
 }
 
 #[cfg(test)]

@@ -1,8 +1,8 @@
 use crate::{
     error::{ParseError, RepositoryError},
     repository::{
-        ReleaseChannel, RemotePackage, RepositoryIdentifiers, RepositoryKind, RepositoryMetadata,
-        RepositoryPackage,
+        Changelog, GitKind, GlobalReleaseChannel, ReleaseChannel, RemotePackage,
+        RepositoryIdentifiers, RepositoryKind, RepositoryMetadata, RepositoryPackage,
     },
     utility::strip_non_digits,
 };
@@ -21,14 +21,13 @@ pub enum AddonVersionKey {
 pub enum AddonState {
     Ignored,
     Unknown,
-    Ajour(Option<String>),
+    Completed,
     Downloading,
+    Error(String),
     Fingerprint,
+    Idle,
     Unpacking,
-    // TODO: I have currently removed the state where curse-id only addons become corrupt.
-    // It can happen that the fingerprint is unknown to the API but everything else is good.
-    // This is properly not the best solution going forward, but for now it solves the purpose.
-    Corrupted,
+    Retry,
     Updatable,
 }
 
@@ -125,15 +124,7 @@ pub struct Addon {
     #[cfg(feature = "gui")]
     pub details_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
-    pub remote_btn_state: iced_native::button::State,
-    #[cfg(feature = "gui")]
-    pub local_btn_state: iced_native::button::State,
-    #[cfg(feature = "gui")]
-    pub full_changelog_btn_state: iced_native::button::State,
-    #[cfg(feature = "gui")]
     pub update_btn_state: iced_native::button::State,
-    #[cfg(feature = "gui")]
-    pub force_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
     pub delete_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
@@ -144,6 +135,10 @@ pub struct Addon {
     pub website_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
     pub pick_release_channel_state: iced_native::pick_list::State<ReleaseChannel>,
+    #[cfg(feature = "gui")]
+    pub changelog_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub remote_version_btn_state: iced_native::button::State,
 }
 
 impl Addon {
@@ -152,21 +147,13 @@ impl Addon {
             primary_folder_id: primary_folder_id.to_string(),
             folders: Default::default(),
             release_channel: Default::default(),
-            state: AddonState::Ajour(None),
+            state: AddonState::Idle,
             repository: Default::default(),
 
             #[cfg(feature = "gui")]
             details_btn_state: Default::default(),
             #[cfg(feature = "gui")]
-            remote_btn_state: Default::default(),
-            #[cfg(feature = "gui")]
-            local_btn_state: Default::default(),
-            #[cfg(feature = "gui")]
-            full_changelog_btn_state: Default::default(),
-            #[cfg(feature = "gui")]
             update_btn_state: Default::default(),
-            #[cfg(feature = "gui")]
-            force_btn_state: Default::default(),
             #[cfg(feature = "gui")]
             delete_btn_state: Default::default(),
             #[cfg(feature = "gui")]
@@ -177,6 +164,10 @@ impl Addon {
             website_btn_state: Default::default(),
             #[cfg(feature = "gui")]
             pick_release_channel_state: Default::default(),
+            #[cfg(feature = "gui")]
+            changelog_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            remote_version_btn_state: Default::default(),
         }
     }
 
@@ -336,6 +327,53 @@ impl Addon {
         self.metadata().map(|m| m.website_url.as_deref()).flatten()
     }
 
+    /// Returns the changelog url of the addon.
+    pub fn changelog_url(&self, default_release_channel: GlobalReleaseChannel) -> Option<String> {
+        let url = self.metadata().map(|m| m.changelog_url.clone()).flatten();
+
+        match self.repository_kind() {
+            Some(RepositoryKind::Git(GitKind::Github)) => {
+                let tag = self
+                    .relevant_release_package(default_release_channel)
+                    .map(|r| r.version);
+
+                if let Some(tag) = tag {
+                    url.map(|url| format!("{}/tag/{}", url, tag))
+                } else {
+                    url
+                }
+            }
+            Some(RepositoryKind::Curse) => {
+                let file = self
+                    .relevant_release_package(default_release_channel)
+                    .map(|r| r.file_id)
+                    .flatten();
+
+                if let Some(file) = file {
+                    url.map(|url| format!("{}/{}", url, file))
+                } else {
+                    url
+                }
+            }
+            Some(_) => url,
+            None => None,
+        }
+    }
+
+    pub async fn changelog(
+        &self,
+        default_release_channel: GlobalReleaseChannel,
+    ) -> Result<Changelog, RepositoryError> {
+        let text = if let Some(repo) = self.repository.as_ref() {
+            repo.get_changelog(self.release_channel, default_release_channel)
+                .await?
+        } else {
+            None
+        };
+
+        Ok(Changelog { text })
+    }
+
     /// Returns the curse id of the addon, if applicable.
     pub fn curse_id(&self) -> Option<i32> {
         if self.repository_kind() == Some(RepositoryKind::Curse) {
@@ -441,12 +479,21 @@ impl Addon {
 
     /// Returns the relevant release_package for the addon.
     /// Logic is that if a release channel above the selected is newer, we return that instead.
-    pub fn relevant_release_package(&self) -> Option<RemotePackage> {
+    pub fn relevant_release_package(
+        &self,
+        default_release_channel: GlobalReleaseChannel,
+    ) -> Option<RemotePackage> {
         let mut remote_packages = self.remote_packages();
 
         let stable_package = remote_packages.remove(&ReleaseChannel::Stable);
         let beta_package = remote_packages.remove(&ReleaseChannel::Beta);
         let alpha_package = remote_packages.remove(&ReleaseChannel::Alpha);
+
+        let release_channel = if self.release_channel == ReleaseChannel::Default {
+            default_release_channel.convert_to_release_channel()
+        } else {
+            self.release_channel
+        };
 
         fn should_choose_other(
             base: &Option<RemotePackage>,
@@ -467,7 +514,8 @@ impl Addon {
             }
         }
 
-        match &self.release_channel {
+        match release_channel {
+            ReleaseChannel::Default => None,
             ReleaseChannel::Stable => stable_package,
             ReleaseChannel::Beta => {
                 let choose_stable = should_choose_other(&beta_package, &stable_package);
@@ -498,19 +546,6 @@ impl Addon {
             }
         }
     }
-
-    pub async fn get_changelog(
-        &self,
-        is_remote: bool,
-    ) -> Result<(String, String), RepositoryError> {
-        if let Some(repository) = self.repository() {
-            return repository
-                .get_changelog(self.release_channel, is_remote)
-                .await;
-        }
-
-        Err(RepositoryError::AddonNoRepository)
-    }
 }
 
 impl PartialEq for Addon {
@@ -521,21 +556,14 @@ impl PartialEq for Addon {
 
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.title().cmp(&other.title()).then_with(|| {
-            self.relevant_release_package()
-                .cmp(&other.relevant_release_package())
-                .reverse()
-        }))
+        Some(self.title().cmp(&other.title()))
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.title().cmp(&other.title()).then_with(|| {
-            self.relevant_release_package()
-                .cmp(&other.relevant_release_package())
-                .reverse()
-        })
+        self.title().cmp(&other.title())
     }
 }
+
 impl Eq for Addon {}

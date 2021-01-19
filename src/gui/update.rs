@@ -1,10 +1,11 @@
 use {
     super::{
-        AddonVersionKey, Ajour, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
-        CatalogSource, Changelog, ChangelogPayload, ColumnKey, DirectoryType, DownloadReason,
-        ExpandType, InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode,
+        Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
+        CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel,
+        InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
         SelfUpdateStatus, SortDirection, State,
     },
+    crate::localization::LANG,
     crate::{log_error, Result},
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
@@ -16,23 +17,28 @@ use {
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
         error::{DownloadError, FilesystemError, ParseError, RepositoryError},
-        fs::{delete_addons, install_addon, PersistentData},
+        fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
-        repository::{RepositoryKind, RepositoryPackage},
-        utility::{download_update_to_temp_file, wow_path_resolution},
+        repository::{Changelog, RepositoryKind, RepositoryPackage},
+        utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
+    ajour_weak_auras::{Aura, AuraStatus},
+    ajour_widgets::header::ResizeEvent,
     anyhow::Context,
     async_std::sync::{Arc, Mutex},
     chrono::{NaiveTime, Utc},
+    fuzzy_matcher::{
+        skim::{SkimMatcherV2, SkimScoreConfig},
+        FuzzyMatcher,
+    },
     iced::{Command, Length},
-    isahc::{http::Uri, HttpClient},
+    isahc::http::Uri,
     native_dialog::*,
     std::collections::{hash_map::DefaultHasher, HashMap},
     std::convert::TryFrom,
     std::hash::Hasher,
     std::path::{Path, PathBuf},
-    widgets::header::ResizeEvent,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -88,6 +94,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ),
                         Message::ParsedAddons,
                     ));
+
+                    // Check if Weak Auras is installed for each flavor. If any of them returns
+                    // true, we will show the My WeakAuras button
+                    commands.push(Command::perform(
+                        is_weak_auras_installed(*flavor, addon_directory),
+                        Message::CheckWeakAurasInstalled,
+                    ));
                 } else {
                     log::debug!("addon directory is not set, showing welcome screen");
 
@@ -115,20 +128,43 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             return Ok(Command::batch(commands));
         }
-        Message::Interaction(Interaction::Refresh) => {
-            log::debug!("Interaction::Refresh");
+        Message::Interaction(Interaction::Refresh(mode)) => {
+            log::debug!("Interaction::Refresh({})", &mode);
 
-            // Close details if shown.
-            ajour.expanded_type = ExpandType::None;
+            match mode {
+                Mode::MyAddons(flavor) => {
+                    // Close details if shown.
+                    ajour.expanded_type = ExpandType::None;
 
-            // Cleans the addons.
-            ajour.addons = HashMap::new();
+                    // Cleans the addons.
+                    ajour.addons = HashMap::new();
 
-            // Prepare state for loading.
-            let flavor = ajour.config.wow.flavor;
-            ajour.state.insert(Mode::MyAddons(flavor), State::Loading);
+                    // Prepare state for loading.
+                    ajour.state.insert(Mode::MyAddons(flavor), State::Loading);
 
-            return Ok(Command::perform(async {}, Message::Parse));
+                    return Ok(Command::perform(async {}, Message::Parse));
+                }
+                Mode::MyWeakAuras(flavor) => {
+                    let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                    if let Some(account) = state.chosen_account.clone() {
+                        if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                            state.auras.drain(..);
+
+                            // Prepare state for loading.
+                            ajour
+                                .state
+                                .insert(Mode::MyWeakAuras(flavor), State::Loading);
+
+                            return Ok(Command::perform(
+                                parse_auras(flavor, wtf_path, account),
+                                Message::ParsedAuras,
+                            ));
+                        }
+                    }
+                }
+                _ => {}
+            }
         }
         Message::Interaction(Interaction::Ignore(id)) => {
             log::debug!("Interaction::Ignore({})", &id);
@@ -161,14 +197,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Update ajour state.
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 // Check if addon is updatable.
-                if let Some(package) = addon.relevant_release_package() {
+                if let Some(package) = addon.relevant_release_package(global_release_channel) {
                     if addon.is_updatable(&package) {
                         addon.state = AddonState::Updatable;
                     } else {
-                        addon.state = AddonState::Ajour(None);
+                        addon.state = AddonState::Idle;
                     }
                 }
             };
@@ -193,6 +230,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             };
 
             return Ok(Command::perform(select_directory(), message));
+        }
+        Message::Interaction(Interaction::ResetColumns) => {
+            log::debug!("Interaction::ResetColumns");
+
+            ajour.column_settings = Default::default();
+            ajour.catalog_column_settings = Default::default();
+
+            ajour.header_state = Default::default();
+            ajour.catalog_header_state = Default::default();
+            ajour.aura_header_state = Default::default();
+
+            save_column_configs(ajour);
         }
         Message::Interaction(Interaction::OpenLink(link)) => {
             log::debug!("Interaction::OpenLink({})", &link);
@@ -235,9 +284,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.wow.flavor = flavor;
             // Persist the newly updated config.
             let _ = &ajour.config.save();
-            // Update flavor on MyAddons if thats our current mode.
-            if let Mode::MyAddons(_) = ajour.mode {
-                ajour.mode = Mode::MyAddons(flavor)
+
+            match ajour.mode {
+                Mode::MyAddons(_) => {
+                    // Update flavor on MyAddons if thats our current mode.
+                    ajour.mode = Mode::MyAddons(flavor);
+                }
+                Mode::MyWeakAuras(_) => {
+                    // Update flavor on MyWeakAuras if thats our current mode.
+                    ajour.mode = Mode::MyWeakAuras(flavor);
+                }
+                _ => {}
             }
             // Update catalog
             query_and_sort_catalog(ajour);
@@ -258,10 +315,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Expand(expand_type)) => {
             // An addon can be exanded in two ways.
             match &expand_type {
-                ExpandType::Details(a) => {
-                    log::debug!("Interaction::Expand(Details({:?}))", &a.primary_folder_id);
+                ExpandType::Details(addon) => {
+                    log::debug!(
+                        "Interaction::Expand(Details({:?}))",
+                        &addon.primary_folder_id
+                    );
                     let should_close = match &ajour.expanded_type {
-                        ExpandType::Details(ea) => a.primary_folder_id == ea.primary_folder_id,
+                        ExpandType::Details(a) => addon.primary_folder_id == a.primary_folder_id,
+                        ExpandType::Changelog { addon: a, .. } => {
+                            addon.primary_folder_id == a.primary_folder_id
+                        }
                         _ => false,
                     };
 
@@ -271,54 +334,60 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.expanded_type = expand_type.clone();
                     }
                 }
-                ExpandType::Changelog(changelog) => match changelog {
-                    // We request changelog.
-                    Changelog::Request(addon, key) => {
-                        log::debug!(
-                            "Interaction::Expand(Changelog::Request({:?}))",
-                            &addon.primary_folder_id
-                        );
-
-                        // Check if the current expanded_type is showing changelog, and is the same
-                        // addon. If this is the case, we close the details.
-
-                        if let ExpandType::Changelog(Changelog::Some(a, _, k)) =
-                            &ajour.expanded_type
-                        {
-                            if addon.primary_folder_id == a.primary_folder_id && key == k {
-                                ajour.expanded_type = ExpandType::None;
-                                return Ok(Command::none());
-                            }
+                ExpandType::Changelog { addon, .. } => {
+                    log::debug!(
+                        "Interaction::Expand(Changelog({:?}))",
+                        &addon.primary_folder_id
+                    );
+                    let should_close = match &ajour.expanded_type {
+                        ExpandType::Changelog { addon: a, .. } => {
+                            addon.primary_folder_id == a.primary_folder_id
                         }
+                        _ => false,
+                    };
 
-                        ajour.expanded_type =
-                            ExpandType::Changelog(Changelog::Loading(addon.clone(), *key));
+                    if should_close {
+                        ajour.expanded_type = ExpandType::None;
+                    } else {
+                        ajour.expanded_type = expand_type.clone();
+
                         return Ok(Command::perform(
-                            perform_fetch_changelog(addon.clone(), *key),
+                            perform_fetch_changelog(
+                                addon.clone(),
+                                ajour.config.addons.global_release_channel,
+                            ),
                             Message::FetchedChangelog,
                         ));
                     }
-                    Changelog::Loading(a, _) => {
-                        log::debug!(
-                            "Interaction::Expand(Changelog::Loading({:?}))",
-                            &a.primary_folder_id
-                        );
-                        ajour.expanded_type = ExpandType::Changelog(changelog.clone());
-                    }
-                    Changelog::Some(a, _, _) => {
-                        log::debug!(
-                            "Interaction::Expand(Changelog::Some({:?}))",
-                            &a.primary_folder_id
-                        );
-                    }
-                },
+                }
                 ExpandType::None => {
                     log::debug!("Interaction::Expand(ExpandType::None)");
                 }
             }
         }
+        Message::FetchedChangelog((addon, result)) => match result {
+            Ok(changelog) => {
+                log::debug!("Message::FetchedChangelog({})", &addon.primary_folder_id);
+
+                if let ExpandType::Changelog {
+                    addon: a,
+                    changelog: c,
+                } = &mut ajour.expanded_type
+                {
+                    if a.primary_folder_id == addon.primary_folder_id {
+                        *c = Some(changelog);
+                    }
+                }
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to fetch changelog").unwrap_err();
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
         Message::Interaction(Interaction::Delete(id)) => {
             log::debug!("Interaction::Delete({})", &id);
+
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
 
@@ -331,6 +400,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 // Delete addon(s) from disk.
                 let _ = delete_addons(&addon.folders);
+
+                // Delete SavedVariable(s) if enabled.
+                if ajour.config.addons.delete_saved_variables {
+                    let wtf_path = &ajour
+                        .config
+                        .get_wtf_directory_for_flavor(&flavor)
+                        .expect("No World of Warcraft directory set.");
+                    let _ = delete_saved_variables(&addon.folders, wtf_path);
+                }
 
                 // Remove addon from cache
                 if let Some(addon_cache) = &ajour.addon_cache {
@@ -358,6 +436,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.expanded_type = ExpandType::None;
 
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let addons = ajour.addons.entry(flavor).or_default();
             let to_directory = ajour
                 .config
@@ -369,8 +448,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     return Ok(Command::perform(
                         perform_download_addon(
                             DownloadReason::Update,
-                            ajour.shared_client.clone(),
                             flavor,
+                            global_release_channel,
                             addon.clone(),
                             to_directory,
                         ),
@@ -379,47 +458,68 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::Interaction(Interaction::UpdateAll) => {
-            log::debug!("Interaction::UpdateAll");
+        Message::Interaction(Interaction::UpdateAll(mode)) => {
+            log::debug!("Interaction::UpdateAll({})", &mode);
 
-            // Close details if shown.
-            ajour.expanded_type = ExpandType::None;
+            match mode {
+                Mode::MyAddons(flavor) => {
+                    // Close details if shown.
+                    ajour.expanded_type = ExpandType::None;
 
-            // Update all updatable addons, expect ignored.
-            let flavor = ajour.config.wow.flavor;
-            let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
-            let mut addons: Vec<_> = ajour
-                .addons
-                .entry(flavor)
-                .or_default()
-                .iter_mut()
-                .filter(|a| !ignored_ids.iter().any(|i| i == &a.primary_folder_id))
-                .collect();
+                    // Update all updatable addons, expect ignored.
+                    let global_release_channel = ajour.config.addons.global_release_channel;
+                    let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
+                    let mut addons: Vec<_> = ajour
+                        .addons
+                        .entry(flavor)
+                        .or_default()
+                        .iter_mut()
+                        .filter(|a| !ignored_ids.iter().any(|i| i == &a.primary_folder_id))
+                        .collect();
 
-            let mut commands = vec![];
-            for addon in addons.iter_mut() {
-                if addon.state == AddonState::Updatable {
-                    if let Some(to_directory) =
-                        ajour.config.get_download_directory_for_flavor(flavor)
-                    {
-                        addon.state = AddonState::Downloading;
-                        let addon = addon.clone();
-                        commands.push(Command::perform(
-                            perform_download_addon(
-                                DownloadReason::Update,
-                                ajour.shared_client.clone(),
-                                flavor,
-                                addon,
-                                to_directory,
-                            ),
-                            Message::DownloadedAddon,
-                        ))
+                    let mut commands = vec![];
+                    for addon in addons.iter_mut() {
+                        if addon.state == AddonState::Updatable {
+                            if let Some(to_directory) =
+                                ajour.config.get_download_directory_for_flavor(flavor)
+                            {
+                                addon.state = AddonState::Downloading;
+                                let addon = addon.clone();
+                                commands.push(Command::perform(
+                                    perform_download_addon(
+                                        DownloadReason::Update,
+                                        flavor,
+                                        global_release_channel,
+                                        addon,
+                                        to_directory,
+                                    ),
+                                    Message::DownloadedAddon,
+                                ))
+                            }
+                        }
+                    }
+                    return Ok(Command::batch(commands));
+                }
+                Mode::MyWeakAuras(flavor) => {
+                    if let Some(addon_dir) = ajour.config.get_addon_directory_for_flavor(&flavor) {
+                        let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                        state.is_updating = true;
+
+                        let auras = state.auras.clone();
+
+                        return Ok(Command::perform(
+                            update_auras(flavor, auras, addon_dir),
+                            Message::AurasUpdated,
+                        ));
                     }
                 }
+                _ => {}
             }
-            return Ok(Command::batch(commands));
         }
         Message::ParsedAddons((flavor, result)) => {
+            let global_release_channel = ajour.config.addons.global_release_channel;
+
             // if our selected flavor returns (either ok or error) - we change to idle.
             ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
@@ -446,18 +546,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             {
                                 a.release_channel = *release_channel;
                             } else {
-                                // Else we try to determine the release_channel based of installed version.
-                                for (release_channel, package) in a.remote_packages() {
-                                    if package.file_id == a.file_id() {
-                                        a.release_channel = release_channel.to_owned();
-                                        break;
-                                    }
-                                }
+                                // Else we set it to the default release channel.
+                                a.release_channel = ReleaseChannel::Default;
                             }
 
                             // Check if addon is updatable based on release channel.
-                            if let Some(package) = a.relevant_release_package() {
-                                if a.is_updatable(&package) && a.state != AddonState::Corrupted {
+                            if let Some(package) =
+                                a.relevant_release_package(global_release_channel)
+                            {
+                                if a.is_updatable(&package) {
                                     a.state = AddonState::Updatable;
                                 }
                             }
@@ -471,7 +568,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         .collect::<Vec<Addon>>();
 
                     // Sort the addons.
-                    sort_addons(&mut addons, SortDirection::Desc, ColumnKey::Status);
+                    sort_addons(
+                        &mut addons,
+                        global_release_channel,
+                        SortDirection::Desc,
+                        ColumnKey::Status,
+                    );
                     ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
                     ajour.header_state.previous_column_key = Some(ColumnKey::Status);
 
@@ -524,10 +626,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     log_error(&error);
                     ajour.error = Some(error);
 
-                    if reason == DownloadReason::Install {
-                        if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
-                        {
-                            install_addon.status = InstallStatus::Retry;
+                    match reason {
+                        DownloadReason::Update => {
+                            if let Some(_addon) =
+                                addons.iter_mut().find(|a| a.primary_folder_id == id)
+                            {
+                                _addon.state = AddonState::Retry;
+                            }
+                        }
+                        DownloadReason::Install => {
+                            if let Some(install_addon) =
+                                install_addons.iter_mut().find(|a| a.id == id)
+                            {
+                                install_addon.status = InstallStatus::Retry;
+                            }
                         }
                     }
                 }
@@ -608,15 +720,26 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     log_error(&error);
                     ajour.error = Some(error);
 
-                    if reason == DownloadReason::Install {
-                        if let Some(install_addon) = install_addons.iter_mut().find(|a| a.id == id)
-                        {
-                            install_addon.status = InstallStatus::Retry;
+                    match reason {
+                        DownloadReason::Update => {
+                            if let Some(_addon) =
+                                addons.iter_mut().find(|a| a.primary_folder_id == id)
+                            {
+                                _addon.state = AddonState::Retry;
+                            }
+                        }
+                        DownloadReason::Install => {
+                            if let Some(install_addon) =
+                                install_addons.iter_mut().find(|a| a.id == id)
+                            {
+                                install_addon.status = InstallStatus::Retry;
+                            }
                         }
                     }
                 }
             }
 
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let mut commands = vec![];
 
             if let (Some(addon), Some(folders)) = (addon, folders) {
@@ -625,7 +748,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 addon.state = AddonState::Fingerprint;
 
                 let mut version = None;
-                if let Some(package) = addon.relevant_release_package() {
+                if let Some(package) = addon.relevant_release_package(global_release_channel) {
                     version = Some(package.version);
                 }
                 if let Some(version) = version {
@@ -693,9 +816,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let addons = ajour.addons.entry(flavor).or_default();
             if let Some(addon) = addons.iter_mut().find(|a| a.primary_folder_id == id) {
                 if result.is_ok() {
-                    addon.state = AddonState::Ajour(Some("Completed".to_owned()));
+                    addon.state = AddonState::Completed;
                 } else {
-                    addon.state = AddonState::Ajour(Some("Error".to_owned()));
+                    addon.state = AddonState::Error("Error".to_owned());
                 }
             }
         }
@@ -738,9 +861,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             let flavor = ajour.config.wow.flavor;
+            let global_release_channel = ajour.config.addons.global_release_channel;
             let mut addons = ajour.addons.entry(flavor).or_default();
 
-            sort_addons(&mut addons, sort_direction, column_key);
+            sort_addons(
+                &mut addons,
+                global_release_channel,
+                sort_direction,
+                column_key,
+            );
 
             ajour.header_state.previous_sort_direction = Some(sort_direction);
             ajour.header_state.previous_column_key = Some(column_key);
@@ -785,9 +914,48 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
+        Message::Interaction(Interaction::SortAuraColumn(column_key)) => {
+            // First time clicking a column should sort it in Ascending order, otherwise
+            // flip the sort direction.
+            let mut sort_direction = SortDirection::Asc;
+
+            if let Some(previous_column_key) = ajour.aura_header_state.previous_column_key {
+                if column_key == previous_column_key {
+                    if let Some(previous_sort_direction) =
+                        ajour.aura_header_state.previous_sort_direction
+                    {
+                        sort_direction = previous_sort_direction.toggle()
+                    }
+                }
+            }
+
+            // Exception would be first time ever sorting and sorting by title.
+            // Since its already sorting in Asc by default, we should sort Desc.
+            if ajour.aura_header_state.previous_column_key.is_none()
+                && column_key == AuraColumnKey::Title
+            {
+                sort_direction = SortDirection::Desc;
+            }
+
+            log::debug!(
+                "Interaction::SortAuraColumn({:?}, {:?})",
+                column_key,
+                sort_direction
+            );
+
+            ajour.aura_header_state.previous_sort_direction = Some(sort_direction);
+            ajour.aura_header_state.previous_column_key = Some(column_key);
+
+            let flavor = ajour.config.wow.flavor;
+            let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+            sort_auras(&mut state.auras, sort_direction, column_key);
+        }
+
         Message::ReleaseChannelSelected(release_channel) => {
             log::debug!("Message::ReleaseChannelSelected({:?})", release_channel);
 
+            let global_release_channel = ajour.config.addons.global_release_channel;
             if let ExpandType::Details(expanded_addon) = &ajour.expanded_type {
                 let flavor = ajour.config.wow.flavor;
                 let addons = ajour.addons.entry(flavor).or_default();
@@ -795,28 +963,39 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     .iter_mut()
                     .find(|a| a.primary_folder_id == expanded_addon.primary_folder_id)
                 {
-                    addon.release_channel = release_channel;
-
-                    // Check if addon is updatable.
-                    if let Some(package) = addon.relevant_release_package() {
-                        if addon.is_updatable(&package) {
-                            addon.state = AddonState::Updatable;
-                        } else {
-                            addon.state = AddonState::Ajour(None);
-                        }
-                    }
-
                     // Update config with the newly changed release channel.
-                    ajour
-                        .config
-                        .addons
-                        .release_channels
-                        .entry(flavor)
-                        .or_default()
-                        .insert(addon.primary_folder_id.clone(), release_channel);
+                    // if we are selecting Default, we ensure we remove it from config.
+                    if release_channel == ReleaseChannel::Default {
+                        ajour
+                            .config
+                            .addons
+                            .release_channels
+                            .entry(flavor)
+                            .or_default()
+                            .remove(&addon.primary_folder_id);
+                    } else {
+                        ajour
+                            .config
+                            .addons
+                            .release_channels
+                            .entry(flavor)
+                            .or_default()
+                            .insert(addon.primary_folder_id.clone(), release_channel);
+                    }
 
                     // Persist the newly updated config.
                     let _ = &ajour.config.save();
+
+                    addon.release_channel = release_channel;
+
+                    // Check if addon is updatable.
+                    if let Some(package) = addon.relevant_release_package(global_release_channel) {
+                        if addon.is_updatable(&package) {
+                            addon.state = AddonState::Updatable;
+                        } else {
+                            addon.state = AddonState::Idle;
+                        }
+                    }
                 }
             }
         }
@@ -869,6 +1048,28 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Mode::Install => {}
                 Mode::Settings => {}
                 Mode::About => {}
+                Mode::MyWeakAuras(_) => {
+                    let left_key = AuraColumnKey::from(left_name.as_str());
+                    let right_key = AuraColumnKey::from(right_name.as_str());
+
+                    if let Some(column) = ajour
+                        .aura_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == left_key && left_key != AuraColumnKey::Title)
+                    {
+                        column.width = Length::Units(left_width);
+                    }
+
+                    if let Some(column) = ajour
+                        .aura_header_state
+                        .columns
+                        .iter_mut()
+                        .find(|c| c.key == right_key && right_key != AuraColumnKey::Title)
+                    {
+                        column.width = Length::Units(right_width);
+                    }
+                }
                 Mode::Catalog => {
                     let left_key = CatalogColumnKey::from(left_name.as_str());
                     let right_key = CatalogColumnKey::from(right_name.as_str());
@@ -959,8 +1160,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if ajour.config.backup_addons {
                     let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
 
-                    if addon_dir.exists() {
-                        src_folders.push(BackupFolder::new(&addon_dir, wow_dir));
+                    // Backup starting with `Interface` folder as some users save
+                    // custom data here that they would like retained
+                    if let Some(interface_dir) = addon_dir.parent() {
+                        if interface_dir.exists() {
+                            src_folders.push(BackupFolder::new(interface_dir, wow_dir));
+                        }
                     }
                 }
 
@@ -1238,7 +1443,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
             // Catalog search query
-            ajour.catalog_search_state.query = Some(query);
+            ajour.catalog_search_state.query = if query.is_empty() {
+                None
+            } else {
+                // Always set sort config to None when a new character is typed
+                // so the sort will be off fuzzy match score.
+                ajour.catalog_header_state.previous_column_key.take();
+                ajour.catalog_header_state.previous_sort_direction.take();
+
+                Some(query)
+            };
 
             query_and_sort_catalog(ajour);
         }
@@ -1315,6 +1529,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         addon.state = AddonState::Downloading;
                         install_addon.addon = Some(addon.clone());
 
+                        let global_release_channel = ajour.config.addons.global_release_channel;
                         let to_directory = ajour
                             .config
                             .get_download_directory_for_flavor(flavor)
@@ -1323,8 +1538,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         return Ok(Command::perform(
                             perform_download_addon(
                                 DownloadReason::Install,
-                                ajour.shared_client.clone(),
                                 flavor,
+                                global_release_channel,
                                 addon,
                                 to_directory,
                             ),
@@ -1341,28 +1556,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                         match install_addon.kind {
                             InstallKind::Catalog { .. } => {
-                                install_addon.status = InstallStatus::Unavilable;
+                                install_addon.status = InstallStatus::Unavailable;
                             }
                             InstallKind::Source => {
                                 install_addon.status = InstallStatus::Error(error.to_string());
                             }
                         }
                     }
-                }
-            }
-        }
-        Message::FetchedChangelog((addon, key, result)) => {
-            log::debug!("Message::FetchedChangelog(error: {})", &result.is_err());
-            match result.context("Failed to fetch changelog") {
-                Ok((changelog, url)) => {
-                    let payload = ChangelogPayload { changelog, url };
-                    let changelog = Changelog::Some(addon, payload, key);
-                    ajour.expanded_type = ExpandType::Changelog(changelog);
-                }
-                Err(error) => {
-                    log_error(&error);
-                    ajour.error = Some(error);
-                    ajour.expanded_type = ExpandType::None;
                 }
             }
         }
@@ -1384,16 +1584,26 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Message::AjourUpdateDownloaded");
 
             match result.context("Failed to update Ajour") {
-                Ok((current_bin_name, temp_bin_path)) => {
+                Ok((relaunch_path, cleanup_path)) => {
                     // Remove first arg, which is path to binary. We don't use this first
                     // arg as binary path because it's not reliable, per the docs.
                     let mut args = std::env::args();
                     args.next();
+                    let mut args: Vec<_> = args.collect();
 
-                    match std::process::Command::new(&temp_bin_path)
+                    // Remove the `--self-update-temp` arg from args if it exists,
+                    // since we need to pass it cleanly. Otherwise new process will
+                    // fail during arg parsing.
+                    if let Some(idx) = args.iter().position(|a| a == "--self-update-temp") {
+                        args.remove(idx);
+                        // Remove path passed after this arg
+                        args.remove(idx);
+                    }
+
+                    match std::process::Command::new(&relaunch_path)
                         .args(args)
                         .arg("--self-update-temp")
-                        .arg(&current_bin_name)
+                        .arg(&cleanup_path)
                         .spawn()
                         .context("Failed to update Ajour")
                     {
@@ -1465,7 +1675,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(last_updated) = &ajour.catalog_last_updated {
                 let now = Utc::now();
                 let now_time = now.time();
-                let refresh_time = NaiveTime::from_hms(0, 5, 0);
+                let refresh_time = NaiveTime::from_hms(0, 40, 0);
 
                 if last_updated.date() < now.date() && now_time > refresh_time {
                     log::debug!("Message::RefreshCatalog: catalog needs to be refreshed");
@@ -1483,6 +1693,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.hide_ignored_addons = is_checked;
             let _ = ajour.config.save();
         }
+        Message::Interaction(Interaction::ToggleDeleteSavedVariables(is_checked)) => {
+            log::debug!("Interaction::ToggleDeleteSavedVariables({})", is_checked);
+
+            ajour.config.addons.delete_saved_variables = is_checked;
+            let _ = ajour.config.save();
+        }
         Message::CatalogDownloaded(error @ Err(_)) => {
             let error = error.context("Failed to download catalog").unwrap_err();
             log_error(&error);
@@ -1492,6 +1708,207 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let error = error.context("Failed to update addon cache").unwrap_err();
             log_error(&error);
             ajour.error = Some(error);
+        }
+        Message::Interaction(Interaction::PickSelfUpdateChannel(channel)) => {
+            log::debug!("Interaction::PickSelfUpdateChannel({:?})", channel);
+
+            ajour.config.self_update_channel = channel;
+
+            let _ = ajour.config.save();
+
+            return Ok(Command::perform(
+                get_latest_release(ajour.config.self_update_channel),
+                Message::LatestRelease,
+            ));
+        }
+        Message::Interaction(Interaction::PickLocalizationLanguage(lang)) => {
+            log::debug!("Interaction::PickLocalizationLanguage({:?})", lang);
+
+            // Update config.
+            ajour.config.language = lang;
+            let _ = ajour.config.save();
+
+            // Update global LANG refcell.
+            *LANG.get().expect("LANG not set").write().unwrap() = lang.language_code();
+        }
+        Message::Interaction(Interaction::PickGlobalReleaseChannel(channel)) => {
+            log::debug!("Interaction::PickGlobalReleaseChannel({:?})", channel);
+
+            // Update all addon states, expect ignored, if needed.
+            let flavors = &Flavor::ALL[..];
+            for flavor in flavors {
+                let ignored_ids = ajour.config.addons.ignored.entry(*flavor).or_default();
+                let mut addons: Vec<_> = ajour
+                    .addons
+                    .entry(*flavor)
+                    .or_default()
+                    .iter_mut()
+                    .filter(|a| !ignored_ids.iter().any(|i| i == &a.primary_folder_id))
+                    .collect();
+                for addon in addons.iter_mut() {
+                    // Check if addon is updatable.
+                    if let Some(package) = addon.relevant_release_package(channel) {
+                        if addon.is_updatable(&package) {
+                            addon.state = AddonState::Updatable;
+                        } else {
+                            addon.state = AddonState::Idle;
+                        }
+                    }
+                }
+            }
+
+            ajour.config.addons.global_release_channel = channel;
+            let _ = ajour.config.save();
+        }
+        Message::CheckLatestRelease(_) => {
+            log::debug!("Message::CheckLatestRelease");
+
+            return Ok(Command::perform(
+                get_latest_release(ajour.config.self_update_channel),
+                Message::LatestRelease,
+            ));
+        }
+        Message::CheckWeakAurasInstalled((flavor, is_installed)) => {
+            log::debug!(
+                "Message::CheckWeakAurasInstalled({}, is_installed: {})",
+                flavor,
+                is_installed
+            );
+
+            if is_installed {
+                ajour.weak_auras_is_installed = true;
+
+                if let Some(wtf_folder) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                    return Ok(Command::perform(
+                        list_accounts(flavor, wtf_folder),
+                        Message::ListWeakAurasAccounts,
+                    ));
+                }
+            }
+        }
+        Message::ListWeakAurasAccounts((flavor, result)) => match result {
+            Ok(accounts) => {
+                log::debug!(
+                    "Message::ListWeakAurasAccounts({}, num_accounts: {})",
+                    flavor,
+                    accounts.len(),
+                );
+
+                let state = ajour.weak_auras_state.entry(flavor).or_default();
+                state.accounts = accounts;
+
+                // If we have an account already selected, use that as the picklist selection
+                // and trigger a parse for this without user interaction
+                if let Some(account) = ajour.config.weak_auras_account.get(&flavor) {
+                    if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                        state.chosen_account = Some(account.clone());
+
+                        return Ok(Command::perform(
+                            parse_auras(flavor, wtf_path, account.clone()),
+                            Message::ParsedAuras,
+                        ));
+                    }
+                }
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to get list of Accounts").unwrap_err();
+
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
+        Message::WeakAurasAccountSelected(account) => {
+            log::debug!("Message::WeakAurasAccountSelected({})", &account,);
+
+            if let Mode::MyWeakAuras(flavor) = ajour.mode {
+                let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                if state.chosen_account.as_ref() != Some(&account) {
+                    state.chosen_account = Some(account.clone());
+
+                    // Persist to config
+                    ajour
+                        .config
+                        .weak_auras_account
+                        .insert(flavor, account.clone());
+                    let _ = ajour.config.save();
+
+                    if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
+                        state.auras.drain(..);
+
+                        // Prepare state for loading.
+                        ajour
+                            .state
+                            .insert(Mode::MyWeakAuras(flavor), State::Loading);
+
+                        return Ok(Command::perform(
+                            parse_auras(flavor, wtf_path, account),
+                            Message::ParsedAuras,
+                        ));
+                    }
+                }
+            }
+        }
+        Message::ParsedAuras((flavor, result)) => match result {
+            Ok(mut auras) => {
+                log::debug!(
+                    "Message::ParsedAuras({}, num_auras: {})",
+                    flavor,
+                    auras.len(),
+                );
+
+                // Sort the addons.
+                sort_auras(&mut auras, SortDirection::Desc, AuraColumnKey::Status);
+                ajour.aura_header_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.aura_header_state.previous_column_key = Some(AuraColumnKey::Status);
+
+                let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                state.auras = auras;
+
+                // Sets the flavor state to ready.
+                ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to parse WeakAuras").unwrap_err();
+
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
+        Message::AurasUpdated((flavor, result)) => match result {
+            Ok(slugs) => {
+                log::debug!(
+                    "Message::AurasUpdated({}, num_auras: {})",
+                    flavor,
+                    slugs.len(),
+                );
+
+                let state = ajour.weak_auras_state.entry(flavor).or_default();
+
+                for slug in slugs.iter() {
+                    if let Some(aura) = state.auras.iter_mut().find(|a| a.slug() == slug) {
+                        aura.set_status(AuraStatus::UpdateQueued);
+                    }
+                }
+
+                state.is_updating = false;
+            }
+            error @ Err(_) => {
+                let error = error.context("Failed to update WeakAuras").unwrap_err();
+
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
+        Message::Interaction(Interaction::AlternatingRowColorToggled(is_set)) => {
+            log::debug!(
+                "Interaction::AlternatingRowColorToggled(is_set: {})",
+                is_set,
+            );
+
+            ajour.config.alternating_row_colors = is_set;
+            let _ = ajour.config.save();
         }
         Message::Error(error) => {
             log_error(&error);
@@ -1547,27 +1964,12 @@ async fn perform_read_addon_directory(
     )
 }
 
-async fn perform_fetch_changelog(
-    addon: Addon,
-    key: AddonVersionKey,
-) -> (
-    Addon,
-    AddonVersionKey,
-    Result<(String, String), RepositoryError>,
-) {
-    let is_remote = key == AddonVersionKey::Remote;
-
-    let result = addon.get_changelog(is_remote).await;
-
-    (addon, key, result)
-}
-
 /// Downloads the newest version of the addon.
 /// This is for now only downloading from warcraftinterface.
 async fn perform_download_addon(
     reason: DownloadReason,
-    shared_client: Arc<HttpClient>,
     flavor: Flavor,
+    global_release_channel: GlobalReleaseChannel,
     addon: Addon,
     to_directory: PathBuf,
 ) -> (DownloadReason, Flavor, String, Result<(), DownloadError>) {
@@ -1575,7 +1977,7 @@ async fn perform_download_addon(
         reason,
         flavor,
         addon.primary_folder_id.clone(),
-        download_addon(&shared_client, &addon, &to_directory).await,
+        download_addon(&addon, global_release_channel, &to_directory).await,
     )
 }
 
@@ -1664,7 +2066,63 @@ async fn perform_fetch_latest_addon(
     )
 }
 
-fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: ColumnKey) {
+async fn list_accounts(
+    flavor: Flavor,
+    wtf_path: PathBuf,
+) -> (Flavor, Result<Vec<String>, ajour_weak_auras::Error>) {
+    (flavor, ajour_weak_auras::list_accounts(&wtf_path).await)
+}
+
+async fn parse_auras(
+    flavor: Flavor,
+    wtf_path: PathBuf,
+    account: String,
+) -> (Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>) {
+    (
+        flavor,
+        ajour_weak_auras::parse_auras(wtf_path, account).await,
+    )
+}
+
+async fn update_auras(
+    flavor: Flavor,
+    auras: Vec<Aura>,
+    addon_dir: PathBuf,
+) -> (Flavor, Result<Vec<String>, ajour_weak_auras::Error>) {
+    async fn _update_auras(
+        auras: Vec<Aura>,
+        addon_dir: PathBuf,
+    ) -> Result<Vec<String>, ajour_weak_auras::Error> {
+        let updates = ajour_weak_auras::get_aura_updates(&auras).await?;
+
+        ajour_weak_auras::write_updates(addon_dir, &updates).await
+    }
+
+    (flavor, _update_auras(auras, addon_dir).await)
+}
+
+async fn is_weak_auras_installed(flavor: Flavor, addon_dir: PathBuf) -> (Flavor, bool) {
+    (
+        flavor,
+        ajour_weak_auras::is_weak_auras_installed(addon_dir).await,
+    )
+}
+
+async fn perform_fetch_changelog(
+    addon: Addon,
+    default_release_channel: GlobalReleaseChannel,
+) -> (Addon, Result<Changelog, RepositoryError>) {
+    let changelog = addon.changelog(default_release_channel).await;
+
+    (addon, changelog)
+}
+
+fn sort_addons(
+    addons: &mut [Addon],
+    global_release_channel: GlobalReleaseChannel,
+    sort_direction: SortDirection,
+    column_key: ColumnKey,
+) {
     match (column_key, sort_direction) {
         (ColumnKey::Title, SortDirection::Asc) => {
             addons.sort_by(|a, b| a.title().to_lowercase().cmp(&b.title().to_lowercase()));
@@ -1676,8 +2134,8 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
                     .cmp(&b.title().to_lowercase())
                     .reverse()
                     .then_with(|| {
-                        a.relevant_release_package()
-                            .cmp(&b.relevant_release_package())
+                        a.relevant_release_package(global_release_channel)
+                            .cmp(&b.relevant_release_package(global_release_channel))
                     })
             });
         }
@@ -1698,15 +2156,15 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
         }
         (ColumnKey::RemoteVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
-                    .cmp(&b.relevant_release_package())
+                a.relevant_release_package(global_release_channel)
+                    .cmp(&b.relevant_release_package(global_release_channel))
                     .then_with(|| a.cmp(&b))
             });
         }
         (ColumnKey::RemoteVersion, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
-                    .cmp(&b.relevant_release_package())
+                a.relevant_release_package(global_release_channel)
+                    .cmp(&b.relevant_release_package(global_release_channel))
                     .reverse()
                     .then_with(|| a.cmp(&b))
             });
@@ -1742,16 +2200,22 @@ fn sort_addons(addons: &mut [Addon], sort_direction: SortDirection, column_key: 
         }
         (ColumnKey::DateReleased, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
+                a.relevant_release_package(global_release_channel)
                     .map(|p| p.date_time)
-                    .cmp(&b.relevant_release_package().map(|p| p.date_time))
+                    .cmp(
+                        &b.relevant_release_package(global_release_channel)
+                            .map(|p| p.date_time),
+                    )
             });
         }
         (ColumnKey::DateReleased, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
-                a.relevant_release_package()
+                a.relevant_release_package(global_release_channel)
                     .map(|p| p.date_time)
-                    .cmp(&b.relevant_release_package().map(|p| p.date_time))
+                    .cmp(
+                        &b.relevant_release_package(global_release_channel)
+                            .map(|p| p.date_time),
+                    )
                     .reverse()
             });
         }
@@ -1825,6 +2289,69 @@ fn sort_catalog_addons(
     }
 }
 
+fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: AuraColumnKey) {
+    match (column_key, sort_direction) {
+        (AuraColumnKey::Title, SortDirection::Asc) => {
+            auras.sort_by(|a, b| a.name().to_lowercase().cmp(&b.name().to_lowercase()));
+        }
+        (AuraColumnKey::Title, SortDirection::Desc) => {
+            auras.sort_by(|a, b| {
+                a.name()
+                    .to_lowercase()
+                    .cmp(&b.name().to_lowercase())
+                    .reverse()
+            });
+        }
+        (AuraColumnKey::LocalVersion, SortDirection::Asc) => {
+            auras.sort_by(|a, b| {
+                a.installed_symver()
+                    .cmp(&b.installed_symver())
+                    .then_with(|| a.name().cmp(&b.name()))
+            });
+        }
+        (AuraColumnKey::LocalVersion, SortDirection::Desc) => {
+            auras.sort_by(|a, b| {
+                a.installed_symver()
+                    .cmp(&b.installed_symver())
+                    .reverse()
+                    .then_with(|| a.name().cmp(&b.name()))
+            });
+        }
+        (AuraColumnKey::RemoteVersion, SortDirection::Asc) => {
+            auras.sort_by(|a, b| {
+                a.remote_symver()
+                    .cmp(&b.remote_symver())
+                    .then_with(|| a.name().cmp(&b.name()))
+            });
+        }
+        (AuraColumnKey::RemoteVersion, SortDirection::Desc) => {
+            auras.sort_by(|a, b| {
+                a.remote_symver()
+                    .cmp(&b.remote_symver())
+                    .reverse()
+                    .then_with(|| a.name().cmp(&b.name()))
+            });
+        }
+        (AuraColumnKey::Author, SortDirection::Asc) => {
+            auras.sort_by(|a, b| a.author().cmp(&b.author()))
+        }
+        (AuraColumnKey::Author, SortDirection::Desc) => {
+            auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
+        }
+        (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
+            a.status()
+                .cmp(&b.status())
+                .then_with(|| a.name().to_lowercase().cmp(&b.name().to_lowercase()))
+        }),
+        (AuraColumnKey::Status, SortDirection::Desc) => auras.sort_by(|a, b| {
+            a.status()
+                .cmp(&b.status())
+                .reverse()
+                .then_with(|| a.name().to_lowercase().cmp(&b.name().to_lowercase()))
+        }),
+    }
+}
+
 fn query_and_sort_catalog(ajour: &mut Ajour) {
     if let Some(catalog) = &ajour.catalog {
         let query = ajour
@@ -1837,46 +2364,94 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
 
-        let mut catalog_rows: Vec<_> = catalog
+        // Increase penalty for gaps between matching characters
+        let fuzzy_match_config = SkimScoreConfig {
+            gap_start: -12,
+            gap_extension: -6,
+            ..Default::default()
+        };
+        let fuzzy_matcher = SkimMatcherV2::default().score_config(fuzzy_match_config);
+
+        let mut catalog_rows_and_score = catalog
             .addons
             .iter()
             .filter(|a| !a.game_versions.is_empty())
-            .filter(|a| {
-                let cleaned_text =
-                    format!("{} {}", a.name.to_lowercase(), a.summary.to_lowercase());
+            .filter_map(|a| {
+                let title_and_summary = format!("{} {}", a.name, a.summary);
 
                 if let Some(query) = &query {
-                    cleaned_text.contains(query)
+                    if let Some(score) = fuzzy_matcher.fuzzy_match(&title_and_summary, &query) {
+                        Some((a, score))
+                    } else {
+                        None
+                    }
                 } else {
-                    true
+                    Some((a, 1))
                 }
             })
-            .filter(|a| {
+            // Only return positive scores
+            .filter(|(_, s)| *s > 0)
+            .filter(|(a, _)| {
                 a.game_versions
                     .iter()
                     .any(|gc| gc.flavor == flavor.base_flavor())
             })
-            .filter(|a| match source {
+            .filter(|(a, _)| match source {
                 CatalogSource::Choice(source) => a.source == *source,
             })
-            .filter(|a| match category {
+            .filter(|(a, _)| match category {
                 CatalogCategory::All => true,
                 CatalogCategory::Choice(name) => a.categories.iter().any(|c| c == name),
             })
-            .cloned()
-            .map(CatalogRow::from)
-            .collect();
+            .map(|(a, score)| (CatalogRow::from(a.clone()), score))
+            .collect::<Vec<_>>();
 
-        let sort_direction = ajour
-            .catalog_header_state
-            .previous_sort_direction
-            .unwrap_or(SortDirection::Desc);
-        let column_key = ajour
-            .catalog_header_state
-            .previous_column_key
-            .unwrap_or(CatalogColumnKey::NumDownloads);
+        let mut catalog_rows = if query.is_some() {
+            // If a query is defined, the default sort is the fuzzy match score
+            catalog_rows_and_score.sort_by(|(addon_a, score_a), (addon_b, score_b)| {
+                score_a.cmp(&score_b).reverse().then_with(|| {
+                    addon_a
+                        .addon
+                        .number_of_downloads
+                        .cmp(&addon_b.addon.number_of_downloads)
+                        .reverse()
+                })
+            });
 
-        sort_catalog_addons(&mut catalog_rows, sort_direction, column_key, flavor);
+            catalog_rows_and_score
+                .into_iter()
+                .map(|(a, _)| a)
+                .collect::<Vec<_>>()
+        } else {
+            catalog_rows_and_score
+                .into_iter()
+                .map(|(a, _)| a)
+                .collect::<Vec<_>>()
+        };
+
+        // If no query is defined, use the column sorting configuration or default
+        // sort of NumDownloads DESC.
+        //
+        // If a query IS defined, only sort if column has been sorted after query
+        // has been typed. Sort direction / key are set to None anytime a character
+        // is typed into the query box so results will sort by fuzzy match score.
+        // Therefore they'll only be Some if the columns are sorted after the query
+        // is input.
+        if query.is_none()
+            || (ajour.catalog_header_state.previous_sort_direction.is_some()
+                && ajour.catalog_header_state.previous_column_key.is_some())
+        {
+            let sort_direction = ajour
+                .catalog_header_state
+                .previous_sort_direction
+                .unwrap_or(SortDirection::Desc);
+            let column_key = ajour
+                .catalog_header_state
+                .previous_column_key
+                .unwrap_or(CatalogColumnKey::NumDownloads);
+
+            sort_catalog_addons(&mut catalog_rows, sort_direction, column_key, flavor);
+        }
 
         catalog_rows = catalog_rows
             .into_iter()
@@ -1903,9 +2478,17 @@ fn save_column_configs(ajour: &mut Ajour) {
         .map(ColumnConfigV2::from)
         .collect();
 
+    let aura_columns: Vec<_> = ajour
+        .aura_header_state
+        .columns
+        .iter()
+        .map(ColumnConfigV2::from)
+        .collect();
+
     ajour.config.column_config = ColumnConfig::V3 {
         my_addons_columns,
         catalog_columns,
+        aura_columns,
     };
 
     let _ = ajour.config.save();

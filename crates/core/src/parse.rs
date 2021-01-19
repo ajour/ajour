@@ -1,8 +1,8 @@
 use crate::{
     addon::{Addon, AddonFolder, AddonState},
-    cache::{AddonCache, AddonCacheEntry, FingerprintCache},
+    cache::{self, AddonCache, AddonCacheEntry, FingerprintCache},
     config::Flavor,
-    error::{DownloadError, ParseError, RepositoryError},
+    error::{CacheError, DownloadError, ParseError, RepositoryError},
     fs::PersistentData,
     murmur2::calculate_hash,
     repository::{curse, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage},
@@ -10,9 +10,8 @@ use crate::{
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
 use futures::future::join_all;
-use isahc::config::RedirectPolicy;
 use isahc::http::Uri;
-use isahc::{prelude::Configurable, HttpClient};
+use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -21,10 +20,6 @@ use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::SystemTime;
-
-lazy_static::lazy_static! {
-    static ref CACHED_GAME_INFO: Mutex<Option<curse::GameInfo>> = Mutex::new(None);
-}
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub struct Fingerprint {
@@ -51,6 +46,22 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // If the path does not exists or does not point on a directory we return an Error.
     if !root_dir.is_dir() {
+        // Delete fingerprints if flavor addon folder no longer exists on filesystem
+        if let Some(fingerprint_cache) = &fingerprint_cache {
+            let mut cache = fingerprint_cache.lock().await;
+
+            if cache.flavor_exists(flavor) {
+                cache.delete_flavor(flavor);
+
+                log::info!(
+                    "{} - deleting cached fingerprints since AddOns folder doesn't exist",
+                    flavor
+                )
+            }
+
+            cache.save()?;
+        }
+
         return Err(ParseError::MissingAddonDirectory {
             path: root_dir.to_owned(),
         });
@@ -78,6 +89,22 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
 
     // Return early if there are no directories to parse
     if all_dirs.is_empty() {
+        // Delete all cached fingerprints for this flavor since there are no addon folders
+        if let Some(fingerprint_cache) = &fingerprint_cache {
+            let mut cache = fingerprint_cache.lock().await;
+
+            if cache.flavor_exists(flavor) {
+                cache.delete_flavor(flavor);
+
+                log::info!(
+                    "{} - deleting cached fingerprints since AddOns folder is empty",
+                    flavor
+                )
+            }
+
+            cache.save()?;
+        }
+
         return Ok(vec![]);
     }
 
@@ -89,7 +116,7 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     let mut addon_folders = parse_addon_folders(root_dir, flavor, &all_dirs, &fingerprints).await;
 
     // Get all cached entries
-    let cache_entries = get_cache_entries(flavor, addon_cache).await;
+    let cache_entries = get_cache_entries(flavor, addon_cache, &addon_folders).await?;
 
     // Get fingerprint info for all non-cached addon folders
     let fingerprint_info =
@@ -110,6 +137,9 @@ pub async fn read_addon_directory<P: AsRef<Path>>(
     // Any remaining addon folders are unknown, we will show them 1:1 in Ajour
     let unknown_addons = addon_folders
         .into_iter()
+        // Blacklist this addon since it's created by Ajour / Companion app and
+        // doesn't need to be managed
+        .filter(|f| f.id != "WeakAurasCompanion")
         .map(|f| {
             let mut addon = Addon::empty(&f.id);
             addon.folders = vec![f];
@@ -274,8 +304,29 @@ async fn parse_addon_folders(
 async fn get_cache_entries(
     flavor: Flavor,
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
-) -> Vec<AddonCacheEntry> {
+    addon_folders: &[AddonFolder],
+) -> Result<Vec<AddonCacheEntry>, CacheError> {
     let cache_entries = if let Some(addon_cache) = addon_cache {
+        // Remove any cached entries for folders that no longer exist
+        // on the filesystem
+        {
+            let num_removed = cache::remove_addon_entries_with_missing_folders(
+                addon_cache.clone(),
+                flavor,
+                addon_folders,
+                true,
+            )
+            .await?;
+
+            if num_removed > 0 {
+                log::debug!(
+                    "{} - {} cached entries removed due to missing addon folders",
+                    flavor,
+                    num_removed
+                );
+            }
+        }
+
         let mut addon_cache = addon_cache.lock().await;
         let addon_cache_entries = addon_cache.get_mut_for_flavor(flavor);
 
@@ -284,9 +335,13 @@ async fn get_cache_entries(
         vec![]
     };
 
-    log::debug!("{} - {} cached entries", flavor, cache_entries.len());
+    log::debug!(
+        "{} - {} valid cache entries retrieved",
+        flavor,
+        cache_entries.len()
+    );
 
-    cache_entries
+    Ok(cache_entries)
 }
 
 async fn get_curse_fingerprint_info(
@@ -481,7 +536,8 @@ async fn get_all_repo_packages(
                 let package = curse_packages.remove(idx);
 
                 r.metadata.title = Some(package.name.clone());
-                r.metadata.website_url = Some(package.website_url);
+                r.metadata.website_url = Some(package.website_url.clone());
+                r.metadata.changelog_url = Some(format!("{}/files", package.website_url));
             }
         });
 
@@ -514,17 +570,9 @@ async fn get_all_repo_packages(
 
     // Get all tukui repo packages
     let tukui_repo_packages = if !tukui_ids.is_empty() {
-        let client = Arc::new(
-            HttpClient::builder()
-                .redirect_policy(RedirectPolicy::Follow)
-                .max_connections_per_host(6)
-                .build()
-                .unwrap(),
-        );
-
         let fetch_tasks: Vec<_> = tukui_ids
             .iter()
-            .map(|id| tukui::fetch_remote_package(client.clone(), &id, &flavor))
+            .map(|id| tukui::fetch_remote_package(&id, &flavor))
             .collect();
 
         join_all(fetch_tasks)
@@ -920,7 +968,7 @@ pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32, ParseError> {
 
         let text = String::from_utf8_lossy(&buf);
         let text = comment_strip_regex.replace_all(&text, "");
-        for line in text.split(&['\n', '\r'][..]) {
+        for line in text.lines() {
             let mut last_offset = 0;
             while let Some(inc_match) = inclusion_regex.captures_from_pos(line, last_offset)? {
                 let prev_last_offset = last_offset;
@@ -1015,29 +1063,35 @@ where
     Some(current)
 }
 
-lazy_static::lazy_static! {
-    static ref RE_TOC_LINE: regex::Regex = regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap();
-    static ref RE_TOC_TITLE: regex::Regex = regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)").unwrap();
-    static ref RE_PARSING_PATTERNS: ParsingPatterns = {
-        let mut file_parsing_regex = HashMap::new();
-        file_parsing_regex.insert(".xml".to_string(), (
+static RE_TOC_LINE: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap());
+static RE_TOC_TITLE: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)").unwrap());
+static RE_PARSING_PATTERNS: Lazy<ParsingPatterns> = Lazy::new(|| {
+    let mut file_parsing_regex = HashMap::new();
+    file_parsing_regex.insert(
+        ".xml".to_string(),
+        (
             regex::Regex::new("(?s)<!--.*?-->").unwrap(),
-            Regex::new("(?i)<(?:Include|Script)\\s+file=[\"\"']((?:(?<!\\.\\.).)+)[\"\"']\\s*/>").unwrap(),
-        ));
+            Regex::new("(?i)<(?:Include|Script)\\s+file=[\"\"']((?:(?<!\\.\\.).)+)[\"\"']\\s*/>")
+                .unwrap(),
+        ),
+    );
 
-
-        file_parsing_regex.insert(".toc".to_string(), (
+    file_parsing_regex.insert(
+        ".toc".to_string(),
+        (
             regex::Regex::new("(?m)\\s*#.*$").unwrap(),
             Regex::new("(?mi)^\\s*((?:(?<!\\.\\.).)+\\.(?:xml|lua))\\s*$").unwrap(),
-        ));
+        ),
+    );
 
-        ParsingPatterns {
-            extra_inclusion_regex: Regex::new("(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
-            initial_inclusion_regex: Regex::new("(?i)^([^/]+)[\\\\/]\\1\\.toc$").unwrap(),
-            file_parsing_regex,
-        }
-    };
-}
+    ParsingPatterns {
+        extra_inclusion_regex: Regex::new("(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
+        initial_inclusion_regex: Regex::new("(?i)^([^/]+)[\\\\/]\\1\\.toc$").unwrap(),
+        file_parsing_regex,
+    }
+});
 
 /// Helper function to parse a given TOC file
 /// (`DirEntry`) into a `Addon` struct.
@@ -1129,7 +1183,7 @@ pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
 
 /// Helper function to split a comma separated string into `Vec<String>`.
 fn split_dependencies_into_vec(value: &str) -> Vec<String> {
-    if value == "" {
+    if value.is_empty() {
         return vec![];
     }
 

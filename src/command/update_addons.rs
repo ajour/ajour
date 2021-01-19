@@ -12,16 +12,13 @@ use ajour_core::config::{load_config, Flavor};
 use ajour_core::fs::install_addon;
 use ajour_core::network::download_addon;
 use ajour_core::parse::{read_addon_directory, update_addon_fingerprint};
-use ajour_core::repository::RepositoryKind;
+use ajour_core::repository::{GlobalReleaseChannel, RepositoryKind};
 
 use anyhow::{format_err, Context};
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
 
 use futures::future::join_all;
-
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
 
 use std::convert::TryFrom;
 use std::path::PathBuf;
@@ -31,6 +28,7 @@ pub fn update_all_addons() -> Result<()> {
 
     task::block_on(async {
         let config = load_config().await?;
+        let global_release_channel = config.addons.global_release_channel;
 
         let fingerprint_cache: Arc<Mutex<_>> =
             Arc::new(Mutex::new(load_fingerprint_cache().await?));
@@ -38,15 +36,6 @@ pub fn update_all_addons() -> Result<()> {
         let addon_cache: Arc<Mutex<_>> = Arc::new(Mutex::new(load_addon_cache().await?));
 
         let mut addons_to_update = vec![];
-
-        // API request will get limited to 6 per host
-        let shared_client = Arc::new(
-            HttpClient::builder()
-                .redirect_policy(RedirectPolicy::Follow)
-                .max_connections_per_host(6)
-                .build()
-                .unwrap(),
-        );
 
         // Update addons for both flavors
         for flavor in Flavor::ALL.iter() {
@@ -87,7 +76,7 @@ pub fn update_all_addons() -> Result<()> {
                         addon.release_channel = *channel;
                     }
 
-                    if let Some(package) = addon.relevant_release_package() {
+                    if let Some(package) = addon.relevant_release_package(global_release_channel) {
                         // Directory to temporarily save downloaded addon
                         let temp_directory = config
                             .get_download_directory_for_flavor(*flavor)
@@ -96,10 +85,10 @@ pub fn update_all_addons() -> Result<()> {
                         // Only add addons that have an update available
                         if addon.is_updatable(&package) {
                             addons_to_update.push((
-                                shared_client.clone(),
                                 addon_cache.clone(),
                                 fingerprint_cache.clone(),
                                 *flavor,
+                                global_release_channel,
                                 addon,
                                 temp_directory,
                                 addon_directory.clone(),
@@ -117,10 +106,10 @@ pub fn update_all_addons() -> Result<()> {
 
         addons_to_update
             .iter()
-            .for_each(|(_, _, _, flavor, addon, ..)| {
+            .for_each(|(_, _, flavor, _, addon, ..)| {
                 let current_version = addon.version().unwrap_or_default();
                 let new_version = addon
-                    .relevant_release_package()
+                    .relevant_release_package(global_release_channel)
                     .map(|p| p.version)
                     .unwrap_or_default();
 
@@ -164,25 +153,25 @@ pub fn update_all_addons() -> Result<()> {
 /// Downloads the latest file, extracts it and refingerprints the addon, saving it to the cache.
 async fn update_addon(
     (
-        shared_client,
         addon_cache,
         fingerprint_cache,
         flavor,
+        global_release_channel,
         mut addon,
         temp_directory,
         addon_directory,
     ): (
-        Arc<HttpClient>,
         Arc<Mutex<AddonCache>>,
         Arc<Mutex<FingerprintCache>>,
         Flavor,
+        GlobalReleaseChannel,
         Addon,
         PathBuf,
         PathBuf,
     ),
 ) -> Result<()> {
     // Download the update to the temp directory
-    download_addon(&shared_client, &addon, &temp_directory).await?;
+    download_addon(&addon, global_release_channel, &temp_directory).await?;
 
     // Extracts addon from the downloaded archive to the addon directory and removes the archive
     let installed_folders = install_addon(&addon, &temp_directory, &addon_directory).await?;

@@ -22,7 +22,7 @@ pub(crate) trait Backend: DynClone + Send + Sync {
         &self,
         file_id: Option<i64>,
         tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError>;
+    ) -> Result<Option<String>, RepositoryError>;
 }
 
 clone_trait_object!(Backend);

@@ -17,6 +17,10 @@ pub enum FilesystemError {
     #[cfg(target_os = "macos")]
     #[error("Could not file bin name {bin_name} in archive")]
     BinMissingFromTar { bin_name: String },
+    #[error("Failed to normalize path slashes for {path:?}")]
+    NormalizingPathSlash { path: PathBuf },
+    #[error("Could not strip prefix {prefix:?} from {from:?}")]
+    StripPrefix { prefix: String, from: String },
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -43,6 +47,8 @@ pub enum DownloadError {
     MissingSelfUpdateRelease { bin_name: String },
     #[error("Catalog failed to download")]
     CatalogFailed,
+    #[error("Self update for linux only works from AppImage")]
+    SelfUpdateLinuxNonAppImage,
     #[error(transparent)]
     Isahc(#[from] isahc::Error),
     #[error(transparent)]
@@ -101,6 +107,8 @@ pub enum RepositoryError {
     Download(#[from] DownloadError),
     #[error(transparent)]
     Filesystem(#[from] FilesystemError),
+    #[error(transparent)]
+    Uri(#[from] isahc::http::uri::InvalidUri),
 }
 
 impl From<std::io::Error> for RepositoryError {
@@ -149,6 +157,8 @@ pub enum ParseError {
     Download(#[from] DownloadError),
     #[error(transparent)]
     Filesystem(#[from] FilesystemError),
+    #[error(transparent)]
+    Cache(#[from] CacheError),
 }
 
 impl From<std::io::Error> for ParseError {

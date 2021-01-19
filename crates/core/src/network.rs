@@ -1,5 +1,6 @@
 use crate::addon::Addon;
 use crate::error::DownloadError;
+use crate::repository::GlobalReleaseChannel;
 use async_std::{
     fs::{create_dir_all, File},
     io::copy,
@@ -7,12 +8,26 @@ use async_std::{
 use isahc::config::RedirectPolicy;
 use isahc::http::header::CONTENT_LENGTH;
 use isahc::prelude::*;
+use once_cell::sync::Lazy;
 use serde::Serialize;
 use std::path::PathBuf;
 
+/// Shared `HttpClient`.
+static HTTP_CLIENT: Lazy<HttpClient> = Lazy::new(|| {
+    HttpClient::builder()
+        .redirect_policy(RedirectPolicy::Follow)
+        .max_connections_per_host(6)
+        .build()
+        .unwrap()
+});
+
+/// Ajour user-agent.
+fn user_agent() -> String {
+    format!("ajour/{}", env!("CARGO_PKG_VERSION"))
+}
+
 /// Generic request function.
-pub(crate) async fn request_async<T: ToString>(
-    shared_client: &HttpClient,
+pub async fn request_async<T: ToString>(
     url: T,
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
@@ -26,11 +41,13 @@ pub(crate) async fn request_async<T: ToString>(
         request = request.header(name, value);
     }
 
+    request = request.header("user-agent", &user_agent());
+
     if let Some(timeout) = timeout {
         request = request.timeout(std::time::Duration::from_secs(timeout));
     }
 
-    Ok(shared_client.send_async(request.body(())?).await?)
+    Ok(HTTP_CLIENT.send_async(request.body(())?).await?)
 }
 
 // Generic function for posting Json data
@@ -49,30 +66,32 @@ pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
         request = request.header(name, value);
     }
 
+    request = request.header("user-agent", &user_agent());
+
     if let Some(timeout) = timeout {
         request = request.timeout(std::time::Duration::from_secs(timeout));
     }
 
-    Ok(request
-        .body(serde_json::to_vec(&data)?)?
-        .send_async()
+    Ok(HTTP_CLIENT
+        .send_async(request.body(serde_json::to_vec(&data)?)?)
         .await?)
 }
 
 /// Function to download a zip archive for a `Addon`.
 /// Note: Addon needs to have a `remote_url` to the file.
 pub async fn download_addon(
-    shared_client: &HttpClient,
     addon: &Addon,
+    global_release_channel: GlobalReleaseChannel,
     to_directory: &PathBuf,
 ) -> Result<(), DownloadError> {
-    let package = if let Some(relevant_package) = addon.relevant_release_package() {
-        Some(relevant_package)
-    } else if let Some(fallback_package) = addon.fallback_release_package() {
-        Some(fallback_package)
-    } else {
-        None
-    };
+    let package =
+        if let Some(relevant_package) = addon.relevant_release_package(global_release_channel) {
+            Some(relevant_package)
+        } else if let Some(fallback_package) = addon.fallback_release_package() {
+            Some(fallback_package)
+        } else {
+            None
+        };
 
     if let Some(package) = package {
         log::debug!(
@@ -80,7 +99,7 @@ pub async fn download_addon(
             package.version,
             &addon.primary_folder_id
         );
-        let resp = request_async(shared_client, package.download_url.clone(), vec![], None).await?;
+        let resp = request_async(package.download_url.clone(), vec![], None).await?;
         let (parts, mut body) = resp.into_parts();
 
         // If response length doesn't equal content length, full file wasn't downloaded
@@ -126,17 +145,7 @@ pub(crate) async fn download_file<T: ToString>(
 
     log::debug!("downloading file from {}", &url);
 
-    let client = HttpClient::builder()
-        .redirect_policy(RedirectPolicy::Follow)
-        .build()?;
-
-    let resp = request_async(
-        &client,
-        &url,
-        vec![("ACCEPT", "application/octet-stream")],
-        None,
-    )
-    .await?;
+    let resp = request_async(&url, vec![("ACCEPT", "application/octet-stream")], None).await?;
     let (parts, mut body) = resp.into_parts();
 
     // If response length doesn't equal content length, full file wasn't downloaded

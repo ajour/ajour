@@ -1,7 +1,7 @@
 use crate::widget::header;
 use iced_graphics::{Backend, Primitive, Renderer};
 use iced_native::mouse;
-use iced_native::{Element, Layout, Point};
+use iced_native::{Element, Layout, Point, Rectangle};
 
 impl<B> header::Renderer for Renderer<B>
 where
@@ -14,6 +14,7 @@ where
         layout: Layout<'_>,
         cursor_position: Point,
         resize_hovering: bool,
+        viewport: &Rectangle,
     ) -> Self::Output {
         let mut mouse_interaction = if resize_hovering {
             mouse::Interaction::ResizingHorizontally
@@ -28,7 +29,7 @@ where
                     .zip(layout.children())
                     .map(|(child, layout)| {
                         let (primitive, new_mouse_interaction) =
-                            child.draw(self, defaults, layout, cursor_position);
+                            child.draw(self, defaults, layout, cursor_position, viewport);
 
                         if new_mouse_interaction > mouse_interaction {
                             mouse_interaction = new_mouse_interaction;

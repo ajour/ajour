@@ -5,13 +5,13 @@
 ### Cargo
 
 ```sh
-cargo install ajour --git https://github.com/casperstorm/ajour.git
+cargo install ajour
 ```
 
 ### [Homebrew](https://brew.sh/)
 
 ```sh
-brew cask install ajour
+brew install --cask ajour
 ```
 
 ### [Chocolatey](https://chocolatey.org/)

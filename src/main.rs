@@ -6,14 +6,14 @@
 mod cli;
 mod command;
 mod gui;
+mod localization;
 
 use ajour_core::fs::CONFIG_DIR;
-use ajour_core::utility::rename;
+use ajour_core::utility::{remove_file, rename};
 
 #[cfg(target_os = "linux")]
 use anyhow::Context;
 use std::env;
-#[cfg(target_os = "linux")]
 use std::path::PathBuf;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -44,21 +44,21 @@ pub fn main() {
     // fix that allows us to print to the console when not using the GUI.
     let opts = cli::validate_opts_or_exit(opts_result, is_cli, is_debug);
 
-    setup_logger(is_cli, is_debug).expect("setup logging");
-
-    // Called when we launch from the temp (new release) binary during the self update
-    // process. We will rename the temp file (running process) to the original binary
-    if let Some(main_bin_name) = &opts.self_update_temp {
-        if let Err(e) = handle_self_update_temp(main_bin_name) {
-            log_error(&e);
-            std::process::exit(1);
-        }
-    }
-
     if let Some(data_dir) = &opts.data_directory {
         let mut config_dir = CONFIG_DIR.lock().unwrap();
 
         *config_dir = data_dir.clone();
+    }
+
+    setup_logger(is_cli, is_debug).expect("setup logging");
+
+    // Called when we launch from the temp (new release) binary during the self update
+    // process. We will rename the temp file (running process) to the original binary
+    if let Some(cleanup_path) = &opts.self_update_temp {
+        if let Err(e) = handle_self_update_temp(cleanup_path) {
+            log_error(&e);
+            std::process::exit(1);
+        }
     }
 
     log_panics::init();
@@ -74,7 +74,9 @@ pub fn main() {
                     destination,
                     flavors,
                 } => command::backup(backup_folder, destination, flavors),
-                cli::Command::Update => command::update_all_addons(),
+                cli::Command::Update => command::update_both(),
+                cli::Command::UpdateAddons => command::update_all_addons(),
+                cli::Command::UpdateWeakauras => command::update_all_weakauras(),
                 cli::Command::Install { url, flavor } => command::install_from_source(url, flavor),
             } {
                 log_error(&e);
@@ -143,19 +145,37 @@ fn setup_logger(is_cli: bool, is_debug: bool) -> Result<()> {
     Ok(())
 }
 
-fn handle_self_update_temp(main_bin_name: &str) -> Result<()> {
+fn handle_self_update_temp(cleanup_path: &PathBuf) -> Result<()> {
     #[cfg(not(target_os = "linux"))]
-    let temp_bin = env::current_exe()?;
+    let current_bin = env::current_exe()?;
 
     #[cfg(target_os = "linux")]
-    let temp_bin =
-        PathBuf::from(std::env::var("APPIMAGE").context("error getting APPIMAGE env variable")?);
+    let current_bin =
+        PathBuf::from(env::var("APPIMAGE").context("error getting APPIMAGE env variable")?);
 
-    let parent_dir = temp_bin.parent().unwrap();
+    // Fix for self updating pre 0.5.4 to >= 0.5.4
+    //
+    // Pre 0.5.4, `cleanup_path` is actually the file name of the main bin name that
+    // got passed via the CLI in the self update process. We want to rename the
+    // current bin to that bin name. This was passed as a string of just the file
+    // name, so we want to make an actual full path out of it first.
+    if current_bin
+        .file_name()
+        .unwrap_or_default()
+        .to_str()
+        .unwrap_or_default()
+        .starts_with("tmp_")
+    {
+        let main_bin_name = cleanup_path;
 
-    let main_bin = parent_dir.join(main_bin_name);
+        let parent_dir = current_bin.parent().unwrap();
 
-    rename(&temp_bin, &main_bin)?;
+        let main_bin = parent_dir.join(&main_bin_name);
+
+        rename(&current_bin, &main_bin)?;
+    } else {
+        remove_file(cleanup_path)?;
+    }
 
     log::debug!("Ajour updated successfully");
 

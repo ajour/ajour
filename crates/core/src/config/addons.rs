@@ -1,5 +1,5 @@
 use super::Flavor;
-use crate::repository::ReleaseChannel;
+use crate::repository::{GlobalReleaseChannel, ReleaseChannel};
 use de::de_ignored;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -7,18 +7,26 @@ use std::collections::HashMap;
 /// Struct for addons specific settings.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct Addons {
+    #[serde(default)]
+    pub global_release_channel: GlobalReleaseChannel,
+
     #[serde(default, deserialize_with = "de_ignored")]
     pub ignored: HashMap<Flavor, Vec<String>>,
 
     #[serde(default)]
     pub release_channels: HashMap<Flavor, HashMap<String, ReleaseChannel>>,
+
+    #[serde(default)]
+    pub delete_saved_variables: bool,
 }
 
 impl Default for Addons {
     fn default() -> Self {
         Addons {
+            global_release_channel: GlobalReleaseChannel::Stable,
             ignored: HashMap::new(),
             release_channels: HashMap::new(),
+            delete_saved_variables: Default::default(),
         }
     }
 }

@@ -14,9 +14,134 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- New languages added to Ajour:
+  - 🇨🇿 Czech (thanks Ragnarocek)
+  - 🇳🇴 Norwegian (thanks Jim Nordbø and Nichlas Sørli)
+  - 🇭🇺 Hungarian (thanks Krisz)
+  - 🇵🇹 Portuguese (thanks Boryana)
+  - 🇸🇰 Slovak (thanks Ragnarocek)
+  - 🇹🇷 Turkish (thanks Gageracer)
+
 ### Changed
 
-- Ajour binaries for Windows are now digitally signed.
+- Refreshed the menu with a more simple and uncluttered look.
+- Catalog fuzzy matching better removes unrelated results while retaining relevant
+  results
+
+## [0.6.3] - 2021-01-14
+
+### Added
+
+- Added back inline changelogs for remote version. Clicking on the remote version
+  will show the changelog inline instead of opening a browser window.
+- Ajour has been localized. Currently we support the following languages:
+  - 🇺🇸 English
+  - 🇩🇰 Danish
+  - 🇷🇺 Russian (thanks Ruslan)
+  - 🇪🇸 Spanish (thanks El Empresario and Boryana)
+  - 🇩🇪 German (thanks Subduck)
+  - 🇫🇷 French (thanks Nelfym)
+  - 🇸🇪 Swedish (thanks Zee)
+
+### Fixed
+
+- Parsing error causing WeakAuras to fail parsing due to missing "version" field
+- Incorrect percent encoding in WeakAuras API calls causing auras to not display
+
+## [0.6.1] - 2021-01-02
+
+### Added
+
+- Added "Beta / Alpha" release channel support for GitHub addons. Releases marked
+  as "pre-release" on GitHub will show as an update when the addon is marked as
+  "Beta" or "Alpha". Releases not marked as "pre-release" will show up for "Stable".
+- Row colors now alternate by default for better accessibility. This can be turned
+  off in settings under the UI section's "Alternate Row Colors" checkbox.
+- Remote version can be clicked to directly open the changelog webpage.
+- Added a new button in settings under Column configuration to "Reset Columns".
+  Pressing this button will reset columns to their default size, sort & visibility.
+- SavedVariables can now be deleted along side the addon if you enable it from
+  Settings.
+
+### Changed
+
+- `Interface` folder root is included in the zip backup when `AddOns` is selected.
+  Some users store proprietary data alongside the `AddOns` folder that they'd like
+  included during backup.
+- Removed `Force install` as it had no value.
+
+### Fixed
+
+- Now correctly parses WeakAuars uploaded to Wago as a guest.
+- Fixed addon title letter casing for GitHub addons by using the actual repository
+  name instead of parsed repo from the user inputted URL
+- Removed minimum window size on Linux. This fixed a issue where the application
+  would not be resizable.
+- Fixed bug where log file didn't respect custom `--data` path. Log is now created
+  under the supplied `--data` path.
+- Small height difference in Catalog search menu.
+
+## [0.6.0] - 2020-12-20
+
+### Added
+
+- Support for updating WeakAuras from [Wago.io](https://wago.io/weakauras).
+  You will find a new button in the menu called `My WeakAuras` if you have
+  the WeakAura addon installed.
+  - Once setup in Ajour, WeakAuras updates can also be checked on the CLI with
+    `ajour update-weakauras`.
+- A global release channel can now be set in Settings. This makes it easy to set
+  all addons to a certain release channel, instead of going through them one by
+  one. Each addon can still overwrite this setting, if wanted.
+
+### Changed
+
+- Catalog search now uses a fuzzy match for better searching of the catalog.
+
+### Fixed
+
+- Certain CF addons weren't fingerprinted correctly due to a bug in the fingerprinting
+  logic for splitting on lines.
+- Fix a bug where users upgrading from an older version of Ajour might have incorrect
+  behavior when trying to resize a column in the Catalog
+- Ignored addons are now sorted correctly again
+- Fingerprint and addon cache entries are now properly deleted when the addon folder
+  is missing from the filesystem
+- Unknown addons are now at the botton of the addon list by default instead of top
+- Padding was added back on My Addon and Catalog title columns, which was unintentionally
+  removed when implementing highlightable rows
+
+## [0.5.4] - 2020-12-07
+
+### Added
+
+- Row Highlighting. Rows in `My Addons` and `Catalog` will now highlight on mouseover.
+  Clicking a row in `My Addons` will expand it. Clicking a row in `Catalog` will
+  launch the website of the addon.
+- Ability to retry an update, if it failed during download or unpacking.
+- A minimum size to the Ajour window.
+- A new Beta self update channel has been added that can be selected to allow self
+  updating Ajour to beta releases. Use this if you'd like to help test out newer
+  features before they are released, or just want the latest a little quicker than
+  our normal release schedule. This can be changed in the settings.
+- Periodic self update check. Ajour will now check for self updates while running
+  every hour. Previously self updates were only checked on launch.
+
+### Changed
+
+- The old Changelog system has been removed which means you can no longer
+  interact with the versions in the `Local` and `Remote` columns.
+  Instead, a `Changelog` button has been added to the expanded addon window.
+
+### Fixed
+
+- Fixed issue where some Tukui addons wouldn't get matched correctly.
+- Fixed a bug in backup where the zip archive created on Windows didn't open
+  properly
+  on Linux and Macos. Fixed by converting Windows `\` path separators to `/`
+  before writing to the zip file.
 
 ## [0.5.3] - 2020-11-23
 
@@ -32,7 +157,7 @@ and `Removed`.
 
 - Sorted themes alphabetically in the picker
 - Better human readable errors in Ajour gui. Errors and underlying causes
-are still logged.
+  are still logged.
 
 ### Fixed
 

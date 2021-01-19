@@ -7,12 +7,10 @@ use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, trunc
 
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use isahc::config::RedirectPolicy;
-use isahc::prelude::*;
+use isahc::ResponseExt;
 use serde::Deserialize;
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Tukui {
@@ -23,15 +21,7 @@ pub struct Tukui {
 #[async_trait]
 impl Backend for Tukui {
     async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
-        let client = Arc::new(
-            HttpClient::builder()
-                .redirect_policy(RedirectPolicy::Follow)
-                .max_connections_per_host(6)
-                .build()
-                .unwrap(),
-        );
-
-        let (_, package) = fetch_remote_package(client, &self.id, &self.flavor).await?;
+        let (_, package) = fetch_remote_package(&self.id, &self.flavor).await?;
 
         let metadata = metadata_from_tukui_package(package);
 
@@ -42,7 +32,7 @@ impl Backend for Tukui {
         &self,
         _file_id: Option<i64>,
         _tag_name: Option<String>,
-    ) -> Result<(String, String), RepositoryError> {
+    ) -> Result<Option<String>, RepositoryError> {
         let url = changelog_endpoint(&self.id, &self.flavor);
 
         match self.flavor {
@@ -50,8 +40,7 @@ impl Backend for Tukui {
                 // Only TukUI and ElvUI main addons has changelog which can be fetched.
                 // The others is embeded into a page.
                 if &self.id == "-1" || &self.id == "-2" {
-                    let client = HttpClient::builder().build().unwrap();
-                    let mut resp = request_async(&client, &url.clone(), vec![], None).await?;
+                    let mut resp = request_async(&url, vec![], None).await?;
 
                     if resp.status().is_success() {
                         let changelog: String = resp.text()?;
@@ -62,20 +51,14 @@ impl Backend for Tukui {
                         let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
                         let c = truncate(&c, 2500).to_string();
 
-                        return Ok((c, url));
+                        return Ok(Some(c));
                     }
-
-                    return Ok(("No changelog found".to_string(), url));
                 }
-
-                Ok(("Please view this changelog in the browser by pressing 'Full Changelog' to the right".to_string(), url))
             }
-            Flavor::Classic | Flavor::ClassicPTR => Ok((
-                "Please view this changelog in the browser by pressing 'Full Changelog' to the right"
-                    .to_string(),
-                url,
-            )),
+            Flavor::Classic | Flavor::ClassicPTR => {}
         }
+
+        Ok(None)
     }
 }
 
@@ -110,11 +93,13 @@ pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMe
     }
 
     let website_url = Some(package.web_url.clone());
+    let changelog_url = Some(format!("{}&changelog", package.web_url));
     let game_version = package.patch;
     let title = package.name;
 
     let mut metadata = RepositoryMetadata::empty();
     metadata.website_url = website_url;
+    metadata.changelog_url = changelog_url;
     metadata.game_version = game_version;
     metadata.remote_packages = remote_packages;
     metadata.title = Some(title);
@@ -122,18 +107,23 @@ pub(crate) fn metadata_from_tukui_package(package: TukuiPackage) -> RepositoryMe
     metadata
 }
 
+/// Returns flavor `String` in Tukui format
+fn format_flavor(flavor: &Flavor) -> String {
+    let base_flavor = flavor.base_flavor();
+    match base_flavor {
+        Flavor::Retail => "retail".to_owned(),
+        Flavor::Classic => "classic".to_owned(),
+        _ => panic!(format!("Unknown base flavor {}", base_flavor)),
+    }
+}
+
 /// Return the tukui API endpoint.
 fn api_endpoint(id: &str, flavor: &Flavor) -> String {
-    match flavor {
-        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
-            "-1" => "https://www.tukui.org/api.php?ui=tukui".to_owned(),
-            "-2" => "https://www.tukui.org/api.php?ui=elvui".to_owned(),
-            _ => format!("https://www.tukui.org/api.php?addon={}", id),
-        },
-        Flavor::Classic | Flavor::ClassicPTR => {
-            format!("https://www.tukui.org/api.php?classic-addon={}", id)
-        }
-    }
+    format!(
+        "https://hub.wowup.io/tukui/{}/{}",
+        format_flavor(flavor),
+        id
+    )
 }
 
 fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
@@ -153,14 +143,13 @@ fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
 /// Function to fetch a remote addon package which contains
 /// information about the addon on the repository.
 pub(crate) async fn fetch_remote_package(
-    shared_client: Arc<HttpClient>,
     id: &str,
     flavor: &Flavor,
 ) -> Result<(String, TukuiPackage), DownloadError> {
     let url = api_endpoint(id, flavor);
 
     let timeout = Some(30);
-    let mut resp = request_async(&shared_client, &url, vec![], timeout).await?;
+    let mut resp = request_async(&url, vec![], timeout).await?;
 
     if resp.status().is_success() {
         let package = resp.json()?;
