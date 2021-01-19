@@ -26,6 +26,7 @@ and `Removed`.
 
 ### Changed
 
+- Ajour binaries for Windows are now digitally signed.
 - Refreshed the menu with a more simple and uncluttered look.
 - Catalog fuzzy matching better removes unrelated results while retaining relevant
   results
