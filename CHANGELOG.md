@@ -14,6 +14,16 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- New languages added to Ajour:
+  - 🇨🇿 Czech (thanks Ragnarocek)
+  - 🇳🇴 Norwegian (thanks Jim Nordbø and Nichlas Sørli)
+  - 🇭🇺 Hungarian (thanks Krisz)
+  - 🇵🇹 Portuguese (thanks Boryana)
+  - 🇸🇰 Slovak (thanks Ragnarocek)
+  - 🇹🇷 Turkish (thanks Gageracer)
+
 ### Changed
 
 - Refreshed the menu with a more simple and uncluttered look.
