@@ -45,7 +45,7 @@ pub async fn get_latest_release(channel: SelfUpdateChannel) -> Option<Release> {
     log::debug!("checking for application update");
 
     let mut resp = request_async(
-        "https://api.github.com/repos/casperstorm/ajour/releases",
+        "https://api.github.com/repos/ajour/ajour/releases",
         vec![],
         None,
     )

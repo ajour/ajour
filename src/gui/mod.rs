@@ -1047,7 +1047,7 @@ pub fn run(opts: Opts) {
     #[cfg(not(target_os = "linux"))]
     // TODO (casperstorm): Due to an upstream bug, min_size causes the window to become unresizable
     // on Linux.
-    // @see: https://github.com/casperstorm/ajour/issues/427
+    // @see: https://github.com/ajour/ajour/issues/427
     {
         settings.window.min_size = Some((600, 300));
     }
