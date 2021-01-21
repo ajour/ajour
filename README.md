@@ -4,8 +4,8 @@
 
 # Ajour
 
-![Continuous integration](https://github.com/casperstorm/ajour/workflows/Continuous-integration/badge.svg)
-![Security audit](https://github.com/casperstorm/ajour/workflows/Security%20audit/badge.svg)
+![Continuous integration](https://github.com/ajour/ajour/workflows/Continuous-integration/badge.svg)
+![Security audit](https://github.com/ajour/ajour/workflows/Security%20audit/badge.svg)
 [![Discord Server](https://img.shields.io/discord/757155234500968459?label=Discord%20Chat&labelColor=3C424A&logo=discord&logoColor=ffffff&color=7389D8)](https://discord.gg/4838t9R)
 [![Ajour on Patreon](https://img.shields.io/static/v1?label=Patreon&message=Ajour&color=4d898b)](https://www.patreon.com/getajour)
 
@@ -33,7 +33,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 
 <div align="center">
 
-[![Download Button](./resources/download-button.png)](https://github.com/casperstorm/ajour/releases)
+[![Download Button](./resources/download-button.png)](https://github.com/ajour/ajour/releases)
 
 </div>
 
@@ -72,10 +72,10 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 
 ## Install
 
-Prebuilt binaries for macOS and Windows can be downloaded from the [GitHub releases](https://github.com/casperstorm/ajour/releases)
+Prebuilt binaries for macOS and Windows can be downloaded from the [GitHub releases](https://github.com/ajour/ajour/releases)
 page.
 
-For everyone else, a detailed instruction can be found [here](https://github.com/casperstorm/ajour/blob/master/INSTALL.md).
+For everyone else, a detailed instruction can be found [here](https://github.com/ajour/ajour/blob/master/INSTALL.md).
 
 ## Themes
 
@@ -92,10 +92,10 @@ Find instructions for using the command line interface [here](./CLI.md)
 Ajour wouldn't be here without your help.
 I welcome contributions of any kind, because together we can make Ajour even better.
 
-- [Let me know](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=)
+- [Let me know](https://github.com/ajour/ajour/issues/new?assignees=&labels=type%3A+feature&template=feature_request.md&title=)
   if you are missing a vital feature.
-- I love [pull requests](https://github.com/casperstorm/ajour/pulls) and [bug reports](https://github.com/casperstorm/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
-- Don't hesitate to [tell me my Rust programming is bad](https://github.com/casperstorm/ajour/issues/new)
+- I love [pull requests](https://github.com/ajour/ajour/pulls) and [bug reports](https://github.com/ajour/ajour/issues/new?assignees=&labels=type%3A+bug&template=bug_report.md&title=).
+- Don't hesitate to [tell me my Rust programming is bad](https://github.com/ajour/ajour/issues/new)
   but please tell me why.
 - Help translating Ajour on [POEditor](https://poeditor.com/join/project?hash=gjghTR7d0Z).
 - Join our [Discord server](https://discord.gg/4838t9R) and say hey.
@@ -104,7 +104,7 @@ I welcome contributions of any kind, because together we can make Ajour even bet
 
 **_What features are planned?_**
 
-We have a roadmap [here](https://github.com/casperstorm/ajour/projects/2).
+We have a roadmap [here](https://github.com/ajour/ajour/projects/2).
 
 **_macOS won't let me open the app, what should I do?_**
 
@@ -154,4 +154,4 @@ done a great job of [cataloguing addon managers](https://ogri-la.github.io/wow-a
 
 ## License
 
-Ajour is released under the [MIT License.](https://github.com/casperstorm/ajour/blob/master/LICENSE)
+Ajour is released under the [MIT License.](https://github.com/ajour/ajour/blob/master/LICENSE)
