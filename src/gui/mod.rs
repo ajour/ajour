@@ -123,6 +123,7 @@ pub enum Interaction {
     AlternatingRowColorToggled(bool),
     ResetColumns,
     ToggleDeleteSavedVariables(bool),
+    AddonsQuery(String),
 }
 
 #[derive(Debug)]
@@ -218,6 +219,7 @@ pub struct Ajour {
     reset_columns_btn_state: button::State,
     localization_picklist_state: pick_list::State<Language>,
     flavor_picklist_state: pick_list::State<Flavor>,
+    addons_search_state: AddonsSearchState,
 }
 
 impl Default for Ajour {
@@ -274,6 +276,7 @@ impl Default for Ajour {
             reset_columns_btn_state: Default::default(),
             localization_picklist_state: Default::default(),
             flavor_picklist_state: Default::default(),
+            addons_search_state: Default::default(),
         }
     }
 }
@@ -408,6 +411,7 @@ impl Application for Ajour {
                     flavor,
                     &mut self.update_all_btn_state,
                     &mut self.refresh_btn_state,
+                    &mut self.addons_search_state,
                     &self.state,
                     addons,
                     &self.config,
@@ -1189,6 +1193,20 @@ impl SortDirection {
         match self {
             SortDirection::Asc => SortDirection::Desc,
             SortDirection::Desc => SortDirection::Asc,
+        }
+    }
+}
+
+pub struct AddonsSearchState {
+    pub query: Option<String>,
+    pub query_state: text_input::State,
+}
+
+impl Default for AddonsSearchState {
+    fn default() -> Self {
+        AddonsSearchState {
+            query: Default::default(),
+            query_state: Default::default(),
         }
     }
 }

@@ -1441,6 +1441,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
+        Message::Interaction(Interaction::AddonsQuery(query)) => {
+            // Addons search query
+            ajour.addons_search_state.query = if query.is_empty() { None } else { Some(query) };
+
+            // TODO (casperstorm): call some query_filtering func.
+        }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
             // Catalog search query
             ajour.catalog_search_state.query = if query.is_empty() {

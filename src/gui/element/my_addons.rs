@@ -1,8 +1,8 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
-        style, ColumnKey, ColumnState, ExpandType, Flavor, Interaction, Message, Mode,
-        ReleaseChannel, SortDirection, State,
+        style, AddonsSearchState, ColumnKey, ColumnState, ExpandType, Flavor, Interaction, Message,
+        Mode, ReleaseChannel, SortDirection, State,
     },
     crate::localization::{localized_string, localized_timeago_formatter},
     ajour_core::{
@@ -12,7 +12,10 @@ use {
     },
     ajour_widgets::{header, Header, TableRow},
     chrono::prelude::*,
-    iced::{button, Align, Button, Column, Container, Element, Length, PickList, Row, Space, Text},
+    iced::{
+        button, Align, Button, Column, Container, Element, Length, PickList, Row, Space, Text,
+        TextInput,
+    },
     std::collections::HashMap,
     strfmt::strfmt,
 };
@@ -742,6 +745,7 @@ pub fn menu_container<'a>(
     flavor: Flavor,
     update_all_button_state: &'a mut button::State,
     refresh_button_state: &'a mut button::State,
+    addons_search_state: &'a mut AddonsSearchState,
     state: &HashMap<Mode, State>,
     addons: &[Addon],
     config: &Config,
@@ -818,6 +822,20 @@ pub fn menu_container<'a>(
         _ => Text::new(""),
     };
 
+    let query = addons_search_state.query.as_deref().unwrap_or_default();
+    let addons_query = TextInput::new(
+        &mut addons_search_state.query_state,
+        &localized_string("search-for-addon")[..],
+        query,
+        Interaction::AddonsQuery,
+    )
+    .size(DEFAULT_FONT_SIZE)
+    .padding(10)
+    .width(Length::Units(350))
+    .style(style::AddonsQueryInput(color_palette));
+
+    let addons_query: Element<Interaction> = addons_query.into();
+
     let status_container = Container::new(status_text)
         .center_y()
         .padding(5)
@@ -831,7 +849,12 @@ pub fn menu_container<'a>(
         .push(update_all_button.map(Message::Interaction))
         .push(Space::new(Length::Units(7), Length::Units(0)))
         .push(status_container)
-        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
+        .push(Space::new(Length::Fill, Length::Units(0)))
+        .push(addons_query.map(Message::Interaction))
+        .push(Space::new(
+            Length::Units(DEFAULT_PADDING + 5),
+            Length::Units(0),
+        ));
 
     // Add space above settings_row.
     let settings_column = Column::new()
