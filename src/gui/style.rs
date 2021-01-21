@@ -822,9 +822,9 @@ impl text_input::StyleSheet for AddonsQueryInput {
     /// Produces the style of an active text input.
     fn active(&self) -> text_input::Style {
         text_input::Style {
-            background: Background::Color(self.0.base.background),
-            border_radius: 0.0,
-            border_width: 0.0,
+            background: Background::Color(self.0.base.foreground),
+            border_radius: 4.0,
+            border_width: 1.0,
             border_color: self.0.base.foreground,
         }
     }
@@ -833,11 +833,11 @@ impl text_input::StyleSheet for AddonsQueryInput {
     fn focused(&self) -> text_input::Style {
         text_input::Style {
             background: Background::Color(self.0.base.foreground),
-            border_radius: 2.0,
+            border_radius: 4.0,
             border_width: 1.0,
             border_color: Color {
                 a: 0.5,
-                ..self.0.normal.primary
+                ..self.0.bright.primary
             },
         }
     }

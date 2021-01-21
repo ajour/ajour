@@ -830,8 +830,8 @@ pub fn menu_container<'a>(
         Interaction::AddonsQuery,
     )
     .size(DEFAULT_FONT_SIZE)
-    .padding(10)
-    .width(Length::Units(350))
+    .padding(7)
+    .width(Length::Units(225))
     .style(style::AddonsQueryInput(color_palette));
 
     let addons_query: Element<Interaction> = addons_query.into();
