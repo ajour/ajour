@@ -32,6 +32,10 @@ and `Removed`.
 - Catalog fuzzy matching better removes unrelated results while retaining relevant
   results
 
+### Fixed
+
+- Refresh button in My WeakAura is now interactable at all times.
+
 ## [0.6.3] - 2021-01-14
 
 ### Added
