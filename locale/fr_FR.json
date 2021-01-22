@@ -82,7 +82,7 @@
     "unavailable": "Indisponible",
     "unignore": "Désignorer",
     "unknown": "Inconnu",
-    "unpacking": "Décompression",
+    "unpacking": "Extraction",
     "update": "Mettre à jour",
     "update-all": "Tout mettre à jour",
     "ajour-update-channel": "Ajour Canal de mise à jour",
@@ -102,5 +102,5 @@
     "weakaura-update-available": "Mise à jour disponible",
     "weakaura-update-queued": "Mise à jour en attente",
     "settings-general": "Paramètres généraux",
-    "catalog-results": ""
+    "catalog-results": "Résultats: {number}"
 }
