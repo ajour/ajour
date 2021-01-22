@@ -102,5 +102,5 @@
     "weakaura-update-available": "Opdatering tilgængelig",
     "weakaura-update-queued": "Opdatering klargjort",
     "settings-general": "Generelt",
-    "catalog-results": ""
+    "catalog-results": "Resultater: {number}"
 }
