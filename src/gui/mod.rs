@@ -123,6 +123,7 @@ pub enum Interaction {
     AlternatingRowColorToggled(bool),
     ResetColumns,
     ToggleDeleteSavedVariables(bool),
+    AddonsQuery(String),
 }
 
 #[derive(Debug)]
@@ -218,6 +219,7 @@ pub struct Ajour {
     reset_columns_btn_state: button::State,
     localization_picklist_state: pick_list::State<Language>,
     flavor_picklist_state: pick_list::State<Flavor>,
+    addons_search_state: AddonsSearchState,
 }
 
 impl Default for Ajour {
@@ -274,6 +276,7 @@ impl Default for Ajour {
             reset_columns_btn_state: Default::default(),
             localization_picklist_state: Default::default(),
             flavor_picklist_state: Default::default(),
+            addons_search_state: Default::default(),
         }
     }
 }
@@ -402,12 +405,15 @@ impl Application for Ajour {
                 // Check if we have any addons.
                 let has_addons = !&addons.is_empty();
 
+                let query = self.addons_search_state.query.clone();
+
                 // Menu for addons.
                 let menu_addons_container = element::my_addons::menu_container(
                     color_palette,
                     flavor,
                     &mut self.update_all_btn_state,
                     &mut self.refresh_btn_state,
+                    &mut self.addons_search_state,
                     &self.state,
                     addons,
                     &self.config,
@@ -437,6 +443,11 @@ impl Application for Ajour {
                 for (idx, addon) in addons.iter_mut().enumerate() {
                     // If hiding ignored addons, we will skip it.
                     if addon.state == AddonState::Ignored && self.config.hide_ignored_addons {
+                        continue;
+                    }
+
+                    // Skip addon if we are filter from query and addon doesn't have fuzzy score
+                    if query.is_some() && addon.fuzzy_score.is_none() {
                         continue;
                     }
 
@@ -844,7 +855,7 @@ impl Application for Ajour {
 
                         let install_addon = install_addons.iter().find(|a| {
                             addon.addon.id.to_string() == a.id
-                                && matches!(a.kind, InstallKind::Catalog {..})
+                                && matches!(a.kind, InstallKind::Catalog { .. })
                         });
 
                         let catalog_data_cell = element::catalog::data_row_container(
@@ -1123,6 +1134,8 @@ pub enum ColumnKey {
     GameVersion,
     DateReleased,
     Source,
+    // Only used for sorting, not an actual visible column that can be shown
+    FuzzyScore,
 }
 
 impl ColumnKey {
@@ -1139,6 +1152,7 @@ impl ColumnKey {
             GameVersion => localized_string("game-version"),
             DateReleased => localized_string("latest-release"),
             Source => localized_string("source"),
+            FuzzyScore => unreachable!("fuzzy score not used as an actual column"),
         }
     }
 
@@ -1155,6 +1169,7 @@ impl ColumnKey {
             GameVersion => "game_version",
             DateReleased => "date_released",
             Source => "source",
+            FuzzyScore => unreachable!("fuzzy score not used as an actual column"),
         };
 
         s.to_string()
@@ -1189,6 +1204,20 @@ impl SortDirection {
         match self {
             SortDirection::Asc => SortDirection::Desc,
             SortDirection::Desc => SortDirection::Asc,
+        }
+    }
+}
+
+pub struct AddonsSearchState {
+    pub query: Option<String>,
+    pub query_state: text_input::State,
+}
+
+impl Default for AddonsSearchState {
+    fn default() -> Self {
+        AddonsSearchState {
+            query: Default::default(),
+            query_state: Default::default(),
         }
     }
 }
