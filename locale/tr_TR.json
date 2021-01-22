@@ -1,7 +1,7 @@
 {
-    "about": "hakkında",
-    "addon": "eklenti",
-    "addons": "eklentiler",
+    "about": "Hakkında",
+    "addon": "Eklenti",
+    "addons": "Eklentiler",
     "addons-loaded": "{number} {flavor} eklentiler yüklendi",
     "ajour": "Ajour",
     "all-categories": "Tüm Kategoriler",
