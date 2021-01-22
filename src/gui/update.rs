@@ -1445,7 +1445,53 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Addons search query
             ajour.addons_search_state.query = if query.is_empty() { None } else { Some(query) };
 
-            // TODO (casperstorm): call some query_filtering func.
+            // Increase penalty for gaps between matching characters
+            let fuzzy_match_config = SkimScoreConfig {
+                gap_start: -12,
+                gap_extension: -6,
+                ..Default::default()
+            };
+            let fuzzy_matcher = SkimMatcherV2::default().score_config(fuzzy_match_config);
+
+            let addons = ajour.addons.entry(ajour.config.wow.flavor).or_default();
+            let global_release_channel = ajour.config.addons.global_release_channel;
+
+            if let Some(query) = &ajour.addons_search_state.query {
+                addons.iter_mut().for_each(|a| {
+                    a.fuzzy_score.take();
+
+                    if let Some(score) = fuzzy_matcher.fuzzy_match(a.title(), query) {
+                        if score > 0 {
+                            a.fuzzy_score = Some(score);
+                        }
+                    }
+                });
+
+                // Sort the addons by score
+                sort_addons(
+                    addons,
+                    global_release_channel,
+                    SortDirection::Desc,
+                    ColumnKey::FuzzyScore,
+                );
+                ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.header_state.previous_column_key = Some(ColumnKey::FuzzyScore);
+            } else {
+                // Clear out the fuzzy scores
+                addons.iter_mut().for_each(|a| {
+                    a.fuzzy_score.take();
+                });
+
+                // Use default sort
+                sort_addons(
+                    addons,
+                    global_release_channel,
+                    SortDirection::Desc,
+                    ColumnKey::Status,
+                );
+                ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.header_state.previous_column_key = Some(ColumnKey::Status);
+            }
         }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
             // Catalog search query
@@ -2230,6 +2276,12 @@ fn sort_addons(
         }
         (ColumnKey::Source, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.repository_kind().cmp(&b.repository_kind()).reverse())
+        }
+        (ColumnKey::FuzzyScore, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.fuzzy_score.cmp(&b.fuzzy_score))
+        }
+        (ColumnKey::FuzzyScore, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.fuzzy_score.cmp(&b.fuzzy_score).reverse())
         }
     }
 }
