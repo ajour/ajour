@@ -757,7 +757,7 @@ pub fn menu_container<'a>(
         .unwrap_or_default();
 
     // A row contain general settings.
-    let mut settings_row = Row::new().height(Length::Units(35));
+    let mut settings_row = Row::new().align_items(Align::Center);
 
     let mut update_all_button = Button::new(
         update_all_button_state,
@@ -859,7 +859,8 @@ pub fn menu_container<'a>(
     // Add space above settings_row.
     let settings_column = Column::new()
         .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(settings_row);
+        .push(settings_row)
+        .push(Space::new(Length::Units(0), Length::Units(8)));
 
     // Wraps it in a container.
     Container::new(settings_column)
