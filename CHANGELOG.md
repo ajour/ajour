@@ -16,6 +16,7 @@ and `Removed`.
 
 ### Added
 
+- Ability to search for addons in MyAddons.
 - New languages added to Ajour:
   - 🇨🇿 Czech (thanks Ragnarocek)
   - 🇳🇴 Norwegian (thanks Jim Nordbø and Nichlas Sørli)
