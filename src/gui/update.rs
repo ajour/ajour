@@ -78,6 +78,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // Builds a Vec of valid flavors.
                     if addon_directory.exists() {
                         ajour.valid_flavors.push(*flavor);
+                        ajour.valid_flavors.sort();
                         ajour.valid_flavors.dedup();
                     }
 
