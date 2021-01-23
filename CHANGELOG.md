@@ -16,6 +16,7 @@ and `Removed`.
 
 ### Added
 
+- Ability to search for addons in MyAddons.
 - New languages added to Ajour:
   - 🇨🇿 Czech (thanks Ragnarocek)
   - 🇳🇴 Norwegian (thanks Jim Nordbø and Nichlas Sørli)
@@ -30,6 +31,10 @@ and `Removed`.
 - Refreshed the menu with a more simple and uncluttered look.
 - Catalog fuzzy matching better removes unrelated results while retaining relevant
   results
+
+### Fixed
+
+- Refresh button in My WeakAura is now interactable at all times.
 
 ## [0.6.3] - 2021-01-14
 

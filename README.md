@@ -41,11 +41,11 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 
 <p align="center">
   <img width="410"
-       alt="Ajour with default Dark theme"
-       src="./resources/screenshots/ajour-0.6.0a.png">
+       alt="Ajour showing addons"
+       src="./resources/screenshots/ajour-0.7.0a.png">
     <img width="410"
-       alt="Ajour with Light theme"
-       src="./resources/screenshots/ajour-0.6.0b.png">
+       alt="Ajour showing catalog"
+       src="./resources/screenshots/ajour-0.7.0b.png">
 </p>
 
 ## Features

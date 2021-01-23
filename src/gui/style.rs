@@ -816,3 +816,46 @@ impl text_input::StyleSheet for CatalogQueryInput {
         self.focused()
     }
 }
+
+pub struct AddonsQueryInput(pub ColorPalette);
+impl text_input::StyleSheet for AddonsQueryInput {
+    /// Produces the style of an active text input.
+    fn active(&self) -> text_input::Style {
+        text_input::Style {
+            background: Background::Color(self.0.base.foreground),
+            border_radius: 4.0,
+            border_width: 1.0,
+            border_color: self.0.base.foreground,
+        }
+    }
+
+    /// Produces the style of a focused text input.
+    fn focused(&self) -> text_input::Style {
+        text_input::Style {
+            background: Background::Color(self.0.base.foreground),
+            border_radius: 4.0,
+            border_width: 1.0,
+            border_color: Color {
+                a: 0.5,
+                ..self.0.normal.primary
+            },
+        }
+    }
+
+    fn placeholder_color(&self) -> Color {
+        self.0.normal.surface
+    }
+
+    fn value_color(&self) -> Color {
+        self.0.bright.primary
+    }
+
+    fn selection_color(&self) -> Color {
+        self.0.bright.secondary
+    }
+
+    /// Produces the style of an hovered text input.
+    fn hovered(&self) -> text_input::Style {
+        self.focused()
+    }
+}
