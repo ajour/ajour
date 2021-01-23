@@ -224,14 +224,12 @@ pub fn data_container<'a, 'b>(
             .size(DEFAULT_FONT_SIZE)
             .vertical_alignment(VerticalAlignment::Center);
         let directory_data_text_container = Container::new(directory_data_text)
-            .height(Length::Units(25))
             .center_y()
             .style(style::NormalBackgroundContainer(color_palette));
 
         // Data row for the Backup directory selection.
         let backup_directory_row = Row::new()
             .align_items(Align::Center)
-            .height(Length::Units(26))
             .push(addon_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(wtf_folder_checkbox.map(Message::Interaction))
@@ -289,8 +287,8 @@ pub fn data_container<'a, 'b>(
             };
 
             let backup_status_text_container = Container::new(backup_status_text)
-                .height(Length::Units(25))
                 .center_y()
+                .height(Length::Units(25))
                 .style(style::NormalBackgroundContainer(color_palette));
 
             let backup_button: Element<Interaction> = backup_button.into();
@@ -305,7 +303,6 @@ pub fn data_container<'a, 'b>(
                 .vertical_alignment(VerticalAlignment::Center);
 
             let backup_status_text_container = Container::new(backup_status_text)
-                .height(Length::Units(25))
                 .center_y()
                 .style(style::NormalBackgroundContainer(color_palette));
 
@@ -499,17 +496,17 @@ pub fn data_container<'a, 'b>(
         .push(general_settings_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(language_container)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(wow_directory_column)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(theme_scale_row)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(alternate_row_color_column)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(self_update_channel_container)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(config_column)
-        .push(Space::new(Length::Units(0), Length::Units(20)));
+        .push(Space::new(Length::Units(0), Length::Units(30)));
 
     // Backup
     scrollable = scrollable
@@ -518,23 +515,23 @@ pub fn data_container<'a, 'b>(
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row)
-        .push(Space::new(Length::Units(0), Length::Units(20)));
+        .push(Space::new(Length::Units(0), Length::Units(30)));
 
     // Addons
     scrollable = scrollable
         .push(addon_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(global_release_channel_column)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
-        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(delete_saved_variables_column);
 
     let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_HEADER_FONT_SIZE);
     let columns_title_text_container =
         Container::new(columns_title_text).style(style::BrightBackgroundContainer(color_palette));
     scrollable = scrollable
-        .push(Space::new(Length::Units(0), Length::Units(20)))
+        .push(Space::new(Length::Units(0), Length::Units(30)))
         .push(columns_title_text_container);
 
     let my_addons_columns_container = {
