@@ -1988,10 +1988,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::RuntimeEvent(iced_native::Event::Keyboard(
             iced_native::keyboard::Event::KeyReleased { key_code, .. },
         )) => {
-            if key_code == iced_native::keyboard::KeyCode::Escape
-                && (ajour.mode == Mode::Settings || ajour.mode == Mode::About)
-            {
-                ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+            if key_code == iced_native::keyboard::KeyCode::Escape {
+                match ajour.mode {
+                    Mode::Settings | Mode::About => {
+                        ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+                    }
+                    Mode::MyAddons(_) => {
+                        ajour.addons_search_state.query = None;
+                    }
+                    Mode::Catalog => {
+                        ajour.catalog_search_state.query = None;
+                    }
+                    _ => {}
+                }
             }
         }
         Message::RuntimeEvent(_) => {}
