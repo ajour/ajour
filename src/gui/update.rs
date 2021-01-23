@@ -133,6 +133,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             match mode {
                 Mode::MyAddons(flavor) => {
+                    // Clear query
+                    ajour.addons_search_state.query = None;
+
                     // Close details if shown.
                     ajour.expanded_type = ExpandType::None;
 
@@ -463,6 +466,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             match mode {
                 Mode::MyAddons(flavor) => {
+                    // Clear query
+                    ajour.addons_search_state.query = None;
+
                     // Close details if shown.
                     ajour.expanded_type = ExpandType::None;
 
