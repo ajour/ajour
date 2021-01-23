@@ -837,7 +837,7 @@ impl text_input::StyleSheet for AddonsQueryInput {
             border_width: 1.0,
             border_color: Color {
                 a: 0.5,
-                ..self.0.bright.primary
+                ..self.0.normal.primary
             },
         }
     }
