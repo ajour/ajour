@@ -121,7 +121,7 @@ pub fn menu_container<'a>(
     let settings_column = Column::new()
         .push(Space::new(Length::Units(0), Length::Units(7)))
         .push(row)
-        .push(Space::new(Length::Units(0), Length::Units(8)));
+        .push(Space::new(Length::Units(0), Length::Units(10)));
 
     // Wraps it in a container.
     Container::new(settings_column)
