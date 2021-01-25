@@ -20,10 +20,10 @@ use std::path::{Path, PathBuf};
 ///
 /// A string looking like 213r323 would return 213323.
 /// A string looking like Rematch_4_10_15.zip would return 41015.
-pub(crate) fn strip_non_digits(string: &str) -> Option<String> {
+pub(crate) fn strip_non_digits(string: &str) -> String {
     let re = Regex::new(r"[\D]").unwrap();
     let stripped = re.replace_all(string, "").to_string();
-    Some(stripped)
+    stripped
 }
 
 #[derive(Debug, Deserialize, Clone)]

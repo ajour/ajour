@@ -5,7 +5,7 @@ use crate::{
 };
 use std::collections::HashSet;
 use std::fs::{remove_dir_all, remove_file};
-use std::path::PathBuf;
+use std::path::Path;
 use walkdir::WalkDir;
 
 /// Deletes an Addon and all dependencies from disk.
@@ -21,7 +21,7 @@ pub fn delete_addons(addon_folders: &[AddonFolder]) -> Result<()> {
 }
 
 /// Deletes all saved varaible files correlating to `[AddonFolder]`.
-pub fn delete_saved_variables(addon_folders: &[AddonFolder], wtf_path: &PathBuf) -> Result<()> {
+pub fn delete_saved_variables(addon_folders: &[AddonFolder], wtf_path: &Path) -> Result<()> {
     for entry in WalkDir::new(&wtf_path)
         .into_iter()
         .filter_map(std::result::Result::ok)
@@ -57,8 +57,8 @@ pub fn delete_saved_variables(addon_folders: &[AddonFolder], wtf_path: &PathBuf)
 /// At the end it will cleanup and remove the archive.
 pub async fn install_addon(
     addon: &Addon,
-    from_directory: &PathBuf,
-    to_directory: &PathBuf,
+    from_directory: &Path,
+    to_directory: &Path,
 ) -> Result<Vec<AddonFolder>> {
     let zip_path = from_directory.join(&addon.primary_folder_id);
     let mut zip_file = std::fs::File::open(&zip_path)?;
@@ -110,7 +110,10 @@ pub async fn install_addon(
     // Cleanup
     std::fs::remove_file(&zip_path)?;
 
-    let mut addon_folders: Vec<_> = toc_files.iter().filter_map(parse_toc_path).collect();
+    let mut addon_folders: Vec<_> = toc_files
+        .iter()
+        .filter_map(|p| parse_toc_path(&p))
+        .collect();
     addon_folders.sort();
 
     Ok(addon_folders)
