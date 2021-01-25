@@ -4,15 +4,10 @@ use crate::network::request_async;
 
 use async_std::task;
 use chrono::prelude::*;
-use futures::future::join_all;
 use isahc::ResponseExt;
 use serde::Deserialize;
 
-const CURSE_CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/curse.json";
-const TUKUI_CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/tukui.json";
-const WOWI_CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/wowi.json";
-
-const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
+const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog.json";
 
 pub async fn get_catalog_addons_from(url: &str) -> Vec<CatalogAddon> {
     let mut addons = vec![];
@@ -33,16 +28,7 @@ pub async fn get_catalog_addons_from(url: &str) -> Vec<CatalogAddon> {
 }
 
 pub async fn get_catalog() -> Result<Catalog, DownloadError> {
-    let mut futures = vec![];
-    for url in CATALOG_URLS.iter() {
-        futures.push(get_catalog_addons_from(url));
-    }
-
-    let mut addons = vec![];
-    let results = join_all(futures).await;
-    for _addons in results {
-        addons.extend(_addons);
-    }
+    let addons = get_catalog_addons_from(CATALOG_URL).await;
 
     if !addons.is_empty() {
         Ok(Catalog { addons })
