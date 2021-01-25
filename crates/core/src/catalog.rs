@@ -8,12 +8,9 @@ use futures::future::join_all;
 use isahc::ResponseExt;
 use serde::Deserialize;
 
-const CURSE_CATALOG_URL: &str =
-    "https://github.com/ajour/ajour-catalog/raw/master/curse.json";
-const TUKUI_CATALOG_URL: &str =
-    "https://github.com/ajour/ajour-catalog/raw/master/tukui.json";
-const WOWI_CATALOG_URL: &str =
-    "https://github.com/ajour/ajour-catalog/raw/master/wowi.json";
+const CURSE_CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/curse.json";
+const TUKUI_CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/tukui.json";
+const WOWI_CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/wowi.json";
 
 const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
 
