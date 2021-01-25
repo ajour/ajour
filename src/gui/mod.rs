@@ -7,10 +7,10 @@ use crate::localization::{localized_string, LANG};
 use crate::Result;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
+    cache::catalog_download_latest_or_use_cache,
     cache::{
         load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
     },
-    catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, Language, SelfUpdateChannel},
     error::*,
@@ -294,7 +294,10 @@ impl Application for Ajour {
                 Message::LatestRelease,
             ),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
-            Command::perform(get_catalog(), Message::CatalogDownloaded),
+            Command::perform(
+                catalog_download_latest_or_use_cache(),
+                Message::CatalogDownloaded,
+            ),
         ];
 
         let mut ajour = Ajour::default();

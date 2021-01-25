@@ -11,8 +11,8 @@ use {
         addon::{Addon, AddonFolder, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
         cache::{
-            remove_addon_cache_entry, update_addon_cache, AddonCache, AddonCacheEntry,
-            FingerprintCache,
+            catalog_download_latest_or_use_cache, remove_addon_cache_entry, update_addon_cache,
+            AddonCache, AddonCacheEntry, FingerprintCache,
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
@@ -1740,7 +1740,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     log::debug!("Message::RefreshCatalog: catalog needs to be refreshed");
 
                     return Ok(Command::perform(
-                        catalog::get_catalog(),
+                        catalog_download_latest_or_use_cache(),
                         Message::CatalogDownloaded,
                     ));
                 }
