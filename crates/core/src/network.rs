@@ -10,7 +10,7 @@ use isahc::http::header::CONTENT_LENGTH;
 use isahc::prelude::*;
 use once_cell::sync::Lazy;
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::Path;
 
 /// Shared `HttpClient`.
 static HTTP_CLIENT: Lazy<HttpClient> = Lazy::new(|| {
@@ -82,7 +82,7 @@ pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
 pub async fn download_addon(
     addon: &Addon,
     global_release_channel: GlobalReleaseChannel,
-    to_directory: &PathBuf,
+    to_directory: &Path,
 ) -> Result<(), DownloadError> {
     let package =
         if let Some(relevant_package) = addon.relevant_release_package(global_release_channel) {
@@ -139,7 +139,7 @@ pub async fn download_addon(
 /// Download a file from the internet
 pub(crate) async fn download_file<T: ToString>(
     url: T,
-    dest_file: &PathBuf,
+    dest_file: &Path,
 ) -> Result<(), DownloadError> {
     let url = url.to_string();
 

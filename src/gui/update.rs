@@ -11,8 +11,8 @@ use {
         addon::{Addon, AddonFolder, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
         cache::{
-            remove_addon_cache_entry, update_addon_cache, AddonCache, AddonCacheEntry,
-            FingerprintCache,
+            catalog_download_latest_or_use_cache, remove_addon_cache_entry, update_addon_cache,
+            AddonCache, AddonCacheEntry, FingerprintCache,
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
@@ -1734,13 +1734,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(last_updated) = &ajour.catalog_last_updated {
                 let now = Utc::now();
                 let now_time = now.time();
-                let refresh_time = NaiveTime::from_hms(0, 40, 0);
+                let refresh_time = NaiveTime::from_hms(2, 0, 0);
 
                 if last_updated.date() < now.date() && now_time > refresh_time {
                     log::debug!("Message::RefreshCatalog: catalog needs to be refreshed");
 
                     return Ok(Command::perform(
-                        catalog::get_catalog(),
+                        catalog_download_latest_or_use_cache(),
                         Message::CatalogDownloaded,
                     ));
                 }

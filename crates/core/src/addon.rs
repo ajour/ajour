@@ -459,9 +459,7 @@ impl Addon {
             let srv = strip_non_digits(&remote_package.version);
             let slv = strip_non_digits(&version);
 
-            if let (Some(srv), Some(slv)) = (srv, slv) {
-                return !slv.contains(&srv);
-            }
+            return !slv.contains(&srv);
         }
 
         false

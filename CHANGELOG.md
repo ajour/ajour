@@ -35,6 +35,7 @@ and `Removed`.
 ### Fixed
 
 - Refresh button in My WeakAura is now interactable at all times.
+- Catalog should no longer take more than a few seconds to load.
 
 ## [0.6.3] - 2021-01-14
 

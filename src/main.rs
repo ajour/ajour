@@ -14,6 +14,8 @@ use ajour_core::utility::{remove_file, rename};
 #[cfg(target_os = "linux")]
 use anyhow::Context;
 use std::env;
+use std::path::Path;
+#[cfg(target_os = "linux")]
 use std::path::PathBuf;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -145,7 +147,7 @@ fn setup_logger(is_cli: bool, is_debug: bool) -> Result<()> {
     Ok(())
 }
 
-fn handle_self_update_temp(cleanup_path: &PathBuf) -> Result<()> {
+fn handle_self_update_temp(cleanup_path: &Path) -> Result<()> {
     #[cfg(not(target_os = "linux"))]
     let current_bin = env::current_exe()?;
 

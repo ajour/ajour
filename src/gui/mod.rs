@@ -7,10 +7,10 @@ use crate::localization::{localized_string, LANG};
 use crate::Result;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
+    cache::catalog_download_latest_or_use_cache,
     cache::{
         load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
     },
-    catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, Language, SelfUpdateChannel},
     error::*,
@@ -294,7 +294,10 @@ impl Application for Ajour {
                 Message::LatestRelease,
             ),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
-            Command::perform(get_catalog(), Message::CatalogDownloaded),
+            Command::perform(
+                catalog_download_latest_or_use_cache(),
+                Message::CatalogDownloaded,
+            ),
         ];
 
         let mut ajour = Ajour::default();
@@ -1815,22 +1818,23 @@ pub struct ThemeState {
 
 impl Default for ThemeState {
     fn default() -> Self {
-        let mut themes = vec![];
-        themes.push(("Alliance".to_string(), Theme::alliance()));
-        themes.push(("Ayu".to_string(), Theme::ayu()));
-        themes.push(("Dark".to_string(), Theme::dark()));
-        themes.push(("Dracula".to_string(), Theme::dracula()));
-        themes.push(("Ferra".to_string(), Theme::ferra()));
-        themes.push(("Forest Night".to_string(), Theme::forest_night()));
-        themes.push(("Gruvbox".to_string(), Theme::gruvbox()));
-        themes.push(("Horde".to_string(), Theme::horde()));
-        themes.push(("Light".to_string(), Theme::light()));
-        themes.push(("Nord".to_string(), Theme::nord()));
-        themes.push(("One Dark".to_string(), Theme::one_dark()));
-        themes.push(("Outrun".to_string(), Theme::outrun()));
-        themes.push(("Solarized Dark".to_string(), Theme::solarized_dark()));
-        themes.push(("Solarized Light".to_string(), Theme::solarized_light()));
-        themes.push(("Sort".to_string(), Theme::sort()));
+        let themes = vec![
+            ("Alliance".to_string(), Theme::alliance()),
+            ("Ayu".to_string(), Theme::ayu()),
+            ("Dark".to_string(), Theme::dark()),
+            ("Dracula".to_string(), Theme::dracula()),
+            ("Ferra".to_string(), Theme::ferra()),
+            ("Forest Night".to_string(), Theme::forest_night()),
+            ("Gruvbox".to_string(), Theme::gruvbox()),
+            ("Horde".to_string(), Theme::horde()),
+            ("Light".to_string(), Theme::light()),
+            ("Nord".to_string(), Theme::nord()),
+            ("One Dark".to_string(), Theme::one_dark()),
+            ("Outrun".to_string(), Theme::outrun()),
+            ("Solarized Dark".to_string(), Theme::solarized_dark()),
+            ("Solarized Light".to_string(), Theme::solarized_light()),
+            ("Sort".to_string(), Theme::sort()),
+        ];
 
         ThemeState {
             themes,

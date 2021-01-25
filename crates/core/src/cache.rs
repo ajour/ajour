@@ -1,9 +1,12 @@
-use crate::addon::{Addon, AddonFolder};
-use crate::config::Flavor;
 use crate::error::{CacheError, FilesystemError};
 use crate::fs::{config_dir, PersistentData};
 use crate::parse::Fingerprint;
 use crate::repository::RepositoryKind;
+use crate::{
+    addon::{Addon, AddonFolder},
+    catalog::{download_catalog, Catalog},
+};
+use crate::{config::Flavor, error::DownloadError};
 
 use async_std::fs::rename;
 use async_std::sync::{Arc, Mutex};
@@ -217,6 +220,46 @@ impl TryFrom<&Addon> for AddonCacheEntry {
                 title: addon.title().to_owned(),
             })
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CatalogCache {
+    etag: String,
+    catalog: Catalog,
+}
+
+impl PersistentData for CatalogCache {
+    fn relative_path() -> PathBuf {
+        PathBuf::from("cache/catalog.yml")
+    }
+}
+
+pub async fn catalog_download_latest_or_use_cache() -> Result<Catalog, DownloadError> {
+    let maybe_cached_catalog = CatalogCache::load();
+
+    // If no cache file exists yet, this will be None and download_catalog will
+    // always download the latest catalog
+    let cached_etag = maybe_cached_catalog.as_ref().map(|c| c.etag.clone()).ok();
+
+    if let Some((downloaded_etag, downloaded_catalog)) = download_catalog(cached_etag).await? {
+        // Etag didn't match latest catalog, so we downloaded new one. Let's update
+        // our cache with it
+        if let Some(etag) = downloaded_etag {
+            // Save it as cache
+            let new_cache = CatalogCache {
+                catalog: downloaded_catalog.clone(),
+                etag,
+            };
+            new_cache.save()?;
+        }
+
+        Ok(downloaded_catalog)
+    } else {
+        // If download_catalog returns None, we have the latest cache file, so use it
+        let cache = maybe_cached_catalog?;
+
+        Ok(cache.catalog)
     }
 }
 
