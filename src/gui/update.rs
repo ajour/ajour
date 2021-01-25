@@ -1734,7 +1734,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(last_updated) = &ajour.catalog_last_updated {
                 let now = Utc::now();
                 let now_time = now.time();
-                let refresh_time = NaiveTime::from_hms(0, 40, 0);
+                let refresh_time = NaiveTime::from_hms(2, 0, 0);
 
                 if last_updated.date() < now.date() && now_time > refresh_time {
                     log::debug!("Message::RefreshCatalog: catalog needs to be refreshed");
