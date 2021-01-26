@@ -4,57 +4,60 @@ use crate::network::request_async;
 
 use async_std::task;
 use chrono::prelude::*;
-use futures::future::join_all;
 use isahc::ResponseExt;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-const CURSE_CATALOG_URL: &str =
-    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/curse.json";
-const TUKUI_CATALOG_URL: &str =
-    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/tukui.json";
-const WOWI_CATALOG_URL: &str =
-    "https://github.com/casperstorm/ajour-catalog/releases/latest/download/wowi.json";
+const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog.json";
 
-const CATALOG_URLS: [&str; 3] = [WOWI_CATALOG_URL, CURSE_CATALOG_URL, TUKUI_CATALOG_URL];
+type Etag = Option<String>;
 
-pub async fn get_catalog_addons_from(url: &str) -> Vec<CatalogAddon> {
-    let mut addons = vec![];
+async fn get_catalog_addons_from(
+    url: &str,
+    cached_etag: Etag,
+) -> Result<Option<(Etag, Vec<CatalogAddon>)>, DownloadError> {
+    let mut headers = vec![];
+    if let Some(etag) = cached_etag.as_deref() {
+        headers.push(("If-None-Match", etag));
+    }
 
-    let request = request_async(url, vec![], None);
-    if let Ok(mut response) = request.await {
-        if let Ok(json) = task::spawn_blocking(move || response.json::<Vec<CatalogAddon>>()).await {
-            log::debug!("Successfully fetched and parsed {}", url);
-            addons.extend(json);
-        } else {
-            log::debug!("Could not parse {}", url);
+    let mut response = request_async(url, headers, None).await?;
+
+    match response.status().as_u16() {
+        200 => {
+            log::debug!("Downloaded latest catalog from {}", url);
+
+            let etag = response
+                .headers()
+                .get("etag")
+                .and_then(|h| h.to_str().map(String::from).ok());
+
+            Ok(Some((
+                etag,
+                task::spawn_blocking(move || response.json::<Vec<CatalogAddon>>()).await?,
+            )))
         }
-    } else {
-        log::debug!("Could not fetch {}", url);
-    }
-
-    addons
-}
-
-pub async fn get_catalog() -> Result<Catalog, DownloadError> {
-    let mut futures = vec![];
-    for url in CATALOG_URLS.iter() {
-        futures.push(get_catalog_addons_from(url));
-    }
-
-    let mut addons = vec![];
-    let results = join_all(futures).await;
-    for _addons in results {
-        addons.extend(_addons);
-    }
-
-    if !addons.is_empty() {
-        Ok(Catalog { addons })
-    } else {
-        Err(DownloadError::CatalogFailed)
+        304 => {
+            log::debug!("Etag match, cached catalog is latest version");
+            Ok(None)
+        }
+        status => {
+            log::error!("Catalog failed to download with status: {}", status);
+            return Err(DownloadError::CatalogFailed);
+        }
     }
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub(crate) async fn download_catalog(
+    cached_etag: Etag,
+) -> Result<Option<(Etag, Catalog)>, DownloadError> {
+    let response = get_catalog_addons_from(CATALOG_URL, cached_etag)
+        .await?
+        .map(|(etag, addons)| (etag, Catalog { addons }));
+
+    Ok(response)
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Source {
     #[serde(alias = "curse")]
     Curse,
@@ -76,41 +79,41 @@ impl std::fmt::Display for Source {
 }
 
 #[serde(transparent)]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Catalog {
     pub addons: Vec<CatalogAddon>,
 }
 
 #[serde(rename_all = "camelCase")]
-#[derive(Debug, Clone, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 pub struct GameVersion {
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     pub game_version: String,
     pub flavor: Flavor,
 }
 
 #[serde(rename_all = "camelCase")]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CatalogAddon {
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     pub id: i32,
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     pub website_url: String,
-    #[serde(with = "date_parser")]
+    #[serde(deserialize_with = "date_parser::deserialize")]
     pub date_released: Option<DateTime<Utc>>,
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     pub name: String,
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     pub categories: Vec<String>,
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     pub summary: String,
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     pub number_of_downloads: u64,
     pub source: Source,
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     #[deprecated(since = "0.4.4", note = "Please use game_versions instead")]
     pub flavors: Vec<Flavor>,
-    #[serde(with = "null_to_default")]
+    #[serde(deserialize_with = "null_to_default::deserialize")]
     pub game_versions: Vec<GameVersion>,
 }
 
@@ -182,7 +185,7 @@ mod tests {
     #[test]
     fn test_catalog_download() {
         async_std::task::block_on(async {
-            let catalog = get_catalog().await;
+            let catalog = download_catalog(None).await;
 
             if let Err(e) = catalog {
                 panic!("{}", e);

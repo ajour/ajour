@@ -68,7 +68,7 @@
     "scale": "Scale",
     "search-for-addon": "Search for an addon...",
     "select-account": "Select an Account",
-    "select-directory": "Select Diretory",
+    "select-directory": "Select Directory",
     "settings": "Settings",
     "setup-ajour-description": "Please select your World of Warcraft directory",
     "setup-ajour-title": "Welcome to Ajour!",
@@ -101,5 +101,6 @@
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Update Available",
     "weakaura-update-queued": "Update Queued",
-    "settings-general": "General"
+    "settings-general": "General",
+    "catalog-results": "Results: {number}"
 }

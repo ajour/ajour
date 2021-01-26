@@ -8,8 +8,8 @@ use {
         theme::ColorPalette,
     },
     iced::{
-        button, Align, Button, Column, Container, Element, HorizontalAlignment, Length, Row, Space,
-        Text,
+        button, pick_list, Align, Button, Column, Container, Element, HorizontalAlignment, Length,
+        PickList, Row, Space, Text,
     },
     std::collections::HashMap,
     version_compare::{CompOp, VersionCompare},
@@ -29,12 +29,8 @@ pub fn data_container<'a>(
     weakauras_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
     install_mode_btn_state: &'a mut button::State,
-    retail_btn_state: &'a mut button::State,
-    retail_ptr_btn_state: &'a mut button::State,
-    retail_beta_btn_state: &'a mut button::State,
-    classic_btn_state: &'a mut button::State,
-    classic_ptr_btn_state: &'a mut button::State,
     self_update_state: &'a mut SelfUpdateState,
+    flavor_picklist_state: &'a mut pick_list::State<Flavor>,
     weak_auras_is_installed: bool,
 ) -> Container<'a, Message> {
     let flavor = config.wow.flavor;
@@ -46,7 +42,9 @@ pub fn data_container<'a>(
         .unwrap_or_default();
 
     // A row contain general settings.
-    let mut settings_row = Row::new().height(Length::Units(50));
+    let mut settings_row = Row::new()
+        .height(Length::Units(50))
+        .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
 
     let mut needs_update = false;
 
@@ -178,142 +176,43 @@ pub fn data_container<'a>(
     let settings_mode_button: Element<Interaction> = settings_mode_button.into();
     let about_mode_button: Element<Interaction> = about_mode_button.into();
 
-    let mut segmented_mode_control_row = Row::new()
-        .push(addons_mode_button.map(Message::Interaction))
+    let segmented_addons_row = Row::new()
         .push(catalog_mode_button.map(Message::Interaction))
         .push(install_mode_button.map(Message::Interaction))
         .spacing(1);
 
+    let mut segmented_mode_row = Row::new()
+        .push(addons_mode_button.map(Message::Interaction))
+        .spacing(1);
+
     if weak_auras_is_installed {
-        segmented_mode_control_row =
-            segmented_mode_control_row.push(weakauras_mode_button.map(Message::Interaction));
+        segmented_mode_row =
+            segmented_mode_row.push(weakauras_mode_button.map(Message::Interaction));
     }
 
-    let segmented_mode_control_container = Container::new(segmented_mode_control_row)
+    let segmented_mode_container = Container::new(segmented_mode_row)
         .padding(2)
         .style(style::SegmentedContainer(color_palette));
 
-    let mut retail_button = Button::new(
-        retail_btn_state,
-        Text::new(Flavor::Retail.to_string()).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette))
-    .on_press(Interaction::FlavorSelected(Flavor::Retail));
+    let segmented_addon_container = Container::new(segmented_addons_row)
+        .padding(2)
+        .style(style::SegmentedContainer(color_palette));
 
-    let mut retail_ptr_button = Button::new(
-        retail_ptr_btn_state,
-        Text::new(Flavor::RetailPTR.to_string()).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette))
-    .on_press(Interaction::FlavorSelected(Flavor::RetailPTR));
+    let flavor_picklist_container = {
+        let pick_list: Element<_> = PickList::new(
+            flavor_picklist_state,
+            valid_flavors.to_vec(),
+            Some(flavor),
+            Interaction::FlavorSelected,
+        )
+        .text_size(14)
+        .style(style::MenuPickList(color_palette))
+        .into();
 
-    let mut retail_beta_button = Button::new(
-        retail_beta_btn_state,
-        Text::new(Flavor::RetailBeta.to_string()).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette))
-    .on_press(Interaction::FlavorSelected(Flavor::RetailBeta));
-
-    let mut classic_button = Button::new(
-        classic_btn_state,
-        Text::new(Flavor::Classic.to_string()).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette))
-    .on_press(Interaction::FlavorSelected(Flavor::Classic));
-
-    let mut classic_ptr_button = Button::new(
-        classic_ptr_btn_state,
-        Text::new(Flavor::ClassicPTR.to_string()).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette))
-    .on_press(Interaction::FlavorSelected(Flavor::ClassicPTR));
-
-    match config.wow.flavor {
-        Flavor::Retail => {
-            retail_button = retail_button.style(style::SelectedDefaultButton(color_palette));
-            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-            classic_button = classic_button.style(style::DefaultButton(color_palette));
-            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-        }
-        Flavor::RetailPTR => {
-            retail_button = retail_button.style(style::DefaultButton(color_palette));
-            retail_ptr_button =
-                retail_ptr_button.style(style::SelectedDefaultButton(color_palette));
-            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-            classic_button = classic_button.style(style::DefaultButton(color_palette));
-            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-        }
-        Flavor::RetailBeta => {
-            retail_button = retail_button.style(style::DefaultButton(color_palette));
-            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-            retail_beta_button =
-                retail_beta_button.style(style::SelectedDefaultButton(color_palette));
-            classic_button = classic_button.style(style::DefaultButton(color_palette));
-            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-        }
-        Flavor::Classic => {
-            retail_button = retail_button.style(style::DefaultButton(color_palette));
-            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-            classic_button = classic_button.style(style::SelectedDefaultButton(color_palette));
-            classic_ptr_button = classic_ptr_button.style(style::DefaultButton(color_palette));
-        }
-        Flavor::ClassicPTR => {
-            retail_button = retail_button.style(style::DefaultButton(color_palette));
-            retail_ptr_button = retail_ptr_button.style(style::DefaultButton(color_palette));
-            retail_beta_button = retail_beta_button.style(style::DefaultButton(color_palette));
-            classic_button = classic_button.style(style::DefaultButton(color_palette));
-            classic_ptr_button =
-                classic_ptr_button.style(style::SelectedDefaultButton(color_palette));
-        }
-    }
-
-    let retail_button: Element<Interaction> = retail_button.into();
-    let retail_ptr_button: Element<Interaction> = retail_ptr_button.into();
-    let retail_beta_button: Element<Interaction> = retail_beta_button.into();
-    let classic_button: Element<Interaction> = classic_button.into();
-    let classic_ptr_button: Element<Interaction> = classic_ptr_button.into();
-
-    let mut segmented_flavor_control_row = Row::new();
-
-    if valid_flavors.len() > 1 {
-        if valid_flavors.iter().any(|f| *f == Flavor::Retail) {
-            segmented_flavor_control_row =
-                segmented_flavor_control_row.push(retail_button.map(Message::Interaction))
-        }
-
-        if valid_flavors.iter().any(|f| *f == Flavor::RetailPTR) {
-            segmented_flavor_control_row =
-                segmented_flavor_control_row.push(retail_ptr_button.map(Message::Interaction))
-        }
-
-        if valid_flavors.iter().any(|f| *f == Flavor::RetailBeta) {
-            segmented_flavor_control_row =
-                segmented_flavor_control_row.push(retail_beta_button.map(Message::Interaction))
-        }
-
-        if valid_flavors.iter().any(|f| *f == Flavor::Classic) {
-            segmented_flavor_control_row =
-                segmented_flavor_control_row.push(classic_button.map(Message::Interaction))
-        }
-
-        if valid_flavors.iter().any(|f| *f == Flavor::ClassicPTR) {
-            segmented_flavor_control_row =
-                segmented_flavor_control_row.push(classic_ptr_button.map(Message::Interaction))
-        }
-
-        segmented_flavor_control_row = segmented_flavor_control_row.spacing(1);
-    }
-
-    let mut segmented_flavor_control_container =
-        Container::new(segmented_flavor_control_row).padding(2);
-
-    // Only add style if we show container.
-    if valid_flavors.len() > 1 {
-        segmented_flavor_control_container =
-            segmented_flavor_control_container.style(style::SegmentedContainer(color_palette));
-    }
+        Container::new(pick_list.map(Message::Interaction))
+            .padding(2)
+            .style(style::SegmentedContainer(color_palette))
+    };
 
     // Displays an error, if any has occured.
     let error_text = if let Some(error) = error {
@@ -354,12 +253,18 @@ pub fn data_container<'a>(
         .padding(5)
         .style(style::NormalForegroundContainer(color_palette));
 
+    // Only adds flavor container picklist when we have more than 1 valid flavor.
+    if valid_flavors.len() > 1 {
+        settings_row = settings_row
+            .push(flavor_picklist_container)
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)));
+    }
+
     // Surrounds the elements with spacers, in order to make the GUI look good.
     settings_row = settings_row
+        .push(segmented_mode_container)
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-        .push(segmented_mode_control_container)
-        .push(Space::new(Length::Units(20), Length::Units(0)))
-        .push(segmented_flavor_control_container)
+        .push(segmented_addon_container)
         .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
         .push(error_container)
         .push(version_container);

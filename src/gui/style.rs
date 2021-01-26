@@ -210,7 +210,10 @@ impl button::StyleSheet for DefaultButton {
 
     fn hovered(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(self.0.normal.primary)),
+            background: Some(Background::Color(Color {
+                a: 0.25,
+                ..self.0.normal.primary
+            })),
             text_color: self.0.bright.primary,
             ..self.active()
         }
@@ -244,7 +247,10 @@ impl button::StyleSheet for DefaultBoxedButton {
 
     fn hovered(&self) -> button::Style {
         button::Style {
-            background: Some(Background::Color(self.0.normal.primary)),
+            background: Some(Background::Color(Color {
+                a: 0.25,
+                ..self.0.normal.primary
+            })),
             text_color: self.0.bright.primary,
             ..self.active()
         }
@@ -344,7 +350,7 @@ impl button::StyleSheet for DefaultDeleteButton {
     fn hovered(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color {
-                a: 0.35,
+                a: 0.25,
                 ..self.0.normal.error
             })),
             text_color: self.0.bright.error,
@@ -405,7 +411,7 @@ impl button::StyleSheet for SelectedColumnHeaderButton {
     fn hovered(&self) -> button::Style {
         button::Style {
             background: Some(Background::Color(Color {
-                a: 0.15,
+                a: 0.25,
                 ..self.0.normal.primary
             })),
             text_color: self.0.bright.primary,
@@ -512,7 +518,7 @@ impl table_row::StyleSheet for TableRowAlternate {
         let style = self.style();
         table_row::Style {
             background: Some(Background::Color(Color {
-                a: 0.15,
+                a: 0.25,
                 ..self.0.normal.primary
             })),
             ..style
@@ -660,7 +666,53 @@ impl pick_list::StyleSheet for SecondaryPickList {
         let active = self.active();
         pick_list::Style {
             background: Background::Color(Color {
+                a: 0.25,
+                ..self.0.normal.primary
+            }),
+            text_color: self.0.bright.primary,
+            ..active
+        }
+    }
+}
+
+pub struct MenuPickList(pub ColorPalette);
+impl pick_list::StyleSheet for MenuPickList {
+    fn menu(&self) -> pick_list::Menu {
+        pick_list::Menu {
+            text_color: self.0.bright.primary,
+            background: Background::Color(self.0.base.background),
+            selected_background: Background::Color(Color {
                 a: 0.15,
+                ..self.0.normal.primary
+            }),
+            border_width: 1.0,
+            border_color: Color {
+                a: 0.5,
+                ..self.0.normal.primary
+            },
+            selected_text_color: self.0.bright.primary,
+        }
+    }
+
+    fn active(&self) -> pick_list::Style {
+        pick_list::Style {
+            text_color: self.0.bright.primary,
+            background: self.0.base.foreground.into(),
+            border_width: 0.0,
+            border_radius: 4.0,
+            border_color: Color {
+                a: 0.5,
+                ..self.0.normal.primary
+            },
+            icon_size: 0.5,
+        }
+    }
+
+    fn hovered(&self) -> pick_list::Style {
+        let active = self.active();
+        pick_list::Style {
+            background: Background::Color(Color {
+                a: 0.25,
                 ..self.0.normal.primary
             }),
             text_color: self.0.bright.primary,
@@ -739,6 +791,49 @@ impl text_input::StyleSheet for CatalogQueryInput {
         text_input::Style {
             background: Background::Color(self.0.base.foreground),
             border_radius: 2.0,
+            border_width: 1.0,
+            border_color: Color {
+                a: 0.5,
+                ..self.0.normal.primary
+            },
+        }
+    }
+
+    fn placeholder_color(&self) -> Color {
+        self.0.normal.surface
+    }
+
+    fn value_color(&self) -> Color {
+        self.0.bright.primary
+    }
+
+    fn selection_color(&self) -> Color {
+        self.0.bright.secondary
+    }
+
+    /// Produces the style of an hovered text input.
+    fn hovered(&self) -> text_input::Style {
+        self.focused()
+    }
+}
+
+pub struct AddonsQueryInput(pub ColorPalette);
+impl text_input::StyleSheet for AddonsQueryInput {
+    /// Produces the style of an active text input.
+    fn active(&self) -> text_input::Style {
+        text_input::Style {
+            background: Background::Color(self.0.base.foreground),
+            border_radius: 4.0,
+            border_width: 1.0,
+            border_color: self.0.base.foreground,
+        }
+    }
+
+    /// Produces the style of a focused text input.
+    fn focused(&self) -> text_input::Style {
+        text_input::Style {
+            background: Background::Color(self.0.base.foreground),
+            border_radius: 4.0,
             border_width: 1.0,
             border_color: Color {
                 a: 0.5,

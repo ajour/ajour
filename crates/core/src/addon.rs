@@ -139,6 +139,8 @@ pub struct Addon {
     pub changelog_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
     pub remote_version_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
+    pub fuzzy_score: Option<i64>,
 }
 
 impl Addon {
@@ -168,6 +170,8 @@ impl Addon {
             changelog_btn_state: Default::default(),
             #[cfg(feature = "gui")]
             remote_version_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            fuzzy_score: None,
         }
     }
 
@@ -455,9 +459,7 @@ impl Addon {
             let srv = strip_non_digits(&remote_package.version);
             let slv = strip_non_digits(&version);
 
-            if let (Some(srv), Some(slv)) = (srv, slv) {
-                return !slv.contains(&srv);
-            }
+            return !slv.contains(&srv);
         }
 
         false

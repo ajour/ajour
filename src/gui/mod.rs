@@ -7,10 +7,10 @@ use crate::localization::{localized_string, LANG};
 use crate::Result;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
+    cache::catalog_download_latest_or_use_cache,
     cache::{
         load_addon_cache, load_fingerprint_cache, AddonCache, AddonCacheEntry, FingerprintCache,
     },
-    catalog::get_catalog,
     catalog::{self, Catalog, CatalogAddon},
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, Language, SelfUpdateChannel},
     error::*,
@@ -123,6 +123,7 @@ pub enum Interaction {
     AlternatingRowColorToggled(bool),
     ResetColumns,
     ToggleDeleteSavedVariables(bool),
+    AddonsQuery(String),
 }
 
 #[derive(Debug)]
@@ -191,11 +192,6 @@ pub struct Ajour {
     theme_state: ThemeState,
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
-    retail_btn_state: button::State,
-    retail_ptr_btn_state: button::State,
-    retail_beta_btn_state: button::State,
-    classic_btn_state: button::State,
-    classic_ptr_btn_state: button::State,
     addon_mode_btn_state: button::State,
     weakaura_mode_btn_state: button::State,
     catalog_mode_btn_state: button::State,
@@ -222,6 +218,8 @@ pub struct Ajour {
     aura_header_state: AuraHeaderState,
     reset_columns_btn_state: button::State,
     localization_picklist_state: pick_list::State<Language>,
+    flavor_picklist_state: pick_list::State<Flavor>,
+    addons_search_state: AddonsSearchState,
 }
 
 impl Default for Ajour {
@@ -248,11 +246,6 @@ impl Default for Ajour {
             theme_state: Default::default(),
             fingerprint_cache: None,
             addon_cache: None,
-            retail_btn_state: Default::default(),
-            retail_ptr_btn_state: Default::default(),
-            retail_beta_btn_state: Default::default(),
-            classic_btn_state: Default::default(),
-            classic_ptr_btn_state: Default::default(),
             addon_mode_btn_state: Default::default(),
             weakaura_mode_btn_state: Default::default(),
             catalog_mode_btn_state: Default::default(),
@@ -282,6 +275,8 @@ impl Default for Ajour {
             aura_header_state: Default::default(),
             reset_columns_btn_state: Default::default(),
             localization_picklist_state: Default::default(),
+            flavor_picklist_state: Default::default(),
+            addons_search_state: Default::default(),
         }
     }
 }
@@ -299,7 +294,10 @@ impl Application for Ajour {
                 Message::LatestRelease,
             ),
             Command::perform(load_user_themes(), Message::ThemesLoaded),
-            Command::perform(get_catalog(), Message::CatalogDownloaded),
+            Command::perform(
+                catalog_download_latest_or_use_cache(),
+                Message::CatalogDownloaded,
+            ),
         ];
 
         let mut ajour = Ajour::default();
@@ -387,12 +385,8 @@ impl Application for Ajour {
             &mut self.weakaura_mode_btn_state,
             &mut self.catalog_mode_btn_state,
             &mut self.install_mode_btn_state,
-            &mut self.retail_btn_state,
-            &mut self.retail_ptr_btn_state,
-            &mut self.retail_beta_btn_state,
-            &mut self.classic_btn_state,
-            &mut self.classic_ptr_btn_state,
             &mut self.self_update_state,
+            &mut self.flavor_picklist_state,
             self.weak_auras_is_installed,
         );
 
@@ -414,12 +408,15 @@ impl Application for Ajour {
                 // Check if we have any addons.
                 let has_addons = !&addons.is_empty();
 
+                let query = self.addons_search_state.query.clone();
+
                 // Menu for addons.
                 let menu_addons_container = element::my_addons::menu_container(
                     color_palette,
                     flavor,
                     &mut self.update_all_btn_state,
                     &mut self.refresh_btn_state,
+                    &mut self.addons_search_state,
                     &self.state,
                     addons,
                     &self.config,
@@ -449,6 +446,11 @@ impl Application for Ajour {
                 for (idx, addon) in addons.iter_mut().enumerate() {
                     // If hiding ignored addons, we will skip it.
                     if addon.state == AddonState::Ignored && self.config.hide_ignored_addons {
+                        continue;
+                    }
+
+                    // Skip addon if we are filter from query and addon doesn't have fuzzy score
+                    if query.is_some() && addon.fuzzy_score.is_none() {
                         continue;
                     }
 
@@ -856,7 +858,7 @@ impl Application for Ajour {
 
                         let install_addon = install_addons.iter().find(|a| {
                             addon.addon.id.to_string() == a.id
-                                && matches!(a.kind, InstallKind::Catalog {..})
+                                && matches!(a.kind, InstallKind::Catalog { .. })
                         });
 
                         let catalog_data_cell = element::catalog::data_row_container(
@@ -1059,7 +1061,7 @@ pub fn run(opts: Opts) {
     #[cfg(not(target_os = "linux"))]
     // TODO (casperstorm): Due to an upstream bug, min_size causes the window to become unresizable
     // on Linux.
-    // @see: https://github.com/casperstorm/ajour/issues/427
+    // @see: https://github.com/ajour/ajour/issues/427
     {
         settings.window.min_size = Some((600, 300));
     }
@@ -1135,6 +1137,8 @@ pub enum ColumnKey {
     GameVersion,
     DateReleased,
     Source,
+    // Only used for sorting, not an actual visible column that can be shown
+    FuzzyScore,
 }
 
 impl ColumnKey {
@@ -1151,6 +1155,7 @@ impl ColumnKey {
             GameVersion => localized_string("game-version"),
             DateReleased => localized_string("latest-release"),
             Source => localized_string("source"),
+            FuzzyScore => unreachable!("fuzzy score not used as an actual column"),
         }
     }
 
@@ -1167,6 +1172,7 @@ impl ColumnKey {
             GameVersion => "game_version",
             DateReleased => "date_released",
             Source => "source",
+            FuzzyScore => unreachable!("fuzzy score not used as an actual column"),
         };
 
         s.to_string()
@@ -1201,6 +1207,20 @@ impl SortDirection {
         match self {
             SortDirection::Asc => SortDirection::Desc,
             SortDirection::Desc => SortDirection::Asc,
+        }
+    }
+}
+
+pub struct AddonsSearchState {
+    pub query: Option<String>,
+    pub query_state: text_input::State,
+}
+
+impl Default for AddonsSearchState {
+    fn default() -> Self {
+        AddonsSearchState {
+            query: Default::default(),
+            query_state: Default::default(),
         }
     }
 }
@@ -1754,7 +1774,11 @@ impl CatalogResultSize {
 
 impl std::fmt::Display for CatalogResultSize {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Results: {}", self.as_usize())
+        let mut vars = HashMap::new();
+        vars.insert("number".to_string(), self.as_usize());
+        let fmt = localized_string("catalog-results");
+
+        write!(f, "{}", strfmt(&fmt, &vars).unwrap())
     }
 }
 
@@ -1794,22 +1818,23 @@ pub struct ThemeState {
 
 impl Default for ThemeState {
     fn default() -> Self {
-        let mut themes = vec![];
-        themes.push(("Alliance".to_string(), Theme::alliance()));
-        themes.push(("Ayu".to_string(), Theme::ayu()));
-        themes.push(("Dark".to_string(), Theme::dark()));
-        themes.push(("Dracula".to_string(), Theme::dracula()));
-        themes.push(("Ferra".to_string(), Theme::ferra()));
-        themes.push(("Forest Night".to_string(), Theme::forest_night()));
-        themes.push(("Gruvbox".to_string(), Theme::gruvbox()));
-        themes.push(("Horde".to_string(), Theme::horde()));
-        themes.push(("Light".to_string(), Theme::light()));
-        themes.push(("Nord".to_string(), Theme::nord()));
-        themes.push(("One Dark".to_string(), Theme::one_dark()));
-        themes.push(("Outrun".to_string(), Theme::outrun()));
-        themes.push(("Solarized Dark".to_string(), Theme::solarized_dark()));
-        themes.push(("Solarized Light".to_string(), Theme::solarized_light()));
-        themes.push(("Sort".to_string(), Theme::sort()));
+        let themes = vec![
+            ("Alliance".to_string(), Theme::alliance()),
+            ("Ayu".to_string(), Theme::ayu()),
+            ("Dark".to_string(), Theme::dark()),
+            ("Dracula".to_string(), Theme::dracula()),
+            ("Ferra".to_string(), Theme::ferra()),
+            ("Forest Night".to_string(), Theme::forest_night()),
+            ("Gruvbox".to_string(), Theme::gruvbox()),
+            ("Horde".to_string(), Theme::horde()),
+            ("Light".to_string(), Theme::light()),
+            ("Nord".to_string(), Theme::nord()),
+            ("One Dark".to_string(), Theme::one_dark()),
+            ("Outrun".to_string(), Theme::outrun()),
+            ("Solarized Dark".to_string(), Theme::solarized_dark()),
+            ("Solarized Light".to_string(), Theme::solarized_light()),
+            ("Sort".to_string(), Theme::sort()),
+        ];
 
         ThemeState {
             themes,

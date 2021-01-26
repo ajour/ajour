@@ -31,15 +31,15 @@ choco install ajour-opengl
 ## Manual Installation
 
 1. [Prerequisites](#prerequisites)
-    1. [Source Code](#clone-the-source-code)
-    2. [Rust Compiler](#install-the-rust-compiler-with-rustup)
-    3. [Dependencies](#dependencies)
-        1. [Debian/Ubuntu](#debianubuntu)
-        2. [Other](#other)
+   1. [Source Code](#clone-the-source-code)
+   2. [Rust Compiler](#install-the-rust-compiler-with-rustup)
+   3. [Dependencies](#dependencies)
+      1. [Debian/Ubuntu](#debianubuntu)
+      2. [Other](#other)
 2. [Building](#building)
-    1. [Linux/Windows](#linux--windows)
-    2. [macOS](#macos)
-    3. [Compatibility build](#compatibility-build)
+   1. [Linux/Windows](#linux--windows)
+   2. [macOS](#macos)
+   3. [Compatibility build](#compatibility-build)
 
 ### Prerequisites
 
@@ -48,7 +48,7 @@ choco install ajour-opengl
 Before compiling Ajour, you need the source code
 
 ```sh
-git clone https://github.com/casperstorm/ajour.git
+git clone https://github.com/ajour/ajour.git
 cd ajour
 ```
 
@@ -70,7 +70,7 @@ sudo apt install build-essential cmake libxft-dev libssl-dev libx11-dev
 ##### Other
 
 If your system has extra dependencies, and they are not listed here please create
-a [pull-request](https://github.com/casperstorm/ajour/pulls) or open a [issue](https://github.com/casperstorm/ajour/issues).
+a [pull-request](https://github.com/ajour/ajour/pulls) or open a [issue](https://github.com/ajour/ajour/issues).
 
 ### Building
 

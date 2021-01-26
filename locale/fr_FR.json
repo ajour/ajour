@@ -30,7 +30,7 @@
     "full-changelog": "Tous les changement",
     "game-version": "Version du jeu",
     "global-release-channel": "Canal par défaut",
-    "hashing": "Hachage",
+    "hashing": "Vérification",
     "hide-addons": "Masquer les addons ignorés",
     "ignore": "Ignorer",
     "ignored": "Ignoré",
@@ -82,11 +82,11 @@
     "unavailable": "Indisponible",
     "unignore": "Désignorer",
     "unknown": "Inconnu",
-    "unpacking": "Décompression",
+    "unpacking": "Extraction",
     "update": "Mettre à jour",
     "update-all": "Tout mettre à jour",
-    "ajour-update-channel": "Ajour Canal de mise à jour",
-    "updating": "Mise à jour",
+    "ajour-update-channel": "Canal de mise à jour pour Ajour",
+    "updating": "Mise à jour...",
     "weakaura-updates-queued": "Mise à jour en attente. Terminez-les en jeu.",
     "weakauras-loaded": "{number} WeakAuras chargés",
     "website": "Site web",
@@ -101,5 +101,6 @@
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Mise à jour disponible",
     "weakaura-update-queued": "Mise à jour en attente",
-    "settings-general": "Paramètres généraux"
+    "settings-general": "Paramètres généraux",
+    "catalog-results": "Résultats: {number}"
 }

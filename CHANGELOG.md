@@ -14,7 +14,28 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Ability to search for addons in MyAddons.
+- New languages added to Ajour:
+  - 🇨🇿 Czech (thanks Ragnarocek)
+  - 🇳🇴 Norwegian (thanks Jim Nordbø and Nichlas Sørli)
+  - 🇭🇺 Hungarian (thanks Krisz)
+  - 🇵🇹 Portuguese (thanks Boryana)
+  - 🇸🇰 Slovak (thanks Ragnarocek)
+  - 🇹🇷 Turkish (thanks Gageracer)
+
+### Changed
+
+- Ajour binaries for Windows are now digitally signed.
+- Refreshed the menu with a more simple and uncluttered look.
+- Catalog fuzzy matching better removes unrelated results while retaining relevant
+  results
+
 ### Fixed
+
+- Refresh button in My WeakAura is now interactable at all times.
+- Catalog is now being cached and will load faster than before.
 
 ## [0.6.3] - 2021-01-14
 

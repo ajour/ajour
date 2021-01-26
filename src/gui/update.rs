@@ -11,8 +11,8 @@ use {
         addon::{Addon, AddonFolder, AddonState},
         backup::{backup_folders, latest_backup, BackupFolder},
         cache::{
-            remove_addon_cache_entry, update_addon_cache, AddonCache, AddonCacheEntry,
-            FingerprintCache,
+            catalog_download_latest_or_use_cache, remove_addon_cache_entry, update_addon_cache,
+            AddonCache, AddonCacheEntry, FingerprintCache,
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
@@ -78,6 +78,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // Builds a Vec of valid flavors.
                     if addon_directory.exists() {
                         ajour.valid_flavors.push(*flavor);
+                        ajour.valid_flavors.sort();
                         ajour.valid_flavors.dedup();
                     }
 
@@ -133,6 +134,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             match mode {
                 Mode::MyAddons(flavor) => {
+                    // Clear query
+                    ajour.addons_search_state.query = None;
+
                     // Close details if shown.
                     ajour.expanded_type = ExpandType::None;
 
@@ -463,6 +467,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             match mode {
                 Mode::MyAddons(flavor) => {
+                    // Clear query
+                    ajour.addons_search_state.query = None;
+
                     // Close details if shown.
                     ajour.expanded_type = ExpandType::None;
 
@@ -1441,6 +1448,58 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             query_and_sort_catalog(ajour);
         }
+        Message::Interaction(Interaction::AddonsQuery(query)) => {
+            // Addons search query
+            ajour.addons_search_state.query = if query.is_empty() { None } else { Some(query) };
+
+            // Increase penalty for gaps between matching characters
+            let fuzzy_match_config = SkimScoreConfig {
+                gap_start: -12,
+                gap_extension: -6,
+                ..Default::default()
+            };
+            let fuzzy_matcher = SkimMatcherV2::default().score_config(fuzzy_match_config);
+
+            let addons = ajour.addons.entry(ajour.config.wow.flavor).or_default();
+            let global_release_channel = ajour.config.addons.global_release_channel;
+
+            if let Some(query) = &ajour.addons_search_state.query {
+                addons.iter_mut().for_each(|a| {
+                    a.fuzzy_score.take();
+
+                    if let Some(score) = fuzzy_matcher.fuzzy_match(a.title(), query) {
+                        if score > 0 {
+                            a.fuzzy_score = Some(score);
+                        }
+                    }
+                });
+
+                // Sort the addons by score
+                sort_addons(
+                    addons,
+                    global_release_channel,
+                    SortDirection::Desc,
+                    ColumnKey::FuzzyScore,
+                );
+                ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.header_state.previous_column_key = Some(ColumnKey::FuzzyScore);
+            } else {
+                // Clear out the fuzzy scores
+                addons.iter_mut().for_each(|a| {
+                    a.fuzzy_score.take();
+                });
+
+                // Use default sort
+                sort_addons(
+                    addons,
+                    global_release_channel,
+                    SortDirection::Desc,
+                    ColumnKey::Status,
+                );
+                ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                ajour.header_state.previous_column_key = Some(ColumnKey::Status);
+            }
+        }
         Message::Interaction(Interaction::CatalogQuery(query)) => {
             // Catalog search query
             ajour.catalog_search_state.query = if query.is_empty() {
@@ -1675,13 +1734,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(last_updated) = &ajour.catalog_last_updated {
                 let now = Utc::now();
                 let now_time = now.time();
-                let refresh_time = NaiveTime::from_hms(0, 40, 0);
+                let refresh_time = NaiveTime::from_hms(2, 0, 0);
 
                 if last_updated.date() < now.date() && now_time > refresh_time {
                     log::debug!("Message::RefreshCatalog: catalog needs to be refreshed");
 
                     return Ok(Command::perform(
-                        catalog::get_catalog(),
+                        catalog_download_latest_or_use_cache(),
                         Message::CatalogDownloaded,
                     ));
                 }
@@ -1930,10 +1989,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::RuntimeEvent(iced_native::Event::Keyboard(
             iced_native::keyboard::Event::KeyReleased { key_code, .. },
         )) => {
-            if key_code == iced_native::keyboard::KeyCode::Escape
-                && (ajour.mode == Mode::Settings || ajour.mode == Mode::About)
-            {
-                ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+            if key_code == iced_native::keyboard::KeyCode::Escape {
+                match ajour.mode {
+                    Mode::Settings | Mode::About => {
+                        ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+                    }
+                    Mode::MyAddons(_) => {
+                        ajour.addons_search_state.query = None;
+                    }
+                    Mode::Catalog => {
+                        ajour.catalog_search_state.query = None;
+                    }
+                    _ => {}
+                }
             }
         }
         Message::RuntimeEvent(_) => {}
@@ -2225,6 +2293,12 @@ fn sort_addons(
         (ColumnKey::Source, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.repository_kind().cmp(&b.repository_kind()).reverse())
         }
+        (ColumnKey::FuzzyScore, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.fuzzy_score.cmp(&b.fuzzy_score))
+        }
+        (ColumnKey::FuzzyScore, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.fuzzy_score.cmp(&b.fuzzy_score).reverse())
+        }
     }
 }
 
@@ -2364,8 +2438,10 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
 
-        // Use default, can tweak if needed in future
+        // Increase penalty for gaps between matching characters
         let fuzzy_match_config = SkimScoreConfig {
+            gap_start: -12,
+            gap_extension: -6,
             ..Default::default()
         };
         let fuzzy_matcher = SkimMatcherV2::default().score_config(fuzzy_match_config);
@@ -2384,9 +2460,11 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                         None
                     }
                 } else {
-                    Some((a, 0))
+                    Some((a, 1))
                 }
             })
+            // Only return positive scores
+            .filter(|(_, s)| *s > 0)
             .filter(|(a, _)| {
                 a.game_versions
                     .iter()

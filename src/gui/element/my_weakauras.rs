@@ -33,7 +33,6 @@ pub fn menu_container<'a>(
     accounts: &'a [String],
     chosen_account: Option<String>,
 ) -> Container<'a, Message> {
-    //
     // MyWeakAuras state.
     let state = state
         .get(&Mode::MyWeakAuras(flavor))
@@ -41,7 +40,7 @@ pub fn menu_container<'a>(
         .unwrap_or_default();
 
     // A row contain general settings.
-    let mut row = Row::new().height(Length::Units(35));
+    let mut row = Row::new().align_items(Align::Center);
 
     let mut update_all_button = Button::new(
         update_all_button_state,
@@ -49,10 +48,11 @@ pub fn menu_container<'a>(
     )
     .style(style::DefaultButton(color_palette));
 
-    let mut refresh_button = Button::new(
+    let refresh_button = Button::new(
         refresh_button_state,
         Text::new(localized_string("refresh")).size(DEFAULT_FONT_SIZE),
     )
+    .on_press(Interaction::Refresh(Mode::MyWeakAuras(flavor)))
     .style(style::DefaultButton(color_palette));
 
     let pick_list = PickList::new(
@@ -68,10 +68,6 @@ pub fn menu_container<'a>(
     if updates_available && !is_updating && !updates_queued {
         update_all_button =
             update_all_button.on_press(Interaction::UpdateAll(Mode::MyWeakAuras(flavor)));
-    }
-
-    if state == State::Ready {
-        refresh_button = refresh_button.on_press(Interaction::Refresh(Mode::MyWeakAuras(flavor)));
     }
 
     let update_all_button: Element<Interaction> = update_all_button.into();
@@ -123,8 +119,9 @@ pub fn menu_container<'a>(
 
     // Add space above settings_row.
     let settings_column = Column::new()
-        .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(row);
+        .push(Space::new(Length::Units(0), Length::Units(7)))
+        .push(row)
+        .push(Space::new(Length::Units(0), Length::Units(10)));
 
     // Wraps it in a container.
     Container::new(settings_column)

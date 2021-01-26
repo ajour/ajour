@@ -633,7 +633,7 @@ async fn get_all_repo_packages(
                     .parse::<Uri>()
                     .map_err(|_| RepositoryError::GitInvalidUrl { url: url.clone() })?;
 
-                Result::<_, RepositoryError>::Ok(RepositoryPackage::from_source_url(flavor, url)?)
+                RepositoryPackage::from_source_url(flavor, url)
             })
             .filter_map(|result| match result {
                 Ok(package) => Some(package),
@@ -896,7 +896,7 @@ pub async fn update_addon_fingerprint(
     Ok(())
 }
 
-pub fn fingerprint_addon_dir(addon_dir: &PathBuf) -> Result<u32, ParseError> {
+pub fn fingerprint_addon_dir(addon_dir: &Path) -> Result<u32, ParseError> {
     let mut to_fingerprint = HashSet::new();
     let mut to_parse = VecDeque::new();
     let root_dir = addon_dir.parent().ok_or(ParseError::NoParentDirectory {
@@ -1098,7 +1098,7 @@ static RE_PARSING_PATTERNS: Lazy<ParsingPatterns> = Lazy::new(|| {
 ///
 /// TOC format summary:
 /// https://wowwiki.fandom.com/wiki/TOC_format
-pub fn parse_toc_path(toc_path: &PathBuf) -> Option<AddonFolder> {
+pub fn parse_toc_path(toc_path: &Path) -> Option<AddonFolder> {
     //direntry
     let file = if let Ok(file) = File::open(toc_path) {
         file

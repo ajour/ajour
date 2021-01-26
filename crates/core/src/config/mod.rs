@@ -212,13 +212,19 @@ impl Display for SelfUpdateChannel {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
 pub enum Language {
+    Czech,
+    Norwegian,
     English,
     Danish,
     German,
     French,
+    Hungarian,
+    Portuguese,
     Russian,
+    Slovak,
     Swedish,
     Spanish,
+    Turkish,
 }
 
 impl std::fmt::Display for Language {
@@ -227,6 +233,7 @@ impl std::fmt::Display for Language {
             f,
             "{}",
             match self {
+                Language::Czech => "Čeština",
                 Language::English => "English",
                 Language::Danish => "Dansk",
                 Language::German => "Deutsch",
@@ -234,13 +241,19 @@ impl std::fmt::Display for Language {
                 Language::French => "Français",
                 Language::Russian => "Pусский",
                 Language::Spanish => "Español",
+                Language::Hungarian => "Magyar",
+                Language::Norwegian => "Bokmål",
+                Language::Slovak => "Slovenčina",
+                Language::Turkish => "Türkçe",
+                Language::Portuguese => "Português",
             }
         )
     }
 }
 
 impl Language {
-    pub const ALL: [Language; 7] = [
+    pub const ALL: [Language; 13] = [
+        Language::Czech,
         Language::Danish,
         Language::English,
         Language::French,
@@ -248,10 +261,16 @@ impl Language {
         Language::Russian,
         Language::Spanish,
         Language::Swedish,
+        Language::Hungarian,
+        Language::Norwegian,
+        Language::Slovak,
+        Language::Turkish,
+        Language::Portuguese,
     ];
 
     pub const fn language_code(self) -> &'static str {
         match self {
+            Language::Czech => "cs_CZ",
             Language::English => "en_US",
             Language::Danish => "da_DK",
             Language::German => "de_DE",
@@ -259,6 +278,11 @@ impl Language {
             Language::Russian => "ru_RU",
             Language::Swedish => "se_SE",
             Language::Spanish => "es_ES",
+            Language::Hungarian => "hu_HU",
+            Language::Norwegian => "nb_NO",
+            Language::Slovak => "sk_SK",
+            Language::Turkish => "tr_TR",
+            Language::Portuguese => "pt_PT",
         }
     }
 }
