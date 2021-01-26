@@ -242,7 +242,7 @@ impl std::fmt::Display for Language {
                 Language::Russian => "Pусский",
                 Language::Spanish => "Español",
                 Language::Hungarian => "Magyar",
-                Language::Norwegian => "Bokmål",
+                Language::Norwegian => "Norwegian bokmål",
                 Language::Slovak => "Slovenčina",
                 Language::Turkish => "Türkçe",
                 Language::Portuguese => "Português",
