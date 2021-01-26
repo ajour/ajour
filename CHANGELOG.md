@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.7.0] - 2021-01-26
+
 ### Added
 
 - Ability to search for addons in MyAddons.
