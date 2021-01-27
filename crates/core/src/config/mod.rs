@@ -234,38 +234,39 @@ impl std::fmt::Display for Language {
             "{}",
             match self {
                 Language::Czech => "Čeština",
-                Language::English => "English",
                 Language::Danish => "Dansk",
-                Language::German => "Deutsch",
-                Language::Swedish => "Svenska",
+                Language::English => "English",
                 Language::French => "Français",
-                Language::Russian => "Pусский",
-                Language::Spanish => "Español",
+                Language::German => "Deutsch",
                 Language::Hungarian => "Magyar",
-                Language::Norwegian => "Bokmål",
-                Language::Slovak => "Slovenčina",
-                Language::Turkish => "Türkçe",
+                Language::Norwegian => "Norsk Bokmål",
                 Language::Portuguese => "Português",
+                Language::Russian => "Pусский",
+                Language::Slovak => "Slovenčina",
+                Language::Spanish => "Español",
+                Language::Swedish => "Svenska",
+                Language::Turkish => "Türkçe",
             }
         )
     }
 }
 
 impl Language {
+    // Alphabetically sorted based on their local name (@see `impl Display`).
     pub const ALL: [Language; 13] = [
-        Language::Czech,
         Language::Danish,
-        Language::English,
-        Language::French,
         Language::German,
-        Language::Russian,
+        Language::English,
         Language::Spanish,
-        Language::Swedish,
+        Language::French,
         Language::Hungarian,
         Language::Norwegian,
-        Language::Slovak,
-        Language::Turkish,
         Language::Portuguese,
+        Language::Russian,
+        Language::Slovak,
+        Language::Swedish,
+        Language::Turkish,
+        Language::Czech,
     ];
 
     pub const fn language_code(self) -> &'static str {
