@@ -14,6 +14,15 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- New languages added to Ajour:
+  - 🇺🇦 Ukrainian (thanks Krapka and Orney)
+
+### Changed
+
+- Sorted language picker in Settings.
+
 ## [0.7.0] - 2021-01-26
 
 ### Added

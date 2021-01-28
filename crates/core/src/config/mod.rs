@@ -225,6 +225,7 @@ pub enum Language {
     Swedish,
     Spanish,
     Turkish,
+    Ukrainian,
 }
 
 impl std::fmt::Display for Language {
@@ -246,6 +247,7 @@ impl std::fmt::Display for Language {
                 Language::Spanish => "Español",
                 Language::Swedish => "Svenska",
                 Language::Turkish => "Türkçe",
+                Language::Ukrainian => "Yкраїнська",
             }
         )
     }
@@ -253,7 +255,8 @@ impl std::fmt::Display for Language {
 
 impl Language {
     // Alphabetically sorted based on their local name (@see `impl Display`).
-    pub const ALL: [Language; 13] = [
+    pub const ALL: [Language; 14] = [
+        Language::Czech,
         Language::Danish,
         Language::German,
         Language::English,
@@ -266,7 +269,7 @@ impl Language {
         Language::Slovak,
         Language::Swedish,
         Language::Turkish,
-        Language::Czech,
+        Language::Ukrainian,
     ];
 
     pub const fn language_code(self) -> &'static str {
@@ -284,6 +287,7 @@ impl Language {
             Language::Slovak => "sk_SK",
             Language::Turkish => "tr_TR",
             Language::Portuguese => "pt_PT",
+            Language::Ukrainian => "uk_UA",
         }
     }
 }
