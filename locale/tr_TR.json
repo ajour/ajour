@@ -102,5 +102,15 @@
     "weakaura-update-available": "Güncelleme Mevcut",
     "weakaura-update-queued": "Güncelleme Sırada",
     "settings-general": "Genel",
-    "catalog-results": "{number} sonuç"
+    "catalog-results": "{number} sonuç",
+    "error-fetch-changelog": "",
+    "error-parse-addons": "",
+    "error-download-addon": "",
+    "error-unpack-addon": "",
+    "error-backup-folders": "",
+    "error-update-ajour": "",
+    "error-remove-cache": "",
+    "error-list-accounts": "",
+    "error-parse-weakauras": "",
+    "error-update-weakauras": ""
 }

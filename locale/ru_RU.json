@@ -102,5 +102,15 @@
     "weakaura-update-available": "Доступны обновления",
     "weakaura-update-queued": "Обновления поставлены в очередь",
     "settings-general": "Общие",
-    "catalog-results": "Результат: {number}"
+    "catalog-results": "Результат: {number}",
+    "error-fetch-changelog": "",
+    "error-parse-addons": "",
+    "error-download-addon": "",
+    "error-unpack-addon": "",
+    "error-backup-folders": "",
+    "error-update-ajour": "",
+    "error-remove-cache": "",
+    "error-list-accounts": "",
+    "error-parse-weakauras": "",
+    "error-update-weakauras": ""
 }

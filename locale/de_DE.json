@@ -102,5 +102,15 @@
     "weakaura-update-available": "Update verfügbar",
     "weakaura-update-queued": "Update in Warteschlange",
     "settings-general": "Allgemein",
-    "catalog-results": "Ergebnisse: {number}"
+    "catalog-results": "Ergebnisse: {number}",
+    "error-fetch-changelog": "",
+    "error-parse-addons": "",
+    "error-download-addon": "",
+    "error-unpack-addon": "",
+    "error-backup-folders": "",
+    "error-update-ajour": "",
+    "error-remove-cache": "",
+    "error-list-accounts": "",
+    "error-parse-weakauras": "",
+    "error-update-weakauras": ""
 }

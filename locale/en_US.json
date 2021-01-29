@@ -102,5 +102,15 @@
     "weakaura-update-available": "Update Available",
     "weakaura-update-queued": "Update Queued",
     "settings-general": "General",
-    "catalog-results": "Results: {number}"
+    "catalog-results": "Results: {number}",
+    "error-fetch-changelog": "Failed to fetch changelog",
+    "error-parse-addons": "Failed to parse addons",
+    "error-download-addon": "Failed to download addon",
+    "error-unpack-addon": "Failed to unpack addon",
+    "error-backup-folders": "Failed to backup folders",
+    "error-update-ajour": "Failed to update Ajour",
+    "error-remove-cache": "Failed to remove cache entry",
+    "error-list-accounts": "Failed to get list of Accounts",
+    "error-parse-weakauras": "Failed to parse WeakAuras",
+    "error-update-weakauras": "Failed to update WeakAuras"
 }
