@@ -195,6 +195,6 @@ mod test {
         channel_beta: String,
         channel_alpha: String,
         catalog_results: String,
-        category: String,
+        categories: String,
     }
 }
