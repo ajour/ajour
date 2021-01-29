@@ -1679,7 +1679,18 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     }
                 }
-                Err(error) => {
+                Err(mut error) => {
+                    // Assign special error message when updating failed due to
+                    // permissions issues
+                    for cause in error.chain() {
+                        if let Some(io_error) = cause.downcast_ref::<std::io::Error>() {
+                            if io_error.kind() == std::io::ErrorKind::PermissionDenied {
+                                error = error.context("Permissions issue while updating Ajour");
+                                break;
+                            }
+                        }
+                    }
+
                     log_error(&error);
                     ajour.error = Some(error);
                     ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
