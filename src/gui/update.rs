@@ -2451,20 +2451,26 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .iter()
             .filter(|a| !a.game_versions.is_empty())
             .filter_map(|a| {
-                let title_and_summary = format!("{} {}", a.name, a.summary);
-
                 if let Some(query) = &query {
-                    if let Some(score) = fuzzy_matcher.fuzzy_match(&title_and_summary, &query) {
-                        Some((a, score))
+                    let title_score = fuzzy_matcher
+                        .fuzzy_match(&a.name, &query)
+                        .unwrap_or_default();
+                    let description_score = fuzzy_matcher
+                        .fuzzy_match(&a.summary, &query)
+                        .unwrap_or_default()
+                        / 2;
+
+                    let max_score = title_score.max(description_score);
+
+                    if max_score > 0 {
+                        Some((a, max_score))
                     } else {
                         None
                     }
                 } else {
-                    Some((a, 1))
+                    Some((a, 0))
                 }
             })
-            // Only return positive scores
-            .filter(|(_, s)| *s > 0)
             .filter(|(a, _)| {
                 a.game_versions
                     .iter()
