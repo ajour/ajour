@@ -1963,7 +1963,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 state.is_updating = false;
             }
             error @ Err(_) => {
-                let error = error.context(localized_string("error-update-weakauras")).unwrap_err();
+                let error = error
+                    .context(localized_string("error-update-weakauras"))
+                    .unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
