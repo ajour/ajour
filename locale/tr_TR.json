@@ -102,5 +102,6 @@
     "weakaura-update-available": "Güncelleme Mevcut",
     "weakaura-update-queued": "Güncelleme Sırada",
     "settings-general": "Genel",
-    "catalog-results": "{number} sonuç"
+    "catalog-results": "{number} sonuç",
+    "categories": ""
 }
