@@ -207,5 +207,6 @@ mod test {
         error_list_accounts: String,
         error_parse_weakauras: String,
         error_update_weakauras: String,
+        error_update_ajour_permission: String,
     }
 }

@@ -1685,7 +1685,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     for cause in error.chain() {
                         if let Some(io_error) = cause.downcast_ref::<std::io::Error>() {
                             if io_error.kind() == std::io::ErrorKind::PermissionDenied {
-                                error = error.context("Permissions issue while updating Ajour");
+                                error = error
+                                    .context(localized_string("error-update-ajour-permission"));
                                 break;
                             }
                         }

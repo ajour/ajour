@@ -112,5 +112,6 @@
     "error-remove-cache": "Failed to remove cache entry",
     "error-list-accounts": "Failed to get list of Accounts",
     "error-parse-weakauras": "Failed to parse WeakAuras",
-    "error-update-weakauras": "Failed to update WeakAuras"
+    "error-update-weakauras": "Failed to update WeakAuras",
+    "error-update-ajour-permission": "Permissions issue while updating Ajour"
 }

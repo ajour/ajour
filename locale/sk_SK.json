@@ -112,5 +112,6 @@
     "error-remove-cache": "",
     "error-list-accounts": "",
     "error-parse-weakauras": "",
-    "error-update-weakauras": ""
+    "error-update-weakauras": "",
+    "error-update-ajour-permission": ""
 }
