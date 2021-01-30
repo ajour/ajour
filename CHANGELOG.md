@@ -23,6 +23,10 @@ and `Removed`.
 
 - Sorted language picker in Settings.
 
+### Fixed
+
+- Multiple error messages are now correctly localized.
+
 ## [0.7.0] - 2021-01-26
 
 ### Added
