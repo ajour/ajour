@@ -348,6 +348,29 @@ pub fn data_row_container<'a, 'b>(
         row_containers.push((idx, num_downloads_container));
     }
 
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::Categories && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let categories = Text::new(&addon_data.categories.join(", ")).size(DEFAULT_FONT_SIZE);
+        let categories_container = Container::new(categories)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::HoverableForegroundContainer(color_palette));
+
+        row_containers.push((idx, categories_container));
+    }
+
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));
     let right_spacer = Space::new(Length::Units(DEFAULT_PADDING + 5), Length::Units(0));
 

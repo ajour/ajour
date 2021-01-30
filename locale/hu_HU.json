@@ -102,5 +102,6 @@
     "weakaura-update-available": "Frissítés elérhető",
     "weakaura-update-queued": "Frissítés sorbaállítva",
     "settings-general": "Általános",
-    "catalog-results": "Találatok: {number}"
+    "catalog-results": "Találatok: {number}",
+    "categories": ""
 }
