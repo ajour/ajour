@@ -102,5 +102,16 @@
     "weakaura-update-available": "Доступне оновлення",
     "weakaura-update-queued": "Оновлення в черзі",
     "settings-general": "Загальні",
-    "catalog-results": "Результат: {number}"
+    "catalog-results": "Результат: {number}",
+    "error-fetch-changelog": "",
+    "error-parse-addons": "",
+    "error-download-addon": "",
+    "error-unpack-addon": "",
+    "error-backup-folders": "",
+    "error-update-ajour": "",
+    "error-remove-cache": "",
+    "error-list-accounts": "",
+    "error-parse-weakauras": "",
+    "error-update-weakauras": "",
+    "error-update-ajour-permission": ""
 }

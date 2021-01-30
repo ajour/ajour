@@ -102,5 +102,16 @@
     "weakaura-update-available": "Dostupná aktualizácia",
     "weakaura-update-queued": "Aktualizácia zaradená",
     "settings-general": "Všeobecné",
-    "catalog-results": "Výsledky: {number}"
+    "catalog-results": "Výsledky: {number}",
+    "error-fetch-changelog": "",
+    "error-parse-addons": "",
+    "error-download-addon": "",
+    "error-unpack-addon": "",
+    "error-backup-folders": "",
+    "error-update-ajour": "",
+    "error-remove-cache": "",
+    "error-list-accounts": "",
+    "error-parse-weakauras": "",
+    "error-update-weakauras": "",
+    "error-update-ajour-permission": ""
 }
