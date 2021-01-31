@@ -1137,6 +1137,7 @@ pub enum ColumnKey {
     GameVersion,
     DateReleased,
     Source,
+    Summary,
     // Only used for sorting, not an actual visible column that can be shown
     FuzzyScore,
 }
@@ -1155,6 +1156,7 @@ impl ColumnKey {
             GameVersion => localized_string("game-version"),
             DateReleased => localized_string("latest-release"),
             Source => localized_string("source"),
+            Summary => localized_string("summary"),
             FuzzyScore => unreachable!("fuzzy score not used as an actual column"),
         }
     }
@@ -1172,6 +1174,7 @@ impl ColumnKey {
             GameVersion => "game_version",
             DateReleased => "date_released",
             Source => "source",
+            Summary => "summary",
             FuzzyScore => unreachable!("fuzzy score not used as an actual column"),
         };
 
@@ -1191,6 +1194,7 @@ impl From<&str> for ColumnKey {
             "game_version" => ColumnKey::GameVersion,
             "date_released" => ColumnKey::DateReleased,
             "source" => ColumnKey::Source,
+            "summary" => ColumnKey::Summary,
             _ => panic!(format!("Unknown ColumnKey for {}", s)),
         }
     }
@@ -1311,6 +1315,13 @@ impl Default for HeaderState {
                     hidden: true,
                     order: 8,
                 },
+                ColumnState {
+                    key: ColumnKey::Summary,
+                    btn_state: Default::default(),
+                    width: Length::Units(110),
+                    hidden: true,
+                    order: 9,
+                },
             ],
         }
     }
@@ -1402,6 +1413,12 @@ impl Default for ColumnSettings {
                 ColumnSettingState {
                     key: ColumnKey::Source,
                     order: 8,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                ColumnSettingState {
+                    key: ColumnKey::Summary,
+                    order: 9,
                     up_btn_state: Default::default(),
                     down_btn_state: Default::default(),
                 },

@@ -2299,6 +2299,12 @@ fn sort_addons(
         (ColumnKey::FuzzyScore, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.fuzzy_score.cmp(&b.fuzzy_score).reverse())
         }
+        (ColumnKey::Summary, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.notes().cmp(&b.notes()))
+        }
+        (ColumnKey::Summary, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.notes().cmp(&b.notes()).reverse())
+        }
     }
 }
 
