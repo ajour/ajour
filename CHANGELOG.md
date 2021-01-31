@@ -17,6 +17,7 @@ and `Removed`.
 ## Added
 
 - Optional 'Categories' column for Catalog.
+- Optional 'Summary' column for My Addons.
 
 ## [0.7.0] - 2021-01-26
 
