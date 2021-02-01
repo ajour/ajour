@@ -102,5 +102,6 @@
     "weakaura-update-available": "Update verfügbar",
     "weakaura-update-queued": "Update in Warteschlange",
     "settings-general": "Allgemein",
-    "catalog-results": "Ergebnisse: {number}"
+    "catalog-results": "Ergebnisse: {number}",
+    "categories": ""
 }

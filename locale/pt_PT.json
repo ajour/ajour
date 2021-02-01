@@ -102,5 +102,6 @@
     "weakaura-update-available": "Atualização disponível",
     "weakaura-update-queued": "Atualização em fila",
     "settings-general": "Configuração geral",
-    "catalog-results": "Resultados: {number}"
+    "catalog-results": "Resultados: {number}",
+    "categories": ""
 }

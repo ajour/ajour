@@ -102,5 +102,6 @@
     "weakaura-update-available": "Uppdateringar tillgängliga",
     "weakaura-update-queued": "Uppdateringar köade",
     "settings-general": "Allmänna inställningar",
-    "catalog-results": "Resultat: {number}"
+    "catalog-results": "Resultat: {number}",
+    "categories": ""
 }

@@ -2299,6 +2299,12 @@ fn sort_addons(
         (ColumnKey::FuzzyScore, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.fuzzy_score.cmp(&b.fuzzy_score).reverse())
         }
+        (ColumnKey::Summary, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.notes().cmp(&b.notes()))
+        }
+        (ColumnKey::Summary, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.notes().cmp(&b.notes()).reverse())
+        }
     }
 }
 
@@ -2360,6 +2366,23 @@ fn sort_catalog_addons(
             let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
             gv_a.cmp(&gv_b).reverse()
         }),
+        (CatalogColumnKey::Categories, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.addon
+                    .categories
+                    .join(", ")
+                    .cmp(&b.addon.categories.join(", "))
+                    .reverse()
+            });
+        }
+        (CatalogColumnKey::Categories, SortDirection::Asc) => {
+            addons.sort_by(|a, b| {
+                a.addon
+                    .categories
+                    .join(", ")
+                    .cmp(&b.addon.categories.join(", "))
+            });
+        }
     }
 }
 

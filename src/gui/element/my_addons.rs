@@ -376,6 +376,30 @@ pub fn data_row_container<'a, 'b>(
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width, hidden))| {
+            if *key == ColumnKey::Summary && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let text = addon_cloned.notes().unwrap_or("-");
+        let summary = Text::new(text).size(DEFAULT_FONT_SIZE);
+        let container = Container::new(summary)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::HoverableForegroundContainer(color_palette));
+
+        row_containers.push((idx, container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
             if *key == ColumnKey::Status && !hidden {
                 Some((idx, width))
             } else {

@@ -102,5 +102,6 @@
     "weakaura-update-available": "Dostupná aktualizácia",
     "weakaura-update-queued": "Aktualizácia zaradená",
     "settings-general": "Všeobecné",
-    "catalog-results": "Výsledky: {number}"
+    "catalog-results": "Výsledky: {number}",
+    "categories": ""
 }
