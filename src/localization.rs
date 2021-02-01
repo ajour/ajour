@@ -208,5 +208,6 @@ mod test {
         error_parse_weakauras: String,
         error_update_weakauras: String,
         error_update_ajour_permission: String,
+        categories: String,
     }
 }

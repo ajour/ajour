@@ -16,12 +16,16 @@ and `Removed`.
 
 ### Added
 
+- Optional 'Categories' column for Catalog.
+- Optional 'Summary' column for My Addons.
 - New languages added to Ajour:
   - 🇺🇦 Ukrainian (thanks Krapka and Orney)
 
 ### Changed
 
 - Sorted language picker in Settings.
+- Tweaked catalog fuzzy search to weight title matches higher than description
+  matches.
 
 ### Fixed
 

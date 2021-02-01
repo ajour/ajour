@@ -113,5 +113,6 @@
     "error-list-accounts": "",
     "error-parse-weakauras": "",
     "error-update-weakauras": "",
-    "error-update-ajour-permission": ""
+    "error-update-ajour-permission": "",
+    "categories": ""
 }

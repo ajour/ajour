@@ -1137,6 +1137,7 @@ pub enum ColumnKey {
     GameVersion,
     DateReleased,
     Source,
+    Summary,
     // Only used for sorting, not an actual visible column that can be shown
     FuzzyScore,
 }
@@ -1155,6 +1156,7 @@ impl ColumnKey {
             GameVersion => localized_string("game-version"),
             DateReleased => localized_string("latest-release"),
             Source => localized_string("source"),
+            Summary => localized_string("summary"),
             FuzzyScore => unreachable!("fuzzy score not used as an actual column"),
         }
     }
@@ -1172,6 +1174,7 @@ impl ColumnKey {
             GameVersion => "game_version",
             DateReleased => "date_released",
             Source => "source",
+            Summary => "summary",
             FuzzyScore => unreachable!("fuzzy score not used as an actual column"),
         };
 
@@ -1191,6 +1194,7 @@ impl From<&str> for ColumnKey {
             "game_version" => ColumnKey::GameVersion,
             "date_released" => ColumnKey::DateReleased,
             "source" => ColumnKey::Source,
+            "summary" => ColumnKey::Summary,
             _ => panic!(format!("Unknown ColumnKey for {}", s)),
         }
     }
@@ -1311,6 +1315,13 @@ impl Default for HeaderState {
                     hidden: true,
                     order: 8,
                 },
+                ColumnState {
+                    key: ColumnKey::Summary,
+                    btn_state: Default::default(),
+                    width: Length::Units(110),
+                    hidden: true,
+                    order: 9,
+                },
             ],
         }
     }
@@ -1405,6 +1416,12 @@ impl Default for ColumnSettings {
                     up_btn_state: Default::default(),
                     down_btn_state: Default::default(),
                 },
+                ColumnSettingState {
+                    key: ColumnKey::Summary,
+                    order: 9,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
             ],
         }
     }
@@ -1426,6 +1443,7 @@ pub enum CatalogColumnKey {
     GameVersion,
     DateReleased,
     Install,
+    Categories,
 }
 
 impl CatalogColumnKey {
@@ -1439,6 +1457,7 @@ impl CatalogColumnKey {
             NumDownloads => localized_string("num-downloads"),
             GameVersion => localized_string("game-version"),
             DateReleased => localized_string("latest-release"),
+            Categories => localized_string("categories"),
             CatalogColumnKey::Install => localized_string("status"),
         }
     }
@@ -1453,6 +1472,7 @@ impl CatalogColumnKey {
             NumDownloads => "num_downloads",
             GameVersion => "game_version",
             DateReleased => "date_released",
+            Categories => "categories",
             CatalogColumnKey::Install => "install",
         };
 
@@ -1470,6 +1490,7 @@ impl From<&str> for CatalogColumnKey {
             "install" => CatalogColumnKey::Install,
             "game_version" => CatalogColumnKey::GameVersion,
             "date_released" => CatalogColumnKey::DateReleased,
+            "categories" => CatalogColumnKey::Categories,
             _ => panic!(format!("Unknown CatalogColumnKey for {}", s)),
         }
     }
@@ -1546,6 +1567,13 @@ impl Default for CatalogHeaderState {
                     width: Length::Units(85),
                     hidden: false,
                     order: 6,
+                },
+                CatalogColumnState {
+                    key: CatalogColumnKey::Categories,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                    hidden: true,
+                    order: 7,
                 },
             ],
         }
@@ -1626,6 +1654,12 @@ impl Default for CatalogColumnSettings {
                 CatalogColumnSettingState {
                     key: CatalogColumnKey::Install,
                     order: 6,
+                    up_btn_state: Default::default(),
+                    down_btn_state: Default::default(),
+                },
+                CatalogColumnSettingState {
+                    key: CatalogColumnKey::Categories,
+                    order: 7,
                     up_btn_state: Default::default(),
                     down_btn_state: Default::default(),
                 },
