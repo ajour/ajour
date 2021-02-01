@@ -19,6 +19,11 @@ and `Removed`.
 - Optional 'Categories' column for Catalog.
 - Optional 'Summary' column for My Addons.
 
+## Changed
+
+- Tweaked catalog fuzzy search to weight title matches higher than description
+  matches
+
 ## [0.7.0] - 2021-01-26
 
 ### Added
