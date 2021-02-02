@@ -225,6 +225,7 @@ pub enum Language {
     Swedish,
     Spanish,
     Turkish,
+    Ukrainian,
 }
 
 impl std::fmt::Display for Language {
@@ -234,38 +235,41 @@ impl std::fmt::Display for Language {
             "{}",
             match self {
                 Language::Czech => "Čeština",
-                Language::English => "English",
                 Language::Danish => "Dansk",
-                Language::German => "Deutsch",
-                Language::Swedish => "Svenska",
+                Language::English => "English",
                 Language::French => "Français",
-                Language::Russian => "Pусский",
-                Language::Spanish => "Español",
+                Language::German => "Deutsch",
                 Language::Hungarian => "Magyar",
-                Language::Norwegian => "Bokmål",
-                Language::Slovak => "Slovenčina",
-                Language::Turkish => "Türkçe",
+                Language::Norwegian => "Norsk Bokmål",
                 Language::Portuguese => "Português",
+                Language::Russian => "Pусский",
+                Language::Slovak => "Slovenčina",
+                Language::Spanish => "Español",
+                Language::Swedish => "Svenska",
+                Language::Turkish => "Türkçe",
+                Language::Ukrainian => "Yкраїнська",
             }
         )
     }
 }
 
 impl Language {
-    pub const ALL: [Language; 13] = [
+    // Alphabetically sorted based on their local name (@see `impl Display`).
+    pub const ALL: [Language; 14] = [
         Language::Czech,
         Language::Danish,
-        Language::English,
-        Language::French,
         Language::German,
-        Language::Russian,
+        Language::English,
         Language::Spanish,
-        Language::Swedish,
+        Language::French,
         Language::Hungarian,
         Language::Norwegian,
-        Language::Slovak,
-        Language::Turkish,
         Language::Portuguese,
+        Language::Russian,
+        Language::Slovak,
+        Language::Swedish,
+        Language::Turkish,
+        Language::Ukrainian,
     ];
 
     pub const fn language_code(self) -> &'static str {
@@ -283,6 +287,7 @@ impl Language {
             Language::Slovak => "sk_SK",
             Language::Turkish => "tr_TR",
             Language::Portuguese => "pt_PT",
+            Language::Ukrainian => "uk_UA",
         }
     }
 }

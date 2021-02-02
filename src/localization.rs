@@ -31,7 +31,9 @@ pub static LOCALIZATION_CTX: Lazy<JSONGetText<'static>> = Lazy::new(|| {
         "tr_TR",
         "locale/tr_TR.json",
         "pt_PT",
-        "locale/pt_PT.json"
+        "locale/pt_PT.json",
+        "uk_UA",
+        "locale/uk_UA.json"
     )
     .unwrap()
 });
@@ -195,6 +197,17 @@ mod test {
         channel_beta: String,
         channel_alpha: String,
         catalog_results: String,
+        error_fetch_changelog: String,
+        error_parse_addons: String,
+        error_download_addon: String,
+        error_unpack_addon: String,
+        error_backup_folders: String,
+        error_update_ajour: String,
+        error_remove_cache: String,
+        error_list_accounts: String,
+        error_parse_weakauras: String,
+        error_update_weakauras: String,
+        error_update_ajour_permission: String,
         categories: String,
     }
 }

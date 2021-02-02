@@ -103,5 +103,16 @@
     "weakaura-update-queued": "Mise à jour en attente",
     "settings-general": "Paramètres généraux",
     "catalog-results": "Résultats: {number}",
+    "error-fetch-changelog": "",
+    "error-parse-addons": "",
+    "error-download-addon": "",
+    "error-unpack-addon": "",
+    "error-backup-folders": "",
+    "error-update-ajour": "",
+    "error-remove-cache": "",
+    "error-list-accounts": "",
+    "error-parse-weakauras": "",
+    "error-update-weakauras": "",
+    "error-update-ajour-permission": "",
     "categories": ""
 }

@@ -5,7 +5,7 @@ use {
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
         SelfUpdateStatus, SortDirection, State,
     },
-    crate::localization::LANG,
+    crate::localization::{localized_string, LANG},
     crate::{log_error, Result},
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
@@ -384,7 +384,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
             error @ Err(_) => {
-                let error = error.context("Failed to fetch changelog").unwrap_err();
+                // let error = error.context("Failed to fetch changelog").unwrap_err();
+                let error = error
+                    .context(localized_string("error-fetch-changelog"))
+                    .unwrap_err();
                 log_error(&error);
                 ajour.error = Some(error);
             }
@@ -530,7 +533,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // if our selected flavor returns (either ok or error) - we change to idle.
             ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
-            match result.context("Failed to parse addons") {
+            match result.context(localized_string("error-parse-addons")) {
                 Ok(addons) => {
                     log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
 
@@ -608,7 +611,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let mut addon = None;
 
-            match result.context("Failed to download addon") {
+            match result.context(localized_string("error-download-addon")) {
                 Ok(_) => match reason {
                     DownloadReason::Update => {
                         if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
@@ -691,7 +694,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let mut addon = None;
             let mut folders = None;
 
-            match result.context("Failed to unpack addon") {
+            match result.context(localized_string("error-unpack-addon")) {
                 Ok(_folders) => match reason {
                     DownloadReason::Update => {
                         if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
@@ -1220,7 +1223,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.backup_state.last_backup = Some(as_of);
         }
         Message::BackupFinished(error @ Err(_)) => {
-            let error = error.context("Failed to backup folders").unwrap_err();
+            let error = error
+                .context(localized_string("error-backup-folders"))
+                .unwrap_err();
 
             log_error(&error);
             ajour.error = Some(error);
@@ -1642,7 +1647,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::AjourUpdateDownloaded(result) => {
             log::debug!("Message::AjourUpdateDownloaded");
 
-            match result.context("Failed to update Ajour") {
+            match result.context(localized_string("error-update-ajour")) {
                 Ok((relaunch_path, cleanup_path)) => {
                     // Remove first arg, which is path to binary. We don't use this first
                     // arg as binary path because it's not reliable, per the docs.
@@ -1664,7 +1669,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         .arg("--self-update-temp")
                         .arg(&cleanup_path)
                         .spawn()
-                        .context("Failed to update Ajour")
+                        .context(localized_string("error-update-ajour"))
                     {
                         Ok(_) => std::process::exit(0),
                         Err(error) => {
@@ -1674,7 +1679,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     }
                 }
-                Err(error) => {
+                Err(mut error) => {
+                    // Assign special error message when updating failed due to
+                    // permissions issues
+                    for cause in error.chain() {
+                        if let Some(io_error) = cause.downcast_ref::<std::io::Error>() {
+                            if io_error.kind() == std::io::ErrorKind::PermissionDenied {
+                                error = error
+                                    .context(localized_string("error-update-ajour-permission"));
+                                break;
+                            }
+                        }
+                    }
+
                     log_error(&error);
                     ajour.error = Some(error);
                     ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
@@ -1685,7 +1702,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Message::AddonCacheUpdated({})", entry.title);
         }
         Message::AddonCacheEntryRemoved(maybe_entry) => {
-            match maybe_entry.context("Failed to remove cache entry") {
+            match maybe_entry.context(localized_string("error-remove-cache")) {
                 Ok(Some(entry)) => log::debug!("Message::AddonCacheEntryRemoved({})", entry.title),
                 Ok(None) => {}
                 Err(e) => {
@@ -1870,7 +1887,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
             error @ Err(_) => {
-                let error = error.context("Failed to get list of Accounts").unwrap_err();
+                let error = error
+                    .context(localized_string("error-list-accounts"))
+                    .unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -1929,7 +1948,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
             }
             error @ Err(_) => {
-                let error = error.context("Failed to parse WeakAuras").unwrap_err();
+                let error = error
+                    .context(localized_string("error-parse-weakauras"))
+                    .unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -1954,7 +1975,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 state.is_updating = false;
             }
             error @ Err(_) => {
-                let error = error.context("Failed to update WeakAuras").unwrap_err();
+                let error = error
+                    .context(localized_string("error-update-weakauras"))
+                    .unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
