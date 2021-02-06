@@ -16,6 +16,7 @@ and `Removed`.
 
 ### Added
 
+- Townlong Yak addons has been added to the Catalog.
 - Optional 'Categories' column for Catalog.
 - Optional 'Summary' column for My Addons.
 - New languages added to Ajour:
