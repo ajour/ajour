@@ -757,15 +757,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 addon.state = AddonState::Fingerprint;
 
-                let mut version = None;
+                // Set version & file id of installed addon to that of newly unpacked package.
                 if let Some(package) = addon.relevant_release_package(global_release_channel) {
-                    version = Some(package.version);
-                }
-                if let Some(version) = version {
-                    addon.set_version(version);
+                    addon.set_version(package.version);
+
+                    if let Some(file_id) = package.file_id {
+                        addon.set_file_id(file_id);
+                    }
                 }
 
-                // If we are updating / installing a Tukui / WowI
+                // If we are updating / installing a Tukui / WowI / Townlong / Git
                 // addon, we want to update the cache. If we are installing a Curse
                 // addon, we want to make sure cache entry exists for those folders
                 if let Some(addon_cache) = &ajour.addon_cache {
@@ -781,6 +782,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             // Update the entry for this cached addon
                             Some(RepositoryKind::Tukui)
                             | Some(RepositoryKind::WowI)
+                            | Some(RepositoryKind::TownlongYak)
                             | Some(RepositoryKind::Git(_)) => {
                                 commands.push(Command::perform(
                                     update_addon_cache(addon_cache.clone(), entry, flavor),
@@ -2131,6 +2133,7 @@ async fn perform_fetch_latest_addon(
                     catalog::Source::Curse => RepositoryKind::Curse,
                     catalog::Source::Tukui => RepositoryKind::Tukui,
                     catalog::Source::WowI => RepositoryKind::WowI,
+                    catalog::Source::TownlongYak => RepositoryKind::TownlongYak,
                 };
 
                 RepositoryPackage::from_repo_id(flavor, kind, id)?

@@ -11,14 +11,15 @@ use std::collections::HashMap;
 mod backend;
 use backend::Backend;
 
-pub use backend::{curse, tukui, wowi};
-use backend::{Curse, Github, Gitlab, Tukui, WowI};
+pub use backend::{curse, townlongyak, tukui, wowi};
+use backend::{Curse, Github, Gitlab, TownlongYak, Tukui, WowI};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]
 pub enum RepositoryKind {
     Curse,
     Tukui,
     WowI,
+    TownlongYak,
     Git(GitKind),
 }
 
@@ -31,6 +32,7 @@ impl std::fmt::Display for RepositoryKind {
                 RepositoryKind::WowI => "WoWInterface",
                 RepositoryKind::Tukui => "Tukui",
                 RepositoryKind::Curse => "CurseForge",
+                RepositoryKind::TownlongYak => "TownlongYak",
                 RepositoryKind::Git(git) => match git {
                     GitKind::Github => "GitHub",
                     GitKind::Gitlab => "GitLab",
@@ -121,6 +123,10 @@ impl RepositoryPackage {
                 flavor,
             }),
             RepositoryKind::Tukui => Box::new(Tukui {
+                id: id.clone(),
+                flavor,
+            }),
+            RepositoryKind::TownlongYak => Box::new(TownlongYak {
                 id: id.clone(),
                 flavor,
             }),

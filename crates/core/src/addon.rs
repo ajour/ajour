@@ -219,7 +219,8 @@ impl Addon {
                         RepositoryKind::WowI => {
                             self.repository_id() == f.repository_identifiers.wowi.as_deref()
                         }
-                        // For git sources, prioritize the folder that has a version in it
+                        // For git & townlong sources, prioritize the folder that has a version in it
+                        RepositoryKind::TownlongYak => f.version.is_some(),
                         RepositoryKind::Git(_) => f.version.is_some(),
                     }
                 } else {
@@ -271,6 +272,13 @@ impl Addon {
     pub fn set_version(&mut self, version: String) {
         if let Some(metadata) = self.repository.as_mut().map(|r| &mut r.metadata) {
             metadata.version = Some(version);
+        }
+    }
+
+    /// Sets the file id of the addon
+    pub fn set_file_id(&mut self, file_id: i64) {
+        if let Some(metadata) = self.repository.as_mut().map(|r| &mut r.metadata) {
+            metadata.file_id = Some(file_id);
         }
     }
 
@@ -410,6 +418,17 @@ impl Addon {
             self.primary_addon_folder()
                 .map(|f| f.repository_identifiers.wowi.as_deref())
                 .flatten()
+        }
+    }
+
+    /// Returns the hub id of the addon, if applicable.
+    pub fn hub_id(&self) -> Option<i32> {
+        if self.repository_kind() == Some(RepositoryKind::TownlongYak) {
+            self.repository()
+                .map(|r| r.id.parse::<i32>().ok())
+                .flatten()
+        } else {
+            None
         }
     }
 

@@ -851,9 +851,14 @@ impl Application for Ajour {
 
                         // TODO (tarkah): We should make this prettier with new sources coming in.
                         let installed_for_flavor = addons.iter().any(|a| {
-                            a.curse_id() == Some(addon.addon.id)
-                                || a.tukui_id() == Some(&addon.addon.id.to_string())
-                                || a.wowi_id() == Some(&addon.addon.id.to_string())
+                            (a.curse_id() == Some(addon.addon.id)
+                                && addon.addon.source == catalog::Source::Curse)
+                                || (a.tukui_id() == Some(&addon.addon.id.to_string())
+                                    && addon.addon.source == catalog::Source::Tukui)
+                                || (a.wowi_id() == Some(&addon.addon.id.to_string())
+                                    && addon.addon.source == catalog::Source::WowI)
+                                || (a.hub_id() == Some(addon.addon.id)
+                                    && addon.addon.source == catalog::Source::TownlongYak)
                         });
 
                         let install_addon = install_addons.iter().find(|a| {
@@ -1827,6 +1832,7 @@ impl CatalogSource {
             CatalogSource::Choice(catalog::Source::Curse),
             CatalogSource::Choice(catalog::Source::Tukui),
             CatalogSource::Choice(catalog::Source::WowI),
+            CatalogSource::Choice(catalog::Source::TownlongYak),
         ]
     }
 }
@@ -1838,6 +1844,7 @@ impl std::fmt::Display for CatalogSource {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
                 catalog::Source::WowI => "WowInterface",
+                catalog::Source::TownlongYak => "TownlongYak",
             },
         };
         write!(f, "{}", s)
