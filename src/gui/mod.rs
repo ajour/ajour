@@ -1844,7 +1844,7 @@ impl std::fmt::Display for CatalogSource {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
                 catalog::Source::WowI => "WowInterface",
-                catalog::Source::TownlongYak => "TownlongYak",
+                catalog::Source::TownlongYak => "Townlong-Yak",
             },
         };
         write!(f, "{}", s)
