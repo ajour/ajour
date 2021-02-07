@@ -6,11 +6,13 @@ use dyn_clone::{clone_trait_object, DynClone};
 
 pub mod curse;
 mod git;
+pub mod townlongyak;
 pub mod tukui;
 pub mod wowi;
 
 pub use curse::Curse;
 pub use git::{Github, Gitlab};
+pub use townlongyak::TownlongYak;
 pub use tukui::Tukui;
 pub use wowi::WowI;
 

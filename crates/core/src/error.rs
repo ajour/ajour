@@ -79,6 +79,8 @@ pub enum RepositoryError {
     CurseMissingPackage { id: String },
     #[error("No package found for WowI id {id}")]
     WowIMissingPackage { id: String },
+    #[error("No package found for Hub id {id}")]
+    HubMissingPackage { id: String },
     #[error("No remote package found for channel {channel}")]
     MissingPackageChannel { channel: ReleaseChannel },
     #[error("Git repo must be created with `from_source_url`")]
