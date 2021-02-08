@@ -67,6 +67,8 @@ pub enum Source {
     WowI,
     #[serde(alias = "townlong-yak")]
     TownlongYak,
+    #[serde(other)]
+    Other,
 }
 
 impl std::fmt::Display for Source {
@@ -76,6 +78,9 @@ impl std::fmt::Display for Source {
             Source::Tukui => "Tukui",
             Source::WowI => "WowInterface",
             Source::TownlongYak => "TownlongYak",
+
+            // This is a fallback option.
+            Source::Other => "Unknown",
         };
         write!(f, "{}", s)
     }
