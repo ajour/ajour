@@ -3,6 +3,7 @@ use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
+use std::fs::create_dir_all;
 use std::path::PathBuf;
 
 mod addons;
@@ -56,25 +57,15 @@ pub struct Config {
 }
 
 impl Config {
-    /// Returns a `Option<PathBuf>` to the falvor directory.
-    /// This will return `None` if no `wow_directory` is set in the config.
-    pub fn get_flavor_directory(&self, flavor: &Flavor) -> Option<PathBuf> {
-        match &self.wow.directory {
-            Some(dir) => {
-                let flavor_dir = dir.join(&flavor.folder_name());
-                Some(flavor_dir)
-            }
-            None => None,
-        }
-    }
-
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
         match &self.wow.directory {
-            Some(dir) => {
-                // The path to the directory containing the addons
-                let mut addon_dir = dir.join(&flavor.folder_name()).join("Interface/AddOns");
+            Some(wow_dir) => {
+                // The path to the flavor directory
+                let flavor_dir = wow_dir.join(&flavor.folder_name());
+                // The path to the addons directory
+                let mut addon_dir = flavor_dir.join("Interface/AddOns");
 
                 // If path doesn't exist, it could have been modified by the user.
                 // Check for a case-insensitive version and use that instead.
@@ -86,16 +77,20 @@ impl Config {
 
                     // For some reason the case insensitive pattern doesn't work
                     // unless we add an actual pattern symbol, hence the `?`.
-                    let pattern = format!(
-                        "{}/?nterface/?ddons",
-                        dir.join(&flavor.folder_name()).display()
-                    );
+                    let pattern = format!("{}/?nterface/?ddons", flavor_dir.display());
 
                     for entry in glob::glob_with(&pattern, options).unwrap() {
                         if let Ok(path) = entry {
                             addon_dir = path;
                         }
                     }
+                }
+
+                // If flavor dir exists but not addon dir we try to create it.
+                // This state can happen if you do a fresh install of WoW and
+                // launch Ajour before you launch WoW.
+                if flavor_dir.exists() && !addon_dir.exists() {
+                    let _ = create_dir_all(&addon_dir);
                 }
 
                 Some(addon_dir)
