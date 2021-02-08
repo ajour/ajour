@@ -32,7 +32,7 @@ and `Removed`.
 
 - Multiple error messages are now correctly localized.
 - Corrected error in flavor detection if Ajour was launched before WoW had ever
-  been launched. 
+  been launched.
 
 ## [0.7.0] - 2021-01-26
 
