@@ -56,6 +56,18 @@ pub struct Config {
 }
 
 impl Config {
+    /// Returns a `Option<PathBuf>` to the falvor directory.
+    /// This will return `None` if no `wow_directory` is set in the config.
+    pub fn get_flavor_directory(&self, flavor: &Flavor) -> Option<PathBuf> {
+        match &self.wow.directory {
+            Some(dir) => {
+                let flavor_dir = dir.join(&flavor.folder_name());
+                Some(flavor_dir)
+            }
+            None => None,
+        }
+    }
+
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {

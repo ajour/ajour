@@ -656,6 +656,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
 
             if let Some(addon) = addon {
+                // TODO this should be changed
                 let from_directory = ajour
                     .config
                     .get_download_directory_for_flavor(flavor)
