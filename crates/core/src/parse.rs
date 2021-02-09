@@ -8,6 +8,7 @@ use crate::{
     repository::{
         curse, townlongyak, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage,
     },
+    utility::format_interface_into_game_version,
 };
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
@@ -1258,19 +1259,6 @@ fn split_dependencies_into_vec(value: &str) -> Vec<String> {
         .collect()
 }
 
-fn format_interface_into_game_version(interface: &str) -> String {
-    if interface.len() == 5 {
-        let major = interface[..1].parse::<u8>();
-        let minor = interface[1..3].parse::<u8>();
-        let patch = interface[3..5].parse::<u8>();
-        if let (Ok(major), Ok(minor), Ok(patch)) = (major, minor, patch) {
-            return format!("{}.{}.{}", major, minor, patch);
-        }
-    }
-
-    interface.to_owned()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1309,17 +1297,5 @@ mod tests {
 
         let title = RE_TOC_TITLE.replace_all("|cff1784d1ElvUI |cff83F3F7Absorb Tags", "$1");
         assert_eq!(title, "ElvUI Absorb Tags");
-    }
-
-    #[test]
-    fn test_interface() {
-        let interface = "90001";
-        assert_eq!("9.0.1", format_interface_into_game_version(interface));
-
-        let interface = "11305";
-        assert_eq!("1.13.5", format_interface_into_game_version(interface));
-
-        let interface = "100000";
-        assert_eq!("100000", format_interface_into_game_version(interface));
     }
 }

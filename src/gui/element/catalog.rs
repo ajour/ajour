@@ -5,7 +5,10 @@ use {
         InstallKind, InstallStatus, Interaction, Message, Mode, SortDirection,
     },
     crate::localization::{localized_string, localized_timeago_formatter},
-    ajour_core::{config::Config, theme::ColorPalette},
+    ajour_core::{
+        catalog::Source, config::Config, theme::ColorPalette,
+        utility::format_interface_into_game_version,
+    },
     ajour_widgets::{header, Header, TableRow},
     chrono::prelude::*,
     iced::{Align, Button, Container, Element, Length, Row, Space, Text},
@@ -276,7 +279,10 @@ pub fn data_row_container<'a, 'b>(
             .game_versions
             .iter()
             .find(|gv| gv.flavor == config.wow.flavor.base_flavor())
-            .map(|gv| gv.game_version.clone())
+            .map(|gv| match addon_data.source {
+                Source::TownlongYak => format_interface_into_game_version(&gv.game_version[..]),
+                _ => gv.game_version.clone(),
+            })
             .unwrap_or_else(|| "-".to_owned());
 
         let game_version_text = Text::new(game_version_text).size(DEFAULT_FONT_SIZE);
