@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.7.1] - 2021-02-13
+
 ### Added
 
 - Townlong Yak addons has been added to the Catalog.
