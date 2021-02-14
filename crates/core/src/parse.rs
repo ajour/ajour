@@ -1,11 +1,14 @@
 use crate::{
     addon::{Addon, AddonFolder, AddonState},
-    cache::{self, AddonCache, AddonCacheEntry, FingerprintCache},
+    cache::{self, AddonCache, AddonCacheEntry, ExternalReleaseId, FingerprintCache},
     config::Flavor,
     error::{CacheError, DownloadError, ParseError, RepositoryError},
     fs::PersistentData,
     murmur2::calculate_hash,
-    repository::{curse, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage},
+    repository::{
+        curse, townlongyak, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage,
+    },
+    utility::format_interface_into_game_version,
 };
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
@@ -433,6 +436,7 @@ async fn get_all_repo_packages(
     let mut curse_ids = vec![];
     let mut tukui_ids = vec![];
     let mut wowi_ids = vec![];
+    let mut townlong_ids = vec![];
     let mut git_urls = vec![];
 
     let cached_folder_names: Vec<_> = cache_entries
@@ -492,6 +496,17 @@ async fn get_all_repo_packages(
                 .filter_map(|f| f.repository_identifiers.wowi.clone()),
         );
         wowi_ids.dedup();
+    }
+
+    // Get all possible townlong_ids (hub) ids
+    {
+        townlong_ids.extend(
+            cache_entries
+                .iter()
+                .filter(|e| e.repository == RepositoryKind::TownlongYak)
+                .map(|e| e.repository_id.clone()),
+        );
+        townlong_ids.dedup();
     }
 
     // Get all possible git urls
@@ -624,6 +639,34 @@ async fn get_all_repo_packages(
         wowi_repo_packages.len()
     );
 
+    // Get all townlong repo packages
+    let townlong_repo_packages = if !townlong_ids.is_empty() {
+        let townlong_packages = townlongyak::fetch_remote_packages(flavor, &townlong_ids).await?;
+
+        townlong_packages
+            .into_iter()
+            .map(|package| {
+                (
+                    package.id.to_string(),
+                    townlongyak::metadata_from_townlong_package(flavor, package),
+                )
+            })
+            .filter_map(|(id, metadata)| {
+                RepositoryPackage::from_repo_id(flavor, RepositoryKind::TownlongYak, id)
+                    .ok()
+                    .map(|r| r.with_metadata(metadata))
+            })
+            .collect::<Vec<_>>()
+    } else {
+        vec![]
+    };
+
+    log::debug!(
+        "{} - {} townlong packages fetched",
+        flavor,
+        townlong_repo_packages.len()
+    );
+
     // Get all git repo packages
     let git_repo_packages = if !git_urls.is_empty() {
         let fetch_tasks = git_urls
@@ -670,6 +713,7 @@ async fn get_all_repo_packages(
         &curse_repo_packages[..],
         &tukui_repo_packages[..],
         &wowi_repo_packages[..],
+        &townlong_repo_packages[..],
         &git_repo_packages[..],
     ]
     .concat())
@@ -688,7 +732,20 @@ fn build_addons(
             let repo_idx = repo_packages
                 .iter()
                 .position(|r| r.id == e.repository_id && r.kind == e.repository)?;
-            let repo_package = repo_packages.remove(repo_idx);
+
+            let mut repo_package = repo_packages.remove(repo_idx);
+
+            // Set the file id / version from the cache entry. This is needed to properly
+            // validate the installed version against the remote version
+            match &e.external_release_id {
+                Some(ExternalReleaseId::FileId(file_id)) => {
+                    repo_package.metadata.file_id = Some(*file_id)
+                }
+                Some(ExternalReleaseId::Version(version)) => {
+                    repo_package.metadata.version = Some(version.clone())
+                }
+                None => {}
+            }
 
             // Get and remove all matching addon folders
             let folder_idxs: Vec<_> = addon_folders
@@ -829,6 +886,15 @@ fn build_addons(
         concatenated_addons
             .iter()
             .filter(|a| a.repository_kind() == Some(RepositoryKind::WowI))
+            .count()
+    );
+
+    log::debug!(
+        "{} - {} addons built from townlong-yak packages",
+        flavor,
+        concatenated_addons
+            .iter()
+            .filter(|a| a.repository_kind() == Some(RepositoryKind::TownlongYak))
             .count()
     );
 
@@ -1193,19 +1259,6 @@ fn split_dependencies_into_vec(value: &str) -> Vec<String> {
         .collect()
 }
 
-fn format_interface_into_game_version(interface: &str) -> String {
-    if interface.len() == 5 {
-        let major = interface[..1].parse::<u8>();
-        let minor = interface[1..3].parse::<u8>();
-        let patch = interface[3..5].parse::<u8>();
-        if let (Ok(major), Ok(minor), Ok(patch)) = (major, minor, patch) {
-            return format!("{}.{}.{}", major, minor, patch);
-        }
-    }
-
-    interface.to_owned()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1244,17 +1297,5 @@ mod tests {
 
         let title = RE_TOC_TITLE.replace_all("|cff1784d1ElvUI |cff83F3F7Absorb Tags", "$1");
         assert_eq!(title, "ElvUI Absorb Tags");
-    }
-
-    #[test]
-    fn test_interface() {
-        let interface = "90001";
-        assert_eq!("9.0.1", format_interface_into_game_version(interface));
-
-        let interface = "11305";
-        assert_eq!("1.13.5", format_interface_into_game_version(interface));
-
-        let interface = "100000";
-        assert_eq!("100000", format_interface_into_game_version(interface));
     }
 }

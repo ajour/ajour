@@ -102,5 +102,17 @@
     "weakaura-update-available": "Opdatering tilgængelig",
     "weakaura-update-queued": "Opdatering klargjort",
     "settings-general": "Generelt",
-    "catalog-results": "Resultater: {number}"
+    "catalog-results": "Resultater: {number}",
+    "error-fetch-changelog": "Fejl under indlæsning af ændringer",
+    "error-parse-addons": "Fejl under indlæsning af addons",
+    "error-download-addon": "Fejl under download af addon",
+    "error-unpack-addon": "Fejl under udpakning af addon",
+    "error-backup-folders": "Fejl under backup af mapper",
+    "error-update-ajour": "Fejl under opdatering af Ajour",
+    "error-remove-cache": "Kunne ikke fjerne indhold fra mellemlager",
+    "error-list-accounts": "Kunne ikke indlæse liste af konti",
+    "error-parse-weakauras": "Fejl under indlæsning af WeakAuras",
+    "error-update-weakauras": "Fejl under opdatering af WeakAuras",
+    "categories": "Kategorier",
+    "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour"
 }

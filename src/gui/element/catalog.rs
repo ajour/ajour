@@ -5,7 +5,10 @@ use {
         InstallKind, InstallStatus, Interaction, Message, Mode, SortDirection,
     },
     crate::localization::{localized_string, localized_timeago_formatter},
-    ajour_core::{config::Config, theme::ColorPalette},
+    ajour_core::{
+        catalog::Source, config::Config, theme::ColorPalette,
+        utility::format_interface_into_game_version,
+    },
     ajour_widgets::{header, Header, TableRow},
     chrono::prelude::*,
     iced::{Align, Button, Container, Element, Length, Row, Space, Text},
@@ -276,7 +279,10 @@ pub fn data_row_container<'a, 'b>(
             .game_versions
             .iter()
             .find(|gv| gv.flavor == config.wow.flavor.base_flavor())
-            .map(|gv| gv.game_version.clone())
+            .map(|gv| match addon_data.source {
+                Source::TownlongYak => format_interface_into_game_version(&gv.game_version[..]),
+                _ => gv.game_version.clone(),
+            })
             .unwrap_or_else(|| "-".to_owned());
 
         let game_version_text = Text::new(game_version_text).size(DEFAULT_FONT_SIZE);
@@ -346,6 +352,29 @@ pub fn data_row_container<'a, 'b>(
             .style(style::HoverableForegroundContainer(color_palette));
 
         row_containers.push((idx, num_downloads_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
+            if *key == CatalogColumnKey::Categories && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let categories = Text::new(&addon_data.categories.join(", ")).size(DEFAULT_FONT_SIZE);
+        let categories_container = Container::new(categories)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .padding(5)
+            .style(style::HoverableForegroundContainer(color_palette));
+
+        row_containers.push((idx, categories_container));
     }
 
     let left_spacer = Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0));

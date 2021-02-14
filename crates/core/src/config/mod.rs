@@ -3,6 +3,7 @@ use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
+use std::fs::create_dir_all;
 use std::path::PathBuf;
 
 mod addons;
@@ -60,9 +61,11 @@ impl Config {
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
         match &self.wow.directory {
-            Some(dir) => {
-                // The path to the directory containing the addons
-                let mut addon_dir = dir.join(&flavor.folder_name()).join("Interface/AddOns");
+            Some(wow_dir) => {
+                // The path to the flavor directory
+                let flavor_dir = wow_dir.join(&flavor.folder_name());
+                // The path to the addons directory
+                let mut addon_dir = flavor_dir.join("Interface/AddOns");
 
                 // If path doesn't exist, it could have been modified by the user.
                 // Check for a case-insensitive version and use that instead.
@@ -74,16 +77,20 @@ impl Config {
 
                     // For some reason the case insensitive pattern doesn't work
                     // unless we add an actual pattern symbol, hence the `?`.
-                    let pattern = format!(
-                        "{}/?nterface/?ddons",
-                        dir.join(&flavor.folder_name()).display()
-                    );
+                    let pattern = format!("{}/?nterface/?ddons", flavor_dir.display());
 
                     for entry in glob::glob_with(&pattern, options).unwrap() {
                         if let Ok(path) = entry {
                             addon_dir = path;
                         }
                     }
+                }
+
+                // If flavor dir exists but not addon dir we try to create it.
+                // This state can happen if you do a fresh install of WoW and
+                // launch Ajour before you launch WoW.
+                if flavor_dir.exists() && !addon_dir.exists() {
+                    let _ = create_dir_all(&addon_dir);
                 }
 
                 Some(addon_dir)
@@ -225,6 +232,7 @@ pub enum Language {
     Swedish,
     Spanish,
     Turkish,
+    Ukrainian,
 }
 
 impl std::fmt::Display for Language {
@@ -234,38 +242,41 @@ impl std::fmt::Display for Language {
             "{}",
             match self {
                 Language::Czech => "Čeština",
-                Language::English => "English",
                 Language::Danish => "Dansk",
-                Language::German => "Deutsch",
-                Language::Swedish => "Svenska",
+                Language::English => "English",
                 Language::French => "Français",
-                Language::Russian => "Pусский",
-                Language::Spanish => "Español",
+                Language::German => "Deutsch",
                 Language::Hungarian => "Magyar",
-                Language::Norwegian => "Bokmål",
-                Language::Slovak => "Slovenčina",
-                Language::Turkish => "Türkçe",
+                Language::Norwegian => "Norsk Bokmål",
                 Language::Portuguese => "Português",
+                Language::Russian => "Pусский",
+                Language::Slovak => "Slovenčina",
+                Language::Spanish => "Español",
+                Language::Swedish => "Svenska",
+                Language::Turkish => "Türkçe",
+                Language::Ukrainian => "Yкраїнська",
             }
         )
     }
 }
 
 impl Language {
-    pub const ALL: [Language; 13] = [
+    // Alphabetically sorted based on their local name (@see `impl Display`).
+    pub const ALL: [Language; 14] = [
         Language::Czech,
         Language::Danish,
-        Language::English,
-        Language::French,
         Language::German,
-        Language::Russian,
+        Language::English,
         Language::Spanish,
-        Language::Swedish,
+        Language::French,
         Language::Hungarian,
         Language::Norwegian,
-        Language::Slovak,
-        Language::Turkish,
         Language::Portuguese,
+        Language::Russian,
+        Language::Slovak,
+        Language::Swedish,
+        Language::Turkish,
+        Language::Ukrainian,
     ];
 
     pub const fn language_code(self) -> &'static str {
@@ -283,6 +294,7 @@ impl Language {
             Language::Slovak => "sk_SK",
             Language::Turkish => "tr_TR",
             Language::Portuguese => "pt_PT",
+            Language::Ukrainian => "uk_UA",
         }
     }
 }

@@ -102,5 +102,17 @@
     "weakaura-update-available": "Mise à jour disponible",
     "weakaura-update-queued": "Mise à jour en attente",
     "settings-general": "Paramètres généraux",
-    "catalog-results": "Résultats: {number}"
+    "catalog-results": "Résultats: {number}",
+    "error-fetch-changelog": "Impossible de récupérer l'historique",
+    "error-parse-addons": "Impossible de récupérer les addons",
+    "error-download-addon": "Impossible de télécharger l'addon",
+    "error-unpack-addon": "Impossible de décompresser l'addon",
+    "error-backup-folders": "Impossible de sauvegarder",
+    "error-update-ajour": "Impossible de mettre à jour Ajour",
+    "error-remove-cache": "Impossible de supprimer le cache",
+    "error-list-accounts": "Impossible de récupérer la liste des comptes",
+    "error-parse-weakauras": "Impossible de récupérer les WeakAuras",
+    "error-update-weakauras": "Impossible de mettre à jour les WeakAuras",
+    "categories": "Catégories",
+    "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour"
 }

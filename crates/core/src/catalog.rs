@@ -7,7 +7,7 @@ use chrono::prelude::*;
 use isahc::ResponseExt;
 use serde::{Deserialize, Serialize};
 
-const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog.json";
+const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog-2.0.json";
 
 type Etag = Option<String>;
 
@@ -65,6 +65,10 @@ pub enum Source {
     Tukui,
     #[serde(alias = "wowi")]
     WowI,
+    #[serde(alias = "townlong-yak")]
+    TownlongYak,
+    #[serde(other)]
+    Other,
 }
 
 impl std::fmt::Display for Source {
@@ -73,6 +77,10 @@ impl std::fmt::Display for Source {
             Source::Curse => "Curse",
             Source::Tukui => "Tukui",
             Source::WowI => "WowInterface",
+            Source::TownlongYak => "TownlongYak",
+
+            // This is a fallback option.
+            Source::Other => "Unknown",
         };
         write!(f, "{}", s)
     }

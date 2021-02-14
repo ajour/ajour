@@ -5,7 +5,7 @@ use {
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
         SelfUpdateStatus, SortDirection, State,
     },
-    crate::localization::LANG,
+    crate::localization::{localized_string, LANG},
     crate::{log_error, Result},
     ajour_core::{
         addon::{Addon, AddonFolder, AddonState},
@@ -384,7 +384,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
             error @ Err(_) => {
-                let error = error.context("Failed to fetch changelog").unwrap_err();
+                // let error = error.context("Failed to fetch changelog").unwrap_err();
+                let error = error
+                    .context(localized_string("error-fetch-changelog"))
+                    .unwrap_err();
                 log_error(&error);
                 ajour.error = Some(error);
             }
@@ -530,7 +533,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // if our selected flavor returns (either ok or error) - we change to idle.
             ajour.state.insert(Mode::MyAddons(flavor), State::Ready);
 
-            match result.context("Failed to parse addons") {
+            match result.context(localized_string("error-parse-addons")) {
                 Ok(addons) => {
                     log::debug!("Message::ParsedAddons({}, {} addons)", flavor, addons.len(),);
 
@@ -608,7 +611,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let mut addon = None;
 
-            match result.context("Failed to download addon") {
+            match result.context(localized_string("error-download-addon")) {
                 Ok(_) => match reason {
                     DownloadReason::Update => {
                         if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
@@ -691,7 +694,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let mut addon = None;
             let mut folders = None;
 
-            match result.context("Failed to unpack addon") {
+            match result.context(localized_string("error-unpack-addon")) {
                 Ok(_folders) => match reason {
                     DownloadReason::Update => {
                         if let Some(_addon) = addons.iter_mut().find(|a| a.primary_folder_id == id)
@@ -754,15 +757,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 addon.state = AddonState::Fingerprint;
 
-                let mut version = None;
+                // Set version & file id of installed addon to that of newly unpacked package.
                 if let Some(package) = addon.relevant_release_package(global_release_channel) {
-                    version = Some(package.version);
-                }
-                if let Some(version) = version {
-                    addon.set_version(version);
+                    addon.set_version(package.version);
+
+                    if let Some(file_id) = package.file_id {
+                        addon.set_file_id(file_id);
+                    }
                 }
 
-                // If we are updating / installing a Tukui / WowI
+                // If we are updating / installing a Tukui / WowI / Townlong / Git
                 // addon, we want to update the cache. If we are installing a Curse
                 // addon, we want to make sure cache entry exists for those folders
                 if let Some(addon_cache) = &ajour.addon_cache {
@@ -778,6 +782,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             // Update the entry for this cached addon
                             Some(RepositoryKind::Tukui)
                             | Some(RepositoryKind::WowI)
+                            | Some(RepositoryKind::TownlongYak)
                             | Some(RepositoryKind::Git(_)) => {
                                 commands.push(Command::perform(
                                     update_addon_cache(addon_cache.clone(), entry, flavor),
@@ -1220,7 +1225,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.backup_state.last_backup = Some(as_of);
         }
         Message::BackupFinished(error @ Err(_)) => {
-            let error = error.context("Failed to backup folders").unwrap_err();
+            let error = error
+                .context(localized_string("error-backup-folders"))
+                .unwrap_err();
 
             log_error(&error);
             ajour.error = Some(error);
@@ -1642,7 +1649,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::AjourUpdateDownloaded(result) => {
             log::debug!("Message::AjourUpdateDownloaded");
 
-            match result.context("Failed to update Ajour") {
+            match result.context(localized_string("error-update-ajour")) {
                 Ok((relaunch_path, cleanup_path)) => {
                     // Remove first arg, which is path to binary. We don't use this first
                     // arg as binary path because it's not reliable, per the docs.
@@ -1664,7 +1671,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         .arg("--self-update-temp")
                         .arg(&cleanup_path)
                         .spawn()
-                        .context("Failed to update Ajour")
+                        .context(localized_string("error-update-ajour"))
                     {
                         Ok(_) => std::process::exit(0),
                         Err(error) => {
@@ -1674,7 +1681,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     }
                 }
-                Err(error) => {
+                Err(mut error) => {
+                    // Assign special error message when updating failed due to
+                    // permissions issues
+                    for cause in error.chain() {
+                        if let Some(io_error) = cause.downcast_ref::<std::io::Error>() {
+                            if io_error.kind() == std::io::ErrorKind::PermissionDenied {
+                                error = error
+                                    .context(localized_string("error-update-ajour-permission"));
+                                break;
+                            }
+                        }
+                    }
+
                     log_error(&error);
                     ajour.error = Some(error);
                     ajour.self_update_state.status = Some(SelfUpdateStatus::Failed);
@@ -1685,7 +1704,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Message::AddonCacheUpdated({})", entry.title);
         }
         Message::AddonCacheEntryRemoved(maybe_entry) => {
-            match maybe_entry.context("Failed to remove cache entry") {
+            match maybe_entry.context(localized_string("error-remove-cache")) {
                 Ok(Some(entry)) => log::debug!("Message::AddonCacheEntryRemoved({})", entry.title),
                 Ok(None) => {}
                 Err(e) => {
@@ -1870,7 +1889,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
             error @ Err(_) => {
-                let error = error.context("Failed to get list of Accounts").unwrap_err();
+                let error = error
+                    .context(localized_string("error-list-accounts"))
+                    .unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -1929,7 +1950,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
             }
             error @ Err(_) => {
-                let error = error.context("Failed to parse WeakAuras").unwrap_err();
+                let error = error
+                    .context(localized_string("error-parse-weakauras"))
+                    .unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -1954,7 +1977,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 state.is_updating = false;
             }
             error @ Err(_) => {
-                let error = error.context("Failed to update WeakAuras").unwrap_err();
+                let error = error
+                    .context(localized_string("error-update-weakauras"))
+                    .unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -2108,6 +2133,8 @@ async fn perform_fetch_latest_addon(
                     catalog::Source::Curse => RepositoryKind::Curse,
                     catalog::Source::Tukui => RepositoryKind::Tukui,
                     catalog::Source::WowI => RepositoryKind::WowI,
+                    catalog::Source::TownlongYak => RepositoryKind::TownlongYak,
+                    catalog::Source::Other => panic!("Unsupported catalog source"),
                 };
 
                 RepositoryPackage::from_repo_id(flavor, kind, id)?
@@ -2299,6 +2326,12 @@ fn sort_addons(
         (ColumnKey::FuzzyScore, SortDirection::Desc) => {
             addons.sort_by(|a, b| a.fuzzy_score.cmp(&b.fuzzy_score).reverse())
         }
+        (ColumnKey::Summary, SortDirection::Asc) => {
+            addons.sort_by(|a, b| a.notes().cmp(&b.notes()))
+        }
+        (ColumnKey::Summary, SortDirection::Desc) => {
+            addons.sort_by(|a, b| a.notes().cmp(&b.notes()).reverse())
+        }
     }
 }
 
@@ -2360,6 +2393,23 @@ fn sort_catalog_addons(
             let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
             gv_a.cmp(&gv_b).reverse()
         }),
+        (CatalogColumnKey::Categories, SortDirection::Desc) => {
+            addons.sort_by(|a, b| {
+                a.addon
+                    .categories
+                    .join(", ")
+                    .cmp(&b.addon.categories.join(", "))
+                    .reverse()
+            });
+        }
+        (CatalogColumnKey::Categories, SortDirection::Asc) => {
+            addons.sort_by(|a, b| {
+                a.addon
+                    .categories
+                    .join(", ")
+                    .cmp(&b.addon.categories.join(", "))
+            });
+        }
     }
 }
 
@@ -2451,20 +2501,26 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .iter()
             .filter(|a| !a.game_versions.is_empty())
             .filter_map(|a| {
-                let title_and_summary = format!("{} {}", a.name, a.summary);
-
                 if let Some(query) = &query {
-                    if let Some(score) = fuzzy_matcher.fuzzy_match(&title_and_summary, &query) {
-                        Some((a, score))
+                    let title_score = fuzzy_matcher
+                        .fuzzy_match(&a.name, &query)
+                        .unwrap_or_default();
+                    let description_score = fuzzy_matcher
+                        .fuzzy_match(&a.summary, &query)
+                        .unwrap_or_default()
+                        / 2;
+
+                    let max_score = title_score.max(description_score);
+
+                    if max_score > 0 {
+                        Some((a, max_score))
                     } else {
                         None
                     }
                 } else {
-                    Some((a, 1))
+                    Some((a, 0))
                 }
             })
-            // Only return positive scores
-            .filter(|(_, s)| *s > 0)
             .filter(|(a, _)| {
                 a.game_versions
                     .iter()

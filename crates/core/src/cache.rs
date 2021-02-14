@@ -195,6 +195,7 @@ pub struct AddonCacheEntry {
     pub primary_folder_id: String,
     pub folder_names: Vec<String>,
     pub modified: DateTime<Utc>,
+    pub external_release_id: Option<ExternalReleaseId>,
 }
 
 impl TryFrom<&Addon> for AddonCacheEntry {
@@ -207,6 +208,15 @@ impl TryFrom<&Addon> for AddonCacheEntry {
             let mut folder_names: Vec<_> = addon.folders.iter().map(|a| a.id.clone()).collect();
             folder_names.sort();
 
+            let external_release_id = if repository == RepositoryKind::TownlongYak {
+                addon.file_id().map(ExternalReleaseId::FileId)
+            } else {
+                addon
+                    .version()
+                    .map(str::to_string)
+                    .map(ExternalReleaseId::Version)
+            };
+
             Ok(AddonCacheEntry {
                 title: addon.title().to_owned(),
                 repository,
@@ -214,6 +224,7 @@ impl TryFrom<&Addon> for AddonCacheEntry {
                 primary_folder_id: addon.primary_folder_id.clone(),
                 folder_names,
                 modified: Utc::now(),
+                external_release_id,
             })
         } else {
             Err(CacheError::AddonMissingRepo {
@@ -221,6 +232,12 @@ impl TryFrom<&Addon> for AddonCacheEntry {
             })
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum ExternalReleaseId {
+    FileId(i64),
+    Version(String),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -307,6 +324,7 @@ mod test {
                         primary_folder_id: folders.first().map(|f| f.id.clone()).unwrap(),
                         folder_names: folders.iter().map(|f| f.id.clone()).collect(),
                         modified: Utc::now(),
+                        external_release_id: None,
                     }
                 }));
 

@@ -102,5 +102,17 @@
     "weakaura-update-available": "Dostupná aktualizácia",
     "weakaura-update-queued": "Aktualizácia zaradená",
     "settings-general": "Všeobecné",
-    "catalog-results": "Výsledky: {number}"
+    "catalog-results": "Výsledky: {number}",
+    "error-fetch-changelog": "Nepodarilo sa načítať zoznam zmien",
+    "error-parse-addons": "Nepodarilo sa analyzovať addony",
+    "error-download-addon": "Nepodarilo sa stiahnuť addon",
+    "error-unpack-addon": "Nepodarilo sa rozbaliť addon",
+    "error-backup-folders": "Nepodarila sa záloha priečinkov",
+    "error-update-ajour": "Akualizácia Ajour sa nepodarila",
+    "error-remove-cache": "Nepodarilo sa zmazať cache",
+    "error-list-accounts": "Nepodarilo sa získať zoznam účtov",
+    "error-parse-weakauras": "Nepodarilo sa analyzovať WeakAury",
+    "error-update-weakauras": "Nepodarilo sa aktualizovať WeakAury",
+    "categories": "Kategórie",
+    "error-update-ajour-permission": "Problém s oprávneniami pri aktualizácii Ajour"
 }

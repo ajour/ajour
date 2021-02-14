@@ -15,6 +15,23 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+/// Takes a `&str` and formats it into a proper
+/// World of Warcraft release version.
+///
+/// Eg. 90001 would be 9.0.1.
+pub fn format_interface_into_game_version(interface: &str) -> String {
+    if interface.len() == 5 {
+        let major = interface[..1].parse::<u8>();
+        let minor = interface[1..3].parse::<u8>();
+        let patch = interface[3..5].parse::<u8>();
+        if let (Ok(major), Ok(minor), Ok(patch)) = (major, minor, patch) {
+            return format!("{}.{}.{}", major, minor, patch);
+        }
+    }
+
+    interface.to_owned()
+}
+
 /// Takes a `&str` and strips any non-digit.
 /// This is used to unify and compare addon versions:
 ///
@@ -323,5 +340,20 @@ mod tests {
             root_alternate_path.eq(&wow_path_resolution(Some(classic_alternate_path)).unwrap()),
             true
         );
+    }
+
+    #[test]
+    fn test_interface() {
+        let interface = "90001";
+        assert_eq!("9.0.1", format_interface_into_game_version(interface));
+
+        let interface = "11305";
+        assert_eq!("1.13.5", format_interface_into_game_version(interface));
+
+        let interface = "100000";
+        assert_eq!("100000", format_interface_into_game_version(interface));
+
+        let interface = "9.0.1";
+        assert_eq!("9.0.1", format_interface_into_game_version(interface));
     }
 }

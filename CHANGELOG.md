@@ -14,6 +14,28 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.7.1] - 2021-02-14
+
+### Added
+
+- Townlong Yak addons has been added to the Catalog.
+- Optional 'Categories' column for Catalog.
+- Optional 'Summary' column for My Addons.
+- New languages added to Ajour:
+  - 🇺🇦 Ukrainian (thanks Krapka and Orney)
+
+### Changed
+
+- Sorted language picker in Settings.
+- Tweaked catalog fuzzy search to weight title matches higher than description
+  matches.
+
+### Fixed
+
+- Multiple error messages are now correctly localized.
+- Corrected error in flavor detection if Ajour was launched before WoW had ever
+  been launched.
+
 ## [0.7.0] - 2021-01-26
 
 ### Added

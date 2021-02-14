@@ -102,5 +102,17 @@
     "weakaura-update-available": "Actualización disponible",
     "weakaura-update-queued": "Actualización en cola",
     "settings-general": "Ajustes globales",
-    "catalog-results": "Resultados: {number}"
+    "catalog-results": "Resultados: {number}",
+    "error-fetch-changelog": "Fallo al encontrar changelog",
+    "error-parse-addons": "Fallo al analizar Addon",
+    "error-download-addon": "Descarga de addon fallida",
+    "error-unpack-addon": "Fallo al desempaquetar addon",
+    "error-backup-folders": "Fallo al hacer una copia de los archivos",
+    "error-update-ajour": "Actualización de Ajour fallida",
+    "error-remove-cache": "Fallo al eliminar la entrada de caché",
+    "error-list-accounts": "Fallo al obtener lista de cuentas",
+    "error-parse-weakauras": "Fallo al analizar WeakAuras",
+    "error-update-weakauras": "Actualización de WeakAuras fallida",
+    "categories": "Categorías",
+    "error-update-ajour-permission": "Problema con permisos mientras se actualizaba Ajour"
 }
