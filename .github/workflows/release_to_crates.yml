@@ -1,0 +1,51 @@
+
+name: "Release to Crates"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    name: Create release
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: login
+      uses: actions-rs/cargo@v1
+      with:
+        command: login
+        args: ${{ secrets.CRATES_IO_TOKEN }}
+    - name: publish core
+      uses: actions-rs/cargo@v1
+      with:
+        command: publish
+        args: --manifest-path crates/core/Cargo.toml
+    - name: wait 5 seconds
+      uses: jakejarvis/wait-action@master
+      with:
+        time: '5s'
+    - name: publish widgets
+      uses: actions-rs/cargo@v1
+      with:
+        command: publish
+        args: --manifest-path crates/widgets/Cargo.toml --features wgpu 
+    - name: wait 5 seconds
+      uses: jakejarvis/wait-action@master
+      with:
+        time: '5s'
+    - name: publish weak_auras
+      uses: actions-rs/cargo@v1
+      with:
+        command: publish
+        args: --manifest-path crates/weak_auras/Cargo.toml
+    - name: wait 5 seconds
+      uses: jakejarvis/wait-action@master
+      with:
+        time: '5s'
+    - name: publish main
+      uses: actions-rs/cargo@v1
+      with:
+        command: publish
