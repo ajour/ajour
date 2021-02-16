@@ -18,18 +18,20 @@ jobs:
         with:
           command: login
           args: ${{ secrets.CRATES_IO_TOKEN }}
-      - name: publish core
+      - name: switch working dir
         working-directory: ./crates/core
-      - uses: actions-rs/cargo@v1
+      - name: publish core
+        uses: actions-rs/cargo@v1
         with:
           command: publish
       - name: wait 5 seconds
         uses: jakejarvis/wait-action@master
         with:
           time: '5s'
-      - name: publish widgets
+      - name: switch working dir
         working-directory: ./crates/widgets
-      - uses: actions-rs/cargo@v1
+      - name: publish widgets
+        uses: actions-rs/cargo@v1
         with:
           command: publish
           args: --features wgpu
@@ -37,9 +39,10 @@ jobs:
         uses: jakejarvis/wait-action@master
         with:
           time: '5s'
-      - name: publish weak_auras
+      - name: switch working dir
         working-directory: ./crates/weak_auras
-      - uses: actions-rs/cargo@v1
+      - name: publish weak_auras
+        uses: actions-rs/cargo@v1
         with:
           command: publish
       - name: wait 5 seconds
@@ -47,6 +50,6 @@ jobs:
         with:
           time: '5s'
       - name: publish main
-      - uses: actions-rs/cargo@v1
+        uses: actions-rs/cargo@v1
         with:
           command: publish
