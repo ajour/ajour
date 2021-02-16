@@ -18,33 +18,29 @@ jobs:
       with:
         command: login
         args: ${{ secrets.CRATES_IO_TOKEN }}
-    - name: switch working dir
-      working-directory: ./crates/core
     - name: publish core
       uses: actions-rs/cargo@v1
       with:
         command: publish
+        args: --manifest-path crates/core/Cargo.toml
     - name: wait 5 seconds
       uses: jakejarvis/wait-action@master
       with:
         time: '5s'
-    - name: switch working dir
-      working-directory: ./crates/widgets
     - name: publish widgets
       uses: actions-rs/cargo@v1
       with:
         command: publish
-        args: --features wgpu
+        args: --manifest-path crates/widgets/Cargo.toml --features wgpu 
     - name: wait 5 seconds
       uses: jakejarvis/wait-action@master
       with:
         time: '5s'
-    - name: switch working dir
-      working-directory: ./crates/weak_auras
     - name: publish weak_auras
       uses: actions-rs/cargo@v1
       with:
         command: publish
+        args: --manifest-path crates/weak_auras/Cargo.toml
     - name: wait 5 seconds
       uses: jakejarvis/wait-action@master
       with:
