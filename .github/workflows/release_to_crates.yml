@@ -23,16 +23,25 @@ jobs:
       with:
         command: publish
         args: --manifest-path crates/core/Cargo.toml
+    - name: wait
+      shell: bash
+      run: sleep 30
     - name: publish widgets
       uses: actions-rs/cargo@v1
       with:
         command: publish
-        args: --manifest-path crates/widgets/Cargo.toml --features wgpu 
+        args: --manifest-path crates/widgets/Cargo.toml --features wgpu
+    - name: wait
+      shell: bash
+      run: sleep 30
     - name: publish weak_auras
       uses: actions-rs/cargo@v1
       with:
         command: publish
         args: --manifest-path crates/weak_auras/Cargo.toml
+    - name: wait
+      shell: bash
+      run: sleep 30
     - name: publish main
       uses: actions-rs/cargo@v1
       with:
