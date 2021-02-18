@@ -211,6 +211,7 @@ async fn update_addon(
     // Update cache for addon
     if addon.repository_kind() == Some(RepositoryKind::Tukui)
         || addon.repository_kind() == Some(RepositoryKind::WowI)
+        || addon.repository_kind() == Some(RepositoryKind::TownlongYak)
         || matches!(addon.repository_kind(), Some(RepositoryKind::Git(_)))
     {
         if let Ok(entry) = AddonCacheEntry::try_from(&addon) {
