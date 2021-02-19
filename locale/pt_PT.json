@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alfa",
     "weakaura-update-available": "Atualização disponível",
-    "weakaura-update-queued": "Atualização em fila",
     "settings-general": "Configuração geral",
     "catalog-results": "Resultados: {number}",
     "error-fetch-changelog": "Falha em ir buscar o changelog",
