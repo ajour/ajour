@@ -2102,7 +2102,7 @@ impl std::fmt::Display for AuraStatus {
         let s = if let Some(key) = match self.0 {
             Idle => None,
             UpdateAvailable => Some("weakaura-update-available"),
-            UpdateQueued => Some("weakaura-update-queued"),
+            UpdateQueued => Some("completed"),
         } {
             localized_string(key)
         } else {
