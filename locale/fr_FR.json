@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Mise à jour disponible",
-    "weakaura-update-queued": "Mise à jour en attente",
     "settings-general": "Paramètres généraux",
     "catalog-results": "Résultats: {number}",
     "error-fetch-changelog": "Impossible de récupérer l'historique",
