@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Oppdatering tilgjengelig",
-    "weakaura-update-queued": "Oppdatering satt i kø",
     "settings-general": "Generelt",
     "catalog-results": "Resultater: {number}",
     "error-fetch-changelog": "Kunne ikke hente endringsloggen",
