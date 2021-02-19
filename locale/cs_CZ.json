@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Dostupná aktualizace",
-    "weakaura-update-queued": "Aktualizace zařazena",
     "settings-general": "Obecné",
     "catalog-results": "Výsledky: {number}",
     "error-fetch-changelog": "Načtení protokolu změn se nezdařilo",
