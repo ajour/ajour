@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Uppdatering tillgänglig",
-    "weakaura-update-queued": "Uppdateringar köade",
     "settings-general": "Allmänna inställningar",
     "catalog-results": "Resultat: {number}",
     "error-fetch-changelog": "Kan inte hämta nyheter",
