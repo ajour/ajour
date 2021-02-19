@@ -100,7 +100,6 @@
     "channel-beta": "Béta",
     "channel-alpha": "Alfa",
     "weakaura-update-available": "Frissítés elérhető",
-    "weakaura-update-queued": "Frissítés sorbaállítva",
     "settings-general": "Általános",
     "catalog-results": "Találatok: {number}",
     "error-fetch-changelog": "Változtatások naplójának betöltése sikertelen",
