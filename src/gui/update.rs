@@ -1876,13 +1876,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 state.accounts = accounts;
 
                 // If we have an account already selected, use that as the picklist selection
+                // or if there is only a single account to choose, use that
                 // and trigger a parse for this without user interaction
-                if let Some(account) = ajour.config.weak_auras_account.get(&flavor) {
+                let account_from_config = ajour.config.weak_auras_account.get(&flavor).cloned();
+                let get_single_account = || match &state.accounts[..] {
+                    [a] => Some(a.clone()),
+                    _ => None,
+                };
+                if let Some(account) = account_from_config.or_else(get_single_account) {
                     if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
                         state.chosen_account = Some(account.clone());
 
                         return Ok(Command::perform(
-                            parse_auras(flavor, wtf_path, account.clone()),
+                            parse_auras(flavor, wtf_path, account),
                             Message::ParsedAuras,
                         ));
                     }
