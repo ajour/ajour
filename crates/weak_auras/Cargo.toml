@@ -21,7 +21,7 @@ ajour-core = { version = "0.7.2-rc.1", path = "../core" }
 
 async-std = { version = "1.6", features = ["unstable"] }
 futures = "0.3"
-isahc = { version = "0.9.6", features = ["json"] }
+isahc = { version = "1.1.0", features = ["json"] }
 mlua = { version = "0.4", features = ["lua53", "vendored"] }
 percent-encoding = "2.1"
 serde = { version = "1", features = ["derive"] }

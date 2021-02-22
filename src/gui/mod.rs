@@ -1088,7 +1088,7 @@ pub fn run(opts: Opts) {
     // Sets the Window icon.
     let image = image::load_from_memory_with_format(WINDOW_ICON, ImageFormat::Ico)
         .expect("loading icon")
-        .to_rgba();
+        .to_rgba8();
     let (width, height) = image.dimensions();
     let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
     settings.window.icon = Some(icon.unwrap());
