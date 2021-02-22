@@ -21,6 +21,8 @@ and `Removed`.
 ### Fixed
 
 - Issue with TownlongYak addons while updating them through CLI
+- Linux: Disable self update for non-AppImage binaries since this functionality
+  only works on the published AppImage
 
 ## [0.7.1] - 2021-02-14
 
