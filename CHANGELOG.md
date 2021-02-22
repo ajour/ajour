@@ -18,6 +18,10 @@ and `Removed`.
 
 - Automatically select account in My WeakAuras if there only is one account
 
+### Fixed
+
+- Issue with TownlongYak addons while updating them through CLI
+
 ## [0.7.1] - 2021-02-14
 
 ### Added
