@@ -229,8 +229,16 @@ pub fn data_container<'a>(
         .width(Length::Fill)
         .style(style::NormalErrorForegroundContainer(color_palette));
 
+    #[cfg(not(target_os = "linux"))]
+    let is_updatable = true;
+
+    #[cfg(target_os = "linux")]
+    let is_updatable = std::env::var("APPIMAGE").is_ok();
+
     let version_text = Text::new(if let Some(release) = &self_update_state.latest_release {
-        if VersionCompare::compare_to(&release.tag_name, VERSION, &CompOp::Gt).unwrap_or(false) {
+        if VersionCompare::compare_to(&release.tag_name, VERSION, &CompOp::Gt).unwrap_or(false)
+            && is_updatable
+        {
             needs_update = true;
 
             format!(
