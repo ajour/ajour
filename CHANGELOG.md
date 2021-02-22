@@ -21,6 +21,8 @@ and `Removed`.
 ### Fixed
 
 - Issue with TownlongYak addons while updating them through CLI
+- Ensure orphaned folders aren't created when updating an addon that no longer
+  has a folder from the previous version
 
 ## [0.7.1] - 2021-02-14
 
