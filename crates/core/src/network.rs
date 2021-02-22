@@ -8,6 +8,7 @@ use async_std::{
 use isahc::config::RedirectPolicy;
 use isahc::http::header::CONTENT_LENGTH;
 use isahc::prelude::*;
+use isahc::{HttpClient, Request, Response};
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use std::path::Path;
@@ -31,7 +32,7 @@ pub async fn request_async<T: ToString>(
     url: T,
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
-) -> Result<Response<isahc::Body>, DownloadError> {
+) -> Result<Response<isahc::AsyncBody>, DownloadError> {
     // Sometimes a download url has a space.
     let url = url.to_string().replace(" ", "%20");
 
@@ -56,7 +57,7 @@ pub(crate) async fn post_json_async<T: ToString, D: Serialize>(
     data: D,
     headers: Vec<(&str, &str)>,
     timeout: Option<u64>,
-) -> Result<Response<isahc::Body>, DownloadError> {
+) -> Result<Response<isahc::AsyncBody>, DownloadError> {
     let mut request = Request::builder()
         .method("POST")
         .uri(url.to_string())

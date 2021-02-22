@@ -4,7 +4,7 @@ use crate::error::DownloadError;
 use crate::error::FilesystemError;
 use crate::network::{download_file, request_async};
 
-use isahc::ResponseExt;
+use isahc::AsyncReadResponseExt;
 use regex::Regex;
 use retry::delay::Fibonacci;
 use retry::{retry, Error as RetryError, OperationResult};
@@ -69,7 +69,7 @@ pub async fn get_latest_release(channel: SelfUpdateChannel) -> Option<Release> {
     .await
     .ok()?;
 
-    let releases: Vec<Release> = resp.json().ok()?;
+    let releases: Vec<Release> = resp.json().await.ok()?;
 
     releases.into_iter().find(|r| {
         if channel == SelfUpdateChannel::Beta {

@@ -60,7 +60,7 @@ impl Backend for Curse {
         let mut resp = request_async(&url, vec![], None).await?;
 
         if resp.status().is_success() {
-            let changelog: String = resp.text_async().await?;
+            let changelog: String = resp.text().await?;
 
             let c = regex_html_tags_to_newline()
                 .replace_all(&changelog, "\n")
@@ -185,7 +185,7 @@ pub(crate) async fn fetch_remote_packages_by_fingerprint(
     )
     .await?;
     if resp.status().is_success() {
-        let fingerprint_info = resp.json()?;
+        let fingerprint_info = resp.json().await?;
         Ok(fingerprint_info)
     } else {
         Err(DownloadError::InvalidStatusCode {
@@ -201,7 +201,7 @@ pub(crate) async fn fetch_remote_packages_by_ids(
     let url = format!("{}/addon", API_ENDPOINT);
     let mut resp = post_json_async(&url, curse_ids, vec![], None).await?;
     if resp.status().is_success() {
-        let packages = resp.json()?;
+        let packages = resp.json().await?;
         Ok(packages)
     } else {
         Err(DownloadError::InvalidStatusCode {

@@ -10,7 +10,7 @@ mod github {
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
     use isahc::http::Uri;
-    use isahc::ResponseExt;
+    use isahc::AsyncReadResponseExt;
     use serde::Deserialize;
 
     use std::collections::HashMap;
@@ -41,6 +41,7 @@ mod github {
 
             let releases: Vec<Release> = resp
                 .json()
+                .await
                 .map_err(|_| RepositoryError::GitMissingRelease { url: url.clone() })?;
 
             let stable_release = releases.iter().find(|r| !r.prerelease);
@@ -133,6 +134,7 @@ mod github {
 
             let release: Release = resp
                 .json()
+                .await
                 .map_err(|_| RepositoryError::GitMissingRelease { url })?;
 
             Ok(Some(release.body))
@@ -233,7 +235,7 @@ mod gitlab {
     use async_trait::async_trait;
     use chrono::{DateTime, Utc};
     use isahc::http::Uri;
-    use isahc::ResponseExt;
+    use isahc::AsyncReadResponseExt;
     use serde::Deserialize;
 
     use std::collections::HashMap;
@@ -267,6 +269,7 @@ mod gitlab {
 
             let releases: Vec<Release> = resp
                 .json()
+                .await
                 .map_err(|_| RepositoryError::GitMissingRelease { url: url.clone() })?;
             let release = releases
                 .get(0)
@@ -372,6 +375,7 @@ mod gitlab {
 
             let release: Release = resp
                 .json()
+                .await
                 .map_err(|_| RepositoryError::GitMissingRelease { url })?;
 
             Ok(Some(release.description))

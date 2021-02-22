@@ -6,7 +6,7 @@ use crate::repository::{ReleaseChannel, RemotePackage};
 
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
-use isahc::ResponseExt;
+use isahc::AsyncReadResponseExt;
 use serde::Deserialize;
 
 use std::collections::HashMap;
@@ -97,7 +97,7 @@ pub(crate) async fn fetch_remote_packages(
     let mut resp = request_async(&url, vec![], timeout).await?;
 
     if resp.status().is_success() {
-        let packages = resp.json();
+        let packages = resp.json().await;
         Ok(packages?)
     } else {
         Err(DownloadError::InvalidStatusCode {
