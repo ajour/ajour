@@ -21,6 +21,8 @@ and `Removed`.
 ### Fixed
 
 - Issue with TownlongYak addons while updating them through CLI
+- Ensure orphaned folders aren't created when updating an addon that no longer
+  has a folder from the previous version
 - Linux: Disable self update for non-AppImage binaries since this functionality
   only works on the published AppImage
 

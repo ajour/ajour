@@ -64,6 +64,14 @@ pub async fn install_addon(
     let mut zip_file = std::fs::File::open(&zip_path)?;
     let mut archive = zip::ZipArchive::new(&mut zip_file)?;
 
+    // Remove all existing top level addon folders.
+    for folder in addon.folders.iter() {
+        let path = &folder.path;
+        if path.exists() {
+            remove_dir_all(path)?;
+        }
+    }
+
     // Get all new top level folders
     let new_top_level_folders = archive
         .file_names()
