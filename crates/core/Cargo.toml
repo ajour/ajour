@@ -22,28 +22,28 @@ name = "parse_addon_directory"
 name = "parse_toc"
 
 [dependencies]
-regex = "1.4.1"
-fancy-regex = "0.4.0" # Regex with backtracking
-async-std = { version = "1.6.2", features = ["unstable"] }
+regex = "1.4.3"
+fancy-regex = "0.5.0" # Regex with backtracking
+async-std = { version = "1.9.0", features = ["unstable"] }
 dirs-next = "2.0.0"
-serde = { version = "1.0.114", features=['derive'] }
-serde_yaml = "0.8.13"
-serde_json = "1.0.57"
-isahc = { version = "0.9.6", features = ["json"] }
-zip = "0.5.6"
+serde = { version = "1.0.123", features=['derive'] }
+serde_yaml = "0.8.17"
+serde_json = "1.0.62"
+isahc = { version = "0.9.4", features = ["json"] }
+zip = "0.5.10"
 glob = "0.3.0"
 rayon = "1.5.0"
-once_cell = "1.5.2"
+once_cell = "1.6.0"
 chrono = { version = "0.4", features = ['serde'] }
 log = "0.4"
 fern = "0.6"
 walkdir = "2.3"
-retry = "1.1"
+retry = "1.2"
 futures = "0.3"
-async-trait = "0.1.41"
-dyn-clone = "1.0.3"
+async-trait = "0.1.42"
+dyn-clone = "1.0.4"
 thiserror = "1.0"
-path-slash = "0.1.3"
+path-slash = "0.1.4"
 
 iced_native = { version = "0.3", optional = true }
 
