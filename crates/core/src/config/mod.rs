@@ -1,3 +1,4 @@
+use crate::catalog;
 use crate::error::FilesystemError;
 use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
@@ -54,6 +55,9 @@ pub struct Config {
 
     #[serde(default)]
     pub language: Language,
+
+    #[serde(default)]
+    pub catalog_source: catalog::Source,
 }
 
 impl Config {

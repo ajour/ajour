@@ -2140,7 +2140,9 @@ async fn perform_fetch_latest_addon(
                     catalog::Source::Tukui => RepositoryKind::Tukui,
                     catalog::Source::WowI => RepositoryKind::WowI,
                     catalog::Source::TownlongYak => RepositoryKind::TownlongYak,
-                    catalog::Source::Other => panic!("Unsupported catalog source"),
+                    catalog::Source::Empty | catalog::Source::Other => {
+                        panic!("Unsupported catalog source")
+                    }
                 };
 
                 RepositoryPackage::from_repo_id(flavor, kind, id)?

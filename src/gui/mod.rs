@@ -1709,7 +1709,7 @@ impl Default for CatalogSearchState {
             category: Default::default(),
             categories: Default::default(),
             categories_state: Default::default(),
-            source: CatalogSource::Choice(catalog::Source::Curse),
+            source: CatalogSource::Choice(catalog::Source::Empty),
             sources: CatalogSource::all(),
             sources_state: Default::default(),
         }
@@ -1839,12 +1839,14 @@ impl CatalogSource {
 
 impl std::fmt::Display for CatalogSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let empty_display_string = &localized_string("select-catalog-source")[..];
         let s = match self {
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
                 catalog::Source::Tukui => "Tukui",
                 catalog::Source::WowI => "WowInterface",
                 catalog::Source::TownlongYak => "TownlongYak",
+                catalog::Source::Empty => empty_display_string,
                 catalog::Source::Other => panic!("Unsupported catalog source"),
             },
         };

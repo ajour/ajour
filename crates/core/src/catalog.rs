@@ -63,6 +63,7 @@ pub enum Source {
     WowI,
     #[serde(alias = "townlong-yak")]
     TownlongYak,
+    Empty,
     #[serde(other)]
     Other,
 }
@@ -75,10 +76,19 @@ impl std::fmt::Display for Source {
             Source::WowI => "WowInterface",
             Source::TownlongYak => "TownlongYak",
 
+            // Used as a `None` value in Catalog.
+            Source::Empty => "",
+
             // This is a fallback option.
             Source::Other => "Unknown",
         };
         write!(f, "{}", s)
+    }
+}
+
+impl Default for Source {
+    fn default() -> Source {
+        Source::Empty
     }
 }
 

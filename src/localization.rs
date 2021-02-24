@@ -210,5 +210,6 @@ mod test {
         error_update_weakauras: String,
         error_update_ajour_permission: String,
         categories: String,
+        select_catalog_source: String,
     }
 }
