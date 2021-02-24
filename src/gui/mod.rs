@@ -884,12 +884,30 @@ impl Application for Ajour {
                     let bottom_space =
                         Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
-                    content = content
-                        .push(catalog_query_container)
-                        .push(Space::new(Length::Fill, Length::Units(5)))
-                        .push(catalog_row_titles)
-                        .push(catalog_scrollable)
-                        .push(bottom_space)
+                    match self.config.catalog_source {
+                        catalog::Source::Empty => {
+                            let status = element::status::data_container(
+                                color_palette,
+                                "Select a Source in the menu ↑",
+                                "Ajour has multiple catalog sources. Select a source to browse the addons.",
+                                None,
+                            );
+
+                            content = content
+                                .push(catalog_query_container)
+                                .push(Space::new(Length::Fill, Length::Units(5)))
+                                .push(status)
+                                .push(bottom_space)
+                        }
+                        _ => {
+                            content = content
+                                .push(catalog_query_container)
+                                .push(Space::new(Length::Fill, Length::Units(5)))
+                                .push(catalog_row_titles)
+                                .push(catalog_scrollable)
+                                .push(bottom_space)
+                        }
+                    }
                 }
             }
             Mode::Settings => {
