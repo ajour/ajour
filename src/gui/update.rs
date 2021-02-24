@@ -1445,7 +1445,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
-                .get(&ajour.catalog_search_state.source.to_string())
+                .get(&ajour.config.catalog_source.to_string())
                 .cloned()
                 .unwrap_or_default();
 
@@ -1568,7 +1568,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
 
             // Catalog source
-            ajour.catalog_search_state.source = source;
+            match source {
+                CatalogSource::Choice(source) => {
+                    ajour.config.catalog_source = source;
+            let _ = ajour.config.save();
+                }
+            };
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
@@ -2492,7 +2497,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .as_ref()
             .map(|s| s.to_lowercase());
         let flavor = &ajour.config.wow.flavor;
-        let source = &ajour.catalog_search_state.source;
+        let source = &ajour.config.catalog_source;
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
 
@@ -2534,9 +2539,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     .iter()
                     .any(|gc| gc.flavor == flavor.base_flavor())
             })
-            .filter(|(a, _)| match source {
-                CatalogSource::Choice(source) => a.source == *source,
-            })
+            .filter(|(a, _)| a.source == *source)
             .filter(|(a, _)| match category {
                 CatalogCategory::All => true,
                 CatalogCategory::Choice(name) => a.categories.iter().any(|c| c == name),

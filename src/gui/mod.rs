@@ -748,11 +748,12 @@ impl Application for Ajour {
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
+                    let catalog_source = CatalogSource::Choice(self.config.catalog_source);
 
                     let source_picklist = PickList::new(
                         &mut self.catalog_search_state.sources_state,
                         &self.catalog_search_state.sources,
-                        Some(self.catalog_search_state.source),
+                        Some(catalog_source),
                         Interaction::CatalogSourceSelected,
                     )
                     .text_size(14)
@@ -1691,7 +1692,6 @@ pub struct CatalogSearchState {
     pub category: CatalogCategory,
     pub categories: Vec<CatalogCategory>,
     pub categories_state: pick_list::State<CatalogCategory>,
-    pub source: CatalogSource,
     pub sources: Vec<CatalogSource>,
     pub sources_state: pick_list::State<CatalogSource>,
 }
@@ -1709,7 +1709,6 @@ impl Default for CatalogSearchState {
             category: Default::default(),
             categories: Default::default(),
             categories_state: Default::default(),
-            source: CatalogSource::Choice(catalog::Source::Empty),
             sources: CatalogSource::all(),
             sources_state: Default::default(),
         }
