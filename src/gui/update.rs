@@ -1574,9 +1574,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Catalog source
             if let CatalogSource::Choice(source) = source {
-
-                    ajour.config.catalog_source = Some(source);
-                    let _ = ajour.config.save();
+                ajour.config.catalog_source = Some(source);
+                let _ = ajour.config.save();
             }
 
             ajour.catalog_search_state.categories = ajour
