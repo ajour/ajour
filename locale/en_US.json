@@ -114,5 +114,7 @@
     "error-update-weakauras": "Failed to update WeakAuras",
     "categories": "Categories",
     "error-update-ajour-permission": "Permissions issue while updating Ajour",
-    "select-catalog-source": "Select Source"
+    "select-catalog-source-picklist": "Select Source",
+    "select-catalog-source-title": "Select a source in the menu",
+    "select-catalog-source-description": "Ajour has multiple catalog sources. Select a source to browse the addons."
 }

@@ -884,30 +884,27 @@ impl Application for Ajour {
                     let bottom_space =
                         Space::new(Length::FillPortion(1), Length::Units(DEFAULT_PADDING));
 
+                    content = content
+                        .push(catalog_query_container)
+                        .push(Space::new(Length::Fill, Length::Units(5)));
+
                     match self.config.catalog_source {
                         catalog::Source::Empty => {
                             let status = element::status::data_container(
                                 color_palette,
-                                "Select a Source in the menu ↑",
-                                "Ajour has multiple catalog sources. Select a source to browse the addons.",
+                                &localized_string("select-catalog-source-title")[..],
+                                &localized_string("select-catalog-source-description")[..],
                                 None,
                             );
 
-                            content = content
-                                .push(catalog_query_container)
-                                .push(Space::new(Length::Fill, Length::Units(5)))
-                                .push(status)
-                                .push(bottom_space)
+                            content = content.push(status);
                         }
                         _ => {
-                            content = content
-                                .push(catalog_query_container)
-                                .push(Space::new(Length::Fill, Length::Units(5)))
-                                .push(catalog_row_titles)
-                                .push(catalog_scrollable)
-                                .push(bottom_space)
+                            content = content.push(catalog_row_titles).push(catalog_scrollable);
                         }
                     }
+
+                    content = content.push(bottom_space)
                 }
             }
             Mode::Settings => {
@@ -1856,7 +1853,7 @@ impl CatalogSource {
 
 impl std::fmt::Display for CatalogSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let empty_display_string = &localized_string("select-catalog-source")[..];
+        let empty_display_string = &localized_string("select-catalog-source-picklist")[..];
         let s = match self {
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
