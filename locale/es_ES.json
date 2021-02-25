@@ -113,5 +113,8 @@
     "error-parse-weakauras": "Fallo al analizar WeakAuras",
     "error-update-weakauras": "Actualización de WeakAuras fallida",
     "categories": "Categorías",
-    "error-update-ajour-permission": "Problema con permisos mientras se actualizaba Ajour"
+    "error-update-ajour-permission": "Problema con permisos mientras se actualizaba Ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

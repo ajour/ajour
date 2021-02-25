@@ -113,5 +113,8 @@
     "error-parse-weakauras": "Gjennomgang av WeakAuras feilet",
     "error-update-weakauras": "Kunne ikke oppdatere WeakAuras",
     "categories": "Kategorier",
-    "error-update-ajour-permission": "under oppdatering av Ajour"
+    "error-update-ajour-permission": "under oppdatering av Ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

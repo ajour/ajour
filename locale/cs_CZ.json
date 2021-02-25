@@ -113,5 +113,8 @@
     "error-parse-weakauras": "Analýza WeakAuras se nezdařila",
     "error-update-weakauras": "Aktualizace WeakAuras se nezdařila",
     "categories": "Kategorie",
-    "error-update-ajour-permission": "Problém s oprávněními při aktualizaci Ajouru"
+    "error-update-ajour-permission": "Problém s oprávněními při aktualizaci Ajouru",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

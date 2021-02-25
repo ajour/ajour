@@ -113,5 +113,8 @@
     "error-parse-weakauras": "Impossible de récupérer les WeakAuras",
     "error-update-weakauras": "Impossible de mettre à jour les WeakAuras",
     "categories": "Catégories",
-    "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour"
+    "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

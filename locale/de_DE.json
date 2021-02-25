@@ -113,5 +113,8 @@
     "error-parse-weakauras": "Fehler beim parsen von WeakAuras",
     "error-update-weakauras": "WeakAuras update fehlgeschlagen",
     "categories": "Kategorien",
-    "error-update-ajour-permission": "Berechtigungsprobleme beim aktualisieren von Ajour"
+    "error-update-ajour-permission": "Berechtigungsprobleme beim aktualisieren von Ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

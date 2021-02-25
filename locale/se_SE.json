@@ -113,5 +113,8 @@
     "error-parse-weakauras": "Kan inte parsa WeakAuras",
     "error-update-weakauras": "Kan inte uppdatera WeakAuras",
     "categories": "Kategorier",
-    "error-update-ajour-permission": "Behörighetsproblem medan Ajour uppdaterades"
+    "error-update-ajour-permission": "Behörighetsproblem medan Ajour uppdaterades",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

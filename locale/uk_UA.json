@@ -113,5 +113,8 @@
     "error-parse-weakauras": "Не вдалося опрацювати WeakAuras",
     "error-update-weakauras": "Не вдалося оновити WeakAuras",
     "categories": "Категорії",
-    "error-update-ajour-permission": "Виникла помилка прав доступу під час оновлення Ajour"
+    "error-update-ajour-permission": "Виникла помилка прав доступу під час оновлення Ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }
