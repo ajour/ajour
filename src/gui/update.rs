@@ -1573,13 +1573,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
 
             // Catalog source
-            match source {
-                CatalogSource::Choice(source) => {
+            if let CatalogSource::Choice(source) = source {
+
                     ajour.config.catalog_source = Some(source);
                     let _ = ajour.config.save();
-                }
-                _ => {}
-            };
+            }
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
