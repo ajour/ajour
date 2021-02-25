@@ -1571,7 +1571,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             match source {
                 CatalogSource::Choice(source) => {
                     ajour.config.catalog_source = source;
-            let _ = ajour.config.save();
+                    let _ = ajour.config.save();
                 }
             };
 
