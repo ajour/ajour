@@ -748,7 +748,11 @@ impl Application for Ajour {
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
-                    let catalog_source = CatalogSource::Choice(self.config.catalog_source);
+                    let catalog_source = self
+                        .config
+                        .catalog_source
+                        .map(CatalogSource::Choice)
+                        .unwrap_or(CatalogSource::None);
 
                     let source_picklist = PickList::new(
                         &mut self.catalog_search_state.sources_state,
@@ -888,20 +892,17 @@ impl Application for Ajour {
                         .push(catalog_query_container)
                         .push(Space::new(Length::Fill, Length::Units(5)));
 
-                    match self.config.catalog_source {
-                        catalog::Source::Empty => {
-                            let status = element::status::data_container(
-                                color_palette,
-                                &localized_string("select-catalog-source-title")[..],
-                                &localized_string("select-catalog-source-description")[..],
-                                None,
-                            );
+                    if self.config.catalog_source.is_none() {
+                        let status = element::status::data_container(
+                            color_palette,
+                            &localized_string("select-catalog-source-title")[..],
+                            &localized_string("select-catalog-source-description")[..],
+                            None,
+                        );
 
-                            content = content.push(status);
-                        }
-                        _ => {
-                            content = content.push(catalog_row_titles).push(catalog_scrollable);
-                        }
+                        content = content.push(status);
+                    } else {
+                        content = content.push(catalog_row_titles).push(catalog_scrollable);
                     }
 
                     content = content.push(bottom_space)
@@ -1838,6 +1839,7 @@ impl std::fmt::Display for CatalogResultSize {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum CatalogSource {
     Choice(catalog::Source),
+    None,
 }
 
 impl CatalogSource {
@@ -1860,9 +1862,9 @@ impl std::fmt::Display for CatalogSource {
                 catalog::Source::Tukui => "Tukui",
                 catalog::Source::WowI => "WowInterface",
                 catalog::Source::TownlongYak => "TownlongYak",
-                catalog::Source::Empty => empty_display_string,
                 catalog::Source::Other => panic!("Unsupported catalog source"),
             },
+            CatalogSource::None => empty_display_string,
         };
         write!(f, "{}", s)
     }

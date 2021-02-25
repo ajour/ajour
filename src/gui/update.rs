@@ -1442,10 +1442,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             });
 
             ajour.catalog_categories_per_source_cache = categories_per_source;
+            let catalog_source_choice = if let Some(source) = &ajour.config.catalog_source {
+                CatalogSource::Choice(*source)
+            } else {
+                CatalogSource::None
+            };
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
-                .get(&ajour.config.catalog_source.to_string())
+                .get(&catalog_source_choice.to_string())
                 .cloned()
                 .unwrap_or_default();
 
@@ -1570,9 +1575,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Catalog source
             match source {
                 CatalogSource::Choice(source) => {
-                    ajour.config.catalog_source = source;
+                    ajour.config.catalog_source = Some(source);
                     let _ = ajour.config.save();
                 }
+                _ => {}
             };
 
             ajour.catalog_search_state.categories = ajour
@@ -2145,7 +2151,7 @@ async fn perform_fetch_latest_addon(
                     catalog::Source::Tukui => RepositoryKind::Tukui,
                     catalog::Source::WowI => RepositoryKind::WowI,
                     catalog::Source::TownlongYak => RepositoryKind::TownlongYak,
-                    catalog::Source::Empty | catalog::Source::Other => {
+                    catalog::Source::Other => {
                         panic!("Unsupported catalog source")
                     }
                 };
@@ -2539,7 +2545,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     .iter()
                     .any(|gc| gc.flavor == flavor.base_flavor())
             })
-            .filter(|(a, _)| a.source == *source)
+            .filter(|(a, _)| Some(a.source) == *source)
             .filter(|(a, _)| match category {
                 CatalogCategory::All => true,
                 CatalogCategory::Choice(name) => a.categories.iter().any(|c| c == name),

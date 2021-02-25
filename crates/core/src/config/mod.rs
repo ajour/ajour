@@ -57,7 +57,7 @@ pub struct Config {
     pub language: Language,
 
     #[serde(default)]
-    pub catalog_source: catalog::Source,
+    pub catalog_source: Option<catalog::Source>,
 }
 
 impl Config {
