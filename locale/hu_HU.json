@@ -113,5 +113,8 @@
     "error-parse-weakauras": "WeakAurák betöltése sikertelen",
     "error-update-weakauras": "WeakAurák frissítése sikertelen",
     "categories": "Kategóriák",
-    "error-update-ajour-permission": "Jogosultsági hiba az Ajour frissítése közben"
+    "error-update-ajour-permission": "Jogosultsági hiba az Ajour frissítése közben",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

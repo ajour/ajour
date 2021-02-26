@@ -18,6 +18,10 @@ and `Removed`.
 
 - Automatically select account in My WeakAuras if there only is one account
 
+### Changed
+
+- Better UX when opening Catalog for the first time
+
 ### Fixed
 
 - Issue with TownlongYak addons while updating them through CLI
