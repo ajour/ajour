@@ -1442,7 +1442,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             });
 
             ajour.catalog_categories_per_source_cache = categories_per_source;
-            let catalog_source_choice = ajour.config.catalog_source.map(CatalogSource::Choice).unwrap_or(CatalogSource::None);
+            let catalog_source_choice = ajour
+                .config
+                .catalog_source
+                .map(CatalogSource::Choice)
+                .unwrap_or(CatalogSource::None);
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
