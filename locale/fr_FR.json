@@ -115,5 +115,8 @@
     "categories": "Catégories",
     "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour",
     "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour"
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

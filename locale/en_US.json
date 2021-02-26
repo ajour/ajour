@@ -115,5 +115,8 @@
     "categories": "Categories",
     "error-update-ajour-permission": "Permissions issue while updating Ajour",
     "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour"
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Select Source",
+    "select-catalog-source-title": "Select a source in the menu",
+    "select-catalog-source-description": "Ajour has multiple catalog sources. Select a source to browse the addons."
 }

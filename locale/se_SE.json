@@ -115,5 +115,8 @@
     "categories": "Kategorier",
     "error-update-ajour-permission": "Behörighetsproblem medan Ajour uppdaterades",
     "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour"
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

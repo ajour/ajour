@@ -115,5 +115,8 @@
     "categories": "Категорії",
     "error-update-ajour-permission": "Виникла помилка прав доступу під час оновлення Ajour",
     "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour"
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }

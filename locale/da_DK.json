@@ -115,5 +115,8 @@
     "categories": "Kategorier",
     "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour",
     "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour"
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "",
+    "select-catalog-source-title": "",
+    "select-catalog-source-description": ""
 }
