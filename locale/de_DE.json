@@ -113,5 +113,7 @@
     "error-parse-weakauras": "Fehler beim parsen von WeakAuras",
     "error-update-weakauras": "WeakAuras update fehlgeschlagen",
     "categories": "Kategorien",
-    "error-update-ajour-permission": "Berechtigungsprobleme beim aktualisieren von Ajour"
+    "error-update-ajour-permission": "Berechtigungsprobleme beim aktualisieren von Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour"
 }

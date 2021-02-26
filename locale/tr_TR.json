@@ -113,5 +113,7 @@
     "error-parse-weakauras": "WeakAuras'ı yüklenemedi",
     "error-update-weakauras": "WeakAuras güncellenemedi",
     "categories": "Kategoriler",
-    "error-update-ajour-permission": "Ajour'u güncellerken bir izin sorunuyla karşılaşıldı"
+    "error-update-ajour-permission": "Ajour'u güncellerken bir izin sorunuyla karşılaşıldı",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour"
 }

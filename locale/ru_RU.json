@@ -113,5 +113,7 @@
     "error-parse-weakauras": "Не удалось разобрать WeakAuras",
     "error-update-weakauras": "Не удалось обновить WeakAuras",
     "categories": "Категории",
-    "error-update-ajour-permission": "Проблема с разрешениями во время обновления Ajour"
+    "error-update-ajour-permission": "Проблема с разрешениями во время обновления Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour"
 }

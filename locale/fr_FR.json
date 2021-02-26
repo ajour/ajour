@@ -113,5 +113,7 @@
     "error-parse-weakauras": "Impossible de récupérer les WeakAuras",
     "error-update-weakauras": "Impossible de mettre à jour les WeakAuras",
     "categories": "Catégories",
-    "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour"
+    "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour"
 }

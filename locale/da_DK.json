@@ -113,5 +113,7 @@
     "error-parse-weakauras": "Fejl under indlæsning af WeakAuras",
     "error-update-weakauras": "Fejl under opdatering af WeakAuras",
     "categories": "Kategorier",
-    "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour"
+    "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour"
 }

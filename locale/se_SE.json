@@ -113,5 +113,7 @@
     "error-parse-weakauras": "Kan inte parsa WeakAuras",
     "error-update-weakauras": "Kan inte uppdatera WeakAuras",
     "categories": "Kategorier",
-    "error-update-ajour-permission": "Behörighetsproblem medan Ajour uppdaterades"
+    "error-update-ajour-permission": "Behörighetsproblem medan Ajour uppdaterades",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour"
 }
