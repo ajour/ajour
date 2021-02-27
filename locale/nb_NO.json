@@ -116,7 +116,7 @@
     "error-update-ajour-permission": "under oppdatering av Ajour",
     "kofi": "Ko-fi",
     "kofi-http": "https://ko-fi.com/ajour",
-    "select-catalog-source-picklist": "",
-    "select-catalog-source-title": "",
-    "select-catalog-source-description": ""
+    "select-catalog-source-picklist": "Velg kildekatalog",
+    "select-catalog-source-title": "Velg en kildekatalog i menyen",
+    "select-catalog-source-description": "Ajour har flere kildekataloger. Velg en kildekatalog for å se tilhørende addons."
 }
