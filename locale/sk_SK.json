@@ -116,7 +116,7 @@
     "error-update-ajour-permission": "Problém s oprávneniami pri aktualizácii Ajour",
     "kofi": "Ko-fi",
     "kofi-http": "https://ko-fi.com/ajour",
-    "select-catalog-source-picklist": "",
-    "select-catalog-source-title": "",
-    "select-catalog-source-description": ""
+    "select-catalog-source-picklist": "Vyber zdroj",
+    "select-catalog-source-title": "Vyber zdroj v menu",
+    "select-catalog-source-description": "Ajour má niekoľko zdrojov katalógu. Vyber zdroj pre prehľadávanie addonov."
 }
