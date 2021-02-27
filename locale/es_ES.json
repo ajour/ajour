@@ -116,7 +116,7 @@
     "error-update-ajour-permission": "Problema con permisos mientras se actualizaba Ajour",
     "kofi": "Ko-fi",
     "kofi-http": "https://ko-fi.com/ajour",
-    "select-catalog-source-picklist": "",
-    "select-catalog-source-title": "",
-    "select-catalog-source-description": ""
+    "select-catalog-source-picklist": "Seleccione la fuente",
+    "select-catalog-source-title": "Seleccione una fuente en el menú",
+    "select-catalog-source-description": "Ajour tiene múltiples fuentes de catálogo. Seleccione una fuente para examinar los complementos."
 }
