@@ -116,7 +116,7 @@
     "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour",
     "kofi": "Ko-fi",
     "kofi-http": "https://ko-fi.com/ajour",
-    "select-catalog-source-picklist": "",
-    "select-catalog-source-title": "",
-    "select-catalog-source-description": ""
+    "select-catalog-source-picklist": "Vælg Kilde",
+    "select-catalog-source-title": "Vælg en kilde i menuen",
+    "select-catalog-source-description": "Ajour har mange katalog kilder. Vælg en kilde for at vise addons."
 }
