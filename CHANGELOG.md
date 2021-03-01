@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.7.2] - 2021-03-01
+
 ### Added
 
 - Automatically select account in My WeakAuras if there only is one account
