@@ -116,7 +116,7 @@
     "error-update-ajour-permission": "Ajour'u güncellerken bir izin sorunuyla karşılaşıldı",
     "kofi": "Ko-fi",
     "kofi-http": "https://ko-fi.com/ajour",
-    "select-catalog-source-picklist": "",
-    "select-catalog-source-title": "",
-    "select-catalog-source-description": ""
+    "select-catalog-source-picklist": "Kaynak Seç",
+    "select-catalog-source-title": "Menüden bir kaynak seçin",
+    "select-catalog-source-description": "Ajour'un birden fazla katalog kaynağı vardır. Eklentilere göz atmak için bir kaynak seçin."
 }

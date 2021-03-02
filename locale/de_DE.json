@@ -35,7 +35,7 @@
     "ignore": "Ausschließen",
     "ignored": "Ausgeschlossen",
     "install": "Installieren",
-    "install-for-flavor": "Installieren für",
+    "install-for-flavor": "Installieren für {flavor}",
     "install-from-url": "Installieren von URL",
     "install-from-url-description": "Installiere ein Addon direkt, entweder von GitHub, oder GitLab.\nDas Addon muss als \"release asset\" veröffentlicht sein.",
     "install-from-url-example": "z.B.: https://github.com/author/repository",
@@ -116,7 +116,7 @@
     "error-update-ajour-permission": "Berechtigungsprobleme beim aktualisieren von Ajour",
     "kofi": "Ko-fi",
     "kofi-http": "https://ko-fi.com/ajour",
-    "select-catalog-source-picklist": "",
-    "select-catalog-source-title": "",
-    "select-catalog-source-description": ""
+    "select-catalog-source-picklist": "Quelle auswählen",
+    "select-catalog-source-title": "Wähle eine Quelle aus dem Menü",
+    "select-catalog-source-description": "Ajour hat mehrere Katalog-Quellen. Wähle eine davon aus, um deren Addons zu durchsuchen."
 }

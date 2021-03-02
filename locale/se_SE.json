@@ -116,7 +116,7 @@
     "error-update-ajour-permission": "Behörighetsproblem medan Ajour uppdaterades",
     "kofi": "Ko-fi",
     "kofi-http": "https://ko-fi.com/ajour",
-    "select-catalog-source-picklist": "",
-    "select-catalog-source-title": "",
-    "select-catalog-source-description": ""
+    "select-catalog-source-picklist": "Välj källa",
+    "select-catalog-source-title": "Välj en källa i menyn",
+    "select-catalog-source-description": "Ajour har fler än en källa. Var god välj en för att hitta addons."
 }

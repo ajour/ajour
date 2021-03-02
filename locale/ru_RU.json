@@ -116,7 +116,7 @@
     "error-update-ajour-permission": "Проблема с разрешениями во время обновления Ajour",
     "kofi": "Ko-fi",
     "kofi-http": "https://ko-fi.com/ajour",
-    "select-catalog-source-picklist": "",
-    "select-catalog-source-title": "",
-    "select-catalog-source-description": ""
+    "select-catalog-source-picklist": "Выберите Источник",
+    "select-catalog-source-title": "Выберите источник в меню",
+    "select-catalog-source-description": "Ajour имеет несколько каталожных источников. Выберите источник для просмотра дополнений."
 }
