@@ -14,6 +14,24 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [0.7.2] - 2021-03-02
+
+### Added
+
+- Automatically select account in My WeakAuras if there only is one account
+
+### Changed
+
+- Better UX when opening Catalog for the first time
+
+### Fixed
+
+- Issue with TownlongYak addons while updating them through CLI
+- Ensure orphaned folders aren't created when updating an addon that no longer
+  has a folder from the previous version
+- Linux: Disable self update for non-AppImage binaries since this functionality
+  only works on the published AppImage
+
 ## [0.7.1] - 2021-02-14
 
 ### Added

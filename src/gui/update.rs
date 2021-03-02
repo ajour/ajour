@@ -1442,10 +1442,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             });
 
             ajour.catalog_categories_per_source_cache = categories_per_source;
+            let catalog_source_choice = ajour
+                .config
+                .catalog_source
+                .map(CatalogSource::Choice)
+                .unwrap_or(CatalogSource::None);
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
-                .get(&ajour.catalog_search_state.source.to_string())
+                .get(&catalog_source_choice.to_string())
                 .cloned()
                 .unwrap_or_default();
 
@@ -1568,7 +1573,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
 
             // Catalog source
-            ajour.catalog_search_state.source = source;
+            if let CatalogSource::Choice(source) = source {
+                ajour.config.catalog_source = Some(source);
+                let _ = ajour.config.save();
+            }
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
@@ -1876,13 +1884,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 state.accounts = accounts;
 
                 // If we have an account already selected, use that as the picklist selection
+                // or if there is only a single account to choose, use that
                 // and trigger a parse for this without user interaction
-                if let Some(account) = ajour.config.weak_auras_account.get(&flavor) {
+                let account_from_config = ajour.config.weak_auras_account.get(&flavor).cloned();
+                let get_single_account = || match &state.accounts[..] {
+                    [a] => Some(a.clone()),
+                    _ => None,
+                };
+                if let Some(account) = account_from_config.or_else(get_single_account) {
                     if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
                         state.chosen_account = Some(account.clone());
 
                         return Ok(Command::perform(
-                            parse_auras(flavor, wtf_path, account.clone()),
+                            parse_auras(flavor, wtf_path, account),
                             Message::ParsedAuras,
                         ));
                     }
@@ -2134,7 +2148,9 @@ async fn perform_fetch_latest_addon(
                     catalog::Source::Tukui => RepositoryKind::Tukui,
                     catalog::Source::WowI => RepositoryKind::WowI,
                     catalog::Source::TownlongYak => RepositoryKind::TownlongYak,
-                    catalog::Source::Other => panic!("Unsupported catalog source"),
+                    catalog::Source::Other => {
+                        panic!("Unsupported catalog source")
+                    }
                 };
 
                 RepositoryPackage::from_repo_id(flavor, kind, id)?
@@ -2484,7 +2500,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .as_ref()
             .map(|s| s.to_lowercase());
         let flavor = &ajour.config.wow.flavor;
-        let source = &ajour.catalog_search_state.source;
+        let source = &ajour.config.catalog_source;
         let category = &ajour.catalog_search_state.category;
         let result_size = ajour.catalog_search_state.result_size.as_usize();
 
@@ -2526,9 +2542,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     .iter()
                     .any(|gc| gc.flavor == flavor.base_flavor())
             })
-            .filter(|(a, _)| match source {
-                CatalogSource::Choice(source) => a.source == *source,
-            })
+            .filter(|(a, _)| Some(a.source) == *source)
             .filter(|(a, _)| match category {
                 CatalogCategory::All => true,
                 CatalogCategory::Choice(name) => a.categories.iter().any(|c| c == name),

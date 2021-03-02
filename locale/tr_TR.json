@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Güncelleme Mevcut",
-    "weakaura-update-queued": "Güncelleme Sırada",
     "settings-general": "Genel",
     "catalog-results": "{number} sonuç",
     "error-fetch-changelog": "Changelog'a ulaşılamadı",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "WeakAuras'ı yüklenemedi",
     "error-update-weakauras": "WeakAuras güncellenemedi",
     "categories": "Kategoriler",
-    "error-update-ajour-permission": "Ajour'u güncellerken bir izin sorunuyla karşılaşıldı"
+    "error-update-ajour-permission": "Ajour'u güncellerken bir izin sorunuyla karşılaşıldı",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Kaynak Seç",
+    "select-catalog-source-title": "Menüden bir kaynak seçin",
+    "select-catalog-source-description": "Ajour'un birden fazla katalog kaynağı vardır. Eklentilere göz atmak için bir kaynak seçin."
 }

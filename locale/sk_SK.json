@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Dostupná aktualizácia",
-    "weakaura-update-queued": "Aktualizácia zaradená",
     "settings-general": "Všeobecné",
     "catalog-results": "Výsledky: {number}",
     "error-fetch-changelog": "Nepodarilo sa načítať zoznam zmien",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Nepodarilo sa analyzovať WeakAury",
     "error-update-weakauras": "Nepodarilo sa aktualizovať WeakAury",
     "categories": "Kategórie",
-    "error-update-ajour-permission": "Problém s oprávneniami pri aktualizácii Ajour"
+    "error-update-ajour-permission": "Problém s oprávneniami pri aktualizácii Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Vyber zdroj",
+    "select-catalog-source-title": "Vyber zdroj v menu",
+    "select-catalog-source-description": "Ajour má niekoľko zdrojov katalógu. Vyber zdroj pre prehľadávanie addonov."
 }

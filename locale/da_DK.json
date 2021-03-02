@@ -87,7 +87,7 @@
     "update-all": "Opdater Alle",
     "ajour-update-channel": "Ajour Opdaterings kanal",
     "updating": "Opdaterer",
-    "weakaura-updates-queued": "Opdateringer gjort klar. Færdiggør inde i spillet.",
+    "weakaura-updates-queued": "Opdateringer kan nu færdiggøres inde i spillet.",
     "weakauras-loaded": "{number} WeakAuras indlæst",
     "website": "Website",
     "website-http": "https://getajour.com",
@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Opdatering tilgængelig",
-    "weakaura-update-queued": "Opdatering klargjort",
     "settings-general": "Generelt",
     "catalog-results": "Resultater: {number}",
     "error-fetch-changelog": "Fejl under indlæsning af ændringer",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Fejl under indlæsning af WeakAuras",
     "error-update-weakauras": "Fejl under opdatering af WeakAuras",
     "categories": "Kategorier",
-    "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour"
+    "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Vælg Kilde",
+    "select-catalog-source-title": "Vælg en kilde i menuen",
+    "select-catalog-source-description": "Ajour har mange katalog kilder. Vælg en kilde for at vise addons."
 }

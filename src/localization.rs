@@ -184,6 +184,7 @@ mod test {
         update_all: String,
         ajour_update_channel: String,
         updating: String,
+        weakaura_update_available: String,
         weakaura_updates_queued: String,
         weakauras_loaded: String,
         website: String,
@@ -209,5 +210,8 @@ mod test {
         error_update_weakauras: String,
         error_update_ajour_permission: String,
         categories: String,
+        select_catalog_source_picklist: String,
+        select_catalog_source_title: String,
+        select_catalog_source_description: String,
     }
 }

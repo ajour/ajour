@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Oppdatering tilgjengelig",
-    "weakaura-update-queued": "Oppdatering satt i kø",
     "settings-general": "Generelt",
     "catalog-results": "Resultater: {number}",
     "error-fetch-changelog": "Kunne ikke hente endringsloggen",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Gjennomgang av WeakAuras feilet",
     "error-update-weakauras": "Kunne ikke oppdatere WeakAuras",
     "categories": "Kategorier",
-    "error-update-ajour-permission": "under oppdatering av Ajour"
+    "error-update-ajour-permission": "under oppdatering av Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Velg kildekatalog",
+    "select-catalog-source-title": "Velg en kildekatalog i menyen",
+    "select-catalog-source-description": "Ajour har flere kildekataloger. Velg en kildekatalog for å se tilhørende addons."
 }

@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alfa",
     "weakaura-update-available": "Atualização disponível",
-    "weakaura-update-queued": "Atualização em fila",
     "settings-general": "Configuração geral",
     "catalog-results": "Resultados: {number}",
     "error-fetch-changelog": "Falha em ir buscar o changelog",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Falha em analisar o WeakAuras",
     "error-update-weakauras": "Falha na actualização do WeakAuras",
     "categories": "Categorias",
-    "error-update-ajour-permission": "Emissão de permissões durante a atualização do Ajour"
+    "error-update-ajour-permission": "Emissão de permissões durante a atualização do Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Selecione a fonte",
+    "select-catalog-source-title": "Selecione uma fonte no menu",
+    "select-catalog-source-description": "Ajour tem múltiplas fontes de catálogo. Selecione uma fonte para navegar pelos addons."
 }

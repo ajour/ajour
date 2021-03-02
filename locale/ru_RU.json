@@ -100,7 +100,6 @@
     "channel-beta": "Бета",
     "channel-alpha": "Альфа",
     "weakaura-update-available": "Доступны обновления",
-    "weakaura-update-queued": "Обновления поставлены в очередь",
     "settings-general": "Общие",
     "catalog-results": "Результат: {number}",
     "error-fetch-changelog": "Не удалось загрузить журнал изменений",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Не удалось разобрать WeakAuras",
     "error-update-weakauras": "Не удалось обновить WeakAuras",
     "categories": "Категории",
-    "error-update-ajour-permission": "Проблема с разрешениями во время обновления Ajour"
+    "error-update-ajour-permission": "Проблема с разрешениями во время обновления Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Выберите Источник",
+    "select-catalog-source-title": "Выберите источник в меню",
+    "select-catalog-source-description": "Ajour имеет несколько каталожных источников. Выберите источник для просмотра дополнений."
 }

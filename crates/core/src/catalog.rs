@@ -2,9 +2,8 @@ use crate::config::Flavor;
 use crate::error::DownloadError;
 use crate::network::request_async;
 
-use async_std::task;
 use chrono::prelude::*;
-use isahc::ResponseExt;
+use isahc::AsyncReadResponseExt;
 use serde::{Deserialize, Serialize};
 
 const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog-2.0.json";
@@ -31,10 +30,7 @@ async fn get_catalog_addons_from(
                 .get("etag")
                 .and_then(|h| h.to_str().map(String::from).ok());
 
-            Ok(Some((
-                etag,
-                task::spawn_blocking(move || response.json::<Vec<CatalogAddon>>()).await?,
-            )))
+            Ok(Some((etag, response.json::<Vec<CatalogAddon>>().await?)))
         }
         304 => {
             log::debug!("Etag match, cached catalog is latest version");

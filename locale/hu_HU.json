@@ -100,7 +100,6 @@
     "channel-beta": "Béta",
     "channel-alpha": "Alfa",
     "weakaura-update-available": "Frissítés elérhető",
-    "weakaura-update-queued": "Frissítés sorbaállítva",
     "settings-general": "Általános",
     "catalog-results": "Találatok: {number}",
     "error-fetch-changelog": "Változtatások naplójának betöltése sikertelen",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "WeakAurák betöltése sikertelen",
     "error-update-weakauras": "WeakAurák frissítése sikertelen",
     "categories": "Kategóriák",
-    "error-update-ajour-permission": "Jogosultsági hiba az Ajour frissítése közben"
+    "error-update-ajour-permission": "Jogosultsági hiba az Ajour frissítése közben",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Forrás kiválasztása",
+    "select-catalog-source-title": "Forrás kiválasztása a menüben",
+    "select-catalog-source-description": "Az Ajour több forrásból is tud addonokat letölteni. Válassz egy forrást a böngészéshez."
 }

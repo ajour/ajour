@@ -4,7 +4,7 @@ use async_std::path::Path;
 use async_std::stream::StreamExt;
 use futures::future;
 use isahc::http;
-use isahc::ResponseExt;
+use isahc::AsyncReadResponseExt;
 use mlua::{prelude::*, Value};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::Deserialize;
@@ -112,7 +112,7 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
 
     let mut response = request_async(url, vec![], Some(30)).await?;
 
-    let mut auras: Vec<Aura> = response.json()?;
+    let mut auras: Vec<Aura> = response.json().await?;
 
     auras.iter_mut().for_each(|a| {
         let displays = displays
@@ -163,10 +163,7 @@ async fn get_encoded_update(slug: &str) -> Result<String, Error> {
     let encoded_slug = utf8_percent_encode(slug, NON_ALPHANUMERIC);
     let url = format!("https://data.wago.io/api/raw/encoded?id={}", encoded_slug);
 
-    Ok(request_async(url, vec![], Some(30))
-        .await?
-        .text_async()
-        .await?)
+    Ok(request_async(url, vec![], Some(30)).await?.text().await?)
 }
 
 /// An Aura that has an update. This stores the [`Aura`] along with the encoded

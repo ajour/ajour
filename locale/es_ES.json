@@ -100,7 +100,6 @@
     "channel-beta": "Versión beta",
     "channel-alpha": "Versión alfa",
     "weakaura-update-available": "Actualización disponible",
-    "weakaura-update-queued": "Actualización en cola",
     "settings-general": "Ajustes globales",
     "catalog-results": "Resultados: {number}",
     "error-fetch-changelog": "Fallo al encontrar changelog",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Fallo al analizar WeakAuras",
     "error-update-weakauras": "Actualización de WeakAuras fallida",
     "categories": "Categorías",
-    "error-update-ajour-permission": "Problema con permisos mientras se actualizaba Ajour"
+    "error-update-ajour-permission": "Problema con permisos mientras se actualizaba Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Seleccione la fuente",
+    "select-catalog-source-title": "Seleccione una fuente en el menú",
+    "select-catalog-source-description": "Ajour tiene múltiples fuentes de catálogo. Seleccione una fuente para examinar los complementos."
 }

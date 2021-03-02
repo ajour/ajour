@@ -208,9 +208,19 @@ async fn update_addon(
         }
     }
 
+    // Set version & file id of installed addon to that of newly unpacked package.
+    if let Some(package) = addon.relevant_release_package(global_release_channel) {
+        addon.set_version(package.version);
+
+        if let Some(file_id) = package.file_id {
+            addon.set_file_id(file_id);
+        }
+    }
+
     // Update cache for addon
     if addon.repository_kind() == Some(RepositoryKind::Tukui)
         || addon.repository_kind() == Some(RepositoryKind::WowI)
+        || addon.repository_kind() == Some(RepositoryKind::TownlongYak)
         || matches!(addon.repository_kind(), Some(RepositoryKind::Git(_)))
     {
         if let Ok(entry) = AddonCacheEntry::try_from(&addon) {

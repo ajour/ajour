@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Mise à jour disponible",
-    "weakaura-update-queued": "Mise à jour en attente",
     "settings-general": "Paramètres généraux",
     "catalog-results": "Résultats: {number}",
     "error-fetch-changelog": "Impossible de récupérer l'historique",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Impossible de récupérer les WeakAuras",
     "error-update-weakauras": "Impossible de mettre à jour les WeakAuras",
     "categories": "Catégories",
-    "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour"
+    "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Choisissez la source",
+    "select-catalog-source-title": "Sélectionnez la source dans le menu",
+    "select-catalog-source-description": "Ajour contient plusieurs sources d'addons. Choisissez une source pour parcourir les addons."
 }

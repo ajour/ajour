@@ -209,6 +209,7 @@ pub struct Ajour {
     catalog_categories_per_source_cache: HashMap<String, Vec<CatalogCategory>>,
     website_btn_state: button::State,
     patreon_btn_state: button::State,
+    kofi_btn_state: button::State,
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
     self_update_channel_state: SelfUpdateChannelState,
@@ -263,6 +264,7 @@ impl Default for Ajour {
             catalog_categories_per_source_cache: Default::default(),
             website_btn_state: Default::default(),
             patreon_btn_state: Default::default(),
+            kofi_btn_state: Default::default(),
             open_config_dir_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
             self_update_channel_state: SelfUpdateChannelState {
@@ -748,11 +750,16 @@ impl Application for Ajour {
                     .style(style::CatalogQueryInput(color_palette));
 
                     let catalog_query: Element<Interaction> = catalog_query.into();
+                    let catalog_source = self
+                        .config
+                        .catalog_source
+                        .map(CatalogSource::Choice)
+                        .unwrap_or(CatalogSource::None);
 
                     let source_picklist = PickList::new(
                         &mut self.catalog_search_state.sources_state,
                         &self.catalog_search_state.sources,
-                        Some(self.catalog_search_state.source),
+                        Some(catalog_source),
                         Interaction::CatalogSourceSelected,
                     )
                     .text_size(14)
@@ -885,10 +892,22 @@ impl Application for Ajour {
 
                     content = content
                         .push(catalog_query_container)
-                        .push(Space::new(Length::Fill, Length::Units(5)))
-                        .push(catalog_row_titles)
-                        .push(catalog_scrollable)
-                        .push(bottom_space)
+                        .push(Space::new(Length::Fill, Length::Units(5)));
+
+                    if self.config.catalog_source.is_none() {
+                        let status = element::status::data_container(
+                            color_palette,
+                            &localized_string("select-catalog-source-title")[..],
+                            &localized_string("select-catalog-source-description")[..],
+                            None,
+                        );
+
+                        content = content.push(status);
+                    } else {
+                        content = content.push(catalog_row_titles).push(catalog_scrollable);
+                    }
+
+                    content = content.push(bottom_space)
                 }
             }
             Mode::Settings => {
@@ -920,6 +939,7 @@ impl Application for Ajour {
                     &mut self.about_scrollable_state,
                     &mut self.website_btn_state,
                     &mut self.patreon_btn_state,
+                    &mut self.kofi_btn_state,
                 );
 
                 content = content.push(about_container)
@@ -1088,7 +1108,7 @@ pub fn run(opts: Opts) {
     // Sets the Window icon.
     let image = image::load_from_memory_with_format(WINDOW_ICON, ImageFormat::Ico)
         .expect("loading icon")
-        .to_rgba();
+        .to_rgba8();
     let (width, height) = image.dimensions();
     let icon = iced::window::Icon::from_rgba(image.into_raw(), width, height);
     settings.window.icon = Some(icon.unwrap());
@@ -1691,7 +1711,6 @@ pub struct CatalogSearchState {
     pub category: CatalogCategory,
     pub categories: Vec<CatalogCategory>,
     pub categories_state: pick_list::State<CatalogCategory>,
-    pub source: CatalogSource,
     pub sources: Vec<CatalogSource>,
     pub sources_state: pick_list::State<CatalogSource>,
 }
@@ -1709,7 +1728,6 @@ impl Default for CatalogSearchState {
             category: Default::default(),
             categories: Default::default(),
             categories_state: Default::default(),
-            source: CatalogSource::Choice(catalog::Source::Curse),
             sources: CatalogSource::all(),
             sources_state: Default::default(),
         }
@@ -1824,6 +1842,7 @@ impl std::fmt::Display for CatalogResultSize {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum CatalogSource {
     Choice(catalog::Source),
+    None,
 }
 
 impl CatalogSource {
@@ -1839,6 +1858,7 @@ impl CatalogSource {
 
 impl std::fmt::Display for CatalogSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let empty_display_string = &localized_string("select-catalog-source-picklist")[..];
         let s = match self {
             CatalogSource::Choice(source) => match source {
                 catalog::Source::Curse => "Curse",
@@ -1847,6 +1867,7 @@ impl std::fmt::Display for CatalogSource {
                 catalog::Source::TownlongYak => "TownlongYak",
                 catalog::Source::Other => panic!("Unsupported catalog source"),
             },
+            CatalogSource::None => empty_display_string,
         };
         write!(f, "{}", s)
     }
@@ -2102,7 +2123,7 @@ impl std::fmt::Display for AuraStatus {
         let s = if let Some(key) = match self.0 {
             Idle => None,
             UpdateAvailable => Some("weakaura-update-available"),
-            UpdateQueued => Some("weakaura-update-queued"),
+            UpdateQueued => Some("completed"),
         } {
             localized_string(key)
         } else {

@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Uppdatering tillgänglig",
-    "weakaura-update-queued": "Uppdateringar köade",
     "settings-general": "Allmänna inställningar",
     "catalog-results": "Resultat: {number}",
     "error-fetch-changelog": "Kan inte hämta nyheter",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Kan inte parsa WeakAuras",
     "error-update-weakauras": "Kan inte uppdatera WeakAuras",
     "categories": "Kategorier",
-    "error-update-ajour-permission": "Behörighetsproblem medan Ajour uppdaterades"
+    "error-update-ajour-permission": "Behörighetsproblem medan Ajour uppdaterades",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Välj källa",
+    "select-catalog-source-title": "Välj en källa i menyn",
+    "select-catalog-source-description": "Ajour har fler än en källa. Var god välj en för att hitta addons."
 }

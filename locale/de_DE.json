@@ -35,7 +35,7 @@
     "ignore": "Ausschließen",
     "ignored": "Ausgeschlossen",
     "install": "Installieren",
-    "install-for-flavor": "Installieren für",
+    "install-for-flavor": "Installieren für {flavor}",
     "install-from-url": "Installieren von URL",
     "install-from-url-description": "Installiere ein Addon direkt, entweder von GitHub, oder GitLab.\nDas Addon muss als \"release asset\" veröffentlicht sein.",
     "install-from-url-example": "z.B.: https://github.com/author/repository",
@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Update verfügbar",
-    "weakaura-update-queued": "Update in Warteschlange",
     "settings-general": "Allgemein",
     "catalog-results": "Ergebnisse: {number}",
     "error-fetch-changelog": "Changelog abruf fehlgeschlagen",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Fehler beim parsen von WeakAuras",
     "error-update-weakauras": "WeakAuras update fehlgeschlagen",
     "categories": "Kategorien",
-    "error-update-ajour-permission": "Berechtigungsprobleme beim aktualisieren von Ajour"
+    "error-update-ajour-permission": "Berechtigungsprobleme beim aktualisieren von Ajour",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Quelle auswählen",
+    "select-catalog-source-title": "Wähle eine Quelle aus dem Menü",
+    "select-catalog-source-description": "Ajour hat mehrere Katalog-Quellen. Wähle eine davon aus, um deren Addons zu durchsuchen."
 }

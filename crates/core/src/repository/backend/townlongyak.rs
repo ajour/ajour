@@ -6,7 +6,7 @@ use crate::repository::{ReleaseChannel, RemotePackage};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use isahc::ResponseExt;
+use isahc::AsyncReadResponseExt;
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
@@ -97,7 +97,10 @@ pub(crate) async fn fetch_remote_packages(
     let mut resp = post_json_async(&url, BatchRequest { addon_ids }, vec![], timeout).await?;
 
     if resp.status().is_success() {
-        let packages = resp.json::<TownlongYakBatchResponse>().map(|r| r.addons);
+        let packages = resp
+            .json::<TownlongYakBatchResponse>()
+            .await
+            .map(|r| r.addons);
 
         Ok(packages?)
     } else {

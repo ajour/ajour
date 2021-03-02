@@ -100,7 +100,6 @@
     "channel-beta": "Beta",
     "channel-alpha": "Alpha",
     "weakaura-update-available": "Dostupná aktualizace",
-    "weakaura-update-queued": "Aktualizace zařazena",
     "settings-general": "Obecné",
     "catalog-results": "Výsledky: {number}",
     "error-fetch-changelog": "Načtení protokolu změn se nezdařilo",
@@ -114,5 +113,10 @@
     "error-parse-weakauras": "Analýza WeakAuras se nezdařila",
     "error-update-weakauras": "Aktualizace WeakAuras se nezdařila",
     "categories": "Kategorie",
-    "error-update-ajour-permission": "Problém s oprávněními při aktualizaci Ajouru"
+    "error-update-ajour-permission": "Problém s oprávněními při aktualizaci Ajouru",
+    "kofi": "Ko-fi",
+    "kofi-http": "https://ko-fi.com/ajour",
+    "select-catalog-source-picklist": "Vyberte zdroj",
+    "select-catalog-source-title": "Vyberte zdroj v menu",
+    "select-catalog-source-description": "Ajour má několik zdrojů katalogu. Vyberte zdroj, pro procházení doplňky."
 }

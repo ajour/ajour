@@ -7,7 +7,7 @@ use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, trunc
 
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use isahc::ResponseExt;
+use isahc::AsyncReadResponseExt;
 use serde::Deserialize;
 
 use std::collections::HashMap;
@@ -43,7 +43,7 @@ impl Backend for Tukui {
                     let mut resp = request_async(&url, vec![], None).await?;
 
                     if resp.status().is_success() {
-                        let changelog: String = resp.text()?;
+                        let changelog: String = resp.text().await?;
 
                         let c = regex_html_tags_to_newline()
                             .replace_all(&changelog, "\n")
@@ -152,7 +152,7 @@ pub(crate) async fn fetch_remote_package(
     let mut resp = request_async(&url, vec![], timeout).await?;
 
     if resp.status().is_success() {
-        let package = resp.json()?;
+        let package = resp.json().await?;
         Ok((id.to_string(), package))
     } else {
         Err(DownloadError::InvalidStatusCode {
