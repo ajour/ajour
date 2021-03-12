@@ -15,7 +15,7 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, Language, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
-    repository::{Changelog, GlobalReleaseChannel, ReleaseChannel},
+    repository::{Changelog, GlobalReleaseChannel, ReleaseChannel, RepositoryPackage},
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
@@ -168,6 +168,8 @@ pub enum Message {
     ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
     AurasUpdated((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
     FetchedChangelog((Addon, Result<Changelog, RepositoryError>)),
+    CheckRepositoryUpdates(Instant),
+    RepositoryPackagesFetched((Flavor, Result<Vec<RepositoryPackage>, DownloadError>)),
 }
 
 pub struct Ajour {
@@ -323,11 +325,14 @@ impl Application for Ajour {
             iced_futures::time::every(Duration::from_secs(60 * 5)).map(Message::RefreshCatalog);
         let new_release_subscription = iced_futures::time::every(Duration::from_secs(60 * 60))
             .map(Message::CheckLatestRelease);
+        let check_updates_subscription = iced_futures::time::every(Duration::from_secs(60 * 30))
+            .map(Message::CheckRepositoryUpdates);
 
         iced::Subscription::batch(vec![
             runtime_subscription,
             catalog_subscription,
             new_release_subscription,
+            check_updates_subscription,
         ])
     }
 
