@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Changed
+
+- Error messages are cleared when "Refresh" is pressed
+
 ## [0.7.2] - 2021-03-02
 
 ### Added
@@ -23,7 +27,6 @@ and `Removed`.
 ### Changed
 
 - Better UX when opening Catalog for the first time
-- Error messages are cleared when "Refresh" is pressed
 
 ### Fixed
 
