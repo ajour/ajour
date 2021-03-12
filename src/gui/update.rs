@@ -601,8 +601,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                     addon.state = AddonState::Updatable;
 
                                     has_update += 1;
-                                } else {
-                                    addon.state = AddonState::Idle;
                                 }
                             }
                         }
