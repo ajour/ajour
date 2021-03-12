@@ -132,6 +132,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::Refresh(mode)) => {
             log::debug!("Interaction::Refresh({})", &mode);
 
+            // Clear any error message
+            ajour.error.take();
+
             match mode {
                 Mode::MyAddons(flavor) => {
                     // Clear query
