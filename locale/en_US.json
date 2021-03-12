@@ -78,6 +78,7 @@
     "status": "Status",
     "summary": "Summary",
     "theme": "Theme",
+    "type": "Type",
     "ui": "UI",
     "unavailable": "Unavailable",
     "unignore": "Include",

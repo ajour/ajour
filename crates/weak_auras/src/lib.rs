@@ -20,8 +20,9 @@ pub use error::Error;
 
 pub async fn is_weak_auras_installed(addon_dir: impl AsRef<Path>) -> bool {
     let weak_auras_toc = addon_dir.as_ref().join("WeakAuras").join("WeakAuras.toc");
+    let plater_toc = addon_dir.as_ref().join("Plater").join("Plater.toc");
 
-    weak_auras_toc.is_file().await
+    weak_auras_toc.is_file().await || plater_toc.is_file().await
 }
 
 /// Return a list of Account names under the specified WTF folder
@@ -55,9 +56,18 @@ pub async fn list_accounts(wtf_path: impl AsRef<Path>) -> Result<Vec<String>, Er
     Ok(accounts)
 }
 
+pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<Vec<Aura>, Error> {
+    let mut auras = vec![];
+
+    auras.extend(parse_weak_auras(&wtf_path, &account).await?);
+    auras.extend(parse_platers(&wtf_path, &account).await?);
+
+    Ok(auras)
+}
+
 /// Parse and return all Auras installed under the accounts `WeakAuras.lua`
 /// SavedVariables file
-pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<Vec<Aura>, Error> {
+async fn parse_weak_auras(wtf_path: impl AsRef<Path>, account: &str) -> Result<Vec<Aura>, Error> {
     let lua_path = wtf_path
         .as_ref()
         .join("Account")
@@ -131,6 +141,134 @@ pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<
     Ok(auras)
 }
 
+/// Parse and return all Platers installed under the accounts `Plater.lua`
+/// SavedVariables file
+async fn parse_platers(wtf_path: impl AsRef<Path>, account: &str) -> Result<Vec<Aura>, Error> {
+    let lua_path = wtf_path
+        .as_ref()
+        .join("Account")
+        .join(&account)
+        .join("SavedVariables")
+        .join("Plater.lua");
+
+    if !lua_path.exists().await {
+        return Ok(vec![]);
+    }
+
+    let source = fs::read_to_string(&lua_path).await?;
+
+    let data = async_std::task::spawn_blocking(move || {
+        let expression = source.replace("PlaterDB = {", "{");
+
+        let lua = mlua::Lua::new();
+        let table = lua.load(&expression).eval::<mlua::Table>()?.to_owned();
+
+        let maybe_table = table.get::<_, Option<HashMap<String, LuaTable>>>("profiles")?;
+
+        let hooks = maybe_table.as_ref().map(|t| {
+            t.iter()
+                .map(|(_, t)| {
+                    t.get::<_, Vec<MaybeAuraDisplay>>("hook_data")
+                        .ok()
+                        .unwrap_or_default()
+                })
+                .flatten()
+                .collect::<Vec<_>>()
+        });
+        let scripts = maybe_table.as_ref().map(|t| {
+            t.iter()
+                .map(|(_, t)| {
+                    t.get::<_, Vec<MaybeAuraDisplay>>("script_data")
+                        .ok()
+                        .unwrap_or_default()
+                })
+                .flatten()
+                .collect::<Vec<_>>()
+        });
+        let profiles = table.get::<_, Option<HashMap<String, MaybeAuraDisplay>>>("profiles")?;
+
+        let mut data = vec![];
+
+        if let Some(hooks) = hooks {
+            data.extend(
+                hooks
+                    .into_iter()
+                    .filter_map(MaybeAuraDisplay::into_inner)
+                    .map(|mut a| {
+                        a.kind = AuraDisplayKind::PlaterHook;
+                        a
+                    }),
+            );
+        }
+
+        if let Some(scripts) = scripts {
+            data.extend(
+                scripts
+                    .into_iter()
+                    .filter_map(MaybeAuraDisplay::into_inner)
+                    .map(|mut a| {
+                        a.kind = AuraDisplayKind::PlaterScript;
+                        a
+                    }),
+            );
+        }
+
+        match profiles {
+            Some(table) => {
+                data.extend(table.into_iter().filter_map(|(name, display)| {
+                    if let Some(mut display) = display.0 {
+                        display.id = name;
+                        display.kind = AuraDisplayKind::PlaterProfile;
+
+                        Some(display)
+                    } else {
+                        None
+                    }
+                }));
+
+                Ok::<_, Error>(data)
+            }
+            None => Ok::<_, Error>(vec![]),
+        }
+    })
+    .await?;
+
+    if data.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let encoded_slugs = data
+        .iter()
+        .map(|a| utf8_percent_encode(&a.slug, NON_ALPHANUMERIC).to_string())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    let url = format!(
+        "https://data.wago.io/api/check/plater?ids={}",
+        encoded_slugs.join(",")
+    );
+
+    let mut response = request_async(url, vec![], Some(30)).await?;
+
+    let mut auras: Vec<Aura> = response.json().await?;
+
+    auras.iter_mut().for_each(|a| {
+        let displays = data.iter().filter(|d| d.slug == a.slug).cloned().collect();
+
+        a.displays = displays;
+        a.kind = AuraKind::Plater;
+
+        if a.has_update() {
+            a.status = AuraStatus::UpdateAvailable;
+        }
+    });
+    auras.sort_by_key(|a| a.slug.clone());
+    auras.dedup_by_key(|a| a.slug.clone());
+
+    Ok(auras)
+}
+
 /// Fetch and return the encoded update strings for all Auras that have an
 /// update available.
 pub async fn get_aura_updates(auras: &[Aura]) -> Result<Vec<AuraUpdate>, Error> {
@@ -180,15 +318,17 @@ impl AuraUpdate {
     fn formatted_slug(&self) -> Result<String, Error> {
         let mut slug = String::new();
 
-        writeln!(&mut slug, "    [\"{}\"] = {{", self.slug)?;
-        writeln!(&mut slug, "      name = [=[{}]=],", self.aura.name)?;
-        writeln!(&mut slug, "      author = [=[{}]=],", self.aura.author())?;
-        writeln!(&mut slug, "      encoded = [=[{}]=],", self.encoded_update)?;
-        writeln!(&mut slug, "      wagoVersion = [=[{}]=],", self.aura.version)?;
-        writeln!(&mut slug, "      wagoSemver = [=[{}]=],", self.aura.version_string)?;
+        let padding = if self.aura.kind == AuraKind::Plater { "  " } else { "" };
+
+        writeln!(&mut slug, "{}    [\"{}\"] = {{", padding, self.slug)?;
+        writeln!(&mut slug, "{}      name = [=[{}]=],", padding, self.aura.name)?;
+        writeln!(&mut slug, "{}      author = [=[{}]=],", padding, self.aura.author())?;
+        writeln!(&mut slug, "{}      encoded = [=[{}]=],", padding, self.encoded_update)?;
+        writeln!(&mut slug, "{}      wagoVersion = [=[{}]=],", padding, self.aura.version)?;
+        writeln!(&mut slug, "{}      wagoSemver = [=[{}]=],", padding, self.aura.version_string)?;
         // TODO: Proper changelog formatting
-        writeln!(&mut slug, "      versionNote = [=[{}]=],", self.aura.changelog.text.as_deref().unwrap_or_default())?;
-        writeln!(&mut slug, "    }},")?;
+        writeln!(&mut slug, "{}      versionNote = [=[{}]=],", padding, self.aura.changelog.text.as_deref().unwrap_or_default())?;
+        writeln!(&mut slug, "{}    }},", padding)?;
 
         Ok(slug)
     }
@@ -197,11 +337,13 @@ impl AuraUpdate {
     fn formatted_uid(&self) -> Result<String, Error> {
         let mut formatted_uid = String::new();
 
+        let padding = if self.aura.kind == AuraKind::Plater { "  " } else { "" };
+
         let uid = self.aura.uid().ok_or(Error::MissingUid {
             slug: self.slug.clone(),
         })?;
 
-        writeln!(&mut formatted_uid, "    [\"{}\"] = [=[{}]=],", uid, self.slug)?;
+        writeln!(&mut formatted_uid, "{}    [\"{}\"] = [=[{}]=],", padding, uid, self.slug)?;
 
         Ok(formatted_uid)
     }
@@ -210,8 +352,10 @@ impl AuraUpdate {
     fn formatted_ids(&self) -> Result<String, Error> {
         let mut ids = String::new();
 
+        let padding = if self.aura.kind == AuraKind::Plater { "  " } else { "" };
+
         for display in self.aura.displays.iter() {
-            writeln!(&mut ids, "    [\"{}\"] = [=[{}]=],", display.id, self.slug)?;
+            writeln!(&mut ids, "{}    [\"{}\"] = [=[{}]=],", padding, display.id, self.slug)?;
         }
 
         Ok(ids)
@@ -257,6 +401,18 @@ impl Display for AuraStatus {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AuraKind {
+    WeakAura,
+    Plater,
+}
+
+impl Default for AuraKind {
+    fn default() -> Self {
+        AuraKind::WeakAura
+    }
+}
+
 /// A parsed Aura from SavedVariables along with it's Wago.io metadata
 #[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -271,11 +427,14 @@ pub struct Aura {
     displays: Vec<AuraDisplay>,
     #[serde(skip_deserializing)]
     status: AuraStatus,
+    #[serde(skip_deserializing)]
+    kind: AuraKind,
 }
 
 impl Debug for Aura {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Aura")
+            .field("kind", &self.kind)
             .field("slug", &self.slug)
             .field("name", &self.name)
             .field("username", &self.username)
@@ -334,12 +493,25 @@ impl Aura {
         }
     }
 
+    pub fn hide(&self) -> bool {
+        self.displays
+            .first()
+            .map(|a| {
+                a.kind == AuraDisplayKind::PlaterHook || a.kind == AuraDisplayKind::PlaterScript
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn kind(&self) -> AuraDisplayKind {
+        self.displays.first().map(|a| a.kind).unwrap()
+    }
+
     fn parent_display(&self) -> Option<&AuraDisplay> {
         self.displays.iter().find(|d| d.parent.is_none())
     }
 
     fn uid(&self) -> Option<&str> {
-        self.parent_display().map(|d| d.uid.as_str())
+        self.parent_display().and_then(|d| d.uid.as_deref())
     }
 
     fn updates_ignored(&self) -> bool {
@@ -373,6 +545,27 @@ struct AuraChangelog {
     format: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum AuraDisplayKind {
+    WeakAura,
+    PlaterProfile,
+    PlaterHook,
+    PlaterScript,
+}
+
+impl Display for AuraDisplayKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            AuraDisplayKind::WeakAura => "Weak Aura",
+            AuraDisplayKind::PlaterProfile => "Plater Profile",
+            AuraDisplayKind::PlaterHook => "Plater Hook",
+            AuraDisplayKind::PlaterScript => "Plater Script",
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug, Clone)]
 struct AuraDisplay {
     url: String,
@@ -381,12 +574,13 @@ struct AuraDisplay {
     version_string: Option<String>,
     parent: Option<String>,
     id: String,
-    uid: String,
+    uid: Option<String>,
     ignore_updates: bool,
     skip_version: Option<u16>,
+    kind: AuraDisplayKind,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct MaybeAuraDisplay(Option<AuraDisplay>);
 
 impl MaybeAuraDisplay {
@@ -407,9 +601,18 @@ impl<'lua> FromLua<'lua> for MaybeAuraDisplay {
                     let version = path.next().map(str::parse::<u16>).and_then(Result::ok);
 
                     if let Some(slug) = slug {
-                        let parent = table.get("parent")?;
-                        let id = table.get("id")?;
+                        let maybe_id = table.get::<_, Option<String>>("id")?;
+                        let name = table.get::<_, Option<String>>("Name")?;
+
+                        // For Weak Auras, they all have an `id`.
+                        //
+                        // For Plater, the profiles don't have name or id, we will tag
+                        // the id based on the "profile" name after returning this. For
+                        // the scripts / hooks, they all have a Name
+                        let id = maybe_id.or(name).unwrap_or_default();
+
                         let uid = table.get("uid")?;
+                        let parent = table.get("parent")?;
                         let version = table
                             .get::<_, Option<u16>>("version")?
                             .map_or(version, Option::Some);
@@ -429,6 +632,8 @@ impl<'lua> FromLua<'lua> for MaybeAuraDisplay {
                             uid,
                             ignore_updates,
                             skip_version,
+                            // Will override once returned for Plater
+                            kind: AuraDisplayKind::WeakAura,
                         })));
                     }
                 }

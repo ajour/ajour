@@ -1987,6 +1987,7 @@ pub enum AuraColumnKey {
     LocalVersion,
     RemoteVersion,
     Author,
+    Type,
     Status,
 }
 
@@ -1999,6 +2000,7 @@ impl AuraColumnKey {
             LocalVersion => localized_string("local"),
             RemoteVersion => localized_string("remote"),
             Author => localized_string("author"),
+            Type => localized_string("type"),
             Status => localized_string("status"),
         }
     }
@@ -2011,6 +2013,7 @@ impl AuraColumnKey {
             LocalVersion => "local",
             RemoteVersion => "remote",
             Author => "author",
+            Type => "type",
             Status => "status",
         };
 
@@ -2025,6 +2028,7 @@ impl From<&str> for AuraColumnKey {
             "local" => AuraColumnKey::LocalVersion,
             "remote" => AuraColumnKey::RemoteVersion,
             "author" => AuraColumnKey::Author,
+            "type" => AuraColumnKey::Type,
             "status" => AuraColumnKey::Status,
             _ => panic!(format!("Unknown AuraColumnKey for {}", s)),
         }
@@ -2074,6 +2078,12 @@ impl Default for AuraHeaderState {
                 },
                 AuraColumnState {
                     key: AuraColumnKey::Author,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                    hidden: false,
+                },
+                AuraColumnState {
+                    key: AuraColumnKey::Type,
                     btn_state: Default::default(),
                     width: Length::Units(85),
                     hidden: false,

@@ -2478,6 +2478,10 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
         (AuraColumnKey::Author, SortDirection::Desc) => {
             auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
         }
+        (AuraColumnKey::Type, SortDirection::Asc) => auras.sort_by(|a, b| a.kind().cmp(&b.kind())),
+        (AuraColumnKey::Type, SortDirection::Desc) => {
+            auras.sort_by(|a, b| a.kind().cmp(&b.kind()).reverse())
+        }
         (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
             a.status()
                 .cmp(&b.status())
