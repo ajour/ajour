@@ -1,0 +1,36 @@
+name: Update translations
+on: workflow_dispatch
+
+jobs:
+  createPullRequest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Timestamp
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Fetch translations
+        run:
+          while read -r lang; do curl "$(curl -X POST https://api.poeditor.com/v2/projects/export
+          -d api_token="${{ secrets.POEDITOR_API_TOKEN }}"
+          -d id="${{ secrets.POEDITOR_PROJECT_ID }}"
+          -d language="$lang"
+          -d type="key_value_json" | jq -r '.result.url')"
+          --output locale/"$lang".json; done < <(curl -X POST https://api.poeditor.com/v2/languages/list
+          -d api_token="${{ secrets.POEDITOR_API_TOKEN }}"
+          -d id="${{ secrets.POEDITOR_PROJECT_ID }}" | jq -r '.result.languages[].code')
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: "chore: updated localizations"
+          branch: "chore/update-localization-${{ steps.date.outputs.date }}"
+          delete-branch: true
+          title: "chore(admin): updated localizations"
+          body: |
+            Automatically updated localizations from [POEditor][1]
+
+            [1]: https://poeditor.com/projects/
+          draft: false
