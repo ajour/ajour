@@ -19,6 +19,8 @@ and `Removed`.
 ### Added
 
 - Automatically select account in My WeakAuras if there only is one account
+- Plater Nameplates are supported in the My Weakauras tab. Updates can be applied
+  from this screen.
 
 ### Changed
 
