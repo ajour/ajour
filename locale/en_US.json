@@ -9,6 +9,7 @@
     "aura": "Aura",
     "author": "Author",
     "authors": "Author(s)",
+    "auto-update": "Automatically apply new updates when available",
     "backup": "Backup",
     "backup-description": "Back up your AddOns and WTF folder to the chosen directory",
     "backup-latest": "Last backup: {time}",
