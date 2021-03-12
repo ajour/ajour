@@ -2548,7 +2548,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                 CatalogCategory::Choice(name) => a.categories.iter().any(|c| c == name),
             })
             .map(|(a, score)| (CatalogRow::from(a.clone()), score))
-            .collect::<Vec<_>>();
+            .collect::<Vec<(CatalogRow, i64)>>();
 
         let mut catalog_rows = if query.is_some() {
             // If a query is defined, the default sort is the fuzzy match score
