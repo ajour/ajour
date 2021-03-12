@@ -28,7 +28,7 @@ jobs:
           commit-message: "chore: updated localizations"
           branch: "chore/update-localization-${{ steps.date.outputs.date }}"
           delete-branch: true
-          title: "chore(admin): updated localizations"
+          title: "chore(bot): updated localizations"
           body: |
             Automatically updated localizations from [POEditor][1]
 
