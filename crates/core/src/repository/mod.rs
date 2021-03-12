@@ -2,7 +2,6 @@ use crate::config::Flavor;
 use crate::error::{DownloadError, RepositoryError};
 
 use chrono::{DateTime, Utc};
-use futures::future::join_all;
 use isahc::http::uri::Uri;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +11,7 @@ use std::collections::HashMap;
 mod backend;
 use backend::Backend;
 
-pub use backend::{curse, townlongyak, tukui, wowi};
+pub use backend::{curse, git, townlongyak, tukui, wowi};
 use backend::{Curse, Github, Gitlab, TownlongYak, Tukui, WowI};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]
@@ -390,133 +389,20 @@ pub async fn batch_refresh_repository_packages(
         .collect::<Vec<_>>();
 
     // Get all curse repo packages
-    let curse_repo_packages = if !curse_ids.is_empty() {
-        let curse_packages = curse::fetch_remote_packages_by_ids(&curse_ids).await?;
-
-        let mut curse_repo_packages = vec![];
-
-        curse_repo_packages.extend(
-            curse_packages
-                .into_iter()
-                .map(|package| {
-                    (
-                        package.id.to_string(),
-                        curse::metadata_from_curse_package(flavor, package),
-                    )
-                })
-                .filter_map(|(id, metadata)| {
-                    RepositoryPackage::from_repo_id(flavor, RepositoryKind::Curse, id)
-                        .map(|r| r.with_metadata(metadata))
-                        .ok()
-                }),
-        );
-
-        curse_repo_packages
-    } else {
-        vec![]
-    };
+    let curse_repo_packages = curse::batch_fetch_repo_packages(flavor, &curse_ids, None).await?;
 
     // Get all tukui repo packages
-    let tukui_repo_packages = if !tukui_ids.is_empty() {
-        let fetch_tasks: Vec<_> = tukui_ids
-            .iter()
-            .map(|id| tukui::fetch_remote_package(&id, &flavor))
-            .collect();
-
-        join_all(fetch_tasks)
-            .await
-            .into_iter()
-            .filter_map(Result::ok)
-            .map(|(id, package)| (id, tukui::metadata_from_tukui_package(package)))
-            .filter_map(|(id, metadata)| {
-                RepositoryPackage::from_repo_id(flavor, RepositoryKind::Tukui, id)
-                    .ok()
-                    .map(|r| r.with_metadata(metadata))
-            })
-            .collect::<Vec<_>>()
-    } else {
-        vec![]
-    };
+    let tukui_repo_packages = tukui::batch_fetch_repo_packages(flavor, &tukui_ids).await?;
 
     // Get all wowi repo packages
-    let wowi_repo_packages = if !wowi_ids.is_empty() {
-        let wowi_packages = wowi::fetch_remote_packages(&wowi_ids).await?;
-
-        wowi_packages
-            .into_iter()
-            .map(|package| {
-                (
-                    package.id.to_string(),
-                    wowi::metadata_from_wowi_package(package),
-                )
-            })
-            .filter_map(|(id, metadata)| {
-                RepositoryPackage::from_repo_id(flavor, RepositoryKind::WowI, id)
-                    .ok()
-                    .map(|r| r.with_metadata(metadata))
-            })
-            .collect::<Vec<_>>()
-    } else {
-        vec![]
-    };
+    let wowi_repo_packages = wowi::batch_fetch_repo_packages(flavor, &wowi_ids).await?;
 
     // Get all townlong repo packages
-    let townlong_repo_packages = if !townlong_ids.is_empty() {
-        let townlong_packages = townlongyak::fetch_remote_packages(flavor, &townlong_ids).await?;
-
-        townlong_packages
-            .into_iter()
-            .map(|package| {
-                (
-                    package.id.to_string(),
-                    townlongyak::metadata_from_townlong_package(flavor, package),
-                )
-            })
-            .filter_map(|(id, metadata)| {
-                RepositoryPackage::from_repo_id(flavor, RepositoryKind::TownlongYak, id)
-                    .ok()
-                    .map(|r| r.with_metadata(metadata))
-            })
-            .collect::<Vec<_>>()
-    } else {
-        vec![]
-    };
+    let townlong_repo_packages =
+        townlongyak::batch_fetch_repo_packages(flavor, &townlong_ids).await?;
 
     // Get all git repo packages
-    let git_repo_packages = if !git_urls.is_empty() {
-        let fetch_tasks = git_urls
-            .iter()
-            .map(|url| {
-                let url = url
-                    .parse::<Uri>()
-                    .map_err(|_| RepositoryError::GitInvalidUrl { url: url.clone() })?;
-
-                RepositoryPackage::from_source_url(flavor, url)
-            })
-            .filter_map(|result| match result {
-                Ok(package) => Some(package),
-                Err(e) => {
-                    log::error!("{}", e);
-                    None
-                }
-            })
-            .map(|mut package| async {
-                if let Err(e) = package.resolve_metadata().await {
-                    log::error!("{}", e);
-                    Err(e)
-                } else {
-                    Ok(package)
-                }
-            });
-
-        join_all(fetch_tasks)
-            .await
-            .into_iter()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>()
-    } else {
-        vec![]
-    };
+    let git_repo_packages = git::batch_fetch_repo_packages(flavor, &git_urls).await?;
 
     Ok([
         &curse_repo_packages[..],

@@ -2,7 +2,7 @@ use super::*;
 use crate::config::Flavor;
 use crate::error::{DownloadError, RepositoryError};
 use crate::network::post_json_async;
-use crate::repository::{ReleaseChannel, RemotePackage};
+use crate::repository::{ReleaseChannel, RemotePackage, RepositoryKind, RepositoryPackage};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -80,6 +80,37 @@ pub(crate) fn metadata_from_townlong_package(
     metadata.author = package.owner_name;
 
     metadata
+}
+
+pub(crate) async fn batch_fetch_repo_packages(
+    flavor: Flavor,
+    townlong_ids: &[String],
+) -> Result<Vec<RepositoryPackage>, DownloadError> {
+    let mut townlong_repo_packages = vec![];
+
+    if townlong_ids.is_empty() {
+        return Ok(townlong_repo_packages);
+    }
+
+    let townlong_packages = townlongyak::fetch_remote_packages(flavor, &townlong_ids).await?;
+
+    townlong_repo_packages.extend(
+        townlong_packages
+            .into_iter()
+            .map(|package| {
+                (
+                    package.id.to_string(),
+                    townlongyak::metadata_from_townlong_package(flavor, package),
+                )
+            })
+            .filter_map(|(id, metadata)| {
+                RepositoryPackage::from_repo_id(flavor, RepositoryKind::TownlongYak, id)
+                    .ok()
+                    .map(|r| r.with_metadata(metadata))
+            }),
+    );
+
+    Ok(townlong_repo_packages)
 }
 
 /// Function to fetch a remote addon package which contains
