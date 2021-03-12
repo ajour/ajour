@@ -23,6 +23,7 @@ and `Removed`.
 ### Changed
 
 - Better UX when opening Catalog for the first time
+- Error messages are cleared when "Refresh" is pressed
 
 ### Fixed
 
