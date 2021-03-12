@@ -124,6 +124,7 @@ pub enum Interaction {
     ResetColumns,
     ToggleDeleteSavedVariables(bool),
     AddonsQuery(String),
+    ToggleAutoUpdateAddons(bool),
 }
 
 #[derive(Debug)]

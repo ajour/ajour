@@ -618,12 +618,28 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         );
                         ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
                         ajour.header_state.previous_column_key = Some(ColumnKey::Status);
+
+                        // If auto update is enabled, trigger a refresh all
+                        if ajour.config.auto_update {
+                            return handle_message(
+                                ajour,
+                                Message::Interaction(Interaction::UpdateAll(Mode::MyAddons(
+                                    flavor,
+                                ))),
+                            );
+                        }
                     }
                 }
                 Err(error) => {
                     log_error(&error);
                 }
             }
+        }
+        Message::Interaction(Interaction::ToggleAutoUpdateAddons(auto_update)) => {
+            log::debug!("Interaction::ToggleAutoUpdateAddons({})", auto_update);
+
+            ajour.config.auto_update = auto_update;
+            let _ = ajour.config.save();
         }
         Message::ParsedAddons((flavor, result)) => {
             let global_release_channel = ajour.config.addons.global_release_channel;
@@ -690,6 +706,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     // Insert the addons into the HashMap.
                     ajour.addons.insert(flavor, addons);
+
+                    // If auto update is enabled, trigger a refresh all
+                    if ajour.config.auto_update {
+                        return handle_message(
+                            ajour,
+                            Message::Interaction(Interaction::UpdateAll(Mode::MyAddons(flavor))),
+                        );
+                    }
                 }
                 Err(error) => {
                     log_error(&error);
