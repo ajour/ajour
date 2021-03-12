@@ -19,6 +19,11 @@ and `Removed`.
 ### Added
 
 - Automatically select account in My WeakAuras if there only is one account
+- Addon updates are automatically checked for every 30 minutes while the program
+  is open. If new updates are available, they will be sorted to the top of the screen
+- A new "Auto Update" setting can be enabled in the Addons section of the Settings.
+  When enabled, Ajour will automatically apply new addon updates when available
+  (new updates are checked for every 30 minutes)
 
 ### Changed
 
