@@ -118,5 +118,6 @@
     "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Kaynak Seç",
     "select-catalog-source-title": "Menüden bir kaynak seçin",
-    "select-catalog-source-description": "Ajour'un birden fazla katalog kaynağı vardır. Eklentilere göz atmak için bir kaynak seçin."
+    "select-catalog-source-description": "Ajour'un birden fazla katalog kaynağı vardır. Eklentilere göz atmak için bir kaynak seçin.",
+    "auto-update": ""
 }

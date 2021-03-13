@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use dyn_clone::{clone_trait_object, DynClone};
 
 pub mod curse;
-mod git;
+pub mod git;
 pub mod townlongyak;
 pub mod tukui;
 pub mod wowi;

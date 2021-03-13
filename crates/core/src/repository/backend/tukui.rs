@@ -2,11 +2,12 @@ use super::*;
 use crate::config::Flavor;
 use crate::error::{DownloadError, RepositoryError};
 use crate::network::request_async;
-use crate::repository::{ReleaseChannel, RemotePackage};
+use crate::repository::{ReleaseChannel, RemotePackage, RepositoryKind, RepositoryPackage};
 use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, TimeZone, Utc};
+use futures::future::join_all;
 use isahc::AsyncReadResponseExt;
 use serde::Deserialize;
 
@@ -138,6 +139,37 @@ fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
             id
         ),
     }
+}
+
+pub(crate) async fn batch_fetch_repo_packages(
+    flavor: Flavor,
+    tukui_ids: &[String],
+) -> Result<Vec<RepositoryPackage>, DownloadError> {
+    let mut tukui_repo_packages = vec![];
+
+    if tukui_ids.is_empty() {
+        return Ok(tukui_repo_packages);
+    }
+
+    let fetch_tasks: Vec<_> = tukui_ids
+        .iter()
+        .map(|id| tukui::fetch_remote_package(&id, &flavor))
+        .collect();
+
+    tukui_repo_packages.extend(
+        join_all(fetch_tasks)
+            .await
+            .into_iter()
+            .filter_map(Result::ok)
+            .map(|(id, package)| (id, tukui::metadata_from_tukui_package(package)))
+            .filter_map(|(id, metadata)| {
+                RepositoryPackage::from_repo_id(flavor, RepositoryKind::Tukui, id)
+                    .ok()
+                    .map(|r| r.with_metadata(metadata))
+            }),
+    );
+
+    Ok(tukui_repo_packages)
 }
 
 /// Function to fetch a remote addon package which contains

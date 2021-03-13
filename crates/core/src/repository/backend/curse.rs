@@ -2,7 +2,7 @@ use super::*;
 use crate::config::Flavor;
 use crate::error::DownloadError;
 use crate::network::{post_json_async, request_async};
-use crate::repository::{ReleaseChannel, RemotePackage};
+use crate::repository::{ReleaseChannel, RemotePackage, RepositoryKind, RepositoryPackage};
 use crate::utility::{regex_html_tags_to_newline, regex_html_tags_to_space, truncate};
 
 use async_trait::async_trait;
@@ -170,6 +170,70 @@ pub(crate) fn metadata_from_fingerprint_info(
     metadata.game_version = game_version;
 
     metadata
+}
+
+pub(crate) async fn batch_fetch_repo_packages(
+    flavor: Flavor,
+    curse_ids: &[i32],
+    fingerprint_info: Option<&FingerprintInfo>,
+) -> Result<Vec<RepositoryPackage>, DownloadError> {
+    let mut curse_repo_packages = vec![];
+
+    if curse_ids.is_empty() {
+        return Ok(curse_repo_packages);
+    }
+
+    let mut curse_packages = curse::fetch_remote_packages_by_ids(&curse_ids).await?;
+
+    if let Some(fingerprint_info) = fingerprint_info {
+        // Get repo packages from fingerprint exact matches
+        curse_repo_packages.extend(
+            fingerprint_info
+                .exact_matches
+                .iter()
+                .map(|info| {
+                    (
+                        info.id.to_string(),
+                        curse::metadata_from_fingerprint_info(flavor, info),
+                    )
+                })
+                .filter_map(|(id, metadata)| {
+                    RepositoryPackage::from_repo_id(flavor, RepositoryKind::Curse, id)
+                        .map(|r| r.with_metadata(metadata))
+                        .ok()
+                }),
+        );
+
+        // Remove any packages that match a fingerprint entry and update missing
+        // metadata fields with that package info
+        curse_repo_packages.iter_mut().for_each(|r| {
+            if let Some(idx) = curse_packages.iter().position(|p| p.id.to_string() == r.id) {
+                let package = curse_packages.remove(idx);
+
+                r.metadata.title = Some(package.name.clone());
+                r.metadata.website_url = Some(package.website_url.clone());
+                r.metadata.changelog_url = Some(format!("{}/files", package.website_url));
+            }
+        });
+    }
+
+    curse_repo_packages.extend(
+        curse_packages
+            .into_iter()
+            .map(|package| {
+                (
+                    package.id.to_string(),
+                    curse::metadata_from_curse_package(flavor, package),
+                )
+            })
+            .filter_map(|(id, metadata)| {
+                RepositoryPackage::from_repo_id(flavor, RepositoryKind::Curse, id)
+                    .map(|r| r.with_metadata(metadata))
+                    .ok()
+            }),
+    );
+
+    Ok(curse_repo_packages)
 }
 
 pub(crate) async fn fetch_remote_packages_by_fingerprint(
