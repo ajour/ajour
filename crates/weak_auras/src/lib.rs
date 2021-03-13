@@ -556,7 +556,7 @@ pub enum AuraDisplayKind {
 impl Display for AuraDisplayKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            AuraDisplayKind::WeakAura => "Weak Aura",
+            AuraDisplayKind::WeakAura => "WeakAura",
             AuraDisplayKind::PlaterProfile => "Plater Profile",
             AuraDisplayKind::PlaterHook => "Plater Hook",
             AuraDisplayKind::PlaterScript => "Plater Script",
