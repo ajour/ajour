@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Changed
+
+- Error messages are cleared when "Refresh" is pressed
+
 ## [0.7.2] - 2021-03-02
 
 ### Added
