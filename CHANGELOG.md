@@ -22,6 +22,10 @@ and `Removed`.
   When enabled, Ajour will automatically apply new addon updates when available
   (new updates are checked for every 30 minutes)
 
+### Changed
+
+- Error messages are cleared when "Refresh" is pressed
+
 ## [0.7.2] - 2021-03-02
 
 ### Added
