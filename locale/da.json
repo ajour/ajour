@@ -118,5 +118,6 @@
     "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Vælg Kilde",
     "select-catalog-source-title": "Vælg en kilde i menuen",
-    "select-catalog-source-description": "Ajour har mange katalog kilder. Vælg en kilde for at vise addons."
+    "select-catalog-source-description": "Ajour har mange katalog kilder. Vælg en kilde for at vise addons.",
+    "auto-update": ""
 }

@@ -2,7 +2,7 @@ use super::*;
 use crate::config::Flavor;
 use crate::error::{DownloadError, RepositoryError};
 use crate::network::request_async;
-use crate::repository::{ReleaseChannel, RemotePackage};
+use crate::repository::{ReleaseChannel, RemotePackage, RepositoryKind, RepositoryPackage};
 
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
@@ -85,6 +85,37 @@ fn api_endpoint(ids: &str) -> String {
 /// Returns the addon website url.
 pub(crate) fn addon_url(id: &str) -> String {
     format!("{}{}", ADDON_URL, id)
+}
+
+pub(crate) async fn batch_fetch_repo_packages(
+    flavor: Flavor,
+    wowi_ids: &[String],
+) -> Result<Vec<RepositoryPackage>, DownloadError> {
+    let mut wowi_repo_packages = vec![];
+
+    if wowi_ids.is_empty() {
+        return Ok(wowi_repo_packages);
+    }
+
+    let wowi_packages = wowi::fetch_remote_packages(&wowi_ids).await?;
+
+    wowi_repo_packages.extend(
+        wowi_packages
+            .into_iter()
+            .map(|package| {
+                (
+                    package.id.to_string(),
+                    wowi::metadata_from_wowi_package(package),
+                )
+            })
+            .filter_map(|(id, metadata)| {
+                RepositoryPackage::from_repo_id(flavor, RepositoryKind::WowI, id)
+                    .ok()
+                    .map(|r| r.with_metadata(metadata))
+            }),
+    );
+
+    Ok(wowi_repo_packages)
 }
 
 /// Function to fetch a remote addon package which contains
