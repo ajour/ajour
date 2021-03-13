@@ -118,5 +118,6 @@
     "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Quelle auswählen",
     "select-catalog-source-title": "Wähle eine Quelle aus dem Menü",
-    "select-catalog-source-description": "Ajour hat mehrere Katalog-Quellen. Wähle eine davon aus, um deren Addons zu durchsuchen."
+    "select-catalog-source-description": "Ajour hat mehrere Katalog-Quellen. Wähle eine davon aus, um deren Addons zu durchsuchen.",
+    "auto-update": ""
 }

@@ -118,5 +118,6 @@
     "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Vyberte zdroj",
     "select-catalog-source-title": "Vyberte zdroj v menu",
-    "select-catalog-source-description": "Ajour má několik zdrojů katalogu. Vyberte zdroj, pro procházení doplňky."
+    "select-catalog-source-description": "Ajour má několik zdrojů katalogu. Vyberte zdroj, pro procházení doplňky.",
+    "auto-update": ""
 }
