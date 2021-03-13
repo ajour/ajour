@@ -9,7 +9,6 @@
     "aura": "Aura",
     "author": "Author",
     "authors": "Author(s)",
-    "auto-update": "Automatically apply new updates when available",
     "backup": "Backup",
     "backup-description": "Back up your AddOns and WTF folder to the chosen directory",
     "backup-latest": "Last backup: {time}",
@@ -119,5 +118,6 @@
     "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Select Source",
     "select-catalog-source-title": "Select a source in the menu",
-    "select-catalog-source-description": "Ajour has multiple catalog sources. Select a source to browse the addons."
+    "select-catalog-source-description": "Ajour has multiple catalog sources. Select a source to browse the addons.",
+    "auto-update": "Automatically apply new updates when available"
 }

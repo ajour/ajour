@@ -118,5 +118,6 @@
     "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Forrás kiválasztása",
     "select-catalog-source-title": "Forrás kiválasztása a menüben",
-    "select-catalog-source-description": "Az Ajour több forrásból is tud addonokat letölteni. Válassz egy forrást a böngészéshez."
+    "select-catalog-source-description": "Az Ajour több forrásból is tud addonokat letölteni. Válassz egy forrást a böngészéshez.",
+    "auto-update": ""
 }

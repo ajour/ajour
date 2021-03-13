@@ -118,5 +118,6 @@
     "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Choisissez la source",
     "select-catalog-source-title": "Sélectionnez la source dans le menu",
-    "select-catalog-source-description": "Ajour contient plusieurs sources d'addons. Choisissez une source pour parcourir les addons."
+    "select-catalog-source-description": "Ajour contient plusieurs sources d'addons. Choisissez une source pour parcourir les addons.",
+    "auto-update": ""
 }
