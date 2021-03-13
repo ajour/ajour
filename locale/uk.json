@@ -118,5 +118,6 @@
     "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Обрати джерело",
     "select-catalog-source-title": "Оберіть джерело в меню",
-    "select-catalog-source-description": "Ajour має кілька джерел каталогів. Оберіть джерело для перегляду додатків."
+    "select-catalog-source-description": "Ajour має кілька джерел каталогів. Оберіть джерело для перегляду додатків.",
+    "auto-update": ""
 }
