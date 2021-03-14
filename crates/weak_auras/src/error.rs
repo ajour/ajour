@@ -1,5 +1,9 @@
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("Failed to parse WeakAuras: {0}")]
+    ParseWeakAuras(#[source] anyhow::Error),
+    #[error("Failed to parse Plater Nameplates: {0}")]
+    ParsePlater(#[source] anyhow::Error),
     #[error("No UID for Aura {slug}")]
     MissingUid { slug: String },
     #[error(transparent)]

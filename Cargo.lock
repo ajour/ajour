@@ -119,6 +119,7 @@ name = "ajour-weak-auras"
 version = "0.7.2"
 dependencies = [
  "ajour-core",
+ "anyhow",
  "async-std",
  "futures",
  "isahc 1.1.0",

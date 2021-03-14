@@ -59,15 +59,26 @@ pub async fn list_accounts(wtf_path: impl AsRef<Path>) -> Result<Vec<String>, Er
 pub async fn parse_auras(wtf_path: impl AsRef<Path>, account: String) -> Result<Vec<Aura>, Error> {
     let mut auras = vec![];
 
-    auras.extend(parse_weak_auras(&wtf_path, &account).await?);
-    auras.extend(parse_platers(&wtf_path, &account).await?);
+    auras.extend(
+        parse_weak_auras(&wtf_path, &account)
+            .await
+            .map_err(Error::ParseWeakAuras)?,
+    );
+    auras.extend(
+        parse_platers(&wtf_path, &account)
+            .await
+            .map_err(Error::ParsePlater)?,
+    );
 
     Ok(auras)
 }
 
 /// Parse and return all Auras installed under the accounts `WeakAuras.lua`
 /// SavedVariables file
-async fn parse_weak_auras(wtf_path: impl AsRef<Path>, account: &str) -> Result<Vec<Aura>, Error> {
+async fn parse_weak_auras(
+    wtf_path: impl AsRef<Path>,
+    account: &str,
+) -> Result<Vec<Aura>, anyhow::Error> {
     let lua_path = wtf_path
         .as_ref()
         .join("Account")
@@ -143,7 +154,10 @@ async fn parse_weak_auras(wtf_path: impl AsRef<Path>, account: &str) -> Result<V
 
 /// Parse and return all Platers installed under the accounts `Plater.lua`
 /// SavedVariables file
-async fn parse_platers(wtf_path: impl AsRef<Path>, account: &str) -> Result<Vec<Aura>, Error> {
+async fn parse_platers(
+    wtf_path: impl AsRef<Path>,
+    account: &str,
+) -> Result<Vec<Aura>, anyhow::Error> {
     let lua_path = wtf_path
         .as_ref()
         .join("Account")
