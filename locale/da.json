@@ -111,7 +111,7 @@
     "error-remove-cache": "Kunne ikke fjerne indhold fra mellemlager",
     "error-list-accounts": "Kunne ikke indlæse liste af konti",
     "error-parse-weakauras": "Fejl under indlæsning af {type}",
-    "error-update-weakauras": "Fejl under opdatering af {type}",
+    "error-update-weakauras": "Fejl under opdatering",
     "categories": "Kategorier",
     "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour",
     "kofi": "Ko-fi",
