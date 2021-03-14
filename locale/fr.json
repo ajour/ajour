@@ -111,7 +111,7 @@
     "error-remove-cache": "Impossible de supprimer le cache",
     "error-list-accounts": "Impossible de récupérer la liste des comptes",
     "error-parse-weakauras": "Échec d'analyse de {type}",
-    "error-update-weakauras": "Échec de mise à jour de {type}",
+    "error-update-weakauras": "Mise à jour a échoué",
     "categories": "Catégories",
     "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour",
     "kofi": "Ko-fi",
