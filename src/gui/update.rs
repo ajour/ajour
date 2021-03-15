@@ -41,6 +41,7 @@ use {
     std::convert::TryFrom,
     std::hash::Hasher,
     std::path::{Path, PathBuf},
+    strfmt::strfmt,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -2104,9 +2105,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
             }
             error @ Err(_) => {
-                let error = error
-                    .context(localized_string("error-parse-weakauras"))
-                    .unwrap_err();
+                let error_type = match error {
+                    Err(ajour_weak_auras::Error::ParseWeakAuras(_)) => "WeakAuras",
+                    Err(ajour_weak_auras::Error::ParsePlater(_)) => "Plater Nameplates",
+                    _ => unreachable!(),
+                };
+
+                let mut vars = HashMap::new();
+                vars.insert("type".to_string(), error_type);
+                let fmt = localized_string("error-parse-weakauras");
+
+                let error = error.context(strfmt(&fmt, &vars).unwrap()).unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -2627,6 +2636,10 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
         }
         (AuraColumnKey::Author, SortDirection::Desc) => {
             auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
+        }
+        (AuraColumnKey::Type, SortDirection::Asc) => auras.sort_by(|a, b| a.kind().cmp(&b.kind())),
+        (AuraColumnKey::Type, SortDirection::Desc) => {
+            auras.sort_by(|a, b| a.kind().cmp(&b.kind()).reverse())
         }
         (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
             a.status()

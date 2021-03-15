@@ -21,6 +21,8 @@ and `Removed`.
 - A new "Auto Update" setting can be enabled in the Addons section of the Settings.
   When enabled, Ajour will automatically apply new addon updates when available
   (new updates are checked for every 30 minutes)
+- Plater Nameplates are supported in the My Weakauras tab. Updates can be applied
+  from this screen
 
 ### Changed
 
