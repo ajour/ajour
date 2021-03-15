@@ -148,6 +148,7 @@ async fn parse_weak_auras(
             a.status = AuraStatus::UpdateAvailable;
         }
     });
+    auras.retain(|a| !a.displays.is_empty());
 
     Ok(auras)
 }
@@ -277,6 +278,7 @@ async fn parse_platers(
             a.status = AuraStatus::UpdateAvailable;
         }
     });
+    auras.retain(|a| !a.displays.is_empty());
     auras.sort_by_key(|a| a.slug.clone());
     auras.dedup_by_key(|a| a.slug.clone());
 
