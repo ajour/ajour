@@ -119,5 +119,6 @@
     "select-catalog-source-picklist": "Select Source",
     "select-catalog-source-title": "Select a source in the menu",
     "select-catalog-source-description": "Ajour has multiple catalog sources. Select a source to browse the addons.",
-    "auto-update": "Automatically apply new updates when available"
+    "auto-update": "Automatically apply new updates when available",
+    "type": "Type"
 }
