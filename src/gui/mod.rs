@@ -125,6 +125,7 @@ pub enum Interaction {
     ToggleDeleteSavedVariables(bool),
     AddonsQuery(String),
     ToggleAutoUpdateAddons(bool),
+    RemoveDirectory(PathBuf),
 }
 
 #[derive(Debug)]

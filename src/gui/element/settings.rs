@@ -41,53 +41,16 @@ pub fn data_container<'a, 'b>(
         .style(style::Scrollable(color_palette));
 
     let wow_directory_column = {
-        // Title for the World of Warcraft directory selection.
+        // Title for the World of Warcraft directories selection.
         let directory_info_text =
-            Text::new(localized_string("wow-directory")).size(DEFAULT_FONT_SIZE);
+            Text::new(localized_string("wow-directories")).size(DEFAULT_FONT_SIZE);
         let direction_info_text_container = Container::new(directory_info_text)
             .style(style::NormalBackgroundContainer(color_palette));
-
-        // Directory button for World of Warcraft directory selection.
-
-        // let directory_button_title_container =
-        //     Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
-        //         .width(Length::FillPortion(1))
-        //         .center_x()
-        //         .align_x(Align::Center);
-
-        // let directory_button: Element<Interaction> =
-        //     Button::new(directory_button_state, directory_button_title_container)
-        //         .style(style::DefaultBoxedButton(color_palette))
-        //         .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
-        //         .into();
-
-        // Directory text, written next to directory button to let the user
-        // know what has been selected..
-        // let no_directory_str = &localized_string("no-directory")[..];
-        // let path_str = config
-        //     .wow
-        //     .directory
-        //     .as_ref()
-        //     .and_then(|p| p.to_str())
-        //     .unwrap_or(no_directory_str);
-        // let directory_data_text = Text::new(path_str)
-        //     .size(14)
-        //     .vertical_alignment(VerticalAlignment::Center);
-        // let directory_data_text_container = Container::new(directory_data_text)
-        //     .height(Length::Units(25))
-        //     .center_y()
-        //     .style(style::NormalBackgroundContainer(color_palette));
-
-        // Data row for the World of Warcraft directory selection.
-        // let directory_data_row = Row::new()
-        //     .push(directory_button.map(Message::Interaction))
-        //     .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-        //     .push(directory_data_text_container);
-
         let mut wow_dir_column = Column::new();
+
         for wow_dir in wow_directories {
             let remove_button_title_container =
-                Container::new(Text::new(localized_string("delete")).size(DEFAULT_FONT_SIZE))
+                Container::new(Text::new(localized_string("remove")).size(DEFAULT_FONT_SIZE))
                     .width(Length::FillPortion(1))
                     .center_x()
                     .align_x(Align::Center);
@@ -97,7 +60,7 @@ pub fn data_container<'a, 'b>(
                 remove_button_title_container,
             )
             .style(style::DefaultDeleteButton(color_palette))
-            .on_press(Interaction::SelectDirectory(DirectoryType::Backup))
+            .on_press(Interaction::RemoveDirectory(wow_dir.path.clone()))
             .into();
 
             let path_str = wow_dir
@@ -122,7 +85,7 @@ pub fn data_container<'a, 'b>(
         }
 
         let directory_button_title_container =
-            Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
+            Container::new(Text::new(localized_string("add-directory")).size(DEFAULT_FONT_SIZE))
                 .width(Length::FillPortion(1))
                 .center_x()
                 .align_x(Align::Center);

@@ -70,13 +70,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ));
             }
 
-            for path in &ajour.config.wow.directories {
-                let wow_directory_struct = WowDirectoryState {
+            // Map WoW paths to WowDirectoryState.
+            ajour.wow_directories = ajour
+                .config
+                .wow
+                .directories
+                .iter()
+                .map(|path| WowDirectoryState {
                     path: path.clone(),
                     ..Default::default()
-                };
-                ajour.wow_directories.push(wow_directory_struct);
-            }
+                })
+                .collect();
 
             let flavors = &Flavor::ALL[..];
             for flavor in flavors {
@@ -249,6 +253,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             return Ok(Command::perform(select_directory(), message));
         }
+        Message::Interaction(Interaction::RemoveDirectory(path)) => {
+            log::debug!("Interaction::RemoveDirectory({:?})", path);
+
+            if let Some(index) = ajour.config.wow.directories.iter().position(|p| *p == path) {
+                // Remove path from config.
+                ajour.config.wow.directories.remove(index);
+                let _ = &ajour.config.save();
+
+                // Map WoW paths to WowDirectoryState.
+                ajour.wow_directories = ajour
+                    .config
+                    .wow
+                    .directories
+                    .iter()
+                    .map(|path| WowDirectoryState {
+                        path: path.clone(),
+                        ..Default::default()
+                    })
+                    .collect();
+            }
+        }
         Message::Interaction(Interaction::ResetColumns) => {
             log::debug!("Interaction::ResetColumns");
 
@@ -281,8 +306,21 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             if let Some(path) = path {
                 ajour.config.wow.directories.push(path);
                 let _ = &ajour.config.save();
+
+                // Map WoW paths to WowDirectoryState.
+                ajour.wow_directories = ajour
+                    .config
+                    .wow
+                    .directories
+                    .iter()
+                    .map(|path| WowDirectoryState {
+                        path: path.clone(),
+                        ..Default::default()
+                    })
+                    .collect();
             }
 
+            // TODO (casper): clean up.
             // if path.is_some() {
             //     // Clear addons.
             //     ajour.addons = HashMap::new();
