@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Addon backup directory will be created if missing,
+
 ## [0.7.2] - 2021-03-02
 
 ### Added
