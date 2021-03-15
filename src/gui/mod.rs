@@ -224,6 +224,7 @@ pub struct Ajour {
     localization_picklist_state: pick_list::State<Language>,
     flavor_picklist_state: pick_list::State<Flavor>,
     addons_search_state: AddonsSearchState,
+    wow_directories: Vec<WowDirectoryState>,
 }
 
 impl Default for Ajour {
@@ -282,6 +283,7 @@ impl Default for Ajour {
             localization_picklist_state: Default::default(),
             flavor_picklist_state: Default::default(),
             addons_search_state: Default::default(),
+            wow_directories: Default::default(),
         }
     }
 }
@@ -934,6 +936,7 @@ impl Application for Ajour {
                     &mut self.default_addon_release_channel_picklist_state,
                     &mut self.reset_columns_btn_state,
                     &mut self.localization_picklist_state,
+                    &mut self.wow_directories,
                 );
 
                 content = content.push(settings_container)
@@ -1137,6 +1140,20 @@ impl Default for InstallFromSCMState {
             query: None,
             query_state: Default::default(),
             install_button_state: Default::default(),
+        }
+    }
+}
+
+pub struct WowDirectoryState {
+    pub path: PathBuf,
+    pub remove_button_state: button::State,
+}
+
+impl Default for WowDirectoryState {
+    fn default() -> Self {
+        WowDirectoryState {
+            path: PathBuf::new(),
+            remove_button_state: Default::default(),
         }
     }
 }

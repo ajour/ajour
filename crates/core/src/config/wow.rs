@@ -9,6 +9,9 @@ pub struct Wow {
     pub directory: Option<PathBuf>,
 
     #[serde(default)]
+    pub directories: Vec<PathBuf>,
+
+    #[serde(default)]
     pub flavor: Flavor,
 }
 
@@ -16,6 +19,7 @@ impl Default for Wow {
     fn default() -> Self {
         Wow {
             directory: None,
+            directories: vec![],
             flavor: Flavor::Retail,
         }
     }

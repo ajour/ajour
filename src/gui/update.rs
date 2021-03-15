@@ -3,7 +3,7 @@ use {
         Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
         CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel,
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
-        SelfUpdateStatus, SortDirection, State,
+        SelfUpdateStatus, SortDirection, State, WowDirectoryState,
     },
     crate::localization::{localized_string, LANG},
     crate::{log_error, Result},
@@ -67,6 +67,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     latest_backup(dir.to_owned()),
                     Message::LatestBackup,
                 ));
+            }
+
+            for path in &ajour.config.wow.directories {
+                let wow_directory_struct = WowDirectoryState {
+                    path: path.clone(),
+                    ..Default::default()
+                };
+                ajour.wow_directories.push(wow_directory_struct);
             }
 
             let flavors = &Flavor::ALL[..];
@@ -267,23 +275,30 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let path = wow_path_resolution(chosen_path);
             log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
 
-            if path.is_some() {
-                // Clear addons.
-                ajour.addons = HashMap::new();
-                // Update the path for World of Warcraft.
-                ajour.config.wow.directory = path;
-                // Persist the newly updated config.
-                let _ = &ajour.config.save();
-                // Set loading state.
-                let state = ajour.state.clone();
-                for (mode, _) in state {
-                    if matches!(mode, Mode::MyAddons(_)) {
-                        ajour.state.insert(mode, State::Loading);
-                    }
-                }
+            println!("path selected {:?}", &path);
 
-                return Ok(Command::perform(async {}, Message::Parse));
+            if let Some(path) = path {
+                ajour.config.wow.directories.push(path);
+                let _ = &ajour.config.save();
             }
+
+            // if path.is_some() {
+            //     // Clear addons.
+            //     ajour.addons = HashMap::new();
+            //     // Update the path for World of Warcraft.
+            //     ajour.config.wow.directory = path;
+            //     // Persist the newly updated config.
+            //     let _ = &ajour.config.save();
+            //     // Set loading state.
+            //     let state = ajour.state.clone();
+            //     for (mode, _) in state {
+            //         if matches!(mode, Mode::MyAddons(_)) {
+            //             ajour.state.insert(mode, State::Loading);
+            //         }
+            //     }
+
+            //     return Ok(Command::perform(async {}, Message::Parse));
+            // }
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
             log::debug!("Interaction::FlavorSelected({})", flavor);
