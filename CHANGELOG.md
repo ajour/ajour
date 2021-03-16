@@ -16,6 +16,7 @@ and `Removed`.
 
 ### Added
 
+- Addon backup directory will be created if missing
 - Addon updates are automatically checked for every 30 minutes while the program
   is open. If new updates are available, they will be sorted to the top of the screen
 - A new "Auto Update" setting can be enabled in the Addons section of the Settings.
