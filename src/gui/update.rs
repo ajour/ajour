@@ -15,7 +15,7 @@ use {
             AddonCache, AddonCacheEntry, FingerprintCache,
         },
         catalog,
-        config::{ColumnConfig, ColumnConfigV2, Flavor},
+        config::{ColumnConfig, ColumnConfigV2, Directory, Flavor},
         error::{DownloadError, FilesystemError, ParseError, RepositoryError},
         fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
         network::download_addon,
@@ -70,17 +70,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ));
             }
 
-            // Map WoW paths to WowDirectoryState.
-            ajour.wow_directories = ajour
-                .config
-                .wow
-                .directories
-                .iter()
-                .map(|path| WowDirectoryState {
-                    path: path.clone(),
-                    ..Default::default()
-                })
-                .collect();
+            // NOTE (casperstorm): Migration from single World of Warcraft directory to multiple directories.
+            let flavors = &Flavor::ALL[..];
+            for flavor in flavors {
+                if ajour.config.wow.directory.is_some() {
+                    let path = ajour.config.wow.directory.as_ref().unwrap();
+                    let flavor_path = ajour.config.get_flavor_directory_for_flavor(flavor, path);
+                    //     ajour
+                    //         .config
+                    //         .wow
+                    //         .directories
+                    //         .insert(*flavor, addon_directory.clone());
+                    //     let _ = &ajour.config.save();
+                }
+            }
 
             let flavors = &Flavor::ALL[..];
             for flavor in flavors {
@@ -255,24 +258,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::RemoveDirectory(path)) => {
             log::debug!("Interaction::RemoveDirectory({:?})", path);
-
-            if let Some(index) = ajour.config.wow.directories.iter().position(|p| *p == path) {
-                // Remove path from config.
-                ajour.config.wow.directories.remove(index);
-                let _ = &ajour.config.save();
-
-                // Map WoW paths to WowDirectoryState.
-                ajour.wow_directories = ajour
-                    .config
-                    .wow
-                    .directories
-                    .iter()
-                    .map(|path| WowDirectoryState {
-                        path: path.clone(),
-                        ..Default::default()
-                    })
-                    .collect();
-            }
         }
         Message::Interaction(Interaction::ResetColumns) => {
             log::debug!("Interaction::ResetColumns");
@@ -303,41 +288,41 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             println!("path selected {:?}", &path);
 
-            if let Some(path) = path {
-                ajour.config.wow.directories.push(path);
-                let _ = &ajour.config.save();
+            // if let Some(path) = path {
+            //     ajour.config.wow.directories.push(path);
+            //     let _ = &ajour.config.save();
 
-                // Map WoW paths to WowDirectoryState.
-                ajour.wow_directories = ajour
-                    .config
-                    .wow
-                    .directories
-                    .iter()
-                    .map(|path| WowDirectoryState {
-                        path: path.clone(),
-                        ..Default::default()
-                    })
-                    .collect();
-            }
+            //     // Map WoW paths to WowDirectoryState.
+            //     ajour.wow_directories = ajour
+            //         .config
+            //         .wow
+            //         .directories
+            //         .iter()
+            //         .map(|path| WowDirectoryState {
+            //             path: path.clone(),
+            //             ..Default::default()
+            //         })
+            //         .collect();
+            // }
 
             // TODO (casper): clean up.
-            // if path.is_some() {
-            //     // Clear addons.
-            //     ajour.addons = HashMap::new();
-            //     // Update the path for World of Warcraft.
-            //     ajour.config.wow.directory = path;
-            //     // Persist the newly updated config.
-            //     let _ = &ajour.config.save();
-            //     // Set loading state.
-            //     let state = ajour.state.clone();
-            //     for (mode, _) in state {
-            //         if matches!(mode, Mode::MyAddons(_)) {
-            //             ajour.state.insert(mode, State::Loading);
-            //         }
-            //     }
+            if path.is_some() {
+                // Clear addons.
+                ajour.addons = HashMap::new();
+                // Update the path for World of Warcraft.
+                ajour.config.wow.directory = path;
+                // Persist the newly updated config.
+                let _ = &ajour.config.save();
+                // Set loading state.
+                let state = ajour.state.clone();
+                for (mode, _) in state {
+                    if matches!(mode, Mode::MyAddons(_)) {
+                        ajour.state.insert(mode, State::Loading);
+                    }
+                }
 
-            //     return Ok(Command::perform(async {}, Message::Parse));
-            // }
+                return Ok(Command::perform(async {}, Message::Parse));
+            }
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
             log::debug!("Interaction::FlavorSelected({})", flavor);

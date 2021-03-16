@@ -13,7 +13,7 @@ mod wow;
 use crate::fs::PersistentData;
 
 pub use crate::config::addons::Addons;
-pub use crate::config::wow::{Flavor, Wow};
+pub use crate::config::wow::{Directory, Flavor, Wow};
 
 /// Config struct.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
@@ -64,6 +64,14 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn get_flavor_directory_for_flavor(
+        &self,
+        flavor: &Flavor,
+        path: &PathBuf,
+    ) -> Option<PathBuf> {
+        Some(PathBuf::new())
+    }
+
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
@@ -108,16 +116,9 @@ impl Config {
 
     /// Returns a `Option<PathBuf>` to the directory which will hold the
     /// temporary zip archives.
-    /// This will return `None` if no `wow_directory` is set in the config.
+    /// This will return `None` if flavor does not have a directory.
     pub fn get_download_directory_for_flavor(&self, flavor: Flavor) -> Option<PathBuf> {
-        match self.get_addon_directory_for_flavor(&flavor) {
-            Some(dir) => {
-                // The path to the directory which hold the temporary zip archives
-                let dir = dir.parent().expect("Expected Addons folder has a parent.");
-                Some(dir.to_path_buf())
-            }
-            None => None,
-        }
+        self.wow.directories.get(&flavor).cloned()
     }
 
     /// Returns a `Option<PathBuf>` to the WTF directory.
