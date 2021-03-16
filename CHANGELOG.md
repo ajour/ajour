@@ -16,6 +16,9 @@ and `Removed`.
 
 ### Added
 
+- Ability to choose a different directory for each flavor.
+  This means you can use a single instance of Ajour even if you have Retail and
+  Classic in two different directories.
 - Addon backup directory will be created if missing
 - Addon updates are automatically checked for every 30 minutes while the program
   is open. If new updates are available, they will be sorted to the top of the screen
