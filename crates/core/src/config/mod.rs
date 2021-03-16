@@ -64,23 +64,19 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn get_flavor_directory_for_flavor(
-        &self,
-        flavor: &Flavor,
-        path: &PathBuf,
-    ) -> Option<PathBuf> {
-        Some(PathBuf::new())
+    /// Returns a `PathBuf` to the flavor directory.
+    pub fn get_flavor_directory_for_flavor(&self, flavor: &Flavor, path: &PathBuf) -> PathBuf {
+        path.join(&flavor.folder_name())
     }
 
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        match &self.wow.directory {
-            Some(wow_dir) => {
-                // The path to the flavor directory
-                let flavor_dir = wow_dir.join(&flavor.folder_name());
+        let dir = self.wow.directories.get(flavor);
+        match dir {
+            Some(dir) => {
                 // The path to the addons directory
-                let mut addon_dir = flavor_dir.join("Interface/AddOns");
+                let mut addon_dir = dir.join("Interface/AddOns");
 
                 // If path doesn't exist, it could have been modified by the user.
                 // Check for a case-insensitive version and use that instead.
@@ -92,7 +88,7 @@ impl Config {
 
                     // For some reason the case insensitive pattern doesn't work
                     // unless we add an actual pattern symbol, hence the `?`.
-                    let pattern = format!("{}/?nterface/?ddons", flavor_dir.display());
+                    let pattern = format!("{}/?nterface/?ddons", dir.display());
 
                     for entry in glob::glob_with(&pattern, options).unwrap() {
                         if let Ok(path) = entry {
@@ -104,7 +100,7 @@ impl Config {
                 // If flavor dir exists but not addon dir we try to create it.
                 // This state can happen if you do a fresh install of WoW and
                 // launch Ajour before you launch WoW.
-                if flavor_dir.exists() && !addon_dir.exists() {
+                if dir.exists() && !addon_dir.exists() {
                     let _ = create_dir_all(&addon_dir);
                 }
 
@@ -124,10 +120,11 @@ impl Config {
     /// Returns a `Option<PathBuf>` to the WTF directory.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_wtf_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        match &self.wow.directory {
+        let dir = self.wow.directories.get(flavor);
+        match dir {
             Some(dir) => {
                 // The path to the WTF directory
-                let mut addon_dir = dir.join(&flavor.folder_name()).join("WTF");
+                let mut addon_dir = dir.join("WTF");
 
                 // If path doesn't exist, it could have been modified by the user.
                 // Check for a case-insensitive version and use that instead.
@@ -139,7 +136,7 @@ impl Config {
 
                     // For some reason the case insensitive pattern doesn't work
                     // unless we add an actual pattern symbol, hence the `?`.
-                    let pattern = format!("{}/?tf", dir.join(&flavor.folder_name()).display());
+                    let pattern = format!("{}/?tf", dir.display());
 
                     for entry in glob::glob_with(&pattern, options).unwrap() {
                         if let Ok(path) = entry {

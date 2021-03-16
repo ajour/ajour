@@ -3,7 +3,7 @@ use {
         Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
         CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel,
         InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
-        SelfUpdateStatus, SortDirection, State, WowDirectoryState,
+        SelfUpdateStatus, SortDirection, State,
     },
     crate::localization::{localized_string, LANG},
     crate::{log_error, Result},
@@ -15,7 +15,7 @@ use {
             AddonCache, AddonCacheEntry, FingerprintCache,
         },
         catalog,
-        config::{ColumnConfig, ColumnConfigV2, Directory, Flavor},
+        config::{ColumnConfig, ColumnConfigV2, Flavor},
         error::{DownloadError, FilesystemError, ParseError, RepositoryError},
         fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
         network::download_addon,
@@ -72,33 +72,26 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // NOTE (casperstorm): Migration from single World of Warcraft directory to multiple directories.
             let flavors = &Flavor::ALL[..];
-            for flavor in flavors {
-                if ajour.config.wow.directory.is_some() {
+            if ajour.config.wow.directory.is_some() {
+                for flavor in flavors {
                     let path = ajour.config.wow.directory.as_ref().unwrap();
                     let flavor_path = ajour.config.get_flavor_directory_for_flavor(flavor, path);
-                    //     ajour
-                    //         .config
-                    //         .wow
-                    //         .directories
-                    //         .insert(*flavor, addon_directory.clone());
-                    //     let _ = &ajour.config.save();
+                    if flavor_path.exists() {
+                        ajour.config.wow.directories.insert(*flavor, flavor_path);
+                    }
                 }
+
+                ajour.config.wow.directory = None;
+                let _ = &ajour.config.save();
             }
 
-            let flavors = &Flavor::ALL[..];
+            let flavors = ajour.config.wow.directories.keys().collect::<Vec<_>>();
             for flavor in flavors {
                 if let Some(addon_directory) = ajour.config.get_addon_directory_for_flavor(flavor) {
                     log::debug!(
                         "preparing to parse addons in {:?}",
                         addon_directory.display()
                     );
-
-                    // Builds a Vec of valid flavors.
-                    if addon_directory.exists() {
-                        ajour.valid_flavors.push(*flavor);
-                        ajour.valid_flavors.sort();
-                        ajour.valid_flavors.dedup();
-                    }
 
                     // Sets loading
                     ajour.state.insert(Mode::MyAddons(*flavor), State::Loading);
@@ -131,16 +124,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
 
-            let flavor = ajour.config.wow.flavor;
             // If we dont have current flavor in valid flavors we select a new.
-            if !ajour.valid_flavors.iter().any(|f| *f == flavor) {
-                // Find new flavor.
-                if let Some(flavor) = ajour.valid_flavors.first() {
-                    // Set nye flavor.
-                    ajour.config.wow.flavor = *flavor;
-                    // Set mode.
-                    ajour.mode = Mode::MyAddons(*flavor);
-                    // Persist the newly updated config.
+            let flavor = ajour.config.wow.flavor;
+            let flavors = ajour
+                .config
+                .wow
+                .directories
+                .keys()
+                .collect::<Vec<_>>()
+                .clone();
+            if !flavors.iter().any(|f| *f == &flavor) {
+                if let Some(flavor) = flavors.first() {
+                    ajour.config.wow.flavor = **flavor;
+                    ajour.mode = Mode::MyAddons(**flavor);
                     ajour.config.save()?;
                 }
             }
