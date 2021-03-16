@@ -121,7 +121,5 @@
     "select-catalog-source-description": "Ajour has multiple catalog sources. Select a source to browse the addons.",
     "auto-update": "Automatically apply new updates when available",
     "type": "Type",
-    "wow-directories": "World of Warcraft directories",
-    "add-directory": "Add Directory",
-    "remove": "Remove"
+    "wow-directories": "World of Warcraft directories"
 }
