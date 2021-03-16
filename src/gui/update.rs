@@ -1,9 +1,9 @@
 use {
     super::{
         Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
-        CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel,
-        InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
-        SelfUpdateStatus, SortDirection, State,
+        CatalogSource, ColumnKey, DownloadReason, ExpandType, GlobalReleaseChannel, InstallAddon,
+        InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel, SelfUpdateStatus,
+        SortDirection, State,
     },
     crate::localization::{localized_string, LANG},
     crate::{log_error, Result},
@@ -242,18 +242,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::OpenDirectory({:?})", path);
             let _ = open::that(path);
         }
-        Message::Interaction(Interaction::SelectDirectory(dir_type)) => {
-            log::debug!("Interaction::SelectDirectory({:?})", dir_type);
-
-            let message = match dir_type {
-                DirectoryType::Wow => Message::UpdateWowDirectory,
-                DirectoryType::Backup => Message::UpdateBackupDirectory,
-            };
-
-            return Ok(Command::perform(select_directory(), message));
+        Message::Interaction(Interaction::SelectWowDirectory(flavor)) => {
+            log::debug!("Interaction::SelectWowDirectory({:?})", flavor);
+            return Ok(Command::perform(
+                select_wow_directory(flavor),
+                Message::UpdateWowDirectory,
+            ));
         }
-        Message::Interaction(Interaction::RemoveDirectory(path)) => {
-            log::debug!("Interaction::RemoveDirectory({:?})", path);
+        Message::Interaction(Interaction::SelectBackupDirectory()) => {
+            log::debug!("Interaction::SelectBackupDirectory");
+            return Ok(Command::perform(
+                select_directory(),
+                Message::UpdateBackupDirectory,
+            ));
         }
         Message::Interaction(Interaction::ResetColumns) => {
             log::debug!("Interaction::ResetColumns");
@@ -277,47 +278,47 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::None,
             ));
         }
-        Message::UpdateWowDirectory(chosen_path) => {
-            log::debug!("Message::UpdateWowDirectory(Chosen({:?}))", &chosen_path);
-            let path = wow_path_resolution(chosen_path);
-            log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
+        Message::UpdateWowDirectory((chosen_path, flavor)) => {
+            log::debug!(
+                "Message::UpdateWowDirectory(Chosen({:?} - {:?}))",
+                &chosen_path,
+                &flavor
+            );
+            if let Some(path) = wow_path_resolution(chosen_path) {
+                log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
 
-            println!("path selected {:?}", &path);
-
-            // if let Some(path) = path {
-            //     ajour.config.wow.directories.push(path);
-            //     let _ = &ajour.config.save();
-
-            //     // Map WoW paths to WowDirectoryState.
-            //     ajour.wow_directories = ajour
-            //         .config
-            //         .wow
-            //         .directories
-            //         .iter()
-            //         .map(|path| WowDirectoryState {
-            //             path: path.clone(),
-            //             ..Default::default()
-            //         })
-            //         .collect();
-            // }
-
-            // TODO (casper): clean up.
-            if path.is_some() {
-                // Clear addons.
-                ajour.addons = HashMap::new();
-                // Update the path for World of Warcraft.
-                ajour.config.wow.directory = path;
-                // Persist the newly updated config.
-                let _ = &ajour.config.save();
-                // Set loading state.
-                let state = ajour.state.clone();
-                for (mode, _) in state {
-                    if matches!(mode, Mode::MyAddons(_)) {
-                        ajour.state.insert(mode, State::Loading);
+                if let Some(flavor) = flavor {
+                    // If a flavor is supplied we only update path for that specific flavor.
+                    let flavor_path = ajour.config.get_flavor_directory_for_flavor(&flavor, &path);
+                    if flavor_path.exists() {
+                        ajour.config.wow.directories.insert(flavor, flavor_path);
                     }
-                }
+                } else {
+                    // If no flavor is supplied it will find as many flavors as possible in the path.
+                    let flavors = &Flavor::ALL[..];
+                    for flavor in flavors {
+                        let flavor_path =
+                            ajour.config.get_flavor_directory_for_flavor(flavor, &path);
+                        if flavor_path.exists() {
+                            ajour.config.wow.directories.insert(*flavor, flavor_path);
+                        }
+                    }
 
-                return Ok(Command::perform(async {}, Message::Parse));
+                    // Clear addons.
+                    ajour.addons = HashMap::new();
+                    // Save config.
+                    ajour.config.wow.directory = None;
+                    let _ = &ajour.config.save();
+
+                    let state = ajour.state.clone();
+                    for (mode, _) in state {
+                        if matches!(mode, Mode::MyAddons(_)) {
+                            ajour.state.insert(mode, State::Loading);
+                        }
+                    }
+
+                    return Ok(Command::perform(async {}, Message::Parse));
+                }
             }
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
@@ -2225,6 +2226,15 @@ async fn select_directory() -> Option<PathBuf> {
     }
 
     None
+}
+
+async fn select_wow_directory(flavor: Option<Flavor>) -> (Option<PathBuf>, Option<Flavor>) {
+    let dialog = OpenSingleDir { dir: None };
+    if let Ok(show) = dialog.show() {
+        return (show, flavor);
+    }
+
+    (None, flavor)
 }
 
 async fn perform_read_addon_directory(

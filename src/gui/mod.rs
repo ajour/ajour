@@ -85,7 +85,8 @@ pub enum Interaction {
     Delete(String),
     Expand(ExpandType),
     Ignore(String),
-    SelectDirectory(DirectoryType),
+    SelectBackupDirectory(),
+    SelectWowDirectory(Option<Flavor>),
     OpenDirectory(PathBuf),
     OpenLink(String),
     Refresh(Mode),
@@ -125,7 +126,6 @@ pub enum Interaction {
     ToggleDeleteSavedVariables(bool),
     AddonsQuery(String),
     ToggleAutoUpdateAddons(bool),
-    RemoveDirectory(PathBuf),
 }
 
 #[derive(Debug)]
@@ -152,7 +152,7 @@ pub enum Message {
             Result<Vec<AddonFolder>, FilesystemError>,
         ),
     ),
-    UpdateWowDirectory(Option<PathBuf>),
+    UpdateWowDirectory((Option<PathBuf>, Option<Flavor>)),
     UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),
     LatestBackup(Option<NaiveDateTime>),
@@ -184,7 +184,6 @@ pub struct Ajour {
     settings_scrollable_state: scrollable::State,
     about_scrollable_state: scrollable::State,
     config: Config,
-    directory_btn_state: button::State,
     expanded_type: ExpandType,
     self_update_state: SelfUpdateState,
     refresh_btn_state: button::State,
@@ -239,7 +238,6 @@ impl Default for Ajour {
             settings_scrollable_state: Default::default(),
             about_scrollable_state: Default::default(),
             config: Config::default(),
-            directory_btn_state: Default::default(),
             expanded_type: ExpandType::None,
             self_update_state: Default::default(),
             refresh_btn_state: Default::default(),
@@ -282,7 +280,13 @@ impl Default for Ajour {
             localization_picklist_state: Default::default(),
             flavor_picklist_state: Default::default(),
             addons_search_state: Default::default(),
-            wow_directories: Default::default(),
+            wow_directories: Flavor::ALL
+                .iter()
+                .map(|f| WowDirectoryState {
+                    flavor: *f,
+                    button_state: Default::default(),
+                })
+                .collect::<Vec<WowDirectoryState>>(),
         }
     }
 }
@@ -920,7 +924,6 @@ impl Application for Ajour {
                 let settings_container = element::settings::data_container(
                     color_palette,
                     &mut self.settings_scrollable_state,
-                    &mut self.directory_btn_state,
                     &self.config,
                     &mut self.theme_state,
                     &mut self.scale_state,
@@ -1143,15 +1146,15 @@ impl Default for InstallFromSCMState {
 }
 
 pub struct WowDirectoryState {
-    pub path: PathBuf,
-    pub remove_button_state: button::State,
+    pub flavor: Flavor,
+    pub button_state: button::State,
 }
 
 impl Default for WowDirectoryState {
     fn default() -> Self {
         WowDirectoryState {
-            path: PathBuf::new(),
-            remove_button_state: Default::default(),
+            flavor: Default::default(),
+            button_state: Default::default(),
         }
     }
 }
@@ -1164,12 +1167,6 @@ pub enum ExpandType {
         changelog: Option<Changelog>,
     },
     None,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum DirectoryType {
-    Wow,
-    Backup,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]

@@ -1,10 +1,11 @@
 #![allow(clippy::too_many_arguments)]
+
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_HEADER_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
-        ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Language, Message,
-        ScaleState, SelfUpdateChannelState, ThemeState, WowDirectoryState,
+        ColumnSettings, GlobalReleaseChannel, Interaction, Language, Message, ScaleState,
+        SelfUpdateChannelState, ThemeState, WowDirectoryState,
     },
     crate::localization::localized_string,
     ajour_core::{config::Config, theme::ColorPalette},
@@ -19,7 +20,6 @@ use {
 pub fn data_container<'a, 'b>(
     color_palette: ColorPalette,
     scrollable_state: &'a mut scrollable::State,
-    directory_button_state: &'a mut button::State,
     config: &Config,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
@@ -41,67 +41,43 @@ pub fn data_container<'a, 'b>(
         .style(style::Scrollable(color_palette));
 
     let wow_directory_column = {
-        // Title for the World of Warcraft directories selection.
-        let directory_info_text =
-            Text::new(localized_string("wow-directories")).size(DEFAULT_FONT_SIZE);
-        let direction_info_text_container = Container::new(directory_info_text)
-            .style(style::NormalBackgroundContainer(color_palette));
         let mut wow_dir_column = Column::new();
-
-        for wow_dir in wow_directories {
-            let remove_button_title_container =
-                Container::new(Text::new(localized_string("remove")).size(DEFAULT_FONT_SIZE))
-                    .width(Length::FillPortion(1))
-                    .center_x()
-                    .align_x(Align::Center);
-
-            let remove_button: Element<Interaction> = Button::new(
-                &mut wow_dir.remove_button_state,
-                remove_button_title_container,
-            )
-            .style(style::DefaultDeleteButton(color_palette))
-            .on_press(Interaction::RemoveDirectory(wow_dir.path.clone()))
-            .into();
-
-            let path_str = wow_dir
-                .path
-                .to_str()
-                .unwrap_or("Error converting path to UTF-8.");
-
-            let directory_data_text = Text::new(path_str)
+        for wow_dir_state in wow_directories {
+            let flavor = wow_dir_state.flavor;
+            let path_str = config
+                .wow
+                .directories
+                .get(&flavor)
+                .map(|p| p.to_str())
+                .flatten()
+                .unwrap_or("-");
+            let flavor_text = Text::new(flavor.to_string())
                 .size(14)
                 .vertical_alignment(VerticalAlignment::Center);
-            let directory_data_text_container = Container::new(directory_data_text)
+            let flavor_text_container = Container::new(flavor_text)
+                .width(Length::Units(75))
+                .center_y();
+            let flavor_button: Element<Interaction> =
+                Button::new(&mut wow_dir_state.button_state, flavor_text_container)
+                    .style(style::DefaultButton(color_palette))
+                    .on_press(Interaction::SelectWowDirectory(Some(flavor)))
+                    .into();
+            let path_text = Text::new(path_str)
+                .size(14)
+                .vertical_alignment(VerticalAlignment::Center);
+            let path_text_container = Container::new(path_text)
                 .height(Length::Units(25))
                 .center_y()
-                .style(style::BrightBackgroundContainer(color_palette));
-
-            let wow_dir_row = Row::new()
-                .push(directory_data_text_container)
+                .style(style::NormalBackgroundContainer(color_palette));
+            let flavor_row = Row::new()
+                .push(flavor_button.map(Message::Interaction))
                 .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-                .push(remove_button.map(Message::Interaction));
+                .push(path_text_container);
 
-            wow_dir_column = wow_dir_column.push(wow_dir_row);
+            wow_dir_column = wow_dir_column.push(flavor_row);
         }
 
-        let directory_button_title_container =
-            Container::new(Text::new(localized_string("add-directory")).size(DEFAULT_FONT_SIZE))
-                .width(Length::FillPortion(1))
-                .center_x()
-                .align_x(Align::Center);
-
-        let directory_button: Element<Interaction> =
-            Button::new(directory_button_state, directory_button_title_container)
-                .style(style::DefaultBoxedButton(color_palette))
-                .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
-                .into();
-
-        Column::new()
-            .push(direction_info_text_container)
-            .push(Space::new(Length::Units(0), Length::Units(5)))
-            .push(wow_dir_column)
-            .push(Space::new(Length::Units(0), Length::Units(5)))
-            .push(directory_button.map(Message::Interaction))
+        wow_dir_column
     };
 
     let theme_column = {
@@ -224,7 +200,7 @@ pub fn data_container<'a, 'b>(
             directory_button_title_container,
         )
         .style(style::DefaultBoxedButton(color_palette))
-        .on_press(Interaction::SelectDirectory(DirectoryType::Backup))
+        .on_press(Interaction::SelectBackupDirectory())
         .into();
 
         // Directory text, written next to directory button to let the user
@@ -448,6 +424,11 @@ pub fn data_container<'a, 'b>(
     let general_settings_title_container = Container::new(general_settings_title)
         .style(style::BrightBackgroundContainer(color_palette));
 
+    let directories_settings_title =
+        Text::new(localized_string("wow-directories")).size(DEFAULT_HEADER_FONT_SIZE);
+    let directories_settings_title_container = Container::new(directories_settings_title)
+        .style(style::BrightBackgroundContainer(color_palette));
+
     let theme_scale_row = Row::new()
         .push(theme_column)
         .push(scale_column)
@@ -527,8 +508,6 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(language_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(wow_directory_column)
-        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(theme_scale_row)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(alternate_row_color_column)
@@ -537,6 +516,13 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(config_column)
         .push(Space::new(Length::Units(0), Length::Units(30)));
+
+    // Directories
+    scrollable = scrollable
+        .push(directories_settings_title_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(wow_directory_column)
+        .push(Space::new(Length::Units(0), Length::Units(20)));
 
     // Backup
     scrollable = scrollable
