@@ -303,22 +303,22 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             ajour.config.wow.directories.insert(*flavor, flavor_path);
                         }
                     }
-
-                    // Clear addons.
-                    ajour.addons = HashMap::new();
-
-                    // Save config.
-                    let _ = &ajour.config.save();
-
-                    let state = ajour.state.clone();
-                    for (mode, _) in state {
-                        if matches!(mode, Mode::MyAddons(_)) {
-                            ajour.state.insert(mode, State::Loading);
-                        }
-                    }
-
-                    return Ok(Command::perform(async {}, Message::Parse));
                 }
+
+                // Clear addons.
+                ajour.addons = HashMap::new();
+
+                // Save config.
+                let _ = &ajour.config.save();
+
+                let state = ajour.state.clone();
+                for (mode, _) in state {
+                    if matches!(mode, Mode::MyAddons(_)) {
+                        ajour.state.insert(mode, State::Loading);
+                    }
+                }
+
+                return Ok(Command::perform(async {}, Message::Parse));
             }
         }
         Message::Interaction(Interaction::FlavorSelected(flavor)) => {
