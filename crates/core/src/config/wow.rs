@@ -7,7 +7,7 @@ use std::path::PathBuf;
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct Wow {
     #[serde(default)]
-    #[deprecated(since = "0.8.0")]
+    #[allow(deprecated)]
     pub directory: Option<PathBuf>,
 
     #[serde(default)]

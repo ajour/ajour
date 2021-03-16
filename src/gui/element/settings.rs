@@ -252,7 +252,7 @@ pub fn data_container<'a, 'b>(
             // the wow folder is chosen and at least one of the folders is selected
             // for backup
             if !backup_state.backing_up
-                && !config.wow.directories.keys().is_empty()
+                && config.wow.directories.keys().next().is_some()
                 && (config.backup_addons || config.backup_wtf)
             {
                 backup_button = backup_button.on_press(Interaction::Backup);

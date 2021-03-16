@@ -1322,31 +1322,31 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let mut src_folders = vec![];
 
-            // Shouldn't panic since button is only clickable if wow directory is chosen
-            let wow_dir = ajour.config.wow.directory.as_ref().unwrap();
-
             // Shouldn't panic since button is only shown if backup directory is chosen
             let dest = ajour.config.backup_directory.as_ref().unwrap();
 
             // Backup WTF & AddOn directories for both flavors if they exist
             for flavor in Flavor::ALL.iter() {
-                if ajour.config.backup_addons {
-                    let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
+                if let Some(wow_dir) = ajour.config.get_root_directory_for_flavor(flavor) {
+                    if ajour.config.backup_addons {
+                        let addon_dir =
+                            ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
 
-                    // Backup starting with `Interface` folder as some users save
-                    // custom data here that they would like retained
-                    if let Some(interface_dir) = addon_dir.parent() {
-                        if interface_dir.exists() {
-                            src_folders.push(BackupFolder::new(interface_dir, wow_dir));
+                        // Backup starting with `Interface` folder as some users save
+                        // custom data here that they would like retained
+                        if let Some(interface_dir) = addon_dir.parent() {
+                            if interface_dir.exists() {
+                                src_folders.push(BackupFolder::new(interface_dir, &wow_dir));
+                            }
                         }
                     }
-                }
 
-                if ajour.config.backup_wtf {
-                    let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
+                    if ajour.config.backup_wtf {
+                        let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
 
-                    if wtf_dir.exists() {
-                        src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
+                        if wtf_dir.exists() {
+                            src_folders.push(BackupFolder::new(&wtf_dir, &wow_dir));
+                        }
                     }
                 }
             }

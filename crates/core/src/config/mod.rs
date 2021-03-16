@@ -69,6 +69,15 @@ impl Config {
         path.join(&flavor.folder_name())
     }
 
+    /// Returns a `Option<PathBuf>` to the root directory of the Flavor.
+    pub fn get_root_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
+        if let Some(flavor_dir) = self.wow.directories.get(flavor) {
+            Some(Box::new(flavor_dir.parent().unwrap()).to_path_buf())
+        } else {
+            None
+        }
+    }
+
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
