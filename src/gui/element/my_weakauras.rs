@@ -253,6 +253,31 @@ pub fn data_row_container<'a, 'b>(
         .iter()
         .enumerate()
         .filter_map(|(idx, (key, width, hidden))| {
+            if *key == AuraColumnKey::Type && !hidden {
+                Some((idx, width))
+            } else {
+                None
+            }
+        })
+        .next()
+    {
+        let kind = Text::new(aura.kind().to_string()).size(DEFAULT_FONT_SIZE);
+
+        let kind_row = Row::new().push(kind).spacing(3).align_items(Align::Center);
+
+        let kind_container = Container::new(kind_row)
+            .height(default_height)
+            .width(*width)
+            .center_y()
+            .style(style::HoverableForegroundContainer(color_palette));
+
+        row_containers.push((idx, kind_container));
+    }
+
+    if let Some((idx, width)) = column_config
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, (key, width, hidden))| {
             if *key == AuraColumnKey::Status && !hidden {
                 Some((idx, width))
             } else {

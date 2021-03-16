@@ -20,7 +20,9 @@ use {
         fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
-        repository::{Changelog, RepositoryKind, RepositoryPackage},
+        repository::{
+            batch_refresh_repository_packages, Changelog, RepositoryKind, RepositoryPackage,
+        },
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
     ajour_weak_auras::{Aura, AuraStatus},
@@ -39,6 +41,7 @@ use {
     std::convert::TryFrom,
     std::hash::Hasher,
     std::path::{Path, PathBuf},
+    strfmt::strfmt,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -131,6 +134,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Refresh(mode)) => {
             log::debug!("Interaction::Refresh({})", &mode);
+
+            // Clear any error message
+            ajour.error.take();
 
             match mode {
                 Mode::MyAddons(flavor) => {
@@ -527,6 +533,118 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 _ => {}
             }
         }
+        Message::CheckRepositoryUpdates(_) => {
+            log::debug!("Message::CheckRepositoryUpdates");
+
+            let mut commands = vec![];
+
+            for flavor in Flavor::ALL.iter() {
+                if let Some(addons) = ajour.addons.get(flavor) {
+                    let repos = addons
+                        .iter()
+                        .map(|a| a.repository().cloned())
+                        .flatten()
+                        .collect::<Vec<_>>();
+
+                    commands.push(Command::perform(
+                        perform_batch_refresh_repository_packages(*flavor, repos),
+                        Message::RepositoryPackagesFetched,
+                    ));
+                }
+            }
+
+            return Ok(Command::batch(commands));
+        }
+        Message::RepositoryPackagesFetched((flavor, result)) => {
+            match result.context(format!(
+                "Failed to fetch repository packages for {}",
+                flavor
+            )) {
+                Ok(packages) => {
+                    log::debug!(
+                        "Message::RepositoryPackagesFetched({}, {} packages)",
+                        flavor,
+                        packages.len()
+                    );
+
+                    let mut has_update = 0;
+
+                    let addons = ajour.addons.entry(flavor).or_default();
+                    let global_release_channel = ajour.config.addons.global_release_channel;
+
+                    // For each addon, check if an updated repository package exists. If it does,
+                    // we will apply that updated package to the addon, then check if
+                    // the addon is updatable.
+                    for addon in addons.iter_mut() {
+                        if let Some(package) = packages.iter().find(|p| {
+                            Some(p.id.as_str()) == addon.repository_id()
+                                && Some(p.kind) == addon.repository_kind()
+                        }) {
+                            // Update remote packages from refeshed repository package
+                            //
+                            // We don't want to replace the entire Repo Package of the addon
+                            // because we don't want to modify certain metadata such as File Id,
+                            // since we didn't use fingerprints to get these updated packages. We
+                            // just want to reference the "latest" remote packages from the repo,
+                            // and assign those to the Addon so we can check for new updates
+                            addon.set_remote_package_from_repo_package(package);
+
+                            // Check if addon is updatable.
+                            if let Some(package) =
+                                addon.relevant_release_package(global_release_channel)
+                            {
+                                if addon.is_updatable(&package) {
+                                    log::debug!(
+                                        "{} - Update is available for {}, {} -> {}",
+                                        flavor,
+                                        addon.title(),
+                                        addon.version().unwrap_or_default(),
+                                        package.version
+                                    );
+
+                                    addon.state = AddonState::Updatable;
+
+                                    has_update += 1;
+                                }
+                            }
+                        }
+                    }
+
+                    if has_update == 0 {
+                        log::debug!("{} - No addon updates available", flavor);
+                    } else {
+                        // Addons have updates, resort by status to put them up top
+                        sort_addons(
+                            addons,
+                            global_release_channel,
+                            SortDirection::Desc,
+                            ColumnKey::Status,
+                        );
+                        ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                        ajour.header_state.previous_column_key = Some(ColumnKey::Status);
+
+                        // If auto update is enabled, trigger a refresh all
+                        if ajour.config.auto_update {
+                            return handle_message(
+                                ajour,
+                                Message::Interaction(Interaction::UpdateAll(Mode::MyAddons(
+                                    flavor,
+                                ))),
+                            );
+                        }
+                    }
+                }
+                Err(error) => {
+                    log_error(&error);
+                }
+            }
+        }
+        Message::Interaction(Interaction::ToggleAutoUpdateAddons(auto_update)) => {
+            log::debug!("Interaction::ToggleAutoUpdateAddons({})", auto_update);
+
+            ajour.config.auto_update = auto_update;
+            let _ = ajour.config.save();
+        }
         Message::ParsedAddons((flavor, result)) => {
             let global_release_channel = ajour.config.addons.global_release_channel;
 
@@ -592,6 +710,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     // Insert the addons into the HashMap.
                     ajour.addons.insert(flavor, addons);
+
+                    // If auto update is enabled, trigger a refresh all
+                    if ajour.config.auto_update {
+                        return handle_message(
+                            ajour,
+                            Message::Interaction(Interaction::UpdateAll(Mode::MyAddons(flavor))),
+                        );
+                    }
                 }
                 Err(error) => {
                     log_error(&error);
@@ -1964,9 +2090,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
             }
             error @ Err(_) => {
-                let error = error
-                    .context(localized_string("error-parse-weakauras"))
-                    .unwrap_err();
+                let error_type = match error {
+                    Err(ajour_weak_auras::Error::ParseWeakAuras(_)) => "WeakAuras",
+                    Err(ajour_weak_auras::Error::ParsePlater(_)) => "Plater Nameplates",
+                    _ => unreachable!(),
+                };
+
+                let mut vars = HashMap::new();
+                vars.insert("type".to_string(), error_type);
+                let fmt = localized_string("error-parse-weakauras");
+
+                let error = error.context(strfmt(&fmt, &vars).unwrap()).unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -2228,6 +2362,16 @@ async fn perform_fetch_changelog(
     (addon, changelog)
 }
 
+async fn perform_batch_refresh_repository_packages(
+    flavor: Flavor,
+    repos: Vec<RepositoryPackage>,
+) -> (Flavor, Result<Vec<RepositoryPackage>, DownloadError>) {
+    (
+        flavor,
+        batch_refresh_repository_packages(flavor, &repos).await,
+    )
+}
+
 fn sort_addons(
     addons: &mut [Addon],
     global_release_channel: GlobalReleaseChannel,
@@ -2477,6 +2621,10 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
         }
         (AuraColumnKey::Author, SortDirection::Desc) => {
             auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
+        }
+        (AuraColumnKey::Type, SortDirection::Asc) => auras.sort_by(|a, b| a.kind().cmp(&b.kind())),
+        (AuraColumnKey::Type, SortDirection::Desc) => {
+            auras.sort_by(|a, b| a.kind().cmp(&b.kind()).reverse())
         }
         (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
             a.status()

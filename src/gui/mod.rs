@@ -15,7 +15,7 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, Language, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
-    repository::{Changelog, GlobalReleaseChannel, ReleaseChannel},
+    repository::{Changelog, GlobalReleaseChannel, ReleaseChannel, RepositoryPackage},
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
@@ -124,6 +124,7 @@ pub enum Interaction {
     ResetColumns,
     ToggleDeleteSavedVariables(bool),
     AddonsQuery(String),
+    ToggleAutoUpdateAddons(bool),
 }
 
 #[derive(Debug)]
@@ -168,6 +169,8 @@ pub enum Message {
     ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
     AurasUpdated((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
     FetchedChangelog((Addon, Result<Changelog, RepositoryError>)),
+    CheckRepositoryUpdates(Instant),
+    RepositoryPackagesFetched((Flavor, Result<Vec<RepositoryPackage>, DownloadError>)),
 }
 
 pub struct Ajour {
@@ -323,11 +326,14 @@ impl Application for Ajour {
             iced_futures::time::every(Duration::from_secs(60 * 5)).map(Message::RefreshCatalog);
         let new_release_subscription = iced_futures::time::every(Duration::from_secs(60 * 60))
             .map(Message::CheckLatestRelease);
+        let check_updates_subscription = iced_futures::time::every(Duration::from_secs(60 * 30))
+            .map(Message::CheckRepositoryUpdates);
 
         iced::Subscription::batch(vec![
             runtime_subscription,
             catalog_subscription,
             new_release_subscription,
+            check_updates_subscription,
         ])
     }
 
@@ -1987,6 +1993,7 @@ pub enum AuraColumnKey {
     LocalVersion,
     RemoteVersion,
     Author,
+    Type,
     Status,
 }
 
@@ -1999,6 +2006,7 @@ impl AuraColumnKey {
             LocalVersion => localized_string("local"),
             RemoteVersion => localized_string("remote"),
             Author => localized_string("author"),
+            Type => localized_string("type"),
             Status => localized_string("status"),
         }
     }
@@ -2011,6 +2019,7 @@ impl AuraColumnKey {
             LocalVersion => "local",
             RemoteVersion => "remote",
             Author => "author",
+            Type => "type",
             Status => "status",
         };
 
@@ -2025,6 +2034,7 @@ impl From<&str> for AuraColumnKey {
             "local" => AuraColumnKey::LocalVersion,
             "remote" => AuraColumnKey::RemoteVersion,
             "author" => AuraColumnKey::Author,
+            "type" => AuraColumnKey::Type,
             "status" => AuraColumnKey::Status,
             _ => panic!(format!("Unknown AuraColumnKey for {}", s)),
         }
@@ -2074,6 +2084,12 @@ impl Default for AuraHeaderState {
                 },
                 AuraColumnState {
                     key: AuraColumnKey::Author,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                    hidden: false,
+                },
+                AuraColumnState {
+                    key: AuraColumnKey::Type,
                     btn_state: Default::default(),
                     width: Length::Units(85),
                     hidden: false,

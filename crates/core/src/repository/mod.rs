@@ -1,5 +1,5 @@
 use crate::config::Flavor;
-use crate::error::RepositoryError;
+use crate::error::{DownloadError, RepositoryError};
 
 use chrono::{DateTime, Utc};
 use isahc::http::uri::Uri;
@@ -11,7 +11,7 @@ use std::collections::HashMap;
 mod backend;
 use backend::Backend;
 
-pub use backend::{curse, townlongyak, tukui, wowi};
+pub use backend::{curse, git, townlongyak, tukui, wowi};
 use backend::{Curse, Github, Gitlab, TownlongYak, Tukui, WowI};
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Serialize, Deserialize)]
@@ -355,4 +355,61 @@ pub struct RepositoryIdentifiers {
 #[derive(Debug, Clone)]
 pub struct Changelog {
     pub text: Option<String>,
+}
+
+pub async fn batch_refresh_repository_packages(
+    flavor: Flavor,
+    repos: &[RepositoryPackage],
+) -> Result<Vec<RepositoryPackage>, DownloadError> {
+    let curse_ids = repos
+        .iter()
+        .filter(|r| r.kind == RepositoryKind::Curse)
+        .map(|r| r.id.parse::<i32>().ok())
+        .flatten()
+        .collect::<Vec<_>>();
+    let tukui_ids = repos
+        .iter()
+        .filter(|r| r.kind == RepositoryKind::Tukui)
+        .map(|r| r.id.clone())
+        .collect::<Vec<_>>();
+    let wowi_ids = repos
+        .iter()
+        .filter(|r| r.kind == RepositoryKind::WowI)
+        .map(|r| r.id.clone())
+        .collect::<Vec<_>>();
+    let townlong_ids = repos
+        .iter()
+        .filter(|r| r.kind == RepositoryKind::TownlongYak)
+        .map(|r| r.id.clone())
+        .collect::<Vec<_>>();
+    let git_urls = repos
+        .iter()
+        .filter(|r| matches!(r.kind, RepositoryKind::Git(_)))
+        .map(|r| r.id.clone())
+        .collect::<Vec<_>>();
+
+    // Get all curse repo packages
+    let curse_repo_packages = curse::batch_fetch_repo_packages(flavor, &curse_ids, None).await?;
+
+    // Get all tukui repo packages
+    let tukui_repo_packages = tukui::batch_fetch_repo_packages(flavor, &tukui_ids).await?;
+
+    // Get all wowi repo packages
+    let wowi_repo_packages = wowi::batch_fetch_repo_packages(flavor, &wowi_ids).await?;
+
+    // Get all townlong repo packages
+    let townlong_repo_packages =
+        townlongyak::batch_fetch_repo_packages(flavor, &townlong_ids).await?;
+
+    // Get all git repo packages
+    let git_repo_packages = git::batch_fetch_repo_packages(flavor, &git_urls).await?;
+
+    Ok([
+        &curse_repo_packages[..],
+        &tukui_repo_packages[..],
+        &wowi_repo_packages[..],
+        &townlong_repo_packages[..],
+        &git_repo_packages[..],
+    ]
+    .concat())
 }
