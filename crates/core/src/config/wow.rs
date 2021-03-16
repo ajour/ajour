@@ -7,7 +7,7 @@ use std::path::PathBuf;
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct Wow {
     #[serde(default)]
-    // TODO: Deprecate this.
+    #[deprecated(since = "0.8.0")]
     pub directory: Option<PathBuf>,
 
     #[serde(default)]
@@ -25,12 +25,6 @@ impl Default for Wow {
             flavor: Flavor::Retail,
         }
     }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, Hash, PartialEq, Eq)]
-pub struct Directory {
-    pub path: PathBuf,
-    pub flavor: Flavor,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]

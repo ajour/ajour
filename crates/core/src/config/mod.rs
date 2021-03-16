@@ -13,7 +13,7 @@ mod wow;
 use crate::fs::PersistentData;
 
 pub use crate::config::addons::Addons;
-pub use crate::config::wow::{Directory, Flavor, Wow};
+pub use crate::config::wow::{Flavor, Wow};
 
 /// Config struct.
 #[derive(Deserialize, Serialize, Debug, PartialEq, Default, Clone)]
