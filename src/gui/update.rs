@@ -306,8 +306,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     // Clear addons.
                     ajour.addons = HashMap::new();
+
                     // Save config.
-                    ajour.config.wow.directory = None;
                     let _ = &ajour.config.save();
 
                     let state = ajour.state.clone();

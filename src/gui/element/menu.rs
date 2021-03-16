@@ -33,7 +33,12 @@ pub fn data_container<'a>(
     weak_auras_is_installed: bool,
 ) -> Container<'a, Message> {
     let flavor = config.wow.flavor;
-    let valid_flavors = config.wow.directories.keys().copied();
+    let valid_flavors = config
+        .wow
+        .directories
+        .keys()
+        .copied()
+        .collect::<Vec<Flavor>>();
 
     // State.
     let myaddons_state = state
