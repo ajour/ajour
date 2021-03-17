@@ -90,7 +90,8 @@ async fn parse_weak_auras(
         return Ok(vec![]);
     }
 
-    let source = fs::read_to_string(&lua_path).await?;
+    let bytes = fs::read(&lua_path).await?;
+    let source = String::from_utf8_lossy(&bytes).to_string();
 
     let displays = async_std::task::spawn_blocking(move || {
         let expression = source.replace("WeakAurasSaved = {", "{");
@@ -169,7 +170,8 @@ async fn parse_platers(
         return Ok(vec![]);
     }
 
-    let source = fs::read_to_string(&lua_path).await?;
+    let bytes = fs::read(&lua_path).await?;
+    let source = String::from_utf8_lossy(&bytes).to_string();
 
     let data = async_std::task::spawn_blocking(move || {
         let expression = source.replace("PlaterDB = {", "{");
