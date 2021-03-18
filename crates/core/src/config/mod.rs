@@ -72,7 +72,7 @@ impl Config {
     /// Returns a `Option<PathBuf>` to the root directory of the Flavor.
     pub fn get_root_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
         if let Some(flavor_dir) = self.wow.directories.get(flavor) {
-            Some(Box::new(flavor_dir.parent().unwrap()).to_path_buf())
+            Some(flavor_dir.parent().unwrap().to_path_buf())
         } else {
             None
         }
