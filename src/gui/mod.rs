@@ -2394,4 +2394,21 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
     ajour.mode = Mode::MyAddons(config.wow.flavor);
 
     ajour.config = config;
+
+    // @see (casperstorm): Migration from single World of Warcraft directory to multiple directories.
+    // This is essentially deprecrating `ajour.config.wow.directory`.
+    if ajour.config.wow.directory.is_some() {
+        for flavor in Flavor::ALL.iter() {
+            let path = ajour.config.wow.directory.as_ref().unwrap();
+            let flavor_path = ajour.config.get_flavor_directory_for_flavor(flavor, path);
+            if flavor_path.exists() {
+                ajour.config.wow.directories.insert(*flavor, flavor_path);
+            }
+        }
+
+        // Removing `directory`, so we don't end up here again.
+        ajour.config.wow.directory = None;
+    }
+
+    let _ = &ajour.config.save();
 }

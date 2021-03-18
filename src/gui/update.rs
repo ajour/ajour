@@ -70,21 +70,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ));
             }
 
-            // NOTE (casperstorm): Migration from single World of Warcraft directory to multiple directories.
-            let flavors = &Flavor::ALL[..];
-            if ajour.config.wow.directory.is_some() {
-                for flavor in flavors {
-                    let path = ajour.config.wow.directory.as_ref().unwrap();
-                    let flavor_path = ajour.config.get_flavor_directory_for_flavor(flavor, path);
-                    if flavor_path.exists() {
-                        ajour.config.wow.directories.insert(*flavor, flavor_path);
-                    }
-                }
-
-                ajour.config.wow.directory = None;
-                let _ = &ajour.config.save();
-            }
-
             let flavors = ajour.config.wow.directories.keys().collect::<Vec<_>>();
             for flavor in flavors {
                 if let Some(addon_directory) = ajour.config.get_addon_directory_for_flavor(flavor) {
