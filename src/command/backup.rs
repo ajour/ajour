@@ -6,6 +6,7 @@ use ajour_core::config::{load_config, Flavor};
 use anyhow::format_err;
 
 use async_std::task;
+use std::fs::create_dir;
 use std::path::PathBuf;
 
 pub fn backup(
@@ -21,6 +22,10 @@ pub fn backup(
         } else {
             flavors
         };
+
+        if !destination.exists() {
+            create_dir(destination.clone())?;
+        }
 
         if !destination.is_dir() {
             return Err(format_err!("destination must be a folder, not a file"));

@@ -195,6 +195,12 @@ impl Addon {
         self.repository = Some(repo_package);
     }
 
+    pub fn set_remote_package_from_repo_package(&mut self, repo_package: &RepositoryPackage) {
+        if let Some(repo) = self.repository.as_mut() {
+            repo.metadata.remote_packages = repo_package.metadata.remote_packages.clone();
+        }
+    }
+
     pub fn update_addon_folders(&mut self, mut folders: Vec<AddonFolder>) {
         if !folders.is_empty() {
             folders.sort_by(|a, b| a.id.cmp(&b.id));
@@ -237,7 +243,7 @@ impl Addon {
         }
     }
 
-    fn repository(&self) -> Option<&RepositoryPackage> {
+    pub fn repository(&self) -> Option<&RepositoryPackage> {
         self.repository.as_ref()
     }
 

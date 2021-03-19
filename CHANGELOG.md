@@ -14,6 +14,21 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Addon backup directory will be created if missing
+- Addon updates are automatically checked for every 30 minutes while the program
+  is open. If new updates are available, they will be sorted to the top of the screen
+- A new "Auto Update" setting can be enabled in the Addons section of the Settings.
+  When enabled, Ajour will automatically apply new addon updates when available
+  (new updates are checked for every 30 minutes)
+- Plater Nameplates are supported in the My Weakauras tab. Updates can be applied
+  from this screen
+
+### Changed
+
+- Error messages are cleared when "Refresh" is pressed
+
 ## [0.7.2] - 2021-03-02
 
 ### Added

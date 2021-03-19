@@ -316,6 +316,21 @@ pub fn data_container<'a, 'b>(
         )
     };
 
+    let auto_update_column = {
+        let auto_update = config.auto_update;
+        let checkbox = Checkbox::new(
+            auto_update,
+            localized_string("auto-update"),
+            move |is_checked| Message::Interaction(Interaction::ToggleAutoUpdateAddons(is_checked)),
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+        let checkbox_container =
+            Container::new(checkbox).style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
+
     let hide_addons_column = {
         let hide_ignored_addons = config.hide_ignored_addons;
         let checkbox = Checkbox::new(
@@ -525,7 +540,9 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(delete_saved_variables_column);
+        .push(delete_saved_variables_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(auto_update_column);
 
     let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_HEADER_FONT_SIZE);
     let columns_title_text_container =

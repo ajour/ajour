@@ -58,6 +58,9 @@ pub struct Config {
 
     #[serde(default)]
     pub catalog_source: Option<catalog::Source>,
+
+    #[serde(default)]
+    pub auto_update: bool,
 }
 
 impl Config {

@@ -1,4 +1,4 @@
-use super::{AuraUpdate, Error};
+use super::{AuraKind, AuraUpdate, Error};
 use async_std::{fs, io::prelude::*, path::Path};
 use std::fmt::Write;
 
@@ -143,30 +143,58 @@ impl CompanionAddon {
 
         let mut output = String::new();
 
+        let aura_updates = updates
+            .iter()
+            .filter(|a| a.aura.kind == AuraKind::WeakAura)
+            .collect::<Vec<_>>();
+        let plater_updates = updates
+            .iter()
+            .filter(|a| a.aura.kind != AuraKind::WeakAura)
+            .collect::<Vec<_>>();
+
         writeln!(&mut output, "-- file generated automatically")?;
         writeln!(&mut output, "WeakAurasCompanion = {{")?;
         writeln!(&mut output, "  slugs = {{")?;
 
-        for update in updates {
+        for update in &aura_updates {
             write!(&mut output, "{}", update.formatted_slug()?)?;
         }
 
         writeln!(&mut output, "  }},")?;
         writeln!(&mut output, "  uids = {{")?;
 
-        for update in updates {
+        for update in &aura_updates {
             write!(&mut output, "{}", update.formatted_uid()?)?;
         }
 
         writeln!(&mut output, "  }},")?;
         writeln!(&mut output, "  ids = {{")?;
 
-        for update in updates {
+        for update in &aura_updates {
             write!(&mut output, "{}", update.formatted_ids()?)?;
         }
 
         writeln!(&mut output, "  }},")?;
-        writeln!(&mut output, "  stash = {{ }}")?;
+        writeln!(&mut output, "  stash = {{ }},")?;
+        writeln!(&mut output, "  Plater = {{")?;
+
+        writeln!(&mut output, "    slugs = {{")?;
+
+        for update in &plater_updates {
+            write!(&mut output, "{}", update.formatted_slug()?)?;
+        }
+
+        writeln!(&mut output, "    }},")?;
+        writeln!(&mut output, "    uids = {{ }},")?;
+        writeln!(&mut output, "    ids = {{")?;
+
+        for update in &plater_updates {
+            write!(&mut output, "{}", update.formatted_ids()?)?;
+        }
+
+        writeln!(&mut output, "    }}")?;
+
+        writeln!(&mut output, "  }}")?;
         writeln!(&mut output, "}}")?;
 
         data_file.write_all(output.as_bytes()).await?;
