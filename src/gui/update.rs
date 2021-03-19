@@ -70,6 +70,49 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ));
             }
 
+            // Check if any new flavor has been added since last time.
+            // Get missing flavors.
+            let mut missing_flavors: Vec<&Flavor> = vec![];
+            for flavor in Flavor::ALL.iter() {
+                if let None = ajour.config.wow.directories.get(flavor) {
+                    missing_flavors.push(flavor);
+                }
+            }
+
+            let flavors = ajour
+                .config
+                .wow
+                .directories
+                .keys()
+                .copied()
+                .collect::<Vec<_>>();
+            for flavor in flavors {
+                // Find root dir of the flavor and check if any of the missing_flavor's is there.
+                // If it is, we added it to the directories.
+                if let Some(root_dir) = ajour.config.get_root_directory_for_flavor(&flavor) {
+                    for missing_flavor in &missing_flavors {
+                        let flavor_dir = ajour
+                            .config
+                            .get_flavor_directory_for_flavor(missing_flavor, &root_dir);
+                        if flavor_dir.exists() {
+                            ajour
+                                .config
+                                .wow
+                                .directories
+                                .insert(**missing_flavor, flavor_dir);
+                        }
+                    }
+                }
+
+                // Check if the current flavor we are looping still exists.
+                // It might have been uninstalled since last time, if we can't find it we remove it.
+                if let Some(flavor_path) = ajour.config.wow.directories.get(&flavor) {
+                    if !flavor_path.exists() {
+                        ajour.config.wow.directories.remove(&flavor);
+                    }
+                }
+            }
+
             let flavors = ajour.config.wow.directories.keys().collect::<Vec<_>>();
             for flavor in flavors {
                 if let Some(addon_directory) = ajour.config.get_addon_directory_for_flavor(flavor) {
