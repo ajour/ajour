@@ -3,8 +3,8 @@ use crate::error::FilesystemError;
 use once_cell::sync::Lazy;
 #[cfg(not(windows))]
 use std::env;
+use std::path::PathBuf;
 use std::sync::Mutex;
-use std::{fs, path::PathBuf};
 
 mod addon;
 pub mod backup;
