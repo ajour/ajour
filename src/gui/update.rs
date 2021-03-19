@@ -74,7 +74,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Get missing flavors.
             let mut missing_flavors: Vec<&Flavor> = vec![];
             for flavor in Flavor::ALL.iter() {
-                if let None = ajour.config.wow.directories.get(flavor) {
+                if ajour.config.wow.directories.get(flavor).is_none() {
                     missing_flavors.push(flavor);
                 }
             }
