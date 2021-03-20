@@ -87,7 +87,7 @@
     "update-all": "Tout mettre à jour",
     "ajour-update-channel": "Canal de mise à jour pour Ajour",
     "updating": "Mise à jour...",
-    "weakaura-updates-queued": "Mise à jour en attente. Terminez-les en jeu.",
+    "weakaura-updates-queued": "Mise à jour en attente, terminez-les en jeu",
     "weakauras-loaded": "{number} chargés",
     "website": "Site web",
     "website-http": "https://getajour.com",
@@ -110,8 +110,8 @@
     "error-update-ajour": "Impossible de mettre à jour Ajour",
     "error-remove-cache": "Impossible de supprimer le cache",
     "error-list-accounts": "Impossible de récupérer la liste des comptes",
-    "error-parse-weakauras": "Échec d'analyse de {type}",
-    "error-update-weakauras": "Mise à jour a échoué",
+    "error-parse-weakauras": "Échec lors du chargement de {type}",
+    "error-update-weakauras": "Échec de la mise à jour",
     "categories": "Catégories",
     "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour",
     "kofi": "Ko-fi",
@@ -119,5 +119,7 @@
     "select-catalog-source-picklist": "Choisissez la source",
     "select-catalog-source-title": "Sélectionnez la source dans le menu",
     "select-catalog-source-description": "Ajour contient plusieurs sources d'addons. Choisissez une source pour parcourir les addons.",
-    "auto-update": "Installer automatiquement les mises à jour lorsque disponibles"
+    "auto-update": "Installer automatiquement les mises à jour lorsque disponibles",
+    "type": "Type",
+    "wow-directories": "Répertoires World of Warcraft"
 }
