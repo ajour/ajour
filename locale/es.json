@@ -57,8 +57,6 @@
     "open-data-directory": "Directorio abierto de datos",
     "parsing-addons": "Análisis de AddOns {flavor} en marcha",
     "parsing-weakauras": "Actualmente analizando {sabor} Datos de Wago",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Actualizar",
     "release-channel-no-release": "no hay versiones disponibles",
     "remote": "Versión remota",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "No se ha podido actualizar",
     "categories": "Categorías",
     "error-update-ajour-permission": "Problema con permisos mientras se actualizaba Ajour",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Seleccione la fuente",
     "select-catalog-source-title": "Seleccione una fuente en el menú",
     "select-catalog-source-description": "Ajour tiene múltiples fuentes de catálogo. Seleccione una fuente para examinar los complementos.",
     "auto-update": "Aplicar automáticamente las nuevas actualizaciones cuando estén disponibles",
     "type": "Tipo",
-    "wow-directories": "Directorios de World of Warcraft"
+    "wow-directories": "Directorios de World of Warcraft",
+    "donate": "Donar",
+    "donate-http": "https://www.getajour.com/donate"
 }

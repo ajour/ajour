@@ -16,8 +16,7 @@ pub fn data_container<'a>(
     release: &Option<Release>,
     scrollable_state: &'a mut scrollable::State,
     website_button_state: &'a mut button::State,
-    patreon_button_state: &'a mut button::State,
-    kofi_button_state: &'a mut button::State,
+    donation_button_state: &'a mut button::State,
 ) -> Container<'a, Message> {
     let ajour_title = Text::new(localized_string("ajour")).size(DEFAULT_HEADER_FONT_SIZE);
     let ajour_title_container =
@@ -49,27 +48,18 @@ pub fn data_container<'a>(
     .on_press(Interaction::OpenLink(localized_string("website-http")))
     .into();
 
-    let patreon_button: Element<Interaction> = Button::new(
-        patreon_button_state,
-        Text::new(localized_string("patreon")).size(DEFAULT_FONT_SIZE),
+    let donation_button: Element<Interaction> = Button::new(
+        donation_button_state,
+        Text::new(localized_string("donate")).size(DEFAULT_FONT_SIZE),
     )
     .style(style::DefaultBoxedButton(color_palette))
-    .on_press(Interaction::OpenLink(localized_string("patreon-http")))
-    .into();
-
-    let kofi_button: Element<Interaction> = Button::new(
-        kofi_button_state,
-        Text::new(localized_string("kofi")).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DefaultBoxedButton(color_palette))
-    .on_press(Interaction::OpenLink(localized_string("kofi-http")))
+    .on_press(Interaction::OpenLink(localized_string("donate-http")))
     .into();
 
     let button_row = Row::new()
         .spacing(DEFAULT_PADDING)
         .push(website_button.map(Message::Interaction))
-        .push(patreon_button.map(Message::Interaction))
-        .push(kofi_button.map(Message::Interaction));
+        .push(donation_button.map(Message::Interaction));
 
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)

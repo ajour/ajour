@@ -57,8 +57,6 @@
     "open-data-directory": "Otvor dátový adresár",
     "parsing-addons": "Práve analyzujem {flavor} addony",
     "parsing-weakauras": "Analyzujem {flavor} Wago dáta",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Obnoviť",
     "release-channel-no-release": "žiadne dostupné vydanie",
     "remote": "Posledná verzia",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "Aktualizácia zlyhala",
     "categories": "Kategórie",
     "error-update-ajour-permission": "Problém s oprávneniami pri aktualizácii Ajour",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Vyber zdroj",
     "select-catalog-source-title": "Vyber zdroj v menu",
     "select-catalog-source-description": "Ajour má niekoľko zdrojov katalógu. Vyber zdroj pre prehľadávanie addonov.",
     "auto-update": "Automaticky aplikuj nové aktualizácie",
     "type": "Typ",
-    "wow-directories": "World of Warcraft adresáre"
+    "wow-directories": "World of Warcraft adresáre",
+    "donate": "Darovať",
+    "donate-http": "https://www.getajour.com/donate"
 }

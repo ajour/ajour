@@ -57,8 +57,6 @@
     "open-data-directory": "Åpne mappe",
     "parsing-addons": "Går gjennom {flavor} AddOns",
     "parsing-weakauras": "Analyserer for øyeblikket {smak} Wago-data",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Oppdater",
     "release-channel-no-release": "Ingen lansering funnet",
     "remote": "Siste versjon",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "Kunne ikke oppdatere",
     "categories": "Kategorier",
     "error-update-ajour-permission": "under oppdatering av Ajour",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Velg kildekatalog",
     "select-catalog-source-title": "Velg en kildekatalog i menyen",
     "select-catalog-source-description": "Ajour har flere kildekataloger. Velg en kildekatalog for å se tilhørende addons.",
     "auto-update": "Bruk nye oppdateringer automatisk når de er tilgjengelige",
     "type": "Type",
-    "wow-directories": "World of Warcraft kataloger"
+    "wow-directories": "World of Warcraft kataloger",
+    "donate": "Donere",
+    "donate-http": "https://www.getajour.com/donate"
 }

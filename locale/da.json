@@ -57,8 +57,6 @@
     "open-data-directory": "Åben data mappe",
     "parsing-addons": "Analyserer {flavor} addons",
     "parsing-weakauras": "Analyserer {flavor} Wago data",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Genindlæs",
     "release-channel-no-release": "Ingen tilgængelig udgivelse",
     "remote": "Seneste version",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "Fejl under opdatering",
     "categories": "Kategorier",
     "error-update-ajour-permission": "Mangler rettigheder til at opdatere Ajour",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Vælg Kilde",
     "select-catalog-source-title": "Vælg en kilde i menuen",
     "select-catalog-source-description": "Ajour har mange katalog kilder. Vælg en kilde for at vise addons.",
     "auto-update": "Installer automatisk nye opdateringer når de er tilgængelige",
     "type": "Type",
-    "wow-directories": "World of Warcraft stier"
+    "wow-directories": "World of Warcraft stier",
+    "donate": "Donation",
+    "donate-http": "https://www.getajour.com/donate"
 }
