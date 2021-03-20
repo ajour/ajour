@@ -57,8 +57,6 @@
     "open-data-directory": "Ouvrir le dossier des réglages",
     "parsing-addons": "Chargement des AddOns pour {flavor}",
     "parsing-weakauras": "Chargement des données Wago pour {flavor}",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Actualiser",
     "release-channel-no-release": "aucune version disponible",
     "remote": "Distant",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "Échec de la mise à jour",
     "categories": "Catégories",
     "error-update-ajour-permission": "Erreur de permissions pendant la mise à jour de Ajour",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Choisissez la source",
     "select-catalog-source-title": "Sélectionnez la source dans le menu",
     "select-catalog-source-description": "Ajour contient plusieurs sources d'addons. Choisissez une source pour parcourir les addons.",
     "auto-update": "Installer automatiquement les mises à jour lorsque disponibles",
     "type": "Type",
-    "wow-directories": "Répertoires World of Warcraft"
+    "wow-directories": "Répertoires World of Warcraft",
+    "donate": "Faire un don",
+    "donate-http": "https://www.getajour.com/donate"
 }

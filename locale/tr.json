@@ -57,8 +57,6 @@
     "open-data-directory": "Ajour klasörünü aç",
     "parsing-addons": "{flavor} eklentilerin geliyor",
     "parsing-weakauras": "Şu anda {flavor} Wago verilerini ayrıştırıyor",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Yenile",
     "release-channel-no-release": "\"release\" sürümü yok",
     "remote": "Son sürüm",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "Güncelleştirilemedi",
     "categories": "Kategoriler",
     "error-update-ajour-permission": "Ajour'u güncellerken bir izin sorunuyla karşılaşıldı",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Kaynak Seç",
     "select-catalog-source-title": "Menüden bir kaynak seçin",
     "select-catalog-source-description": "Ajour'un birden fazla katalog kaynağı vardır. Eklentilere göz atmak için bir kaynak seçin.",
     "auto-update": "Kullanılabilir olduğunda yeni güncelleştirmeleri otomatik olarak uygula",
     "type": "Türü",
-    "wow-directories": "World of Warcraft dizinleri"
+    "wow-directories": "World of Warcraft dizinleri",
+    "donate": "Bağış",
+    "donate-http": "https://www.getajour.com/donate"
 }
