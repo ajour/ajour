@@ -57,8 +57,6 @@
     "open-data-directory": "Adatok mappájának menyitása",
     "parsing-addons": "{flavor} AddOnok beolvasása",
     "parsing-weakauras": "Jelenleg {flavor} Wago adatok elemzésével",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Frissítés",
     "release-channel-no-release": "nincs elérhető kiadás",
     "remote": "Legfrissebb verzió",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "Nem sikerült frissíteni",
     "categories": "Kategóriák",
     "error-update-ajour-permission": "Jogosultsági hiba az Ajour frissítése közben",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Forrás kiválasztása",
     "select-catalog-source-title": "Forrás kiválasztása a menüben",
     "select-catalog-source-description": "Az Ajour több forrásból is tud addonokat letölteni. Válassz egy forrást a böngészéshez.",
     "auto-update": "Új frissítések automatikus alkalmazása, ha rendelkezésre állnak",
     "type": "Típus",
-    "wow-directories": "World of Warcraft könyvtárak"
+    "wow-directories": "World of Warcraft könyvtárak",
+    "donate": "Adományoz",
+    "donate-http": "https://www.getajour.com/donate"
 }

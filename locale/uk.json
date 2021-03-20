@@ -57,8 +57,6 @@
     "open-data-directory": "Відкрити теку з даними",
     "parsing-addons": "Опрацьовую {flavor} додатки",
     "parsing-weakauras": "В даний час аналіз даних {flavor} Wago",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Оновити",
     "release-channel-no-release": "немає доступних релізів",
     "remote": "Остання версія",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "Не вдалося оновити",
     "categories": "Категорії",
     "error-update-ajour-permission": "Виникла помилка прав доступу під час оновлення Ajour",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Обрати джерело",
     "select-catalog-source-title": "Оберіть джерело в меню",
     "select-catalog-source-description": "Ajour має кілька джерел каталогів. Оберіть джерело для перегляду додатків.",
     "auto-update": "Автоматично застосовувати нові оновлення за наявності",
     "type": "Тип",
-    "wow-directories": "Світ warcraft каталоги"
+    "wow-directories": "Світ warcraft каталоги",
+    "donate": "Пожертвувати",
+    "donate-http": "https://www.getajour.com/donate"
 }

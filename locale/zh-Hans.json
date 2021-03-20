@@ -57,8 +57,6 @@
     "open-data-directory": "打开数据目录",
     "parsing-addons": "当前正在解析{flavor}插件",
     "parsing-weakauras": "当前正在解析{flavor}WA",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "刷新",
     "release-channel-no-release": "没有可用的发行版本",
     "remote": "最新版本",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "无法更新WA",
     "categories": "分类",
     "error-update-ajour-permission": "当更新Ajour时遇到权限问题",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "选择来源",
     "select-catalog-source-title": "在菜单里选择一个来源",
     "select-catalog-source-description": "Ajour有许多插件目录下载来源。请选一个来源以展示插件。",
     "auto-update": "",
     "type": "",
-    "wow-directories": ""
+    "wow-directories": "",
+    "donate": "",
+    "donate-http": ""
 }
