@@ -211,8 +211,7 @@ pub struct Ajour {
     catalog_header_state: CatalogHeaderState,
     catalog_categories_per_source_cache: HashMap<String, Vec<CatalogCategory>>,
     website_btn_state: button::State,
-    patreon_btn_state: button::State,
-    kofi_btn_state: button::State,
+    donation_btn_state: button::State,
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
     self_update_channel_state: SelfUpdateChannelState,
@@ -266,8 +265,7 @@ impl Default for Ajour {
             catalog_header_state: Default::default(),
             catalog_categories_per_source_cache: Default::default(),
             website_btn_state: Default::default(),
-            patreon_btn_state: Default::default(),
-            kofi_btn_state: Default::default(),
+            donation_btn_state: Default::default(),
             open_config_dir_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
             self_update_channel_state: SelfUpdateChannelState {
@@ -944,8 +942,7 @@ impl Application for Ajour {
                     &release_copy,
                     &mut self.about_scrollable_state,
                     &mut self.website_btn_state,
-                    &mut self.patreon_btn_state,
-                    &mut self.kofi_btn_state,
+                    &mut self.donation_btn_state,
                 );
 
                 content = content.push(about_container)
