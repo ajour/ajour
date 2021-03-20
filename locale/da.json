@@ -52,11 +52,11 @@
     "no-addons-for-flavor": "Du har ingen {flavor} addons",
     "no-changelog": "Ingen ændringer fundet",
     "no-directory": "Ingen sti angivet",
-    "no-known-weakauras": "",
+    "no-known-weakauras": "Du har intet kendt {flavor} Wago data",
     "num-downloads": "# Downloads",
     "open-data-directory": "Åben data mappe",
     "parsing-addons": "Analyserer {flavor} addons",
-    "parsing-weakauras": "",
+    "parsing-weakauras": "Analyserer {flavor} Wago data",
     "patreon": "Patreon",
     "patreon-http": "https://patreon.com/getajour",
     "refresh": "Genindlæs",
@@ -73,7 +73,7 @@
     "setup-ajour-description": "Angiv sti til din World of Warcraft mappe",
     "setup-ajour-title": "Velkommen til Ajour!",
     "setup-weakauras-description": "Vælg en konto som skal administeres",
-    "setup-weakauras-title": "",
+    "setup-weakauras-title": "Administrere dit Wago data med Ajour!",
     "source": "Kilde",
     "status": "Status",
     "summary": "Kort beskrivelse",
@@ -119,5 +119,7 @@
     "select-catalog-source-picklist": "Vælg Kilde",
     "select-catalog-source-title": "Vælg en kilde i menuen",
     "select-catalog-source-description": "Ajour har mange katalog kilder. Vælg en kilde for at vise addons.",
-    "auto-update": "Installer automatisk nye opdateringer når de er tilgængelige"
+    "auto-update": "Installer automatisk nye opdateringer når de er tilgængelige",
+    "type": "Type",
+    "wow-directories": "World of Warcraft stier"
 }

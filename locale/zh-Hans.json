@@ -119,5 +119,7 @@
     "select-catalog-source-picklist": "选择来源",
     "select-catalog-source-title": "在菜单里选择一个来源",
     "select-catalog-source-description": "Ajour有许多插件目录下载来源。请选一个来源以展示插件。",
-    "auto-update": ""
+    "auto-update": "",
+    "type": "",
+    "wow-directories": ""
 }
