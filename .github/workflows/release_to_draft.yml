@@ -4,11 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Specify tag to create'
+        description: "Specify tag to create"
         required: true
 
 jobs:
-  
   build:
     name: Build
     strategy:
@@ -60,7 +59,7 @@ jobs:
           override: true
 
       - name: Do we need linuxdeploy?
-        if: ${{ matrix.target.os == 'ubuntu-16.04' }} 
+        if: ${{ matrix.target.os == 'ubuntu-16.04' }}
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
@@ -76,7 +75,7 @@ jobs:
 
       - name: Code signing
         if: ${{ matrix.target.os == 'windows-latest' }}
-        env: 
+        env:
           codesign_cert: ${{ secrets.CODESIGN_CERT }}
           codesign_cert_password: ${{ secrets.CODESIGN_CERT_PASSWORD }}
         run: |
@@ -106,7 +105,7 @@ jobs:
         uses: actions/create-release@v1
         with:
           tag_name: ${{ github.event.inputs.tag }}
-          release_name: ${{ github.event.inputs.tag }}
+          release_name: Ajour ${{ github.event.inputs.tag }}
           draft: true
           prerelease: false
 
