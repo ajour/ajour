@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// Struct for settings related to World of Warcraft.
@@ -6,7 +7,11 @@ use std::path::PathBuf;
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct Wow {
     #[serde(default)]
+    #[allow(deprecated)]
     pub directory: Option<PathBuf>,
+
+    #[serde(default)]
+    pub directories: HashMap<Flavor, PathBuf>,
 
     #[serde(default)]
     pub flavor: Flavor,
@@ -16,6 +21,7 @@ impl Default for Wow {
     fn default() -> Self {
         Wow {
             directory: None,
+            directories: HashMap::new(),
             flavor: Flavor::Retail,
         }
     }

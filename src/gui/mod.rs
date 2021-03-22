@@ -85,7 +85,8 @@ pub enum Interaction {
     Delete(String),
     Expand(ExpandType),
     Ignore(String),
-    SelectDirectory(DirectoryType),
+    SelectBackupDirectory(),
+    SelectWowDirectory(Option<Flavor>),
     OpenDirectory(PathBuf),
     OpenLink(String),
     Refresh(Mode),
@@ -151,7 +152,7 @@ pub enum Message {
             Result<Vec<AddonFolder>, FilesystemError>,
         ),
     ),
-    UpdateWowDirectory(Option<PathBuf>),
+    UpdateWowDirectory((Option<PathBuf>, Option<Flavor>)),
     UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),
     LatestBackup(Option<NaiveDateTime>),
@@ -183,8 +184,6 @@ pub struct Ajour {
     settings_scrollable_state: scrollable::State,
     about_scrollable_state: scrollable::State,
     config: Config,
-    valid_flavors: Vec<Flavor>,
-    directory_btn_state: button::State,
     expanded_type: ExpandType,
     self_update_state: SelfUpdateState,
     refresh_btn_state: button::State,
@@ -223,6 +222,7 @@ pub struct Ajour {
     localization_picklist_state: pick_list::State<Language>,
     flavor_picklist_state: pick_list::State<Flavor>,
     addons_search_state: AddonsSearchState,
+    wow_directories: Vec<WowDirectoryState>,
 }
 
 impl Default for Ajour {
@@ -237,8 +237,6 @@ impl Default for Ajour {
             settings_scrollable_state: Default::default(),
             about_scrollable_state: Default::default(),
             config: Config::default(),
-            valid_flavors: Vec::new(),
-            directory_btn_state: Default::default(),
             expanded_type: ExpandType::None,
             self_update_state: Default::default(),
             refresh_btn_state: Default::default(),
@@ -280,6 +278,13 @@ impl Default for Ajour {
             localization_picklist_state: Default::default(),
             flavor_picklist_state: Default::default(),
             addons_search_state: Default::default(),
+            wow_directories: Flavor::ALL
+                .iter()
+                .map(|f| WowDirectoryState {
+                    flavor: *f,
+                    button_state: Default::default(),
+                })
+                .collect::<Vec<WowDirectoryState>>(),
         }
     }
 }
@@ -384,7 +389,6 @@ impl Application for Ajour {
             &self.state,
             &self.error,
             &self.config,
-            &self.valid_flavors,
             &mut self.settings_btn_state,
             &mut self.about_btn_state,
             &mut self.addon_mode_btn_state,
@@ -918,7 +922,6 @@ impl Application for Ajour {
                 let settings_container = element::settings::data_container(
                     color_palette,
                     &mut self.settings_scrollable_state,
-                    &mut self.directory_btn_state,
                     &self.config,
                     &mut self.theme_state,
                     &mut self.scale_state,
@@ -932,6 +935,7 @@ impl Application for Ajour {
                     &mut self.default_addon_release_channel_picklist_state,
                     &mut self.reset_columns_btn_state,
                     &mut self.localization_picklist_state,
+                    &mut self.wow_directories,
                 );
 
                 content = content.push(settings_container)
@@ -1138,6 +1142,20 @@ impl Default for InstallFromSCMState {
     }
 }
 
+pub struct WowDirectoryState {
+    pub flavor: Flavor,
+    pub button_state: button::State,
+}
+
+impl Default for WowDirectoryState {
+    fn default() -> Self {
+        WowDirectoryState {
+            flavor: Default::default(),
+            button_state: Default::default(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ExpandType {
     Details(Addon),
@@ -1146,12 +1164,6 @@ pub enum ExpandType {
         changelog: Option<Changelog>,
     },
     None,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum DirectoryType {
-    Wow,
-    Backup,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
@@ -2379,4 +2391,21 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
     ajour.mode = Mode::MyAddons(config.wow.flavor);
 
     ajour.config = config;
+
+    // @see (casperstorm): Migration from single World of Warcraft directory to multiple directories.
+    // This is essentially deprecrating `ajour.config.wow.directory`.
+    if ajour.config.wow.directory.is_some() {
+        for flavor in Flavor::ALL.iter() {
+            let path = ajour.config.wow.directory.as_ref().unwrap();
+            let flavor_path = ajour.config.get_flavor_directory_for_flavor(flavor, path);
+            if flavor_path.exists() {
+                ajour.config.wow.directories.insert(*flavor, flavor_path);
+            }
+        }
+
+        // Removing `directory`, so we don't end up here again.
+        ajour.config.wow.directory = None;
+    }
+
+    let _ = &ajour.config.save();
 }

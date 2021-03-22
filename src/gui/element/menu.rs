@@ -22,7 +22,6 @@ pub fn data_container<'a>(
     state: &HashMap<Mode, State>,
     error: &Option<anyhow::Error>,
     config: &Config,
-    valid_flavors: &[Flavor],
     settings_button_state: &'a mut button::State,
     about_button_state: &'a mut button::State,
     addon_mode_button_state: &'a mut button::State,
@@ -34,6 +33,14 @@ pub fn data_container<'a>(
     weak_auras_is_installed: bool,
 ) -> Container<'a, Message> {
     let flavor = config.wow.flavor;
+    let mut valid_flavors = config
+        .wow
+        .directories
+        .keys()
+        .copied()
+        .collect::<Vec<Flavor>>();
+
+    valid_flavors.sort();
 
     // State.
     let myaddons_state = state

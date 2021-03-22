@@ -1,4 +1,4 @@
-use crate::config::SelfUpdateChannel;
+use crate::config::{Flavor, SelfUpdateChannel};
 use crate::error::DownloadError;
 #[cfg(target_os = "macos")]
 use crate::error::FilesystemError;
@@ -199,11 +199,14 @@ fn extract_binary_from_tar(
     })
 }
 
-/// Logic to help pick the right World of Warcraft folder. We want the root folder.
+/// Logic to help pick the right World of Warcraft folder.
 pub fn wow_path_resolution(path: Option<PathBuf>) -> Option<PathBuf> {
     if let Some(path) = path {
         // Known folders in World of Warcraft dir
-        let known_folders = ["_retail_", "_classic_", "_ptr_"];
+        let known_folders = Flavor::ALL
+            .iter()
+            .map(|f| f.folder_name())
+            .collect::<Vec<String>>();
 
         // If chosen path has any of the known Wow folders, we have the right one.
         for folder in known_folders.iter() {

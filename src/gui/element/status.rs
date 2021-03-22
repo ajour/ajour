@@ -1,6 +1,6 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, DirectoryType, Interaction, Message, State},
+    crate::gui::{style, Interaction, Message, State},
     crate::localization::localized_string,
     ajour_core::theme::ColorPalette,
     iced::{
@@ -44,7 +44,7 @@ pub fn data_container<'a>(
         let onboarding_button: Element<Interaction> =
             Button::new(btn_state, onboarding_button_title_container)
                 .style(style::DefaultButton(color_palette))
-                .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
+                .on_press(Interaction::SelectWowDirectory(None))
                 .into();
 
         colum = colum
