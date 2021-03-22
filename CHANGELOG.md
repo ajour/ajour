@@ -32,6 +32,11 @@ and `Removed`.
 
 - Error messages are cleared when "Refresh" is pressed
 
+### Fixed
+
+- Default config folder is no longer created when passing a custom directory
+  with `--data`
+
 ## [0.7.2] - 2021-03-02
 
 ### Added

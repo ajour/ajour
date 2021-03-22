@@ -57,8 +57,6 @@
     "open-data-directory": "Open data Directory",
     "parsing-addons": "Currently parsing {flavor} AddOns",
     "parsing-weakauras": "Currently parsing {flavor} Wago data",
-    "patreon": "Patreon",
-    "patreon-http": "https://patreon.com/getajour",
     "refresh": "Refresh",
     "release-channel-no-release": "no available release",
     "remote": "Latest version",
@@ -114,12 +112,12 @@
     "error-update-weakauras": "Failed to update",
     "categories": "Categories",
     "error-update-ajour-permission": "Permissions issue while updating Ajour",
-    "kofi": "Ko-fi",
-    "kofi-http": "https://ko-fi.com/ajour",
     "select-catalog-source-picklist": "Select Source",
     "select-catalog-source-title": "Select a source in the menu",
     "select-catalog-source-description": "Ajour has multiple catalog sources. Select a source to browse the addons.",
     "auto-update": "Automatically apply new updates when available",
     "type": "Type",
-    "wow-directories": "World of Warcraft directories"
+    "wow-directories": "World of Warcraft directories",
+    "donate": "Donate",
+    "donate-http": "https://www.getajour.com/donate"
 }
