@@ -67,7 +67,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
   - [Ability to add your own custom themes](./THEMES.md)
 - Ability to backup your whole UI, including all settings from WTF
 - Ability to run as a [command line application](#command-line) for advanced users
-- WeakAuras import strings from [Wago.io](https://wago.io/weakauras) will automatically
+- WeakAuras and Plater import strings from [Wago.io](https://wago.io/) will automatically
   be parsed
 - Localized in multiple languages
 
