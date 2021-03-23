@@ -3,6 +3,7 @@ use crate::error::FilesystemError;
 use once_cell::sync::Lazy;
 #[cfg(not(windows))]
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
@@ -45,7 +46,13 @@ pub static CONFIG_DIR: Lazy<Mutex<PathBuf>> = Lazy::new(|| {
 });
 
 pub fn config_dir() -> PathBuf {
-    CONFIG_DIR.lock().unwrap().clone()
+    let config_dir = CONFIG_DIR.lock().unwrap().clone();
+
+    if !config_dir.exists() {
+        let _ = fs::create_dir_all(&config_dir);
+    }
+
+    config_dir
 }
 
 type Result<T, E = FilesystemError> = std::result::Result<T, E>;
