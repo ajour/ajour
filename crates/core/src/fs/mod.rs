@@ -3,8 +3,9 @@ use crate::error::FilesystemError;
 use once_cell::sync::Lazy;
 #[cfg(not(windows))]
 use std::env;
+use std::fs;
+use std::path::PathBuf;
 use std::sync::Mutex;
-use std::{fs, path::PathBuf};
 
 mod addon;
 pub mod backup;
@@ -25,13 +26,7 @@ pub static CONFIG_DIR: Lazy<Mutex<PathBuf>> = Lazy::new(|| {
     #[cfg(not(windows))]
     {
         let home = env::var("HOME").expect("user home directory not found.");
-
         let config_dir = PathBuf::from(&home).join(".config/ajour");
-
-        if !config_dir.exists() {
-            fs::create_dir_all(&config_dir).expect("could not create folder $HOME/.config/ajour");
-            log::debug!("config directory created");
-        }
 
         Mutex::new(config_dir)
     }
@@ -46,17 +41,18 @@ pub static CONFIG_DIR: Lazy<Mutex<PathBuf>> = Lazy::new(|| {
             .map(|path| path.join("ajour"))
             .expect("user home directory not found.");
 
-        if !config_dir.exists() {
-            fs::create_dir(&config_dir).expect("could not create folder %APPDATA%\\ajour");
-            log::debug!("config directory created");
-        }
-
         Mutex::new(config_dir)
     }
 });
 
 pub fn config_dir() -> PathBuf {
-    CONFIG_DIR.lock().unwrap().clone()
+    let config_dir = CONFIG_DIR.lock().unwrap().clone();
+
+    if !config_dir.exists() {
+        let _ = fs::create_dir_all(&config_dir);
+    }
+
+    config_dir
 }
 
 type Result<T, E = FilesystemError> = std::result::Result<T, E>;

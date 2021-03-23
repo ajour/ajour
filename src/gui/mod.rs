@@ -15,7 +15,7 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, Language, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
-    repository::{Changelog, GlobalReleaseChannel, ReleaseChannel},
+    repository::{Changelog, GlobalReleaseChannel, ReleaseChannel, RepositoryPackage},
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
@@ -85,7 +85,8 @@ pub enum Interaction {
     Delete(String),
     Expand(ExpandType),
     Ignore(String),
-    SelectDirectory(DirectoryType),
+    SelectBackupDirectory(),
+    SelectWowDirectory(Option<Flavor>),
     OpenDirectory(PathBuf),
     OpenLink(String),
     Refresh(Mode),
@@ -124,6 +125,7 @@ pub enum Interaction {
     ResetColumns,
     ToggleDeleteSavedVariables(bool),
     AddonsQuery(String),
+    ToggleAutoUpdateAddons(bool),
 }
 
 #[derive(Debug)]
@@ -150,7 +152,7 @@ pub enum Message {
             Result<Vec<AddonFolder>, FilesystemError>,
         ),
     ),
-    UpdateWowDirectory(Option<PathBuf>),
+    UpdateWowDirectory((Option<PathBuf>, Option<Flavor>)),
     UpdateBackupDirectory(Option<PathBuf>),
     RuntimeEvent(iced_native::Event),
     LatestBackup(Option<NaiveDateTime>),
@@ -168,6 +170,8 @@ pub enum Message {
     ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
     AurasUpdated((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
     FetchedChangelog((Addon, Result<Changelog, RepositoryError>)),
+    CheckRepositoryUpdates(Instant),
+    RepositoryPackagesFetched((Flavor, Result<Vec<RepositoryPackage>, DownloadError>)),
 }
 
 pub struct Ajour {
@@ -180,8 +184,6 @@ pub struct Ajour {
     settings_scrollable_state: scrollable::State,
     about_scrollable_state: scrollable::State,
     config: Config,
-    valid_flavors: Vec<Flavor>,
-    directory_btn_state: button::State,
     expanded_type: ExpandType,
     self_update_state: SelfUpdateState,
     refresh_btn_state: button::State,
@@ -208,8 +210,7 @@ pub struct Ajour {
     catalog_header_state: CatalogHeaderState,
     catalog_categories_per_source_cache: HashMap<String, Vec<CatalogCategory>>,
     website_btn_state: button::State,
-    patreon_btn_state: button::State,
-    kofi_btn_state: button::State,
+    donation_btn_state: button::State,
     open_config_dir_btn_state: button::State,
     install_from_scm_state: InstallFromSCMState,
     self_update_channel_state: SelfUpdateChannelState,
@@ -221,6 +222,7 @@ pub struct Ajour {
     localization_picklist_state: pick_list::State<Language>,
     flavor_picklist_state: pick_list::State<Flavor>,
     addons_search_state: AddonsSearchState,
+    wow_directories: Vec<WowDirectoryState>,
 }
 
 impl Default for Ajour {
@@ -235,8 +237,6 @@ impl Default for Ajour {
             settings_scrollable_state: Default::default(),
             about_scrollable_state: Default::default(),
             config: Config::default(),
-            valid_flavors: Vec::new(),
-            directory_btn_state: Default::default(),
             expanded_type: ExpandType::None,
             self_update_state: Default::default(),
             refresh_btn_state: Default::default(),
@@ -263,8 +263,7 @@ impl Default for Ajour {
             catalog_header_state: Default::default(),
             catalog_categories_per_source_cache: Default::default(),
             website_btn_state: Default::default(),
-            patreon_btn_state: Default::default(),
-            kofi_btn_state: Default::default(),
+            donation_btn_state: Default::default(),
             open_config_dir_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
             self_update_channel_state: SelfUpdateChannelState {
@@ -279,6 +278,13 @@ impl Default for Ajour {
             localization_picklist_state: Default::default(),
             flavor_picklist_state: Default::default(),
             addons_search_state: Default::default(),
+            wow_directories: Flavor::ALL
+                .iter()
+                .map(|f| WowDirectoryState {
+                    flavor: *f,
+                    button_state: Default::default(),
+                })
+                .collect::<Vec<WowDirectoryState>>(),
         }
     }
 }
@@ -323,11 +329,14 @@ impl Application for Ajour {
             iced_futures::time::every(Duration::from_secs(60 * 5)).map(Message::RefreshCatalog);
         let new_release_subscription = iced_futures::time::every(Duration::from_secs(60 * 60))
             .map(Message::CheckLatestRelease);
+        let check_updates_subscription = iced_futures::time::every(Duration::from_secs(60 * 30))
+            .map(Message::CheckRepositoryUpdates);
 
         iced::Subscription::batch(vec![
             runtime_subscription,
             catalog_subscription,
             new_release_subscription,
+            check_updates_subscription,
         ])
     }
 
@@ -380,7 +389,6 @@ impl Application for Ajour {
             &self.state,
             &self.error,
             &self.config,
-            &self.valid_flavors,
             &mut self.settings_btn_state,
             &mut self.about_btn_state,
             &mut self.addon_mode_btn_state,
@@ -914,7 +922,6 @@ impl Application for Ajour {
                 let settings_container = element::settings::data_container(
                     color_palette,
                     &mut self.settings_scrollable_state,
-                    &mut self.directory_btn_state,
                     &self.config,
                     &mut self.theme_state,
                     &mut self.scale_state,
@@ -928,6 +935,7 @@ impl Application for Ajour {
                     &mut self.default_addon_release_channel_picklist_state,
                     &mut self.reset_columns_btn_state,
                     &mut self.localization_picklist_state,
+                    &mut self.wow_directories,
                 );
 
                 content = content.push(settings_container)
@@ -938,8 +946,7 @@ impl Application for Ajour {
                     &release_copy,
                     &mut self.about_scrollable_state,
                     &mut self.website_btn_state,
-                    &mut self.patreon_btn_state,
-                    &mut self.kofi_btn_state,
+                    &mut self.donation_btn_state,
                 );
 
                 content = content.push(about_container)
@@ -1135,6 +1142,20 @@ impl Default for InstallFromSCMState {
     }
 }
 
+pub struct WowDirectoryState {
+    pub flavor: Flavor,
+    pub button_state: button::State,
+}
+
+impl Default for WowDirectoryState {
+    fn default() -> Self {
+        WowDirectoryState {
+            flavor: Default::default(),
+            button_state: Default::default(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ExpandType {
     Details(Addon),
@@ -1143,12 +1164,6 @@ pub enum ExpandType {
         changelog: Option<Changelog>,
     },
     None,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum DirectoryType {
-    Wow,
-    Backup,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq)]
@@ -1987,6 +2002,7 @@ pub enum AuraColumnKey {
     LocalVersion,
     RemoteVersion,
     Author,
+    Type,
     Status,
 }
 
@@ -1999,6 +2015,7 @@ impl AuraColumnKey {
             LocalVersion => localized_string("local"),
             RemoteVersion => localized_string("remote"),
             Author => localized_string("author"),
+            Type => localized_string("type"),
             Status => localized_string("status"),
         }
     }
@@ -2011,6 +2028,7 @@ impl AuraColumnKey {
             LocalVersion => "local",
             RemoteVersion => "remote",
             Author => "author",
+            Type => "type",
             Status => "status",
         };
 
@@ -2025,6 +2043,7 @@ impl From<&str> for AuraColumnKey {
             "local" => AuraColumnKey::LocalVersion,
             "remote" => AuraColumnKey::RemoteVersion,
             "author" => AuraColumnKey::Author,
+            "type" => AuraColumnKey::Type,
             "status" => AuraColumnKey::Status,
             _ => panic!(format!("Unknown AuraColumnKey for {}", s)),
         }
@@ -2074,6 +2093,12 @@ impl Default for AuraHeaderState {
                 },
                 AuraColumnState {
                     key: AuraColumnKey::Author,
+                    btn_state: Default::default(),
+                    width: Length::Units(85),
+                    hidden: false,
+                },
+                AuraColumnState {
+                    key: AuraColumnKey::Type,
                     btn_state: Default::default(),
                     width: Length::Units(85),
                     hidden: false,
@@ -2366,4 +2391,21 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
     ajour.mode = Mode::MyAddons(config.wow.flavor);
 
     ajour.config = config;
+
+    // @see (casperstorm): Migration from single World of Warcraft directory to multiple directories.
+    // This is essentially deprecrating `ajour.config.wow.directory`.
+    if ajour.config.wow.directory.is_some() {
+        for flavor in Flavor::ALL.iter() {
+            let path = ajour.config.wow.directory.as_ref().unwrap();
+            let flavor_path = ajour.config.get_flavor_directory_for_flavor(flavor, path);
+            if flavor_path.exists() {
+                ajour.config.wow.directories.insert(*flavor, flavor_path);
+            }
+        }
+
+        // Removing `directory`, so we don't end up here again.
+        ajour.config.wow.directory = None;
+    }
+
+    let _ = &ajour.config.save();
 }

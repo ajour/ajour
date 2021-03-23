@@ -2,18 +2,17 @@ use crate::{
     addon::{Addon, AddonFolder, AddonState},
     cache::{self, AddonCache, AddonCacheEntry, ExternalReleaseId, FingerprintCache},
     config::Flavor,
-    error::{CacheError, DownloadError, ParseError, RepositoryError},
+    error::{CacheError, DownloadError, ParseError},
     fs::PersistentData,
     murmur2::calculate_hash,
     repository::{
-        curse, townlongyak, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage,
+        curse, git, townlongyak, tukui, wowi, RepositoryIdentifiers, RepositoryKind,
+        RepositoryPackage,
     },
     utility::format_interface_into_game_version,
 };
 use async_std::sync::{Arc, Mutex};
 use fancy_regex::Regex;
-use futures::future::join_all;
-use isahc::http::Uri;
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -521,61 +520,8 @@ async fn get_all_repo_packages(
     }
 
     // Get all curse repo packages
-    let curse_repo_packages = if !curse_ids.is_empty() {
-        let mut curse_packages = curse::fetch_remote_packages_by_ids(&curse_ids).await?;
-
-        let mut curse_repo_packages = vec![];
-
-        // Get repo packages from fingerprint exact matches
-        curse_repo_packages.extend(
-            fingerprint_info
-                .exact_matches
-                .iter()
-                .map(|info| {
-                    (
-                        info.id.to_string(),
-                        curse::metadata_from_fingerprint_info(flavor, info),
-                    )
-                })
-                .filter_map(|(id, metadata)| {
-                    RepositoryPackage::from_repo_id(flavor, RepositoryKind::Curse, id)
-                        .map(|r| r.with_metadata(metadata))
-                        .ok()
-                }),
-        );
-
-        // Remove any packages that match a fingerprint entry and update missing
-        // metadata fields with that package info
-        curse_repo_packages.iter_mut().for_each(|r| {
-            if let Some(idx) = curse_packages.iter().position(|p| p.id.to_string() == r.id) {
-                let package = curse_packages.remove(idx);
-
-                r.metadata.title = Some(package.name.clone());
-                r.metadata.website_url = Some(package.website_url.clone());
-                r.metadata.changelog_url = Some(format!("{}/files", package.website_url));
-            }
-        });
-
-        curse_repo_packages.extend(
-            curse_packages
-                .into_iter()
-                .map(|package| {
-                    (
-                        package.id.to_string(),
-                        curse::metadata_from_curse_package(flavor, package),
-                    )
-                })
-                .filter_map(|(id, metadata)| {
-                    RepositoryPackage::from_repo_id(flavor, RepositoryKind::Curse, id)
-                        .map(|r| r.with_metadata(metadata))
-                        .ok()
-                }),
-        );
-
-        curse_repo_packages
-    } else {
-        vec![]
-    };
+    let curse_repo_packages =
+        curse::batch_fetch_repo_packages(flavor, &curse_ids, Some(fingerprint_info)).await?;
 
     log::debug!(
         "{} - {} curse packages fetched",
@@ -584,26 +530,7 @@ async fn get_all_repo_packages(
     );
 
     // Get all tukui repo packages
-    let tukui_repo_packages = if !tukui_ids.is_empty() {
-        let fetch_tasks: Vec<_> = tukui_ids
-            .iter()
-            .map(|id| tukui::fetch_remote_package(&id, &flavor))
-            .collect();
-
-        join_all(fetch_tasks)
-            .await
-            .into_iter()
-            .filter_map(Result::ok)
-            .map(|(id, package)| (id, tukui::metadata_from_tukui_package(package)))
-            .filter_map(|(id, metadata)| {
-                RepositoryPackage::from_repo_id(flavor, RepositoryKind::Tukui, id)
-                    .ok()
-                    .map(|r| r.with_metadata(metadata))
-            })
-            .collect::<Vec<_>>()
-    } else {
-        vec![]
-    };
+    let tukui_repo_packages = tukui::batch_fetch_repo_packages(flavor, &tukui_ids).await?;
 
     log::debug!(
         "{} - {} tukui packages fetched",
@@ -612,26 +539,7 @@ async fn get_all_repo_packages(
     );
 
     // Get all wowi repo packages
-    let wowi_repo_packages = if !wowi_ids.is_empty() {
-        let wowi_packages = wowi::fetch_remote_packages(&wowi_ids).await?;
-
-        wowi_packages
-            .into_iter()
-            .map(|package| {
-                (
-                    package.id.to_string(),
-                    wowi::metadata_from_wowi_package(package),
-                )
-            })
-            .filter_map(|(id, metadata)| {
-                RepositoryPackage::from_repo_id(flavor, RepositoryKind::WowI, id)
-                    .ok()
-                    .map(|r| r.with_metadata(metadata))
-            })
-            .collect::<Vec<_>>()
-    } else {
-        vec![]
-    };
+    let wowi_repo_packages = wowi::batch_fetch_repo_packages(flavor, &wowi_ids).await?;
 
     log::debug!(
         "{} - {} wowi packages fetched",
@@ -640,26 +548,8 @@ async fn get_all_repo_packages(
     );
 
     // Get all townlong repo packages
-    let townlong_repo_packages = if !townlong_ids.is_empty() {
-        let townlong_packages = townlongyak::fetch_remote_packages(flavor, &townlong_ids).await?;
-
-        townlong_packages
-            .into_iter()
-            .map(|package| {
-                (
-                    package.id.to_string(),
-                    townlongyak::metadata_from_townlong_package(flavor, package),
-                )
-            })
-            .filter_map(|(id, metadata)| {
-                RepositoryPackage::from_repo_id(flavor, RepositoryKind::TownlongYak, id)
-                    .ok()
-                    .map(|r| r.with_metadata(metadata))
-            })
-            .collect::<Vec<_>>()
-    } else {
-        vec![]
-    };
+    let townlong_repo_packages =
+        townlongyak::batch_fetch_repo_packages(flavor, &townlong_ids).await?;
 
     log::debug!(
         "{} - {} townlong packages fetched",
@@ -668,40 +558,7 @@ async fn get_all_repo_packages(
     );
 
     // Get all git repo packages
-    let git_repo_packages = if !git_urls.is_empty() {
-        let fetch_tasks = git_urls
-            .iter()
-            .map(|url| {
-                let url = url
-                    .parse::<Uri>()
-                    .map_err(|_| RepositoryError::GitInvalidUrl { url: url.clone() })?;
-
-                RepositoryPackage::from_source_url(flavor, url)
-            })
-            .filter_map(|result| match result {
-                Ok(package) => Some(package),
-                Err(e) => {
-                    log::error!("{}", e);
-                    None
-                }
-            })
-            .map(|mut package| async {
-                if let Err(e) = package.resolve_metadata().await {
-                    log::error!("{}", e);
-                    Err(e)
-                } else {
-                    Ok(package)
-                }
-            });
-
-        join_all(fetch_tasks)
-            .await
-            .into_iter()
-            .filter_map(Result::ok)
-            .collect::<Vec<_>>()
-    } else {
-        vec![]
-    };
+    let git_repo_packages = git::batch_fetch_repo_packages(flavor, &git_urls).await?;
 
     log::debug!(
         "{} - {} git packages fetched",

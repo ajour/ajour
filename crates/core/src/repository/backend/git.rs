@@ -1,5 +1,57 @@
+use crate::config::Flavor;
+use crate::error::{DownloadError, RepositoryError};
+use crate::repository::RepositoryPackage;
+
+use futures::future::join_all;
+use isahc::http::Uri;
+
 pub use github::Github;
 pub use gitlab::Gitlab;
+
+pub(crate) async fn batch_fetch_repo_packages(
+    flavor: Flavor,
+    git_urls: &[String],
+) -> Result<Vec<RepositoryPackage>, DownloadError> {
+    let mut git_repo_packages = vec![];
+
+    if git_urls.is_empty() {
+        return Ok(git_repo_packages);
+    }
+
+    let fetch_tasks = git_urls
+        .iter()
+        .map(|url| {
+            let url = url
+                .parse::<Uri>()
+                .map_err(|_| RepositoryError::GitInvalidUrl { url: url.clone() })?;
+
+            RepositoryPackage::from_source_url(flavor, url)
+        })
+        .filter_map(|result| match result {
+            Ok(package) => Some(package),
+            Err(e) => {
+                log::error!("{}", e);
+                None
+            }
+        })
+        .map(|mut package| async {
+            if let Err(e) = package.resolve_metadata().await {
+                log::error!("{}", e);
+                Err(e)
+            } else {
+                Ok(package)
+            }
+        });
+
+    git_repo_packages.extend(
+        join_all(fetch_tasks)
+            .await
+            .into_iter()
+            .filter_map(Result::ok),
+    );
+
+    Ok(git_repo_packages)
+}
 
 mod github {
     use crate::config::Flavor;

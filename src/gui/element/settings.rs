@@ -1,10 +1,11 @@
 #![allow(clippy::too_many_arguments)]
+
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_HEADER_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
-        ColumnSettings, DirectoryType, GlobalReleaseChannel, Interaction, Language, Message,
-        ScaleState, SelfUpdateChannelState, ThemeState,
+        ColumnSettings, GlobalReleaseChannel, Interaction, Language, Message, ScaleState,
+        SelfUpdateChannelState, ThemeState, WowDirectoryState,
     },
     crate::localization::localized_string,
     ajour_core::{config::Config, theme::ColorPalette},
@@ -19,7 +20,6 @@ use {
 pub fn data_container<'a, 'b>(
     color_palette: ColorPalette,
     scrollable_state: &'a mut scrollable::State,
-    directory_button_state: &'a mut button::State,
     config: &Config,
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
@@ -33,6 +33,7 @@ pub fn data_container<'a, 'b>(
     default_addon_release_channel_picklist_state: &'a mut pick_list::State<GlobalReleaseChannel>,
     reset_columns_button_state: &'a mut button::State,
     localization_picklist_state: &'a mut pick_list::State<Language>,
+    wow_directories: &'a mut Vec<WowDirectoryState>,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -40,53 +41,43 @@ pub fn data_container<'a, 'b>(
         .style(style::Scrollable(color_palette));
 
     let wow_directory_column = {
-        // Title for the World of Warcraft directory selection.
-        let directory_info_text =
-            Text::new(localized_string("wow-directory")).size(DEFAULT_FONT_SIZE);
-        let direction_info_text_container = Container::new(directory_info_text)
-            .style(style::NormalBackgroundContainer(color_palette));
+        let mut wow_dir_column = Column::new();
+        for wow_dir_state in wow_directories {
+            let flavor = wow_dir_state.flavor;
+            let path_str = config
+                .wow
+                .directories
+                .get(&flavor)
+                .map(|p| p.to_str())
+                .flatten()
+                .unwrap_or("-");
+            let flavor_text = Text::new(flavor.to_string())
+                .size(14)
+                .vertical_alignment(VerticalAlignment::Center);
+            let flavor_text_container = Container::new(flavor_text)
+                .width(Length::Units(75))
+                .center_y();
+            let flavor_button: Element<Interaction> =
+                Button::new(&mut wow_dir_state.button_state, flavor_text_container)
+                    .style(style::DefaultButton(color_palette))
+                    .on_press(Interaction::SelectWowDirectory(Some(flavor)))
+                    .into();
+            let path_text = Text::new(path_str)
+                .size(14)
+                .vertical_alignment(VerticalAlignment::Center);
+            let path_text_container = Container::new(path_text)
+                .height(Length::Units(25))
+                .center_y()
+                .style(style::NormalBackgroundContainer(color_palette));
+            let flavor_row = Row::new()
+                .push(flavor_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                .push(path_text_container);
 
-        // Directory button for World of Warcraft directory selection.
+            wow_dir_column = wow_dir_column.push(flavor_row);
+        }
 
-        let directory_button_title_container =
-            Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
-                .width(Length::FillPortion(1))
-                .center_x()
-                .align_x(Align::Center);
-
-        let directory_button: Element<Interaction> =
-            Button::new(directory_button_state, directory_button_title_container)
-                .style(style::DefaultBoxedButton(color_palette))
-                .on_press(Interaction::SelectDirectory(DirectoryType::Wow))
-                .into();
-
-        // Directory text, written next to directory button to let the user
-        // know what has been selected..
-        let no_directory_str = &localized_string("no-directory")[..];
-        let path_str = config
-            .wow
-            .directory
-            .as_ref()
-            .and_then(|p| p.to_str())
-            .unwrap_or(no_directory_str);
-        let directory_data_text = Text::new(path_str)
-            .size(14)
-            .vertical_alignment(VerticalAlignment::Center);
-        let directory_data_text_container = Container::new(directory_data_text)
-            .height(Length::Units(25))
-            .center_y()
-            .style(style::NormalBackgroundContainer(color_palette));
-
-        // Data row for the World of Warcraft directory selection.
-        let directory_data_row = Row::new()
-            .push(directory_button.map(Message::Interaction))
-            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-            .push(directory_data_text_container);
-
-        Column::new()
-            .push(direction_info_text_container)
-            .push(Space::new(Length::Units(0), Length::Units(5)))
-            .push(directory_data_row)
+        wow_dir_column
     };
 
     let theme_column = {
@@ -209,7 +200,7 @@ pub fn data_container<'a, 'b>(
             directory_button_title_container,
         )
         .style(style::DefaultBoxedButton(color_palette))
-        .on_press(Interaction::SelectDirectory(DirectoryType::Backup))
+        .on_press(Interaction::SelectBackupDirectory())
         .into();
 
         // Directory text, written next to directory button to let the user
@@ -261,7 +252,7 @@ pub fn data_container<'a, 'b>(
             // the wow folder is chosen and at least one of the folders is selected
             // for backup
             if !backup_state.backing_up
-                && config.wow.directory.is_some()
+                && config.wow.directories.keys().next().is_some()
                 && (config.backup_addons || config.backup_wtf)
             {
                 backup_button = backup_button.on_press(Interaction::Backup);
@@ -314,6 +305,21 @@ pub fn data_container<'a, 'b>(
             backup_directory_row,
             backup_now_row,
         )
+    };
+
+    let auto_update_column = {
+        let auto_update = config.auto_update;
+        let checkbox = Checkbox::new(
+            auto_update,
+            localized_string("auto-update"),
+            move |is_checked| Message::Interaction(Interaction::ToggleAutoUpdateAddons(is_checked)),
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+        let checkbox_container =
+            Container::new(checkbox).style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
     };
 
     let hide_addons_column = {
@@ -418,6 +424,11 @@ pub fn data_container<'a, 'b>(
     let general_settings_title_container = Container::new(general_settings_title)
         .style(style::BrightBackgroundContainer(color_palette));
 
+    let directories_settings_title =
+        Text::new(localized_string("wow-directories")).size(DEFAULT_HEADER_FONT_SIZE);
+    let directories_settings_title_container = Container::new(directories_settings_title)
+        .style(style::BrightBackgroundContainer(color_palette));
+
     let theme_scale_row = Row::new()
         .push(theme_column)
         .push(scale_column)
@@ -497,8 +508,6 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(language_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(wow_directory_column)
-        .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(theme_scale_row)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(alternate_row_color_column)
@@ -507,6 +516,13 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(config_column)
         .push(Space::new(Length::Units(0), Length::Units(30)));
+
+    // Directories
+    scrollable = scrollable
+        .push(directories_settings_title_container)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(wow_directory_column)
+        .push(Space::new(Length::Units(0), Length::Units(20)));
 
     // Backup
     scrollable = scrollable
@@ -525,7 +541,9 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(delete_saved_variables_column);
+        .push(delete_saved_variables_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(auto_update_column);
 
     let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_HEADER_FONT_SIZE);
     let columns_title_text_container =

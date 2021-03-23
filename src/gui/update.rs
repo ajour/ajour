@@ -1,9 +1,9 @@
 use {
     super::{
         Ajour, AuraColumnKey, BackupFolderKind, CatalogCategory, CatalogColumnKey, CatalogRow,
-        CatalogSource, ColumnKey, DirectoryType, DownloadReason, ExpandType, GlobalReleaseChannel,
-        InstallAddon, InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel,
-        SelfUpdateStatus, SortDirection, State,
+        CatalogSource, ColumnKey, DownloadReason, ExpandType, GlobalReleaseChannel, InstallAddon,
+        InstallKind, InstallStatus, Interaction, Message, Mode, ReleaseChannel, SelfUpdateStatus,
+        SortDirection, State,
     },
     crate::localization::{localized_string, LANG},
     crate::{log_error, Result},
@@ -20,7 +20,9 @@ use {
         fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
-        repository::{Changelog, RepositoryKind, RepositoryPackage},
+        repository::{
+            batch_refresh_repository_packages, Changelog, RepositoryKind, RepositoryPackage,
+        },
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
     ajour_weak_auras::{Aura, AuraStatus},
@@ -39,6 +41,7 @@ use {
     std::convert::TryFrom,
     std::hash::Hasher,
     std::path::{Path, PathBuf},
+    strfmt::strfmt,
 };
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
@@ -67,20 +70,56 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ));
             }
 
-            let flavors = &Flavor::ALL[..];
+            // Check if any new flavor has been added since last time.
+            // Get missing flavors.
+            let mut missing_flavors: Vec<&Flavor> = vec![];
+            for flavor in Flavor::ALL.iter() {
+                if ajour.config.wow.directories.get(flavor).is_none() {
+                    missing_flavors.push(flavor);
+                }
+            }
+
+            let flavors = ajour
+                .config
+                .wow
+                .directories
+                .keys()
+                .copied()
+                .collect::<Vec<_>>();
+            for flavor in flavors {
+                // Find root dir of the flavor and check if any of the missing_flavor's is there.
+                // If it is, we added it to the directories.
+                if let Some(root_dir) = ajour.config.get_root_directory_for_flavor(&flavor) {
+                    for missing_flavor in &missing_flavors {
+                        let flavor_dir = ajour
+                            .config
+                            .get_flavor_directory_for_flavor(missing_flavor, &root_dir);
+                        if flavor_dir.exists() {
+                            ajour
+                                .config
+                                .wow
+                                .directories
+                                .insert(**missing_flavor, flavor_dir);
+                        }
+                    }
+                }
+
+                // Check if the current flavor we are looping still exists.
+                // It might have been uninstalled since last time, if we can't find it we remove it.
+                if let Some(flavor_path) = ajour.config.wow.directories.get(&flavor) {
+                    if !flavor_path.exists() {
+                        ajour.config.wow.directories.remove(&flavor);
+                    }
+                }
+            }
+
+            let flavors = ajour.config.wow.directories.keys().collect::<Vec<_>>();
             for flavor in flavors {
                 if let Some(addon_directory) = ajour.config.get_addon_directory_for_flavor(flavor) {
                     log::debug!(
                         "preparing to parse addons in {:?}",
                         addon_directory.display()
                     );
-
-                    // Builds a Vec of valid flavors.
-                    if addon_directory.exists() {
-                        ajour.valid_flavors.push(*flavor);
-                        ajour.valid_flavors.sort();
-                        ajour.valid_flavors.dedup();
-                    }
 
                     // Sets loading
                     ajour.state.insert(Mode::MyAddons(*flavor), State::Loading);
@@ -113,16 +152,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
 
-            let flavor = ajour.config.wow.flavor;
             // If we dont have current flavor in valid flavors we select a new.
-            if !ajour.valid_flavors.iter().any(|f| *f == flavor) {
-                // Find new flavor.
-                if let Some(flavor) = ajour.valid_flavors.first() {
-                    // Set nye flavor.
-                    ajour.config.wow.flavor = *flavor;
-                    // Set mode.
-                    ajour.mode = Mode::MyAddons(*flavor);
-                    // Persist the newly updated config.
+            let flavor = ajour.config.wow.flavor;
+            let flavors = ajour
+                .config
+                .wow
+                .directories
+                .keys()
+                .collect::<Vec<_>>()
+                .clone();
+            if !flavors.iter().any(|f| *f == &flavor) {
+                if let Some(flavor) = flavors.first() {
+                    ajour.config.wow.flavor = **flavor;
+                    ajour.mode = Mode::MyAddons(**flavor);
                     ajour.config.save()?;
                 }
             }
@@ -131,6 +173,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::Refresh(mode)) => {
             log::debug!("Interaction::Refresh({})", &mode);
+
+            // Clear any error message
+            ajour.error.take();
 
             match mode {
                 Mode::MyAddons(flavor) => {
@@ -225,15 +270,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::OpenDirectory({:?})", path);
             let _ = open::that(path);
         }
-        Message::Interaction(Interaction::SelectDirectory(dir_type)) => {
-            log::debug!("Interaction::SelectDirectory({:?})", dir_type);
-
-            let message = match dir_type {
-                DirectoryType::Wow => Message::UpdateWowDirectory,
-                DirectoryType::Backup => Message::UpdateBackupDirectory,
-            };
-
-            return Ok(Command::perform(select_directory(), message));
+        Message::Interaction(Interaction::SelectWowDirectory(flavor)) => {
+            log::debug!("Interaction::SelectWowDirectory({:?})", flavor);
+            return Ok(Command::perform(
+                select_wow_directory(flavor),
+                Message::UpdateWowDirectory,
+            ));
+        }
+        Message::Interaction(Interaction::SelectBackupDirectory()) => {
+            log::debug!("Interaction::SelectBackupDirectory");
+            return Ok(Command::perform(
+                select_directory(),
+                Message::UpdateBackupDirectory,
+            ));
         }
         Message::Interaction(Interaction::ResetColumns) => {
             log::debug!("Interaction::ResetColumns");
@@ -257,19 +306,39 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 Message::None,
             ));
         }
-        Message::UpdateWowDirectory(chosen_path) => {
-            log::debug!("Message::UpdateWowDirectory(Chosen({:?}))", &chosen_path);
-            let path = wow_path_resolution(chosen_path);
-            log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
+        Message::UpdateWowDirectory((chosen_path, flavor)) => {
+            log::debug!(
+                "Message::UpdateWowDirectory(Chosen({:?} - {:?}))",
+                &chosen_path,
+                &flavor
+            );
+            if let Some(path) = wow_path_resolution(chosen_path) {
+                log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
 
-            if path.is_some() {
+                if let Some(flavor) = flavor {
+                    // If a flavor is supplied we only update path for that specific flavor.
+                    let flavor_path = ajour.config.get_flavor_directory_for_flavor(&flavor, &path);
+                    if flavor_path.exists() {
+                        ajour.config.wow.directories.insert(flavor, flavor_path);
+                    }
+                } else {
+                    // If no flavor is supplied it will find as many flavors as possible in the path.
+                    let flavors = &Flavor::ALL[..];
+                    for flavor in flavors {
+                        let flavor_path =
+                            ajour.config.get_flavor_directory_for_flavor(flavor, &path);
+                        if flavor_path.exists() {
+                            ajour.config.wow.directories.insert(*flavor, flavor_path);
+                        }
+                    }
+                }
+
                 // Clear addons.
                 ajour.addons = HashMap::new();
-                // Update the path for World of Warcraft.
-                ajour.config.wow.directory = path;
-                // Persist the newly updated config.
+
+                // Save config.
                 let _ = &ajour.config.save();
-                // Set loading state.
+
                 let state = ajour.state.clone();
                 for (mode, _) in state {
                     if matches!(mode, Mode::MyAddons(_)) {
@@ -527,6 +596,118 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 _ => {}
             }
         }
+        Message::CheckRepositoryUpdates(_) => {
+            log::debug!("Message::CheckRepositoryUpdates");
+
+            let mut commands = vec![];
+
+            for flavor in Flavor::ALL.iter() {
+                if let Some(addons) = ajour.addons.get(flavor) {
+                    let repos = addons
+                        .iter()
+                        .map(|a| a.repository().cloned())
+                        .flatten()
+                        .collect::<Vec<_>>();
+
+                    commands.push(Command::perform(
+                        perform_batch_refresh_repository_packages(*flavor, repos),
+                        Message::RepositoryPackagesFetched,
+                    ));
+                }
+            }
+
+            return Ok(Command::batch(commands));
+        }
+        Message::RepositoryPackagesFetched((flavor, result)) => {
+            match result.context(format!(
+                "Failed to fetch repository packages for {}",
+                flavor
+            )) {
+                Ok(packages) => {
+                    log::debug!(
+                        "Message::RepositoryPackagesFetched({}, {} packages)",
+                        flavor,
+                        packages.len()
+                    );
+
+                    let mut has_update = 0;
+
+                    let addons = ajour.addons.entry(flavor).or_default();
+                    let global_release_channel = ajour.config.addons.global_release_channel;
+
+                    // For each addon, check if an updated repository package exists. If it does,
+                    // we will apply that updated package to the addon, then check if
+                    // the addon is updatable.
+                    for addon in addons.iter_mut() {
+                        if let Some(package) = packages.iter().find(|p| {
+                            Some(p.id.as_str()) == addon.repository_id()
+                                && Some(p.kind) == addon.repository_kind()
+                        }) {
+                            // Update remote packages from refeshed repository package
+                            //
+                            // We don't want to replace the entire Repo Package of the addon
+                            // because we don't want to modify certain metadata such as File Id,
+                            // since we didn't use fingerprints to get these updated packages. We
+                            // just want to reference the "latest" remote packages from the repo,
+                            // and assign those to the Addon so we can check for new updates
+                            addon.set_remote_package_from_repo_package(package);
+
+                            // Check if addon is updatable.
+                            if let Some(package) =
+                                addon.relevant_release_package(global_release_channel)
+                            {
+                                if addon.is_updatable(&package) {
+                                    log::debug!(
+                                        "{} - Update is available for {}, {} -> {}",
+                                        flavor,
+                                        addon.title(),
+                                        addon.version().unwrap_or_default(),
+                                        package.version
+                                    );
+
+                                    addon.state = AddonState::Updatable;
+
+                                    has_update += 1;
+                                }
+                            }
+                        }
+                    }
+
+                    if has_update == 0 {
+                        log::debug!("{} - No addon updates available", flavor);
+                    } else {
+                        // Addons have updates, resort by status to put them up top
+                        sort_addons(
+                            addons,
+                            global_release_channel,
+                            SortDirection::Desc,
+                            ColumnKey::Status,
+                        );
+                        ajour.header_state.previous_sort_direction = Some(SortDirection::Desc);
+                        ajour.header_state.previous_column_key = Some(ColumnKey::Status);
+
+                        // If auto update is enabled, trigger a refresh all
+                        if ajour.config.auto_update {
+                            return handle_message(
+                                ajour,
+                                Message::Interaction(Interaction::UpdateAll(Mode::MyAddons(
+                                    flavor,
+                                ))),
+                            );
+                        }
+                    }
+                }
+                Err(error) => {
+                    log_error(&error);
+                }
+            }
+        }
+        Message::Interaction(Interaction::ToggleAutoUpdateAddons(auto_update)) => {
+            log::debug!("Interaction::ToggleAutoUpdateAddons({})", auto_update);
+
+            ajour.config.auto_update = auto_update;
+            let _ = ajour.config.save();
+        }
         Message::ParsedAddons((flavor, result)) => {
             let global_release_channel = ajour.config.addons.global_release_channel;
 
@@ -592,6 +773,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                     // Insert the addons into the HashMap.
                     ajour.addons.insert(flavor, addons);
+
+                    // If auto update is enabled, trigger a refresh all
+                    if ajour.config.auto_update {
+                        return handle_message(
+                            ajour,
+                            Message::Interaction(Interaction::UpdateAll(Mode::MyAddons(flavor))),
+                        );
+                    }
                 }
                 Err(error) => {
                     log_error(&error);
@@ -1161,31 +1350,31 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let mut src_folders = vec![];
 
-            // Shouldn't panic since button is only clickable if wow directory is chosen
-            let wow_dir = ajour.config.wow.directory.as_ref().unwrap();
-
             // Shouldn't panic since button is only shown if backup directory is chosen
             let dest = ajour.config.backup_directory.as_ref().unwrap();
 
             // Backup WTF & AddOn directories for both flavors if they exist
             for flavor in Flavor::ALL.iter() {
-                if ajour.config.backup_addons {
-                    let addon_dir = ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
+                if let Some(wow_dir) = ajour.config.get_root_directory_for_flavor(flavor) {
+                    if ajour.config.backup_addons {
+                        let addon_dir =
+                            ajour.config.get_addon_directory_for_flavor(flavor).unwrap();
 
-                    // Backup starting with `Interface` folder as some users save
-                    // custom data here that they would like retained
-                    if let Some(interface_dir) = addon_dir.parent() {
-                        if interface_dir.exists() {
-                            src_folders.push(BackupFolder::new(interface_dir, wow_dir));
+                        // Backup starting with `Interface` folder as some users save
+                        // custom data here that they would like retained
+                        if let Some(interface_dir) = addon_dir.parent() {
+                            if interface_dir.exists() {
+                                src_folders.push(BackupFolder::new(interface_dir, &wow_dir));
+                            }
                         }
                     }
-                }
 
-                if ajour.config.backup_wtf {
-                    let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
+                    if ajour.config.backup_wtf {
+                        let wtf_dir = ajour.config.get_wtf_directory_for_flavor(flavor).unwrap();
 
-                    if wtf_dir.exists() {
-                        src_folders.push(BackupFolder::new(&wtf_dir, wow_dir));
+                        if wtf_dir.exists() {
+                            src_folders.push(BackupFolder::new(&wtf_dir, &wow_dir));
+                        }
                     }
                 }
             }
@@ -1964,9 +2153,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.state.insert(Mode::MyWeakAuras(flavor), State::Ready);
             }
             error @ Err(_) => {
-                let error = error
-                    .context(localized_string("error-parse-weakauras"))
-                    .unwrap_err();
+                let error_type = match error {
+                    Err(ajour_weak_auras::Error::ParseWeakAuras(_)) => "WeakAuras",
+                    Err(ajour_weak_auras::Error::ParsePlater(_)) => "Plater Nameplates",
+                    _ => unreachable!(),
+                };
+
+                let mut vars = HashMap::new();
+                vars.insert("type".to_string(), error_type);
+                let fmt = localized_string("error-parse-weakauras");
+
+                let error = error.context(strfmt(&fmt, &vars).unwrap()).unwrap_err();
 
                 log_error(&error);
                 ajour.error = Some(error);
@@ -2057,6 +2254,15 @@ async fn select_directory() -> Option<PathBuf> {
     }
 
     None
+}
+
+async fn select_wow_directory(flavor: Option<Flavor>) -> (Option<PathBuf>, Option<Flavor>) {
+    let dialog = OpenSingleDir { dir: None };
+    if let Ok(show) = dialog.show() {
+        return (show, flavor);
+    }
+
+    (None, flavor)
 }
 
 async fn perform_read_addon_directory(
@@ -2226,6 +2432,16 @@ async fn perform_fetch_changelog(
     let changelog = addon.changelog(default_release_channel).await;
 
     (addon, changelog)
+}
+
+async fn perform_batch_refresh_repository_packages(
+    flavor: Flavor,
+    repos: Vec<RepositoryPackage>,
+) -> (Flavor, Result<Vec<RepositoryPackage>, DownloadError>) {
+    (
+        flavor,
+        batch_refresh_repository_packages(flavor, &repos).await,
+    )
 }
 
 fn sort_addons(
@@ -2477,6 +2693,10 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
         }
         (AuraColumnKey::Author, SortDirection::Desc) => {
             auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
+        }
+        (AuraColumnKey::Type, SortDirection::Asc) => auras.sort_by(|a, b| a.kind().cmp(&b.kind())),
+        (AuraColumnKey::Type, SortDirection::Desc) => {
+            auras.sort_by(|a, b| a.kind().cmp(&b.kind()).reverse())
         }
         (AuraColumnKey::Status, SortDirection::Asc) => auras.sort_by(|a, b| {
             a.status()

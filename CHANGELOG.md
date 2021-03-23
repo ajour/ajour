@@ -14,6 +14,32 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.0.0] - 2021-03-23
+
+### Added
+
+- Ability to choose a different directory for each flavor.
+  This means you can use a single instance of Ajour even if you have Retail and
+  Classic in two different directories.
+- Addon backup directory will be created if missing
+- Addon updates are automatically checked for every 30 minutes while the program
+  is open. If new updates are available, they will be sorted to the top of the screen
+- A new "Auto Update" setting can be enabled in the Addons section of the Settings.
+  When enabled, Ajour will automatically apply new addon updates when available
+  (new updates are checked for every 30 minutes)
+- Plater Nameplates are supported in the Wago tab. Updates can be applied
+  from this screen
+
+### Changed
+
+- Renamed My WeakAuras to Wago because we now support both Plater and WeakAuras
+- Error messages are cleared when "Refresh" is pressed
+
+### Fixed
+
+- Default config folder is no longer created when passing a custom directory
+  with `--data`
+
 ## [0.7.2] - 2021-03-02
 
 ### Added

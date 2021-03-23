@@ -42,10 +42,10 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 <p align="center">
   <img width="410"
        alt="Ajour showing addons"
-       src="./resources/screenshots/ajour-0.7.0a.png">
+       src="./resources/screenshots/ajour-1.0.0a.png">
     <img width="410"
        alt="Ajour showing catalog"
-       src="./resources/screenshots/ajour-0.7.0b.png">
+       src="./resources/screenshots/ajour-1.0.0b.png">
 </p>
 
 ## Features
@@ -54,6 +54,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
   - [Tukui](https://www.tukui.org/)
   - [CurseForge](https://www.curseforge.com/wow/addons)
   - [WoWInterface](https://www.wowinterface.com/)
+  - [Townlong Yak](https://www.townlong-yak.com/)
 - Install new addons from the catalog or directly from a GitHub/GitLab URL
 - Support for release channels, so it's possible to select either `alpha`, `beta`
   or `stable` for each addon
@@ -66,7 +67,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
   - [Ability to add your own custom themes](./THEMES.md)
 - Ability to backup your whole UI, including all settings from WTF
 - Ability to run as a [command line application](#command-line) for advanced users
-- WeakAuras import strings from [Wago.io](https://wago.io/weakauras) will automatically
+- WeakAuras and Plater import strings from [Wago.io](https://wago.io/) will automatically
   be parsed
 - Localized in multiple languages
 
@@ -147,10 +148,8 @@ done a great job of [cataloguing addon managers](https://ogri-la.github.io/wow-a
 
 ## Acknowledgement
 
-- [tarkah](https://github.com/tarkah) for the many great contributions.
 - [Rasmus Nielsen](https://rasmusnielsen.dk/) for the Ajour icon.
 - [Rune Seir](https://instagram.com/rseir/) for the Ajour banner.
-- [mlablah](https://github.com/mlablah) for the architectural discussions.
 
 ## License
 
