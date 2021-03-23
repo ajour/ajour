@@ -42,10 +42,10 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 <p align="center">
   <img width="410"
        alt="Ajour showing addons"
-       src="./resources/screenshots/ajour-0.7.0a.png">
+       src="./resources/screenshots/ajour-1.0.0a.png">
     <img width="410"
        alt="Ajour showing catalog"
-       src="./resources/screenshots/ajour-0.7.0b.png">
+       src="./resources/screenshots/ajour-1.0.0b.png">
 </p>
 
 ## Features
