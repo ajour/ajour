@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.0.0] - 2021-03-23
+
 ### Added
 
 - Ability to choose a different directory for each flavor.
