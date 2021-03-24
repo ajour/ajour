@@ -15,6 +15,7 @@ and `Removed`.
 ## [Unreleased]
 
 ### Added
+
 - Support zstd compression when creating backups
 
 ## [1.0.0] - 2021-03-23
