@@ -103,7 +103,7 @@ impl std::fmt::Display for Flavor {
                 Flavor::RetailBeta => "Retail Beta",
                 Flavor::Classic => "Classic",
                 Flavor::ClassicPTR => "Classic PTR",
-                Flavor::ClassicBeta => "Classic Beta
+                Flavor::ClassicBeta => "Classic Beta"
             }
         )
     }
