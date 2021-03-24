@@ -111,3 +111,37 @@ fn zip_write(
 
     Ok(())
 }
+
+pub struct ZstdBackup {
+    src: Vec<BackupFolder>,
+    dest: PathBuf,
+}
+
+impl ZstdBackup {
+    pub(crate) fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>) -> ZstdBackup {
+        ZstdBackup {
+            src,
+            dest: dest.as_ref().to_owned(),
+        }
+    }
+}
+
+impl Backup for ZstdBackup {
+    fn backup(&self) -> Result<()> {
+        use zstd::stream::write::Encoder as ZstdEncoder;
+
+        let output = File::create(&self.dest)?;
+        let mut enc = ZstdEncoder::new(output, 0)?;
+        enc.multithread(num_cpus::get() as u32)?;
+        let mut tar = tar::Builder::new(enc.auto_finish());
+
+        for folder in &self.src {
+            let path = folder.path.strip_prefix(&folder.prefix).unwrap();
+            let src_path = folder.prefix.join(&folder.path);
+            tar.append_dir_all(path, src_path)?;
+        }
+        tar.finish()?;
+
+        Ok(())
+    }
+}

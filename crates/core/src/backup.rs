@@ -1,5 +1,6 @@
 use crate::error::FilesystemError;
-use crate::fs::backup::{Backup, ZipBackup};
+use crate::fs::backup::{Backup, ZipBackup, ZstdBackup};
+use crate::repository::CompressionFormat;
 
 use chrono::{Local, NaiveDateTime};
 use std::convert::TryFrom;
@@ -10,17 +11,20 @@ use std::path::{Path, PathBuf};
 pub async fn backup_folders(
     src_folders: Vec<BackupFolder>,
     mut dest: PathBuf,
+    compression: CompressionFormat,
 ) -> Result<NaiveDateTime, FilesystemError> {
     let now = Local::now();
 
     dest.push(format!(
-        "ajour_backup_{}.zip",
-        now.format("%Y-%m-%d_%H-%M-%S")
+        "ajour_backup_{}.{}",
+        now.format("%Y-%m-%d_%H-%M-%S"),
+        compression.file_ext(),
     ));
 
-    let zip_backup = ZipBackup::new(src_folders, &dest);
-
-    zip_backup.backup()?;
+    match compression {
+        CompressionFormat::Zip => ZipBackup::new(src_folders, &dest).backup()?,
+        CompressionFormat::Zstd => ZstdBackup::new(src_folders, &dest).backup()?,
+    }
 
     // Won't fail since we pass it the correct format
     let as_of = Archive::try_from(dest).unwrap().as_of;

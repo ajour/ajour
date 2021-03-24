@@ -72,7 +72,7 @@ pub fn backup(
             }
         }
 
-        backup_folders(src_folders, destination).await?;
+        backup_folders(src_folders, destination, std::default::Default::default()).await?;
 
         log::info!("Backup complete!");
 

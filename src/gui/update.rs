@@ -1379,8 +1379,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
 
+            let compr_format = std::default::Default::default();
             return Ok(Command::perform(
-                backup_folders(src_folders, dest.to_owned()),
+                backup_folders(src_folders, dest.to_owned(), compr_format),
                 Message::BackupFinished,
             ));
         }
