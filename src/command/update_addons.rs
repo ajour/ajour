@@ -14,7 +14,7 @@ use ajour_core::network::download_addon;
 use ajour_core::parse::{read_addon_directory, update_addon_fingerprint};
 use ajour_core::repository::{GlobalReleaseChannel, RepositoryKind};
 
-use anyhow::{format_err, Context};
+use anyhow::Context;
 use async_std::sync::{Arc, Mutex};
 use async_std::task;
 
@@ -38,9 +38,13 @@ pub fn update_all_addons() -> Result<()> {
         let mut addons_to_update = vec![];
 
         // Update addons for both flavors
-        for flavor in Flavor::ALL.iter() {
-            // Only returns None if the path isn't set in the config
-            let addon_directory = config.get_addon_directory_for_flavor(flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+        let flavors = config.wow.directories.keys().collect::<Vec<_>>();
+        for flavor in flavors {
+            // Returns None if no path is found
+            let addon_directory = match config.get_addon_directory_for_flavor(flavor) {
+                Some(path) => path,
+                None => continue,
+            };
 
             if let Ok(addons) = read_addon_directory(
                 Some(addon_cache.clone()),
