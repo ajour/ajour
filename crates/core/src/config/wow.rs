@@ -36,22 +36,24 @@ pub enum Flavor {
     #[serde(alias = "classic", alias = "wow_classic")]
     Classic,
     ClassicPTR,
+    ClassicBeta,
 }
 
 impl Flavor {
-    pub const ALL: [Flavor; 5] = [
+    pub const ALL: [Flavor; 6] = [
         Flavor::Retail,
         Flavor::RetailPTR,
         Flavor::RetailBeta,
         Flavor::Classic,
         Flavor::ClassicPTR,
+        Flavor::ClassicBeta,
     ];
 
     /// Returns flavor `String` in CurseForge format
     pub(crate) fn curse_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => "wow_retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPTR => "wow_classic".to_owned(),
+            Flavor::Classic | Flavor::ClassicPTR | Flavor::ClassicBeta => "wow_classic".to_owned(),
         }
     }
 
@@ -59,7 +61,7 @@ impl Flavor {
     pub(crate) fn hub_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => "retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPTR => "classic".to_owned(),
+            Flavor::Classic | Flavor::ClassicPTR | Flavor::ClassicBeta => "classic".to_owned(),
         }
     }
 
@@ -67,7 +69,7 @@ impl Flavor {
     pub fn base_flavor(self) -> Flavor {
         match self {
             Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => Flavor::Retail,
-            Flavor::Classic | Flavor::ClassicPTR => Flavor::Classic,
+            Flavor::Classic | Flavor::ClassicPTR | Flavor::ClassicBeta => Flavor::Classic,
         }
     }
 
@@ -79,6 +81,7 @@ impl Flavor {
             Flavor::RetailBeta => "_beta_".to_owned(),
             Flavor::Classic => "_classic_".to_owned(),
             Flavor::ClassicPTR => "_classic_ptr_".to_owned(),
+            Flavor::ClassicBeta => "_classic_beta_".to_owned(),
         }
     }
 }
@@ -100,6 +103,7 @@ impl std::fmt::Display for Flavor {
                 Flavor::RetailBeta => "Retail Beta",
                 Flavor::Classic => "Classic",
                 Flavor::ClassicPTR => "Classic PTR",
+                Flavor::ClassicBeta => "Classic Beta
             }
         )
     }
