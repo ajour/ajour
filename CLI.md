@@ -70,6 +70,12 @@ OPTIONS:
 
     -f, --flavors <flavors>
 
+    # Compression format to use
+    # [default: zip]
+    # [possible values: zip, zstd]
+
+    -c, --compression-format <compression-format>
+
 ARGS:
     # folder to save backups to
 
