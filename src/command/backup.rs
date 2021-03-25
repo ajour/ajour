@@ -45,12 +45,21 @@ pub fn backup(
         let mut src_folders = vec![];
 
         for flavor in flavors {
-            let wow_dir = config.get_root_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directories set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-            let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directories set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-            let wtf_directory = config.get_wtf_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directories set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+            let wow_directory = match config.get_root_directory_for_flavor(&flavor) {
+                Some(path) => path,
+                None => continue,
+            };
+            let addon_directory = match config.get_addon_directory_for_flavor(&flavor) {
+                Some(path) => path,
+                None => continue,
+            };
+            let wtf_directory = match config.get_wtf_directory_for_flavor(&flavor) {
+                Some(path) => path,
+                None => continue,
+            };
 
-            let addons_folder = backup::BackupFolder::new(&addon_directory, &wow_dir);
-            let wtf_folder = backup::BackupFolder::new(&wtf_directory, &wow_dir);
+            let addons_folder = backup::BackupFolder::new(&addon_directory, &wow_directory);
+            let wtf_folder = backup::BackupFolder::new(&wtf_directory, &wow_directory);
 
             match backup_folder {
                 BackupFolder::Both => {

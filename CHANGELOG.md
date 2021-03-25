@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fix
+
+- CLI now works properly with the new multiple path setup.
+
 ## [1.0.0] - 2021-03-23
 
 ### Added
