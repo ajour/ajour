@@ -48,7 +48,7 @@ dependencies = [
 
 [[package]]
 name = "ajour"
-version = "1.0.0"
+version = "1.0.1-rc.1"
 dependencies = [
  "ajour-core",
  "ajour-weak-auras",
@@ -85,7 +85,7 @@ dependencies = [
 
 [[package]]
 name = "ajour-core"
-version = "1.0.0"
+version = "1.0.1-rc.1"
 dependencies = [
  "async-std",
  "async-trait",
@@ -118,7 +118,7 @@ dependencies = [
 
 [[package]]
 name = "ajour-weak-auras"
-version = "1.0.0"
+version = "1.0.1-rc.1"
 dependencies = [
  "ajour-core",
  "anyhow",
@@ -135,7 +135,7 @@ dependencies = [
 
 [[package]]
 name = "ajour-widgets"
-version = "1.0.0"
+version = "1.0.1-rc.1"
 dependencies = [
  "iced_core",
  "iced_glow",
