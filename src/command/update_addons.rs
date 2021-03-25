@@ -37,7 +37,7 @@ pub fn update_all_addons() -> Result<()> {
 
         let mut addons_to_update = vec![];
 
-        // Update addons for both flavors
+        // Update addons for known flavors
         let flavors = config.wow.directories.keys().collect::<Vec<_>>();
         for flavor in flavors {
             // Returns None if no path is found
