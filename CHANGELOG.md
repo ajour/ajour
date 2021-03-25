@@ -17,6 +17,7 @@ and `Removed`.
 ### Fix
 
 - CLI now works properly with the new multiple path setup.
+- Turkish language no longer crash Ajour in the Wago screen.
 
 ## [1.0.0] - 2021-03-23
 
