@@ -167,8 +167,8 @@ pub async fn download_update_to_temp_file(
 /// Extracts the Ajour binary from a `tar.gz` archive to temp_file path
 #[cfg(target_os = "macos")]
 fn extract_binary_from_tar(
-    archive_path: &PathBuf,
-    temp_file: &PathBuf,
+    archive_path: &Path,
+    temp_file: &Path,
     bin_name: &str,
 ) -> Result<(), FilesystemError> {
     use flate2::read::GzDecoder;

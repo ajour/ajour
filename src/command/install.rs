@@ -45,8 +45,12 @@ pub fn install_from_source(url: Uri, flavor: Flavor) -> Result<()> {
 
         log::debug!("Installing {} for {:?}", addon.title(), flavor);
 
-        let download_directory = config.get_download_directory_for_flavor(flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-        let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directory set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+        let download_directory = config
+            .get_download_directory_for_flavor(flavor)
+            .ok_or_else(|| format_err!("No known WoW directory found for the selected flavor."))?;
+        let addon_directory = config
+            .get_addon_directory_for_flavor(&flavor)
+            .ok_or_else(|| format_err!("No known WoW directory found for the selected flavor."))?;
 
         // Download the addon
         download_addon(&addon, global_release_channel, &download_directory).await?;
