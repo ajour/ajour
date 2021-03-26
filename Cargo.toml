@@ -1,7 +1,7 @@
 [package]
 name = "ajour"
 description = "A World of Warcraft addon manager"
-version = "1.0.1-rc.1"
+version = "1.0.1-rc.2"
 authors = ["Casper Rogild Storm"]
 license = "MIT"
 homepage = "https://github.com/ajour/ajour"
@@ -17,9 +17,9 @@ wgpu = ["ajour-widgets/wgpu", "iced/wgpu", "iced/default_system_font"]
 opengl = ["ajour-widgets/opengl", "iced/glow", "iced/glow_default_system_font"]
 
 [dependencies]
-ajour-core = { version = "1.0.1-rc.1", path = "crates/core", features=['gui'] }
-ajour-weak-auras = { version = "1.0.1-rc.1", path = "crates/weak_auras" }
-ajour-widgets = { version = "1.0.1-rc.1", path = "crates/widgets" }
+ajour-core = { version = "1.0.1-rc.2", path = "crates/core", features=['gui'] }
+ajour-weak-auras = { version = "1.0.1-rc.2", path = "crates/weak_auras" }
+ajour-widgets = { version = "1.0.1-rc.2", path = "crates/widgets" }
 
 iced = { version = "0.2.0", default-features = false, features = ["debug"] }
 iced_futures = { version = "0.2", features = ["async-std"] }
