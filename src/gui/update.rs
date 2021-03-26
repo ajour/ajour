@@ -633,12 +633,17 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     let mut has_update = 0;
 
                     let addons = ajour.addons.entry(flavor).or_default();
+                    let ignored_ids = ajour.config.addons.ignored.entry(flavor).or_default();
                     let global_release_channel = ajour.config.addons.global_release_channel;
 
                     // For each addon, check if an updated repository package exists. If it does,
                     // we will apply that updated package to the addon, then check if
                     // the addon is updatable.
                     for addon in addons.iter_mut() {
+                        if ignored_ids.iter().any(|id| id == &addon.primary_folder_id) {
+                            continue;
+                        }
+
                         if let Some(package) = packages.iter().find(|p| {
                             Some(p.id.as_str()) == addon.repository_id()
                                 && Some(p.kind) == addon.repository_kind()
