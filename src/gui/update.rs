@@ -640,6 +640,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     // we will apply that updated package to the addon, then check if
                     // the addon is updatable.
                     for addon in addons.iter_mut() {
+                        // If addon is ignored, we will skip it.
                         if ignored_ids.iter().any(|id| id == &addon.primary_folder_id) {
                             continue;
                         }
