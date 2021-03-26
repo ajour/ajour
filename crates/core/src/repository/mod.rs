@@ -354,10 +354,10 @@ pub enum CompressionFormat {
 impl CompressionFormat {
     pub const ALL: [CompressionFormat; 2] = [CompressionFormat::Zip, CompressionFormat::Zstd];
 
-    pub(crate) fn file_ext(&self) -> &'static str {
+    pub(crate) const fn file_ext(&self) -> &'static str {
         match self {
             CompressionFormat::Zip => "zip",
-            CompressionFormat::Zstd => "zst",
+            CompressionFormat::Zstd => "tar.zst",
         }
     }
 }

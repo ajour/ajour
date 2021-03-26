@@ -35,11 +35,15 @@ pub async fn backup_folders(
 /// Finds the latest archive in the supplied backup folder and returns
 /// the datetime it was saved
 pub async fn latest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
-    let pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].zip", &backup_dir.display());
+    let zip_pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].zip", backup_dir.display());
+    let zstd_pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].tar.zst", backup_dir.display());
 
     let mut backups = vec![];
 
-    for entry in glob::glob(&pattern).unwrap() {
+    for entry in glob::glob(&zip_pattern)
+        .unwrap()
+        .chain(glob::glob(&zstd_pattern).unwrap())
+    {
         if let Ok(path) = entry {
             if let Ok(archive) = Archive::try_from(path) {
                 backups.push(archive.as_of);
@@ -78,7 +82,13 @@ impl TryFrom<PathBuf> for Archive {
     type Error = chrono::ParseError;
 
     fn try_from(path: PathBuf) -> Result<Archive, chrono::ParseError> {
-        let file_stem = path.file_stem().unwrap().to_str().unwrap();
+        let mut file_stem = path.file_stem().unwrap().to_str().unwrap();
+
+        // in the case of "file.tar.zst" path.file_stem() will return "file.tar", we still need to
+        // drop the extension
+        if let Some(i) = file_stem.find('.') {
+            file_stem = file_stem.split_at(i).0;
+        }
 
         let date_str = format!(
             "{} {}",
