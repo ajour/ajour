@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+## Added
+
+- Added flavor for Classic Beta (which TBC Classic beta is using).
+
 ### Fix
 
 - CLI now works properly with the new multiple path setup.
