@@ -5,7 +5,7 @@ use std::path::PathBuf;
 #[derive(thiserror::Error, Debug)]
 pub enum FilesystemError {
     #[error(transparent)]
-    IO(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error(transparent)]
     SerdeYaml(#[from] serde_yaml::Error),
     #[error(transparent)]
@@ -63,7 +63,7 @@ pub enum DownloadError {
 
 impl From<std::io::Error> for DownloadError {
     fn from(e: std::io::Error) -> Self {
-        DownloadError::Filesystem(FilesystemError::IO(e))
+        DownloadError::Filesystem(FilesystemError::Io(e))
     }
 }
 
@@ -115,7 +115,7 @@ pub enum RepositoryError {
 
 impl From<std::io::Error> for RepositoryError {
     fn from(e: std::io::Error) -> Self {
-        RepositoryError::Filesystem(FilesystemError::IO(e))
+        RepositoryError::Filesystem(FilesystemError::Io(e))
     }
 }
 
@@ -134,7 +134,7 @@ pub enum ParseError {
     #[error("No parent directory for {dir:?}")]
     NoParentDirectory { dir: PathBuf },
     #[error("Invalid UTF8 path: {path:?}")]
-    InvalidUTF8Path { path: PathBuf },
+    InvalidUtf8Path { path: PathBuf },
     #[error("Path is not a file or doesn't exist: {path:?}")]
     InvalidFile { path: PathBuf },
     #[error("Invalid extension for path: {path:?}")]
@@ -165,6 +165,6 @@ pub enum ParseError {
 
 impl From<std::io::Error> for ParseError {
     fn from(e: std::io::Error) -> Self {
-        ParseError::Filesystem(FilesystemError::IO(e))
+        ParseError::Filesystem(FilesystemError::Io(e))
     }
 }

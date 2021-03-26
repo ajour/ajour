@@ -829,7 +829,7 @@ pub fn fingerprint_addon_dir(addon_dir: &Path) -> Result<u32, ParseError> {
     // Add initial files
     let glob_pattern = format!(
         "{}/**/*.*",
-        addon_dir.to_str().ok_or(ParseError::InvalidUTF8Path {
+        addon_dir.to_str().ok_or(ParseError::InvalidUtf8Path {
             path: addon_dir.to_owned(),
         })?
     );
@@ -843,7 +843,7 @@ pub fn fingerprint_addon_dir(addon_dir: &Path) -> Result<u32, ParseError> {
         let relative_path = path
             .strip_prefix(root_dir)?
             .to_str()
-            .ok_or(ParseError::InvalidUTF8Path { path: path.clone() })?
+            .ok_or(ParseError::InvalidUtf8Path { path: path.clone() })?
             .to_ascii_lowercase()
             .replace("/", "\\"); // Convert to windows seperator
         if RE_PARSING_PATTERNS
@@ -873,7 +873,7 @@ pub fn fingerprint_addon_dir(addon_dir: &Path) -> Result<u32, ParseError> {
             path.extension()
                 .ok_or(ParseError::InvalidExt { path: path.clone() })?
                 .to_str()
-                .ok_or(ParseError::InvalidUTF8Path { path: path.clone() })?
+                .ok_or(ParseError::InvalidUtf8Path { path: path.clone() })?
         );
         if !RE_PARSING_PATTERNS.file_parsing_regex.contains_key(&ext) {
             continue;

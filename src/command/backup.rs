@@ -76,7 +76,7 @@ pub fn backup(
                         src_folders.push(addons_folder);
                     }
                 }
-                BackupFolder::WTF => {
+                BackupFolder::Wtf => {
                     if wtf_directory.exists() {
                         src_folders.push(wtf_folder);
                     }
