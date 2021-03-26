@@ -1915,7 +1915,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::Interaction(Interaction::InstallSCMQuery(query)) => {
+        Message::Interaction(Interaction::InstallScmQuery(query)) => {
             // install from scm search query
             ajour.install_from_scm_state.query = Some(query);
 
@@ -1938,7 +1938,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
-        Message::Interaction(Interaction::InstallSCMURL) => {
+        Message::Interaction(Interaction::InstallScmUrl) => {
             if let Some(url) = ajour.install_from_scm_state.query.clone() {
                 if !url.is_empty() {
                     return handle_message(

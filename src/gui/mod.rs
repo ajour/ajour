@@ -110,8 +110,8 @@ pub enum Interaction {
     MoveCatalogColumnRight(CatalogColumnKey),
     ModeSelected(Mode),
     CatalogQuery(String),
-    InstallSCMQuery(String),
-    InstallSCMURL,
+    InstallScmQuery(String),
+    InstallScmUrl,
     InstallAddon(Flavor, String, InstallKind),
     CatalogCategorySelected(CatalogCategory),
     CatalogResultSizeSelected(CatalogResultSize),
@@ -212,7 +212,7 @@ pub struct Ajour {
     website_btn_state: button::State,
     donation_btn_state: button::State,
     open_config_dir_btn_state: button::State,
-    install_from_scm_state: InstallFromSCMState,
+    install_from_scm_state: InstallFromScmState,
     self_update_channel_state: SelfUpdateChannelState,
     default_addon_release_channel_picklist_state: pick_list::State<GlobalReleaseChannel>,
     weak_auras_is_installed: bool,
@@ -669,7 +669,7 @@ impl Application for Ajour {
                 .style(style::DefaultBoxedButton(color_palette));
 
                 if matches!(install_status, None) && !installed && is_valid_url {
-                    install_button = install_button.on_press(Interaction::InstallSCMURL);
+                    install_button = install_button.on_press(Interaction::InstallScmUrl);
                 }
 
                 let install_button: Element<Interaction> = install_button.into();
@@ -678,7 +678,7 @@ impl Application for Ajour {
                     &mut self.install_from_scm_state.query_state,
                     &localized_string("install-from-url-example")[..],
                     query,
-                    Interaction::InstallSCMQuery,
+                    Interaction::InstallScmQuery,
                 )
                 .size(DEFAULT_FONT_SIZE)
                 .padding(10)
@@ -689,7 +689,7 @@ impl Application for Ajour {
                     && !matches!(install_status, Some(InstallStatus::Error(_)))
                     && is_valid_url
                 {
-                    install_scm_query = install_scm_query.on_submit(Interaction::InstallSCMURL);
+                    install_scm_query = install_scm_query.on_submit(Interaction::InstallScmUrl);
                 }
 
                 let install_scm_query: Element<Interaction> = install_scm_query.into();
@@ -1126,15 +1126,15 @@ pub fn run(opts: Opts) {
     Ajour::run(settings).expect("running Ajour gui");
 }
 
-pub struct InstallFromSCMState {
+pub struct InstallFromScmState {
     pub query: Option<String>,
     pub query_state: text_input::State,
     pub install_button_state: button::State,
 }
 
-impl Default for InstallFromSCMState {
+impl Default for InstallFromScmState {
     fn default() -> Self {
-        InstallFromSCMState {
+        InstallFromScmState {
             query: None,
             query_state: Default::default(),
             install_button_state: Default::default(),
@@ -1235,7 +1235,7 @@ impl From<&str> for ColumnKey {
             "date_released" => ColumnKey::DateReleased,
             "source" => ColumnKey::Source,
             "summary" => ColumnKey::Summary,
-            _ => panic!(format!("Unknown ColumnKey for {}", s)),
+            _ => panic!("Unknown ColumnKey for {}", s),
         }
     }
 }
@@ -1531,7 +1531,7 @@ impl From<&str> for CatalogColumnKey {
             "game_version" => CatalogColumnKey::GameVersion,
             "date_released" => CatalogColumnKey::DateReleased,
             "categories" => CatalogColumnKey::Categories,
-            _ => panic!(format!("Unknown CatalogColumnKey for {}", s)),
+            _ => panic!("Unknown CatalogColumnKey for {}", s),
         }
     }
 }
@@ -1941,6 +1941,7 @@ impl Default for ScaleState {
 #[derive(Debug, Clone)]
 pub enum BackupFolderKind {
     AddOns,
+    #[allow(clippy::upper_case_acronyms)]
     WTF,
 }
 
@@ -2045,7 +2046,7 @@ impl From<&str> for AuraColumnKey {
             "author" => AuraColumnKey::Author,
             "type" => AuraColumnKey::Type,
             "status" => AuraColumnKey::Status,
-            _ => panic!(format!("Unknown AuraColumnKey for {}", s)),
+            _ => panic!("Unknown AuraColumnKey for {}", s),
         }
     }
 }

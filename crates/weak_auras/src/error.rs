@@ -7,7 +7,7 @@ pub enum Error {
     #[error("No UID for Aura {slug}")]
     MissingUid { slug: String },
     #[error(transparent)]
-    IO(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
     #[error(transparent)]
     Format(#[from] std::fmt::Error),
     #[error("{0}")]
