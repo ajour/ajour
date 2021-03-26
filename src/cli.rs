@@ -115,9 +115,9 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
     match s {
         "retail" => Ok(Flavor::Retail),
         "beta" => Ok(Flavor::RetailBeta),
-        "ptr" => Ok(Flavor::RetailPTR),
+        "ptr" => Ok(Flavor::RetailPtr),
         "classic" => Ok(Flavor::Classic),
-        "classic_ptr" => Ok(Flavor::ClassicPTR),
+        "classic_ptr" => Ok(Flavor::ClassicPtr),
         _ => Err("valid values are ['retail','ptr','beta','classic','classic_ptr']"),
     }
 }
@@ -126,13 +126,13 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
 pub enum BackupFolder {
     Both,
     AddOns,
-    WTF,
+    Wtf,
 }
 
 fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {
     match s {
         "both" => Ok(BackupFolder::Both),
-        "wtf" => Ok(BackupFolder::WTF),
+        "wtf" => Ok(BackupFolder::Wtf),
         "addons" => Ok(BackupFolder::AddOns),
         _ => Err("valid values are ['both','wtf','addons']"),
     }
