@@ -90,7 +90,7 @@ pub enum Command {
     UpdateWeakauras,
     /// Install an addon from the command line
     Install {
-        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr"])]
+        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr","classic_beta"])]
         /// flavor to install addon under
         flavor: Flavor,
         #[structopt()]
@@ -102,7 +102,7 @@ pub enum Command {
         #[structopt(short, long, default_value = "both", parse(try_from_str = str_to_backup_folder), possible_values = &["both","wtf","addons"])]
         /// folder to backup
         backup_folder: BackupFolder,
-        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr"])]
+        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr","classic_beta"])]
         /// space separated list of flavors to include in backup. If ommited, all flavors will be included.
         flavors: Vec<Flavor>,
         #[structopt()]
@@ -118,7 +118,8 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
         "ptr" => Ok(Flavor::RetailPtr),
         "classic" => Ok(Flavor::Classic),
         "classic_ptr" => Ok(Flavor::ClassicPtr),
-        _ => Err("valid values are ['retail','ptr','beta','classic','classic_ptr']"),
+        "classic_beta" => Ok(Flavor::ClassicBeta),
+        _ => Err("valid values are ['retail','ptr','beta','classic','classic_ptr','classic_beta']"),
     }
 }
 
