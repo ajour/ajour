@@ -14,9 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
-## Added
+### Added
 
 - Added flavor for Classic Beta (which TBC Classic beta is using).
+- Support zstd compression when creating backups
 
 ### Fix
 

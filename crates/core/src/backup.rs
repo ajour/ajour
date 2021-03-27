@@ -1,5 +1,6 @@
 use crate::error::FilesystemError;
-use crate::fs::backup::{Backup, ZipBackup};
+use crate::fs::backup::{Backup, ZipBackup, ZstdBackup};
+use crate::repository::CompressionFormat;
 
 use chrono::{Local, NaiveDateTime};
 use std::convert::TryFrom;
@@ -10,17 +11,20 @@ use std::path::{Path, PathBuf};
 pub async fn backup_folders(
     src_folders: Vec<BackupFolder>,
     mut dest: PathBuf,
+    compression: CompressionFormat,
 ) -> Result<NaiveDateTime, FilesystemError> {
     let now = Local::now();
 
     dest.push(format!(
-        "ajour_backup_{}.zip",
-        now.format("%Y-%m-%d_%H-%M-%S")
+        "ajour_backup_{}.{}",
+        now.format("%Y-%m-%d_%H-%M-%S"),
+        compression.file_ext(),
     ));
 
-    let zip_backup = ZipBackup::new(src_folders, &dest);
-
-    zip_backup.backup()?;
+    match compression {
+        CompressionFormat::Zip => ZipBackup::new(src_folders, &dest).backup()?,
+        CompressionFormat::Zstd => ZstdBackup::new(src_folders, &dest).backup()?,
+    }
 
     // Won't fail since we pass it the correct format
     let as_of = Archive::try_from(dest).unwrap().as_of;
@@ -31,11 +35,15 @@ pub async fn backup_folders(
 /// Finds the latest archive in the supplied backup folder and returns
 /// the datetime it was saved
 pub async fn latest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
-    let pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].zip", &backup_dir.display());
+    let zip_pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].zip", backup_dir.display());
+    let zstd_pattern = format!("{}/ajour_backup_[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9]-[0-9][0-9]-[0-9][0-9].tar.zst", backup_dir.display());
 
     let mut backups = vec![];
 
-    for entry in glob::glob(&pattern).unwrap() {
+    for entry in glob::glob(&zip_pattern)
+        .unwrap()
+        .chain(glob::glob(&zstd_pattern).unwrap())
+    {
         if let Ok(path) = entry {
             if let Ok(archive) = Archive::try_from(path) {
                 backups.push(archive.as_of);
@@ -74,7 +82,13 @@ impl TryFrom<PathBuf> for Archive {
     type Error = chrono::ParseError;
 
     fn try_from(path: PathBuf) -> Result<Archive, chrono::ParseError> {
-        let file_stem = path.file_stem().unwrap().to_str().unwrap();
+        let mut file_stem = path.file_stem().unwrap().to_str().unwrap();
+
+        // in the case of "file.tar.zst" path.file_stem() will return "file.tar", we still need to
+        // drop the extension
+        if let Some(i) = file_stem.find('.') {
+            file_stem = file_stem.split_at(i).0;
+        }
 
         let date_str = format!(
             "{} {}",

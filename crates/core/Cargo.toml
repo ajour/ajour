@@ -44,6 +44,9 @@ async-trait = "0.1.42"
 dyn-clone = "1.0.4"
 thiserror = "1.0"
 path-slash = "0.1.4"
+tar = "0.4.33"
+zstd = { version = "0.6.1", features = ["zstdmt"] }
+num_cpus = "1.13.0"
 
 iced_native = { version = "0.3", optional = true }
 

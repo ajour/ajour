@@ -3,6 +3,7 @@ use crate::Result;
 
 use ajour_core::backup::{self, backup_folders};
 use ajour_core::config::{load_config, Flavor};
+use ajour_core::repository::CompressionFormat;
 use anyhow::format_err;
 
 use async_std::task;
@@ -13,6 +14,7 @@ pub fn backup(
     backup_folder: BackupFolder,
     destination: PathBuf,
     flavors: Vec<Flavor>,
+    compression_format: CompressionFormat,
 ) -> Result<()> {
     task::block_on(async {
         let config = load_config().await?;
@@ -36,10 +38,11 @@ pub fn backup(
         }
 
         log::info!(
-            "Backing up:\n\tbackup folders: {:?}\n\tflavors: {:?}\n\tdestination: {:?}",
+            "Backing up:\n\tbackup folders: {:?}\n\tflavors: {:?}\n\tdestination: {:?}\n\tcompression format: {:?}",
             backup_folder,
             flavors,
-            destination
+            destination,
+            compression_format,
         );
 
         let mut src_folders = vec![];
@@ -81,7 +84,7 @@ pub fn backup(
             }
         }
 
-        backup_folders(src_folders, destination).await?;
+        backup_folders(src_folders, destination, compression_format).await?;
 
         log::info!("Backup complete!");
 

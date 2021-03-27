@@ -1386,7 +1386,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
 
             return Ok(Command::perform(
-                backup_folders(src_folders, dest.to_owned()),
+                backup_folders(
+                    src_folders,
+                    dest.to_owned(),
+                    ajour.config.compression_format,
+                ),
                 Message::BackupFinished,
             ));
         }
@@ -2245,6 +2249,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     _ => {}
                 }
             }
+        }
+        Message::Interaction(Interaction::PickBackupCompressionFormat(format)) => {
+            log::debug!("Interaction::PickBackupCompressionFormat({:?})", format);
+            ajour.config.compression_format = format;
+            let _ = ajour.config.save();
         }
         Message::RuntimeEvent(_) => {}
         Message::None(_) => {}

@@ -1,6 +1,6 @@
 use crate::VERSION;
 
-use ajour_core::config::Flavor;
+use ajour_core::{config::Flavor, repository::CompressionFormat};
 
 use isahc::http::Uri;
 use structopt::{
@@ -108,6 +108,8 @@ pub enum Command {
         #[structopt()]
         /// folder to save backups to
         destination: PathBuf,
+        #[structopt(short, long, default_value = "zip", possible_values = &["zip", "zstd"])]
+        compression_format: CompressionFormat,
     },
 }
 

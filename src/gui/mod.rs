@@ -15,7 +15,9 @@ use ajour_core::{
     config::{ColumnConfig, ColumnConfigV2, Config, Flavor, Language, SelfUpdateChannel},
     error::*,
     fs::PersistentData,
-    repository::{Changelog, GlobalReleaseChannel, ReleaseChannel, RepositoryPackage},
+    repository::{
+        Changelog, CompressionFormat, GlobalReleaseChannel, ReleaseChannel, RepositoryPackage,
+    },
     theme::{load_user_themes, Theme},
     utility::{self, get_latest_release},
 };
@@ -120,6 +122,7 @@ pub enum Interaction {
     ToggleBackupFolder(bool, BackupFolderKind),
     PickSelfUpdateChannel(SelfUpdateChannel),
     PickGlobalReleaseChannel(GlobalReleaseChannel),
+    PickBackupCompressionFormat(CompressionFormat),
     PickLocalizationLanguage(Language),
     AlternatingRowColorToggled(bool),
     ResetColumns,
@@ -223,6 +226,7 @@ pub struct Ajour {
     flavor_picklist_state: pick_list::State<Flavor>,
     addons_search_state: AddonsSearchState,
     wow_directories: Vec<WowDirectoryState>,
+    default_backup_compression_format: pick_list::State<CompressionFormat>,
 }
 
 impl Default for Ajour {
@@ -285,6 +289,7 @@ impl Default for Ajour {
                     button_state: Default::default(),
                 })
                 .collect::<Vec<WowDirectoryState>>(),
+            default_backup_compression_format: Default::default(),
         }
     }
 }
@@ -926,6 +931,7 @@ impl Application for Ajour {
                     &mut self.theme_state,
                     &mut self.scale_state,
                     &mut self.backup_state,
+                    &mut self.default_backup_compression_format,
                     &mut self.column_settings,
                     &column_config,
                     &mut self.catalog_column_settings,

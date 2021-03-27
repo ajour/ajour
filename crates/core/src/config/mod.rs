@@ -1,5 +1,6 @@
 use crate::catalog;
 use crate::error::FilesystemError;
+use crate::repository::CompressionFormat;
 use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -61,6 +62,9 @@ pub struct Config {
 
     #[serde(default)]
     pub auto_update: bool,
+
+    #[serde(default)]
+    pub compression_format: CompressionFormat,
 }
 
 impl Config {

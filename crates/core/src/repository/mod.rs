@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::fmt::Display;
+use std::str::FromStr;
 
 mod backend;
 use backend::Backend;
@@ -340,6 +342,50 @@ impl std::fmt::Display for ReleaseChannel {
                 ReleaseChannel::Alpha => "Alpha",
             }
         )
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
+pub enum CompressionFormat {
+    Zip,
+    Zstd,
+}
+
+impl CompressionFormat {
+    pub const ALL: [CompressionFormat; 2] = [CompressionFormat::Zip, CompressionFormat::Zstd];
+
+    pub(crate) const fn file_ext(&self) -> &'static str {
+        match self {
+            CompressionFormat::Zip => "zip",
+            CompressionFormat::Zstd => "tar.zst",
+        }
+    }
+}
+
+impl Default for CompressionFormat {
+    fn default() -> CompressionFormat {
+        CompressionFormat::Zip
+    }
+}
+
+impl Display for CompressionFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompressionFormat::Zip => f.write_str("Zip"),
+            CompressionFormat::Zstd => f.write_str("Zstd"),
+        }
+    }
+}
+
+impl FromStr for CompressionFormat {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "zip" | "Zip" => Ok(CompressionFormat::Zip),
+            "zstd" | "Zstd" => Ok(CompressionFormat::Zstd),
+            _ => Err("valid values are: zip, zstd"),
+        }
     }
 }
 
