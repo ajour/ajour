@@ -1,11 +1,12 @@
 use crate::catalog;
 use crate::error::FilesystemError;
+use crate::repository::CompressionFormat;
 use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::fs::create_dir_all;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 mod addons;
 mod wow;
@@ -61,11 +62,14 @@ pub struct Config {
 
     #[serde(default)]
     pub auto_update: bool,
+
+    #[serde(default)]
+    pub compression_format: CompressionFormat,
 }
 
 impl Config {
     /// Returns a `PathBuf` to the flavor directory.
-    pub fn get_flavor_directory_for_flavor(&self, flavor: &Flavor, path: &PathBuf) -> PathBuf {
+    pub fn get_flavor_directory_for_flavor(&self, flavor: &Flavor, path: &Path) -> PathBuf {
         path.join(&flavor.folder_name())
     }
 

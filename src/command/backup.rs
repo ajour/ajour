@@ -3,6 +3,7 @@ use crate::Result;
 
 use ajour_core::backup::{self, backup_folders};
 use ajour_core::config::{load_config, Flavor};
+use ajour_core::repository::CompressionFormat;
 use anyhow::format_err;
 
 use async_std::task;
@@ -13,6 +14,7 @@ pub fn backup(
     backup_folder: BackupFolder,
     destination: PathBuf,
     flavors: Vec<Flavor>,
+    compression_format: CompressionFormat,
 ) -> Result<()> {
     task::block_on(async {
         let config = load_config().await?;
@@ -36,21 +38,31 @@ pub fn backup(
         }
 
         log::info!(
-            "Backing up:\n\tbackup folders: {:?}\n\tflavors: {:?}\n\tdestination: {:?}",
+            "Backing up:\n\tbackup folders: {:?}\n\tflavors: {:?}\n\tdestination: {:?}\n\tcompression format: {:?}",
             backup_folder,
             flavors,
-            destination
+            destination,
+            compression_format,
         );
 
         let mut src_folders = vec![];
 
         for flavor in flavors {
-            let wow_dir = config.get_root_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directories set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-            let addon_directory = config.get_addon_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directories set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
-            let wtf_directory = config.get_wtf_directory_for_flavor(&flavor).ok_or_else(|| format_err!("No WoW directories set. Launch Ajour and make sure a WoW directory is set before using the command line."))?;
+            let wow_directory = match config.get_root_directory_for_flavor(&flavor) {
+                Some(path) => path,
+                None => continue,
+            };
+            let addon_directory = match config.get_addon_directory_for_flavor(&flavor) {
+                Some(path) => path,
+                None => continue,
+            };
+            let wtf_directory = match config.get_wtf_directory_for_flavor(&flavor) {
+                Some(path) => path,
+                None => continue,
+            };
 
-            let addons_folder = backup::BackupFolder::new(&addon_directory, &wow_dir);
-            let wtf_folder = backup::BackupFolder::new(&wtf_directory, &wow_dir);
+            let addons_folder = backup::BackupFolder::new(&addon_directory, &wow_directory);
+            let wtf_folder = backup::BackupFolder::new(&wtf_directory, &wow_directory);
 
             match backup_folder {
                 BackupFolder::Both => {
@@ -64,7 +76,7 @@ pub fn backup(
                         src_folders.push(addons_folder);
                     }
                 }
-                BackupFolder::WTF => {
+                BackupFolder::Wtf => {
                     if wtf_directory.exists() {
                         src_folders.push(wtf_folder);
                     }
@@ -72,7 +84,7 @@ pub fn backup(
             }
         }
 
-        backup_folders(src_folders, destination).await?;
+        backup_folders(src_folders, destination, compression_format).await?;
 
         log::info!("Backup complete!");
 

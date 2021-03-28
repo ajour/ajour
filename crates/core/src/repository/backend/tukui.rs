@@ -37,7 +37,7 @@ impl Backend for Tukui {
         let url = changelog_endpoint(&self.id, &self.flavor);
 
         match self.flavor {
-            Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPTR => {
+            Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPtr => {
                 // Only TukUI and ElvUI main addons has changelog which can be fetched.
                 // The others is embeded into a page.
                 if &self.id == "-1" || &self.id == "-2" {
@@ -56,7 +56,7 @@ impl Backend for Tukui {
                     }
                 }
             }
-            Flavor::Classic | Flavor::ClassicPTR => {}
+            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => {}
         }
 
         Ok(None)
@@ -114,7 +114,7 @@ fn format_flavor(flavor: &Flavor) -> String {
     match base_flavor {
         Flavor::Retail => "retail".to_owned(),
         Flavor::Classic => "classic".to_owned(),
-        _ => panic!(format!("Unknown base flavor {}", base_flavor)),
+        _ => panic!("Unknown base flavor {}", base_flavor),
     }
 }
 
@@ -129,12 +129,12 @@ fn api_endpoint(id: &str, flavor: &Flavor) -> String {
 
 fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
     match flavor {
-        Flavor::Retail | Flavor::RetailPTR | Flavor::RetailBeta => match id {
+        Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => match id {
             "-1" => "https://www.tukui.org/ui/tukui/changelog".to_owned(),
             "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
             _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
         },
-        Flavor::Classic | Flavor::ClassicPTR => format!(
+        Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => format!(
             "https://www.tukui.org/classic-addons.php?id={}&changelog",
             id
         ),

@@ -1,6 +1,6 @@
 use crate::VERSION;
 
-use ajour_core::config::Flavor;
+use ajour_core::{config::Flavor, repository::CompressionFormat};
 
 use isahc::http::Uri;
 use structopt::{
@@ -90,7 +90,7 @@ pub enum Command {
     UpdateWeakauras,
     /// Install an addon from the command line
     Install {
-        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr"])]
+        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr","classic_beta"])]
         /// flavor to install addon under
         flavor: Flavor,
         #[structopt()]
@@ -102,12 +102,14 @@ pub enum Command {
         #[structopt(short, long, default_value = "both", parse(try_from_str = str_to_backup_folder), possible_values = &["both","wtf","addons"])]
         /// folder to backup
         backup_folder: BackupFolder,
-        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr"])]
+        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr","classic_beta"])]
         /// space separated list of flavors to include in backup. If ommited, all flavors will be included.
         flavors: Vec<Flavor>,
         #[structopt()]
         /// folder to save backups to
         destination: PathBuf,
+        #[structopt(short, long, default_value = "zip", possible_values = &["zip", "zstd"])]
+        compression_format: CompressionFormat,
     },
 }
 
@@ -115,10 +117,11 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
     match s {
         "retail" => Ok(Flavor::Retail),
         "beta" => Ok(Flavor::RetailBeta),
-        "ptr" => Ok(Flavor::RetailPTR),
+        "ptr" => Ok(Flavor::RetailPtr),
         "classic" => Ok(Flavor::Classic),
-        "classic_ptr" => Ok(Flavor::ClassicPTR),
-        _ => Err("valid values are ['retail','ptr','beta','classic','classic_ptr']"),
+        "classic_ptr" => Ok(Flavor::ClassicPtr),
+        "classic_beta" => Ok(Flavor::ClassicBeta),
+        _ => Err("valid values are ['retail','ptr','beta','classic','classic_ptr','classic_beta']"),
     }
 }
 
@@ -126,13 +129,13 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
 pub enum BackupFolder {
     Both,
     AddOns,
-    WTF,
+    Wtf,
 }
 
 fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {
     match s {
         "both" => Ok(BackupFolder::Both),
-        "wtf" => Ok(BackupFolder::WTF),
+        "wtf" => Ok(BackupFolder::Wtf),
         "addons" => Ok(BackupFolder::AddOns),
         _ => Err("valid values are ['both','wtf','addons']"),
     }

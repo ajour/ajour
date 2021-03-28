@@ -50,7 +50,7 @@ pub async fn load_fingerprint_cache() -> Result<FingerprintCache, CacheError> {
 
             rename(old_location, new_location)
                 .await
-                .map_err(FilesystemError::IO)?;
+                .map_err(FilesystemError::Io)?;
         }
     }
 

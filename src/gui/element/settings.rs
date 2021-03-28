@@ -1,5 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
+use ajour_core::repository::CompressionFormat;
+
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_HEADER_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
@@ -24,6 +26,7 @@ pub fn data_container<'a, 'b>(
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
+    default_backup_compression_format: &'a mut pick_list::State<CompressionFormat>,
     column_settings: &'a mut ColumnSettings,
     column_config: &'b [(ColumnKey, Length, bool)],
     catalog_column_settings: &'a mut CatalogColumnSettings,
@@ -189,6 +192,17 @@ pub fn data_container<'a, 'b>(
         .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
+        let backup_compr_fmt_pick_list: Element<_> = PickList::new(
+            default_backup_compression_format,
+            &CompressionFormat::ALL[..],
+            Some(config.compression_format),
+            Interaction::PickBackupCompressionFormat,
+        )
+        .text_size(14)
+        .width(Length::Units(64))
+        .style(style::PickList(color_palette))
+        .into();
+
         // Directory button for Backup directory selection.
         let directory_button_title_container =
             Container::new(Text::new(localized_string("select-directory")).size(DEFAULT_FONT_SIZE))
@@ -224,6 +238,8 @@ pub fn data_container<'a, 'b>(
             .push(addon_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(wtf_folder_checkbox.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(backup_compr_fmt_pick_list.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_button.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
