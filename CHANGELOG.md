@@ -25,7 +25,7 @@ and `Removed`.
 
 - CLI now works properly with the new multiple path setup.
 - Turkish language no longer crash Ajour in the Wago screen.
-- Auto refresh will not correctly respect the exclude list.
+- Auto refresh will now correctly respect the exclude list.
 
 ## [1.0.0] - 2021-03-23
 
