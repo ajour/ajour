@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.0.1] - 2021-03-28
+
 ### Added
 
 - Added flavor for Classic Beta (which TBC Classic beta is using).
