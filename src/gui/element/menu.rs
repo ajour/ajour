@@ -7,6 +7,7 @@ use {
         config::{Config, Flavor},
         theme::ColorPalette,
     },
+    ajour_widgets::TableRow,
     iced::{
         button, pick_list, Align, Button, Column, Container, Element, HorizontalAlignment, Length,
         PickList, Row, Space, Text,
@@ -22,10 +23,10 @@ pub fn data_container<'a>(
     state: &HashMap<Mode, State>,
     error: &Option<anyhow::Error>,
     config: &Config,
+    updatable_addons: usize,
+    updatable_wagos: usize,
     settings_button_state: &'a mut button::State,
     about_button_state: &'a mut button::State,
-    addon_mode_button_state: &'a mut button::State,
-    weakauras_mode_button_state: &'a mut button::State,
     catalog_mode_btn_state: &'a mut button::State,
     install_mode_btn_state: &'a mut button::State,
     self_update_state: &'a mut SelfUpdateState,
@@ -55,17 +56,89 @@ pub fn data_container<'a>(
 
     let mut needs_update = false;
 
-    let mut addons_mode_button = Button::new(
-        addon_mode_button_state,
-        Text::new(localized_string("my-addons")).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette));
+    let mut my_addons_table_row = {
+        let title_container = Container::new(
+            Text::new(localized_string("my-addons"))
+                .horizontal_alignment(HorizontalAlignment::Center)
+                .size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::HoverableSegmentContainer(color_palette));
+        let text = {
+            match updatable_addons {
+                0..=9 => format!("{}", updatable_addons),
+                _ => "9+".to_owned(),
+            }
+        };
+        let notification_row = Row::new()
+            .push(Space::new(Length::Units(3), Length::Units(0)))
+            .push(
+                Text::new(text)
+                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .size(10),
+            )
+            .push(Space::new(Length::Units(3), Length::Units(0)));
+        let notification_container = Container::new(notification_row)
+            .padding(3)
+            .style(style::HoverableSegmentAlternateContainer(color_palette));
+        let mut row = Row::new()
+            .height(Length::Units(24))
+            .align_items(Align::Center)
+            .push(Space::new(Length::Units(6), Length::Units(1)))
+            .push(title_container)
+            .push(Space::new(Length::Units(6), Length::Units(1)));
 
-    let mut weakauras_mode_button = Button::new(
-        weakauras_mode_button_state,
-        Text::new(localized_string("my-weakauras")).size(DEFAULT_FONT_SIZE),
-    )
-    .style(style::DisabledDefaultButton(color_palette));
+        if updatable_addons > 0 {
+            row = row
+                .push(notification_container)
+                .push(Space::new(Length::Units(6), Length::Units(1)));
+        }
+
+        TableRow::new(row).inner_row_height(24).on_press(move |_| {
+            Message::Interaction(Interaction::ModeSelected(Mode::MyAddons(flavor)))
+        })
+    };
+
+    let mut my_wago_table_row = {
+        let title_container = Container::new(
+            Text::new(localized_string("my-weakauras"))
+                .horizontal_alignment(HorizontalAlignment::Center)
+                .size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::HoverableSegmentContainer(color_palette));
+        let text = {
+            match updatable_wagos {
+                0..=9 => format!("{}", updatable_wagos),
+                _ => "9+".to_owned(),
+            }
+        };
+        let notification_row = Row::new()
+            .push(Space::new(Length::Units(3), Length::Units(0)))
+            .push(
+                Text::new(text)
+                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .size(10),
+            )
+            .push(Space::new(Length::Units(3), Length::Units(0)));
+        let notification_container = Container::new(notification_row)
+            .padding(3)
+            .style(style::HoverableSegmentAlternateContainer(color_palette));
+        let mut row = Row::new()
+            .height(Length::Units(24))
+            .align_items(Align::Center)
+            .push(Space::new(Length::Units(6), Length::Units(1)))
+            .push(title_container)
+            .push(Space::new(Length::Units(6), Length::Units(1)));
+
+        if updatable_wagos > 0 {
+            row = row
+                .push(notification_container)
+                .push(Space::new(Length::Units(6), Length::Units(1)));
+        }
+
+        TableRow::new(row).inner_row_height(24).on_press(move |_| {
+            Message::Interaction(Interaction::ModeSelected(Mode::MyWeakAuras(flavor)))
+        })
+    };
 
     let mut catalog_mode_button = Button::new(
         catalog_mode_btn_state,
@@ -97,87 +170,79 @@ pub fn data_container<'a>(
 
     match mode {
         Mode::MyAddons(_) => {
-            addons_mode_button =
-                addons_mode_button.style(style::SelectedDefaultButton(color_palette));
-            weakauras_mode_button =
-                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
             about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
+
+            my_addons_table_row =
+                my_addons_table_row.style(style::SelectedSegmentTableRow(color_palette));
+            my_wago_table_row = my_wago_table_row.style(style::SegmentTableRow(color_palette));
         }
         Mode::MyWeakAuras(_) => {
-            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
-            weakauras_mode_button =
-                weakauras_mode_button.style(style::SelectedDefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
             about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
+
+            my_addons_table_row = my_addons_table_row.style(style::SegmentTableRow(color_palette));
+            my_wago_table_row =
+                my_wago_table_row.style(style::SelectedSegmentTableRow(color_palette));
         }
         Mode::Install => {
-            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
-            weakauras_mode_button =
-                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button =
                 install_mode_button.style(style::SelectedDefaultButton(color_palette));
             about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
+
+            my_addons_table_row = my_addons_table_row.style(style::SegmentTableRow(color_palette));
+            my_wago_table_row = my_wago_table_row.style(style::SegmentTableRow(color_palette));
         }
         Mode::Catalog => {
-            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
-            weakauras_mode_button =
-                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button =
                 catalog_mode_button.style(style::SelectedDefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
             about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
+
+            my_addons_table_row = my_addons_table_row.style(style::SegmentTableRow(color_palette));
+            my_wago_table_row = my_wago_table_row.style(style::SegmentTableRow(color_palette));
         }
         Mode::Settings => {
-            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
-            weakauras_mode_button =
-                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
             about_mode_button = about_mode_button.style(style::DefaultButton(color_palette));
             settings_mode_button =
                 settings_mode_button.style(style::SelectedDefaultButton(color_palette));
+
+            my_addons_table_row = my_addons_table_row.style(style::SegmentTableRow(color_palette));
+            my_wago_table_row = my_wago_table_row.style(style::SegmentTableRow(color_palette));
         }
         Mode::About => {
-            addons_mode_button = addons_mode_button.style(style::DefaultButton(color_palette));
-            weakauras_mode_button =
-                weakauras_mode_button.style(style::DefaultButton(color_palette));
             catalog_mode_button = catalog_mode_button.style(style::DefaultButton(color_palette));
             install_mode_button = install_mode_button.style(style::DefaultButton(color_palette));
             about_mode_button =
                 about_mode_button.style(style::SelectedDefaultButton(color_palette));
             settings_mode_button = settings_mode_button.style(style::DefaultButton(color_palette));
+
+            my_addons_table_row = my_addons_table_row.style(style::SegmentTableRow(color_palette));
+            my_wago_table_row = my_wago_table_row.style(style::SegmentTableRow(color_palette));
         }
     }
 
     if matches!(myaddons_state, State::Start) {
-        addons_mode_button = addons_mode_button.style(style::DisabledDefaultButton(color_palette));
-        weakauras_mode_button =
-            weakauras_mode_button.style(style::DisabledDefaultButton(color_palette));
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
         install_mode_button =
             install_mode_button.style(style::DisabledDefaultButton(color_palette));
     } else {
-        addons_mode_button =
-            addons_mode_button.on_press(Interaction::ModeSelected(Mode::MyAddons(flavor)));
-        weakauras_mode_button =
-            weakauras_mode_button.on_press(Interaction::ModeSelected(Mode::MyWeakAuras(flavor)));
         catalog_mode_button =
             catalog_mode_button.on_press(Interaction::ModeSelected(Mode::Catalog));
         install_mode_button =
             install_mode_button.on_press(Interaction::ModeSelected(Mode::Install));
     }
 
-    let addons_mode_button: Element<Interaction> = addons_mode_button.into();
-    let weakauras_mode_button: Element<Interaction> = weakauras_mode_button.into();
     let catalog_mode_button: Element<Interaction> = catalog_mode_button.into();
     let install_mode_button: Element<Interaction> = install_mode_button.into();
     let settings_mode_button: Element<Interaction> = settings_mode_button.into();
@@ -188,17 +253,14 @@ pub fn data_container<'a>(
         .push(install_mode_button.map(Message::Interaction))
         .spacing(1);
 
-    let mut segmented_mode_row = Row::new()
-        .push(addons_mode_button.map(Message::Interaction))
-        .spacing(1);
+    let mut segmented_mode_row = Row::new().push(my_addons_table_row);
 
     if weak_auras_is_installed {
-        segmented_mode_row =
-            segmented_mode_row.push(weakauras_mode_button.map(Message::Interaction));
+        segmented_mode_row = segmented_mode_row.push(my_wago_table_row);
     }
 
     let segmented_mode_container = Container::new(segmented_mode_row)
-        .padding(2)
+        .padding(1)
         .style(style::SegmentedContainer(color_palette));
 
     let segmented_addon_container = Container::new(segmented_addons_row)

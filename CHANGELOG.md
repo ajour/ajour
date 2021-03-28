@@ -21,7 +21,7 @@ and `Removed`.
 - Added flavor for Classic Beta (which TBC Classic beta is using).
 - Support zstd compression when creating backups
 
-### Fix
+### Fixed
 
 - CLI now works properly with the new multiple path setup.
 - Turkish language no longer crash Ajour in the Wago screen.
