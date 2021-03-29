@@ -87,6 +87,7 @@ pub fn data_container<'a>(
             .push(title_container)
             .push(Space::new(Length::Units(6), Length::Units(1)));
 
+        // Only display the notification container if we have any updatable addons.
         if updatable_addons > 0 {
             row = row
                 .push(notification_container)
@@ -129,6 +130,7 @@ pub fn data_container<'a>(
             .push(title_container)
             .push(Space::new(Length::Units(6), Length::Units(1)));
 
+        // Only display the notification container if we have any updatable wagos.
         if updatable_wagos > 0 {
             row = row
                 .push(notification_container)
