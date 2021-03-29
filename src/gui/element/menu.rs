@@ -70,13 +70,13 @@ pub fn data_container<'a>(
             }
         };
         let notification_row = Row::new()
-            .push(Space::new(Length::Units(3), Length::Units(0)))
+            .push(Space::new(Length::Units(6), Length::Units(0)))
             .push(
                 Text::new(text)
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(10),
             )
-            .push(Space::new(Length::Units(3), Length::Units(0)));
+            .push(Space::new(Length::Units(6), Length::Units(0)));
         let notification_container = Container::new(notification_row)
             .padding(3)
             .style(style::HoverableSegmentAlternateContainer(color_palette));
@@ -112,13 +112,13 @@ pub fn data_container<'a>(
             }
         };
         let notification_row = Row::new()
-            .push(Space::new(Length::Units(3), Length::Units(0)))
+            .push(Space::new(Length::Units(7), Length::Units(0)))
             .push(
                 Text::new(text)
                     .horizontal_alignment(HorizontalAlignment::Center)
                     .size(10),
             )
-            .push(Space::new(Length::Units(3), Length::Units(0)));
+            .push(Space::new(Length::Units(7), Length::Units(0)));
         let notification_container = Container::new(notification_row)
             .padding(3)
             .style(style::HoverableSegmentAlternateContainer(color_palette));

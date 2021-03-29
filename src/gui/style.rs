@@ -61,13 +61,13 @@ pub struct HoverableSegmentAlternateContainer(pub ColorPalette);
 impl container::StyleSheet for HoverableSegmentAlternateContainer {
     fn style(&self) -> container::Style {
         container::Style {
-            background: None,
-            text_color: Some(self.0.bright.secondary),
+            background: Some(Background::Color(self.0.base.foreground)),
+            text_color: Some(self.0.bright.primary),
             border_radius: 15.0,
             border_width: 1.0,
             border_color: Color {
-                a: 0.4,
-                ..self.0.bright.secondary
+                a: 1.0,
+                ..self.0.normal.primary
             },
         }
     }
