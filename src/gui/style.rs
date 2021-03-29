@@ -69,7 +69,6 @@ impl container::StyleSheet for HoverableSegmentAlternateContainer {
                 a: 0.4,
                 ..self.0.bright.secondary
             },
-            ..container::Style::default()
         }
     }
 }
