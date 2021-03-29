@@ -14,6 +14,11 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Resolved issue where single accounts was never saved to the
+  config casuing the CLI `update-weakauras` not to work properly.
+
 ## [1.0.1] - 2021-03-28
 
 ### Added

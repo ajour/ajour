@@ -2090,6 +2090,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     [a] => Some(a.clone()),
                     _ => None,
                 };
+
+                // If there is only a single account, we save it to the config.
+                if let Some(single_account) = get_single_account() {
+                    ajour
+                        .config
+                        .weak_auras_account
+                        .insert(flavor, single_account);
+                    let _ = ajour.config.save();
+                }
+
                 if let Some(account) = account_from_config.or_else(get_single_account) {
                     if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
                         state.chosen_account = Some(account.clone());
