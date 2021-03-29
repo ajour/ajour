@@ -16,7 +16,8 @@ and `Removed`.
 
 ### Fixed
 
-- Resolved issue where if you only have a single account, it was never saved to the config.
+- Resolved issue where if you only have a single account, it was
+  never saved to the config.
 
 ## [1.0.1] - 2021-03-28
 
