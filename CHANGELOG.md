@@ -16,8 +16,7 @@ and `Removed`.
 
 ### Added
 
-- Small labels will now indicate if there are addons or Wago's ready to be
-  installed.
+- Small labels will now indicate if there are addons or Wago's ready to be updated.
 
 ## [1.0.1] - 2021-03-28
 
