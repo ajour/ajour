@@ -2090,7 +2090,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     [a] => Some(a.clone()),
                     _ => None,
                 };
+
                 if let Some(account) = account_from_config.or_else(get_single_account) {
+                    // Ensure config is updated.
+                    ajour
+                        .config
+                        .weak_auras_account
+                        .insert(flavor, account.clone());
+                    let _ = ajour.config.save();
+
                     if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
                         state.chosen_account = Some(account.clone());
 
