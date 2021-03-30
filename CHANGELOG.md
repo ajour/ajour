@@ -16,6 +16,7 @@ and `Removed`.
 
 ### Added
 
+- Small labels will now indicate if there are addons or Wago's ready to be updated.
 - Added CLI command `add-path`. More information can be found in CLI.md.
 
 ### Changed
@@ -34,7 +35,7 @@ and `Removed`.
 - Added flavor for Classic Beta (which TBC Classic beta is using).
 - Support zstd compression when creating backups
 
-### Fix
+### Fixed
 
 - CLI now works properly with the new multiple path setup.
 - Turkish language no longer crash Ajour in the Wago screen.

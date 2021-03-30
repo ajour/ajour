@@ -197,8 +197,6 @@ pub struct Ajour {
     theme_state: ThemeState,
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
-    addon_mode_btn_state: button::State,
-    weakaura_mode_btn_state: button::State,
     catalog_mode_btn_state: button::State,
     install_mode_btn_state: button::State,
     scale_state: ScaleState,
@@ -251,8 +249,6 @@ impl Default for Ajour {
             theme_state: Default::default(),
             fingerprint_cache: None,
             addon_cache: None,
-            addon_mode_btn_state: Default::default(),
-            weakaura_mode_btn_state: Default::default(),
             catalog_mode_btn_state: Default::default(),
             install_mode_btn_state: Default::default(),
             scale_state: Default::default(),
@@ -388,16 +384,31 @@ impl Application for Ajour {
         };
 
         // Menu container at the top of the applications.
+        let updatable_addons = self
+            .addons
+            .entry(flavor)
+            .or_default()
+            .iter()
+            .filter(|a| a.state == AddonState::Updatable)
+            .count();
+        let updatable_wagos = self
+            .weak_auras_state
+            .entry(flavor)
+            .or_default()
+            .auras
+            .iter()
+            .filter(|a| a.status() == ajour_weak_auras::AuraStatus::UpdateAvailable)
+            .count();
         let menu_container = element::menu::data_container(
             color_palette,
             &self.mode,
             &self.state,
             &self.error,
             &self.config,
+            updatable_addons,
+            updatable_wagos,
             &mut self.settings_btn_state,
             &mut self.about_btn_state,
-            &mut self.addon_mode_btn_state,
-            &mut self.weakaura_mode_btn_state,
             &mut self.catalog_mode_btn_state,
             &mut self.install_mode_btn_state,
             &mut self.self_update_state,
