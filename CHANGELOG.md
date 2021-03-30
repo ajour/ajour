@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Added CLI command `add-path`. More information can be found in CLI.md.
+
 ### Changed
 
 - Renamed CLI command `update-weakauras` to `update-auras`.

@@ -26,6 +26,7 @@ SUBCOMMANDS:
     update              Update all addons, WeakAura and Plater auras
     update-addons       Update all addons
     update-auras        Update all WeakAura and Plater auras
+    path-add            Add a World of Warcraft path to known directories
 ```
 
 ## Options
@@ -147,4 +148,35 @@ ajour update-addons
 # Update all WeakAura and Plater auras
 
 ajour update-auras
+```
+
+### Path Add
+
+Add World of Warcraft path to known directories.
+
+```sh
+USAGE:
+    ajour path-add <path> [flavor]
+
+ARGS:
+    # Path to the World of Warcraft directory
+
+    <path>
+
+    # Flavor to use from the path. If none, we use all we find
+    # [possible values: retail, ptr, beta, classic, classic_ptr]
+
+    [flavor]
+```
+
+#### Example
+
+```sh
+# Add retail from ./World of Warcraft
+
+ajour path-add ./World of Warcraft retail
+
+# Add all known flavors from ./World of Warcraft
+
+ajour path-add ./World of Warcraft
 ```

@@ -111,6 +111,14 @@ pub enum Command {
         #[structopt(short, long, default_value = "zip", possible_values = &["zip", "zstd"])]
         compression_format: CompressionFormat,
     },
+    /// Add a World of Warcraft path
+    PathAdd {
+        /// path to the World of Warcraft directory
+        path: PathBuf,
+        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr","classic_beta"])]
+        /// flavor to use from the path. If none, we use all we find
+        flavor: Option<Flavor>,
+    },
 }
 
 fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
