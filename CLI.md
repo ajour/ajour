@@ -150,7 +150,7 @@ ajour update-addons
 ajour update-weakauras
 ```
 
-### Add Path
+### Path Add
 
 Add World of Warcraft path to known directories.
 
