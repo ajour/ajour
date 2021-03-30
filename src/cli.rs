@@ -113,10 +113,10 @@ pub enum Command {
     },
     /// Add a World of Warcraft path
     PathAdd {
-        /// Path to the World of Warcraft directory
+        /// path to the World of Warcraft directory
         path: PathBuf,
         #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr","classic_beta"])]
-        /// Flavor to use from the path. If none, we use all we find
+        /// flavor to use from the path. If none, we use all we find
         flavor: Option<Flavor>,
     },
 }
