@@ -2066,15 +2066,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if let Some(wtf_folder) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
                     return Ok(Command::perform(
                         list_accounts(flavor, wtf_folder),
-                        Message::ListWeakAurasAccounts,
+                        Message::ListWtfAccounts,
                     ));
                 }
             }
         }
-        Message::ListWeakAurasAccounts((flavor, result)) => match result {
+        Message::ListWtfAccounts((flavor, result)) => match result {
             Ok(accounts) => {
                 log::debug!(
-                    "Message::ListWeakAurasAccounts({}, num_accounts: {})",
+                    "Message::ListWtfAccounts({}, num_accounts: {})",
                     flavor,
                     accounts.len(),
                 );
