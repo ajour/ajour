@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed CLI command `update-weakauras` to `update-auras`.
+
 ### Fixed
 
 - Resolved issue where single accounts was never saved to the
