@@ -25,6 +25,7 @@ and `Removed`.
 
 ### Fixed
 
+- Localization issues which were causing Ajour to crash has been resolved.
 - Resolved issue where single accounts was never saved to the
   config casuing the CLI `update-weakauras` not to work properly.
 
