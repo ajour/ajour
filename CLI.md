@@ -161,7 +161,7 @@ USAGE:
 ARGS:
     # Path to the World of Warcraft directory
 
-    <url>
+    <path>
 
     # Flavor to use from the path. If none, we use all we find
     # [possible values: retail, ptr, beta, classic, classic_ptr]
