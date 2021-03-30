@@ -23,9 +23,9 @@ OPTIONS:
 SUBCOMMANDS:
     backup     Backup your WTF and/or AddOns folders
     install    Install an addon from the command line
-    update              Update all addons and WeakAuras
-    update-addons       Update all addons from the command line then exit
-    update-weakauras    Update all WeakAuras from the command line then exit`
+    update              Update all addons, WeakAura and Plater auras
+    update-addons       Update all addons
+    update-auras        Update all WeakAura and Plater auras
 ```
 
 ## Options
@@ -130,7 +130,7 @@ Update all addons and/or WeakAuras from the command line then exit.
 USAGE:
     ajour update
     ajour update-addons
-    ajour update-weakauras
+    ajour update-auras
 ```
 
 #### Example
@@ -144,7 +144,7 @@ ajour update
 
 ajour update-addons
 
-# Update all WeakAuras
+# Update all WeakAura and Plater auras
 
-ajour update-weakauras
+ajour update-auras
 ```

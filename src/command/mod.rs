@@ -10,12 +10,12 @@ mod update_addons;
 pub use update_addons::update_all_addons;
 
 mod update_weakauras;
-pub use update_weakauras::update_all_weakauras;
+pub use update_weakauras::update_all_auras;
 
 pub fn update_both() -> Result<()> {
     update_all_addons()?;
 
-    update_all_weakauras()?;
+    update_all_auras()?;
 
     Ok(())
 }

@@ -79,7 +79,7 @@ pub fn main() {
                 } => command::backup(backup_folder, destination, flavors, compression_format),
                 cli::Command::Update => command::update_both(),
                 cli::Command::UpdateAddons => command::update_all_addons(),
-                cli::Command::UpdateWeakauras => command::update_all_weakauras(),
+                cli::Command::UpdateAuras => command::update_all_auras(),
                 cli::Command::Install { url, flavor } => command::install_from_source(url, flavor),
             } {
                 log_error(&e);
