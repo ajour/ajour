@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Added `add-path` CLI command. More information can be found in CLI.md.
+
 ### Fixed
 
 - Resolved issue where single accounts was never saved to the

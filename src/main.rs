@@ -81,6 +81,7 @@ pub fn main() {
                 cli::Command::UpdateAddons => command::update_all_addons(),
                 cli::Command::UpdateWeakauras => command::update_all_weakauras(),
                 cli::Command::Install { url, flavor } => command::install_from_source(url, flavor),
+                cli::Command::PathAdd { path, flavor } => command::path_add(path, flavor),
             } {
                 log_error(&e);
             }

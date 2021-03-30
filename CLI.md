@@ -26,6 +26,7 @@ SUBCOMMANDS:
     update              Update all addons and WeakAuras
     update-addons       Update all addons from the command line then exit
     update-weakauras    Update all WeakAuras from the command line then exit`
+    path-add            Add a World of Warcraft path to known directories
 ```
 
 ## Options
@@ -147,4 +148,35 @@ ajour update-addons
 # Update all WeakAuras
 
 ajour update-weakauras
+```
+
+### Add Path
+
+Add World of Warcraft path to known directories.
+
+```sh
+USAGE:
+    ajour path-add <path> [flavor]
+
+ARGS:
+    # Path to the World of Warcraft directory
+
+    <url>
+
+    # Flavor to use from the path. If none, we use all we find
+    # [possible values: retail, ptr, beta, classic, classic_ptr]
+
+    [flavor]
+```
+
+#### Example
+
+```sh
+# Add retail from ./World of Warcraft
+
+ajour path-add ./World of Warcraft retail
+
+# Add all known flavors from ./World of Warcraft
+
+ajour path-add ./World of Warcraft
 ```
