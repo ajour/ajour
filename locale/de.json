@@ -52,7 +52,7 @@
     "no-addons-for-flavor": "Du hast keine {flavor} Addons",
     "no-changelog": "Kein Changelog gefunden",
     "no-directory": "Kein Verzeichnis ausgewählt",
-    "no-known-weakauras": "Sie haben keine bekannten {Flavor} Wago-Daten",
+    "no-known-weakauras": "Sie haben keine bekannten {flavor} Wago-Daten",
     "num-downloads": "# Downloads",
     "open-data-directory": "Öffne Data Ordner",
     "parsing-addons": "Analysiert {flavor} Addons",
@@ -61,7 +61,7 @@
     "release-channel-no-release": "Keine verfügbaren Veröffentlichungen",
     "remote": "Aktuelle Version",
     "remote-release-channel": "Veröffentlichungskanal",
-    "reset-columns": "Setze Spalten zurück",
+    "reset-columns": "Spalten zurücksetzen",
     "retry": "Erneut versuchen",
     "scale": "Skalierung",
     "search-for-addon": "Suche nach einem Addon",
@@ -118,6 +118,6 @@
     "auto-update": "Neue Updates automatisch anwenden, wenn sie verfügbar sind",
     "type": "Typ",
     "wow-directories": "World of Warcraft Verzeichnisse",
-    "donate": "Spenden Sie",
+    "donate": "Unterstützen",
     "donate-http": "https://www.getajour.com/donate"
 }
