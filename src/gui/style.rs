@@ -770,7 +770,7 @@ impl pick_list::StyleSheet for MenuPickList {
             text_color: self.0.bright.primary,
             background: self.0.base.foreground.into(),
             border_width: 0.0,
-            border_radius: 4.0,
+            border_radius: 2.0,
             border_color: Color {
                 a: 0.5,
                 ..self.0.normal.primary
