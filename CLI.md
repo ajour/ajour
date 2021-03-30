@@ -23,9 +23,9 @@ OPTIONS:
 SUBCOMMANDS:
     backup     Backup your WTF and/or AddOns folders
     install    Install an addon from the command line
-    update              Update all addons and WeakAuras
-    update-addons       Update all addons from the command line then exit
-    update-auras        Update all WeakAura and Plater auras from the command line then exit
+    update              Update all addons, WeakAura and Plater auras
+    update-addons       Update all addons
+    update-auras        Update all WeakAura and Plater auras
 ```
 
 ## Options
