@@ -118,7 +118,7 @@ pub fn update_all_addons() -> Result<()> {
                     .unwrap_or_default();
 
                 log::info!(
-                    "\t{} - {}, {} -> {}",
+                    "\t{} - {} ({} -> {})",
                     &addon.primary_folder_id,
                     flavor,
                     current_version,

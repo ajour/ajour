@@ -17,6 +17,16 @@ and `Removed`.
 ### Added
 
 - Small labels will now indicate if there are addons or Wago's ready to be updated.
+- Added CLI command `add-path`. More information can be found in CLI.md.
+
+### Changed
+
+- Renamed CLI command `update-weakauras` to `update-auras`.
+
+### Fixed
+
+- Resolved issue where single accounts was never saved to the
+  config casuing the CLI `update-weakauras` not to work properly.
 
 ## [1.0.1] - 2021-03-28
 

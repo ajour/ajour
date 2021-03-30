@@ -168,7 +168,7 @@ pub enum Message {
     RefreshCatalog(Instant),
     CheckLatestRelease(Instant),
     CheckWeakAurasInstalled((Flavor, bool)),
-    ListWeakAurasAccounts((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
+    ListWtfAccounts((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
     WeakAurasAccountSelected(String),
     ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
     AurasUpdated((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),

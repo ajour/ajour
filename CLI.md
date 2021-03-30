@@ -23,9 +23,10 @@ OPTIONS:
 SUBCOMMANDS:
     backup     Backup your WTF and/or AddOns folders
     install    Install an addon from the command line
-    update              Update all addons and WeakAuras
-    update-addons       Update all addons from the command line then exit
-    update-weakauras    Update all WeakAuras from the command line then exit`
+    update              Update all addons, WeakAura and Plater auras
+    update-addons       Update all addons
+    update-auras        Update all WeakAura and Plater auras
+    path-add            Add a World of Warcraft path to known directories
 ```
 
 ## Options
@@ -130,7 +131,7 @@ Update all addons and/or WeakAuras from the command line then exit.
 USAGE:
     ajour update
     ajour update-addons
-    ajour update-weakauras
+    ajour update-auras
 ```
 
 #### Example
@@ -144,7 +145,38 @@ ajour update
 
 ajour update-addons
 
-# Update all WeakAuras
+# Update all WeakAura and Plater auras
 
-ajour update-weakauras
+ajour update-auras
+```
+
+### Path Add
+
+Add World of Warcraft path to known directories.
+
+```sh
+USAGE:
+    ajour path-add <path> [flavor]
+
+ARGS:
+    # Path to the World of Warcraft directory
+
+    <path>
+
+    # Flavor to use from the path. If none, we use all we find
+    # [possible values: retail, ptr, beta, classic, classic_ptr]
+
+    [flavor]
+```
+
+#### Example
+
+```sh
+# Add retail from ./World of Warcraft
+
+ajour path-add ./World of Warcraft retail
+
+# Add all known flavors from ./World of Warcraft
+
+ajour path-add ./World of Warcraft
 ```
