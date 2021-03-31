@@ -26,9 +26,9 @@ use ajour_widgets::header;
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::{
-    button, pick_list, scrollable, text_input, Align, Application, Button, Column, Command,
-    Container, Element, HorizontalAlignment, Length, PickList, Row, Scrollable, Settings, Space,
-    Subscription, Text, TextInput,
+    button, pick_list, scrollable, text_input, Align, Application, Button, Clipboard, Column,
+    Command, Container, Element, HorizontalAlignment, Length, PickList, Row, Scrollable, Settings,
+    Space, Subscription, Text, TextInput,
 };
 use image::ImageFormat;
 use isahc::http::Uri;
@@ -341,7 +341,7 @@ impl Application for Ajour {
         ])
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
         match update::handle_message(self, message) {
             Ok(x) => x,
             Err(e) => Command::perform(async { e }, Message::Error),
