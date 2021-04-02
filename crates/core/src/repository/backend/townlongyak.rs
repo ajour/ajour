@@ -52,7 +52,7 @@ pub(crate) fn metadata_from_townlong_package(
     let mut remote_packages = HashMap::new();
 
     for release in package.releases.iter() {
-        if release.game_type == flavor.hub_format() {
+        if Some(release.game_type.clone()) == flavor.hub_format() {
             let version = release.tag_name.clone();
             let download_url = release.download_url.clone();
             let date_time = Some(release.published_at);
@@ -119,7 +119,11 @@ pub(crate) async fn fetch_remote_packages(
     flavor: Flavor,
     ids: &[String],
 ) -> Result<Vec<TownlongYakPackage>, DownloadError> {
-    let url = format!("{}/addons/batch/{}", API_ENDPOINT, flavor.hub_format());
+    let url = format!(
+        "{}/addons/batch/{}",
+        API_ENDPOINT,
+        flavor.hub_format().unwrap()
+    );
 
     let addon_ids = ids.iter().filter_map(|i| i.parse::<i64>().ok()).collect();
 

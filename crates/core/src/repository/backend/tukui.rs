@@ -36,12 +36,16 @@ impl Backend for Tukui {
     ) -> Result<Option<String>, RepositoryError> {
         let url = changelog_endpoint(&self.id, &self.flavor);
 
+        if url.is_none() {
+            return Ok(None);
+        }
+
         match self.flavor {
             Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPtr => {
                 // Only TukUI and ElvUI main addons has changelog which can be fetched.
                 // The others is embeded into a page.
                 if &self.id == "-1" || &self.id == "-2" {
-                    let mut resp = request_async(&url, vec![], None).await?;
+                    let mut resp = request_async(&url.unwrap(), vec![], None).await?;
 
                     if resp.status().is_success() {
                         let changelog: String = resp.text().await?;
@@ -56,7 +60,7 @@ impl Backend for Tukui {
                     }
                 }
             }
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => {}
+            _ => {}
         }
 
         Ok(None)
@@ -127,17 +131,21 @@ fn api_endpoint(id: &str, flavor: &Flavor) -> String {
     )
 }
 
-fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
+fn changelog_endpoint(id: &str, flavor: &Flavor) -> Option<String> {
     match flavor {
         Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => match id {
-            "-1" => "https://www.tukui.org/ui/tukui/changelog".to_owned(),
-            "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
-            _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
+            "-1" => Some("https://www.tukui.org/ui/tukui/changelog".to_owned()),
+            "-2" => Some("https://www.tukui.org/ui/elvui/changelog".to_owned()),
+            _ => Some(format!(
+                "https://www.tukui.org/addons.php?id={}&changelog",
+                id
+            )),
         },
-        Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => format!(
+        Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => Some(format!(
             "https://www.tukui.org/classic-addons.php?id={}&changelog",
             id
-        ),
+        )),
+        _ => None,
     }
 }
 

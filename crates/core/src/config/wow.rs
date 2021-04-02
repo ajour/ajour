@@ -39,6 +39,8 @@ pub enum Flavor {
     #[serde(alias = "ClassicPTR")]
     ClassicPtr,
     ClassicBeta,
+    #[serde(other)]
+    Other,
 }
 
 impl Flavor {
@@ -52,18 +54,26 @@ impl Flavor {
     ];
 
     /// Returns flavor `String` in CurseForge format
-    pub(crate) fn curse_format(self) -> String {
+    pub(crate) fn curse_format(self) -> Option<String> {
         match self {
-            Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "wow_retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => "wow_classic".to_owned(),
+            Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => {
+                Some("wow_retail".to_owned())
+            }
+            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => {
+                Some("wow_classic".to_owned())
+            }
+            _ => None,
         }
     }
 
     /// Returns flavor `String` in WowUp.Hub format
-    pub(crate) fn hub_format(self) -> String {
+    pub(crate) fn hub_format(self) -> Option<String> {
         match self {
-            Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => "classic".to_owned(),
+            Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => Some("retail".to_owned()),
+            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => {
+                Some("classic".to_owned())
+            }
+            _ => None,
         }
     }
 
@@ -72,6 +82,7 @@ impl Flavor {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => Flavor::Retail,
             Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => Flavor::Classic,
+            _ => Flavor::Other,
         }
     }
 
@@ -84,6 +95,7 @@ impl Flavor {
             Flavor::Classic => "_classic_".to_owned(),
             Flavor::ClassicPtr => "_classic_ptr_".to_owned(),
             Flavor::ClassicBeta => "_classic_beta_".to_owned(),
+            _ => panic!("Unsupported flavor: {:?}", self),
         }
     }
 }
@@ -106,6 +118,7 @@ impl std::fmt::Display for Flavor {
                 Flavor::Classic => "Classic",
                 Flavor::ClassicBeta => "Classic Beta",
                 Flavor::ClassicPtr => "Classic PTR",
+                _ => panic!("Unsupported flavor: {:?}", self),
             }
         )
     }

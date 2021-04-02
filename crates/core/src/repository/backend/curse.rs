@@ -80,7 +80,7 @@ pub(crate) fn metadata_from_curse_package(flavor: Flavor, package: Package) -> R
 
     for file in package.latest_files.iter() {
         let game_version_flavor = file.game_version_flavor.as_ref();
-        if !file.is_alternate && game_version_flavor == Some(&flavor.curse_format()) {
+        if !file.is_alternate && game_version_flavor == flavor.curse_format().as_ref() {
             let version = file.display_name.clone();
             let download_url = file.download_url.clone();
             let date_time = DateTime::parse_from_rfc3339(&file.file_date)
@@ -128,7 +128,7 @@ pub(crate) fn metadata_from_fingerprint_info(
 
     for file in info.latest_files.iter() {
         let game_version_flavor = file.game_version_flavor.as_ref();
-        if !file.is_alternate && game_version_flavor == Some(&flavor.curse_format()) {
+        if !file.is_alternate && game_version_flavor == flavor.curse_format().as_ref() {
             let version = file.display_name.clone();
             let download_url = file.download_url.clone();
             let date_time = DateTime::parse_from_rfc3339(&file.file_date)
