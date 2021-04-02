@@ -122,7 +122,7 @@ pub(crate) async fn fetch_remote_packages(
     let url = format!(
         "{}/addons/batch/{}",
         API_ENDPOINT,
-        flavor.hub_format().unwrap()
+        flavor.hub_format().unwrap_or_default()
     );
 
     let addon_ids = ids.iter().filter_map(|i| i.parse::<i64>().ok()).collect();
