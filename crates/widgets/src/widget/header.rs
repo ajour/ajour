@@ -152,9 +152,9 @@ where
         event: Event,
         layout: Layout<'_>,
         cursor_position: Point,
-        messages: &mut Vec<Message>,
         renderer: &Renderer,
-        clipboard: Option<&dyn Clipboard>,
+        clipboard: &mut dyn Clipboard,
+        messages: &mut Vec<Message>,
     ) -> event::Status {
         let in_bounds = layout.bounds().contains(cursor_position);
 
@@ -223,9 +223,9 @@ where
                         return event::Status::Captured;
                     }
                 }
-                Event::Mouse(mouse::Event::CursorMoved { x, .. }) => {
+                Event::Mouse(mouse::Event::CursorMoved { position }) => {
                     if self.state.resizing {
-                        let delta = x - self.state.starting_cursor_pos.unwrap().x;
+                        let delta = position.x - self.state.starting_cursor_pos.unwrap().x;
 
                         let left_width = self.state.starting_left_width;
                         let right_width = self.state.starting_right_width;
@@ -261,9 +261,9 @@ where
                     event.clone(),
                     layout,
                     cursor_position,
-                    messages,
                     renderer,
                     clipboard,
+                    messages,
                 )
             })
             .fold(event::Status::Ignored, event::Status::merge)

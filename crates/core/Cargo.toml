@@ -48,7 +48,7 @@ tar = "0.4.33"
 zstd = { version = "0.6.1", features = ["zstdmt"] }
 num_cpus = "1.13.0"
 
-iced_native = { version = "0.3", optional = true }
+iced_native = { version = "0.4.0", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 flate2 = "1.0"
