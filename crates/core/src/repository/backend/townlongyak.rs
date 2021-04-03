@@ -119,10 +119,15 @@ pub(crate) async fn fetch_remote_packages(
     flavor: Flavor,
     ids: &[String],
 ) -> Result<Vec<TownlongYakPackage>, DownloadError> {
+    let flavor_hub_format = flavor.hub_format();
+    if flavor_hub_format.is_none() {
+        return Ok(vec![]);
+    }
+
     let url = format!(
         "{}/addons/batch/{}",
         API_ENDPOINT,
-        flavor.hub_format().unwrap_or_default()
+        flavor_hub_format.unwrap()
     );
 
     let addon_ids = ids.iter().filter_map(|i| i.parse::<i64>().ok()).collect();

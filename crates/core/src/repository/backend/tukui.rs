@@ -34,33 +34,29 @@ impl Backend for Tukui {
         _file_id: Option<i64>,
         _tag_name: Option<String>,
     ) -> Result<Option<String>, RepositoryError> {
-        let url = changelog_endpoint(&self.id, &self.flavor);
+        if let Some(url) = changelog_endpoint(&self.id, &self.flavor) {
+            match self.flavor {
+                Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPtr => {
+                    // Only TukUI and ElvUI main addons has changelog which can be fetched.
+                    // The others is embeded into a page.
+                    if &self.id == "-1" || &self.id == "-2" {
+                        let mut resp = request_async(&url, vec![], None).await?;
 
-        if url.is_none() {
-            return Ok(None);
-        }
+                        if resp.status().is_success() {
+                            let changelog: String = resp.text().await?;
 
-        match self.flavor {
-            Flavor::Retail | Flavor::RetailBeta | Flavor::RetailPtr => {
-                // Only TukUI and ElvUI main addons has changelog which can be fetched.
-                // The others is embeded into a page.
-                if &self.id == "-1" || &self.id == "-2" {
-                    let mut resp = request_async(&url.unwrap(), vec![], None).await?;
+                            let c = regex_html_tags_to_newline()
+                                .replace_all(&changelog, "\n")
+                                .to_string();
+                            let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
+                            let c = truncate(&c, 2500).to_string();
 
-                    if resp.status().is_success() {
-                        let changelog: String = resp.text().await?;
-
-                        let c = regex_html_tags_to_newline()
-                            .replace_all(&changelog, "\n")
-                            .to_string();
-                        let c = regex_html_tags_to_space().replace_all(&c, "").to_string();
-                        let c = truncate(&c, 2500).to_string();
-
-                        return Ok(Some(c));
+                            return Ok(Some(c));
+                        }
                     }
                 }
+                _ => {}
             }
-            _ => {}
         }
 
         Ok(None)
