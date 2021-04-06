@@ -117,9 +117,6 @@ pub struct CatalogAddon {
     #[serde(deserialize_with = "null_to_default::deserialize")]
     pub number_of_downloads: u64,
     pub source: Source,
-    #[serde(deserialize_with = "null_to_default::deserialize")]
-    #[deprecated(since = "0.4.4", note = "Please use game_versions instead")]
-    pub flavors: Vec<Flavor>,
     #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")]
     pub game_versions: Vec<GameVersion>,
 }
