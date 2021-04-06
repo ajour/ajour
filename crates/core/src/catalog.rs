@@ -30,7 +30,10 @@ async fn get_catalog_addons_from(
                 .get("etag")
                 .and_then(|h| h.to_str().map(String::from).ok());
 
-            Ok(Some((etag, response.json::<Vec<CatalogAddon>>().await?)))
+            let mut addons = response.json::<Vec<CatalogAddon>>().await?;
+            addons.retain(|a| !a.game_versions.is_empty());
+
+            Ok(Some((etag, addons)))
         }
         304 => {
             log::debug!("Etag match, cached catalog is latest version");
@@ -117,7 +120,7 @@ pub struct CatalogAddon {
     #[serde(deserialize_with = "null_to_default::deserialize")]
     #[deprecated(since = "0.4.4", note = "Please use game_versions instead")]
     pub flavors: Vec<Flavor>,
-    #[serde(deserialize_with = "null_to_default::deserialize")]
+    #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")]
     pub game_versions: Vec<GameVersion>,
 }
 
@@ -131,6 +134,77 @@ mod null_to_default {
     {
         let opt = Option::deserialize(deserializer)?;
         Ok(opt.unwrap_or_default())
+    }
+}
+
+mod skip_element_unknown_variant {
+    use serde::{
+        de::{self, SeqAccess, Visitor},
+        Deserialize, Deserializer,
+    };
+    use std::fmt;
+    use std::marker::PhantomData;
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Vec<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Deserialize<'de>,
+    {
+        struct SeqVisitor<V>(PhantomData<V>);
+
+        impl<'de, V> Visitor<'de> for SeqVisitor<V>
+        where
+            V: Deserialize<'de>,
+        {
+            type Value = Vec<V>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "an array of values")
+            }
+
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(vec![])
+            }
+
+            fn visit_none<E>(self) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(vec![])
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let mut values = vec![];
+
+                loop {
+                    let value = seq.next_element::<V>();
+
+                    match value {
+                        Ok(Some(v)) => {
+                            values.push(v);
+                        }
+                        Ok(None) => break,
+                        Err(e) => {
+                            if e.to_string().starts_with("unknown variant") {
+                                continue;
+                            } else {
+                                return Err(e);
+                            }
+                        }
+                    }
+                }
+
+                Ok(values)
+            }
+        }
+
+        deserializer.deserialize_any(SeqVisitor(PhantomData::default()))
     }
 }
 
@@ -206,6 +280,45 @@ mod tests {
 
         for test in tests.iter() {
             serde_json::from_str::<Vec<CatalogAddon>>(test).unwrap();
+        }
+    }
+
+    #[test]
+    fn test_skip_failed_element() {
+        #[derive(Debug, Deserialize)]
+        struct Test(
+            #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")]
+            Vec<GameVersion>,
+        );
+
+        let tests = [
+            // Will return 0 results
+            r"[]",
+            // Will return 0 results
+            r#"null"#,
+            // Will return 2 results
+            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": "retail"}]"#,
+            // Will return 2 results, gameVersion as null will be String::default
+            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": null, "flavor": "retail"}]"#,
+            // Test skipping when GameVersion has an unknown flavor variant. Will return only first result.
+            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": "unknown"}]"#,
+            // All other deser error on elements will fail... missing field
+            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf"}]"#,
+            // All other deser error on elements will fail... null flavor
+            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": null}]"#,
+            // All other deser error on elements will fail... invalid type for a field
+            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": {}, "flavor": "unknown"}]"#,
+        ];
+
+        for (idx, test) in tests.iter().enumerate() {
+            let result = serde_json::from_str::<Test>(test);
+            match idx {
+                _ if idx < 5 => {
+                    dbg!(&result);
+                    assert!(result.is_ok());
+                }
+                _ => assert!(result.is_err()),
+            }
         }
     }
 }
