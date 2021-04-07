@@ -193,10 +193,6 @@ unsafe fn remove_icon(hwnd: HWND) {
 }
 
 unsafe fn show_popup_menu(hwnd: HWND, state: &TrayState) {
-    if state.about_shown {
-        return;
-    }
-
     let menu = CreatePopupMenu();
 
     let hidden = state.hidden;
@@ -307,12 +303,13 @@ unsafe extern "system" fn callback(
             PostQuitMessage(0);
         }
         WM_COMMAND => {
-            if state.about_shown {
-                return 1;
-            }
-
             match LOWORD(wparam as u32) {
                 ID_ABOUT => {
+                    // Don't show if already up
+                    if state.about_shown {
+                        return 1;
+                    }
+
                     state.about_shown = true;
 
                     show_about();
