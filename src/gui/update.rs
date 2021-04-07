@@ -2226,6 +2226,23 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let _ = ajour.config.save();
             }
         }
+        #[cfg(target_os = "windows")]
+        Message::RuntimeEvent(iced_native::Event::Window(
+            iced_native::window::Event::CloseRequested,
+        )) => {
+            log::debug!("Message::RuntimeEvent(CloseRequested)");
+
+            use crate::tray::{TrayMessage, SHOULD_EXIT, TRAY_SENDER};
+            use std::sync::atomic::Ordering;
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                if ajour.config.close_to_tray {
+                    let _ = sender.try_send(TrayMessage::CloseToTray);
+                } else {
+                    SHOULD_EXIT.store(true, Ordering::Relaxed);
+                }
+            }
+        }
         Message::RuntimeEvent(iced_native::Event::Keyboard(
             iced_native::keyboard::Event::KeyReleased { key_code, .. },
         )) => {
@@ -2248,6 +2265,25 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::PickBackupCompressionFormat({:?})", format);
             ajour.config.compression_format = format;
             let _ = ajour.config.save();
+        }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleCloseToTray(enable)) => {
+            log::debug!("Interaction::ToggleCloseToTray({})", enable);
+
+            use crate::tray::{TrayMessage, TRAY_SENDER};
+
+            ajour.config.close_to_tray = enable;
+            let _ = ajour.config.save();
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                let msg = if enable {
+                    TrayMessage::Enable
+                } else {
+                    TrayMessage::Disable
+                };
+
+                let _ = sender.try_send(msg);
+            }
         }
         Message::RuntimeEvent(_) => {}
         Message::None(_) => {}

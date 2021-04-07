@@ -119,5 +119,6 @@
     "type": "Type",
     "wow-directories": "World of Warcraft directories",
     "donate": "Donate",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Close to System Tray"
 }

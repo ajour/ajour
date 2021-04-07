@@ -65,6 +65,9 @@ pub struct Config {
 
     #[serde(default)]
     pub compression_format: CompressionFormat,
+
+    #[serde(default)]
+    pub close_to_tray: bool,
 }
 
 impl Config {

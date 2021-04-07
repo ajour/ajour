@@ -518,6 +518,24 @@ pub fn data_container<'a, 'b>(
             .push(container)
     };
 
+    #[cfg(target_os = "windows")]
+    let close_to_tray_column = {
+        let checkbox = Checkbox::new(
+            config.close_to_tray,
+            localized_string("close-to-tray"),
+            Interaction::ToggleCloseToTray,
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        let checkbox: Element<Interaction> = checkbox.into();
+
+        let checkbox_container = Container::new(checkbox.map(Message::Interaction))
+            .style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
+
     // General
     scrollable = scrollable
         .push(general_settings_title_container)
@@ -530,8 +548,16 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(self_update_channel_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(config_column)
-        .push(Space::new(Length::Units(0), Length::Units(30)));
+        .push(config_column);
+
+    #[cfg(target_os = "windows")]
+    {
+        scrollable = scrollable
+            .push(Space::new(Length::Units(0), Length::Units(10)))
+            .push(close_to_tray_column)
+    }
+
+    scrollable = scrollable.push(Space::new(Length::Units(0), Length::Units(30)));
 
     // Directories
     scrollable = scrollable

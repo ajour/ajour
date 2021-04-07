@@ -1,0 +1,381 @@
+use std::mem;
+use std::ptr;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{sync_channel, SyncSender};
+use std::sync::{Arc, Mutex};
+use std::thread::{self, JoinHandle};
+
+use once_cell::sync::OnceCell;
+use winapi::shared::minwindef::{BOOL, LOWORD, LPARAM, LRESULT, UINT, WPARAM};
+use winapi::shared::windef::{HWND, POINT};
+use winapi::um::libloaderapi::GetModuleHandleW;
+use winapi::um::shellapi::{
+    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NOTIFYICONDATAW,
+};
+use winapi::um::wingdi::{CreateSolidBrush, RGB};
+use winapi::um::winuser::{
+    CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyMenu, DestroyWindow, DispatchMessageW,
+    EnumWindows, GetCursorPos, GetMessageW, GetWindowInfo, GetWindowLongPtrW,
+    GetWindowThreadProcessId, InsertMenuW, LoadIconW, MessageBoxW, PostMessageW, PostQuitMessage,
+    RegisterClassExW, SendMessageW, SetFocus, SetForegroundWindow, SetMenuDefaultItem,
+    SetWindowLongPtrW, ShowWindow, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, GWLP_USERDATA,
+    MAKEINTRESOURCEW, MB_ICONINFORMATION, MB_OK, MF_BYPOSITION, MF_STRING, SW_HIDE, SW_SHOW,
+    SW_SHOWMINIMIZED, TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON, WINDOWINFO,
+    WM_APP, WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP, WM_LBUTTONDBLCLK,
+    WM_RBUTTONUP, WNDCLASSEXW, WS_EX_NOACTIVATE,
+};
+
+pub static SHOULD_EXIT: AtomicBool = AtomicBool::new(false);
+pub static TRAY_SENDER: OnceCell<SyncSender<TrayMessage>> = OnceCell::new();
+
+const ID_ABOUT: u16 = 2000;
+const ID_TOGGLE_WINDOW: u16 = 2001;
+const ID_EXIT: u16 = 2002;
+
+#[derive(Debug, Clone, Copy)]
+pub enum TrayMessage {
+    Enable,
+    Disable,
+    CloseToTray,
+}
+
+#[derive(Debug)]
+struct TrayState {
+    gui_handle: Option<HWND>,
+    hidden: bool,
+    about_shown: bool,
+    close_gui: bool,
+}
+
+unsafe impl Send for TrayState {}
+unsafe impl Sync for TrayState {}
+
+struct Window(HWND);
+
+unsafe impl Send for Window {}
+unsafe impl Sync for Window {}
+
+macro_rules! str_to_wide {
+    ($str:expr) => {{
+        $str.encode_utf16()
+            .chain(std::iter::once(0))
+            .collect::<Vec<_>>()
+    }};
+}
+
+pub fn spawn_sys_tray(enabled: bool) {
+    thread::spawn(move || {
+        let (sender, receiver) = sync_channel(1);
+        let _ = TRAY_SENDER.set(sender);
+
+        let window: Arc<Mutex<Option<Window>>> = Default::default();
+
+        // Spawn tray initially if enabled
+        if enabled {
+            unsafe { spawn(window.clone()) };
+        }
+
+        while let Ok(msg) = receiver.recv() {
+            match msg {
+                TrayMessage::Enable => {
+                    if window.lock().unwrap().is_none() {
+                        unsafe { spawn(window.clone()) };
+                    }
+                }
+                TrayMessage::Disable => {
+                    if let Some(window) = window.lock().unwrap().take() {
+                        unsafe { PostMessageW(window.0, WM_CLOSE, 1, 0) };
+                    }
+                }
+                TrayMessage::CloseToTray => unsafe {
+                    if let Some(window) = window.lock().unwrap().as_ref() {
+                        let ptr = GetWindowLongPtrW(window.0, GWLP_USERDATA);
+                        let state = &mut *(ptr as *mut TrayState);
+
+                        state.hidden = true;
+                        ShowWindow(*state.gui_handle.as_ref().unwrap(), SW_HIDE);
+                    }
+                },
+            }
+        }
+    });
+}
+
+unsafe fn spawn(window: Arc<Mutex<Option<Window>>>) -> JoinHandle<()> {
+    thread::spawn(move || {
+        let mut tray_state = TrayState {
+            gui_handle: None,
+            hidden: false,
+            about_shown: false,
+            close_gui: false,
+        };
+
+        // Keep searching for window handle until its found
+        while tray_state.gui_handle.is_none() {
+            EnumWindows(Some(wndenumproc), &mut tray_state as *mut _ as LPARAM);
+        }
+
+        let h_instance = GetModuleHandleW(ptr::null());
+
+        let class_name = str_to_wide!("Ajour Tray");
+
+        let mut class = mem::zeroed::<WNDCLASSEXW>();
+        class.cbSize = mem::size_of::<WNDCLASSEXW>() as u32;
+        class.lpfnWndProc = Some(callback);
+        class.hInstance = h_instance;
+        class.lpszClassName = class_name.as_ptr();
+        class.hbrBackground = CreateSolidBrush(RGB(0, 77, 128));
+
+        RegisterClassExW(&class);
+
+        let hwnd = CreateWindowExW(
+            WS_EX_NOACTIVATE,
+            class_name.as_ptr(),
+            ptr::null(),
+            0,
+            0,
+            0,
+            0,
+            0,
+            ptr::null_mut(),
+            ptr::null_mut(),
+            h_instance,
+            &mut tray_state as *mut _ as *mut std::ffi::c_void,
+        );
+
+        *window.lock().unwrap() = Some(Window(hwnd));
+
+        let mut msg = mem::zeroed();
+        while GetMessageW(&mut msg, ptr::null_mut(), 0, 0) != 0 {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+
+        if tray_state.close_gui {
+            // WM_QUIT was sent, which was triggered by the Exit button. Close entire program.
+            SHOULD_EXIT.store(true, Ordering::Relaxed);
+
+            // Activate window to force event loop to run / see that it should now close
+            ShowWindow(tray_state.gui_handle.unwrap(), SW_SHOWMINIMIZED);
+        }
+    })
+}
+
+unsafe fn add_icon(hwnd: HWND) {
+    let h_instance = GetModuleHandleW(ptr::null());
+
+    let icon_handle = LoadIconW(h_instance, MAKEINTRESOURCEW(0x101));
+
+    let mut tooltip_array = [0u16; 128];
+    let tooltip = "Ajour";
+    let mut tooltip = tooltip.encode_utf16().collect::<Vec<_>>();
+    tooltip.extend(vec![0; 128 - tooltip.len()]);
+    tooltip_array.swap_with_slice(&mut tooltip[..]);
+
+    let mut icon_data: NOTIFYICONDATAW = mem::zeroed();
+    icon_data.cbSize = mem::size_of::<NOTIFYICONDATAW>() as u32;
+    icon_data.hWnd = hwnd;
+    icon_data.uID = 1;
+    icon_data.uCallbackMessage = WM_APP;
+    icon_data.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    icon_data.hIcon = icon_handle;
+    icon_data.szTip = tooltip_array;
+
+    Shell_NotifyIconW(NIM_ADD, &mut icon_data);
+}
+
+unsafe fn remove_icon(hwnd: HWND) {
+    let mut icon_data: NOTIFYICONDATAW = mem::zeroed();
+    icon_data.hWnd = hwnd;
+    icon_data.uID = 1;
+
+    Shell_NotifyIconW(NIM_DELETE, &mut icon_data);
+}
+
+unsafe fn show_popup_menu(hwnd: HWND, state: &TrayState) {
+    if state.about_shown {
+        return;
+    }
+
+    let menu = CreatePopupMenu();
+
+    let hidden = state.hidden;
+
+    let mut about = str_to_wide!("About...");
+    let mut toggle = str_to_wide!(if hidden { "Show window" } else { "Hide window" });
+    let mut exit = str_to_wide!("Exit");
+
+    InsertMenuW(
+        menu,
+        0,
+        MF_BYPOSITION | MF_STRING,
+        ID_ABOUT as usize,
+        about.as_mut_ptr(),
+    );
+
+    InsertMenuW(
+        menu,
+        1,
+        MF_BYPOSITION | MF_STRING,
+        ID_TOGGLE_WINDOW as usize,
+        toggle.as_mut_ptr(),
+    );
+
+    InsertMenuW(
+        menu,
+        2,
+        MF_BYPOSITION | MF_STRING,
+        ID_EXIT as usize,
+        exit.as_mut_ptr(),
+    );
+
+    SetMenuDefaultItem(menu, ID_ABOUT as u32, 0);
+    SetFocus(hwnd);
+    SendMessageW(hwnd, WM_INITMENUPOPUP, menu as usize, 0);
+
+    let mut point: POINT = mem::zeroed();
+    GetCursorPos(&mut point);
+
+    let cmd = TrackPopupMenu(
+        menu,
+        TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY,
+        point.x,
+        point.y,
+        0,
+        hwnd,
+        ptr::null_mut(),
+    );
+
+    SendMessageW(hwnd, WM_COMMAND, cmd as usize, 0);
+
+    DestroyMenu(menu);
+}
+
+unsafe fn show_about() {
+    let mut title = str_to_wide!("About");
+
+    let msg = format!(
+        "Ajour - {}\n\nCopyright © 2020-2021 Casper Rogild Storm",
+        env!("CARGO_PKG_VERSION")
+    );
+
+    let mut msg = str_to_wide!(msg);
+
+    MessageBoxW(
+        ptr::null_mut(),
+        msg.as_mut_ptr(),
+        title.as_mut_ptr(),
+        MB_ICONINFORMATION | MB_OK,
+    );
+}
+
+unsafe extern "system" fn callback(
+    hwnd: HWND,
+    msg: UINT,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
+    let mut state: &mut TrayState;
+
+    if msg == WM_CREATE {
+        let create_struct = &*(lparam as *const CREATESTRUCTW);
+        state = &mut *(create_struct.lpCreateParams as *mut TrayState);
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, state as *mut _ as LPARAM);
+
+        add_icon(hwnd);
+
+        return 0;
+    } else {
+        let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA);
+        state = &mut *(ptr as *mut TrayState);
+    }
+
+    match msg {
+        WM_CLOSE => {
+            // We send wparam as 1 when disabling tray from gui, and we don't want
+            // to shut down gui. Otherwise tray is closing because we selected Exit
+            // from tray icon
+            if wparam == 0 {
+                state.close_gui = true;
+            }
+
+            remove_icon(hwnd);
+
+            DestroyWindow(hwnd);
+        }
+        WM_DESTROY => {
+            PostQuitMessage(0);
+        }
+        WM_COMMAND => {
+            if state.about_shown {
+                return 1;
+            }
+
+            match LOWORD(wparam as u32) {
+                ID_ABOUT => {
+                    state.about_shown = true;
+
+                    show_about();
+
+                    state.about_shown = false;
+                }
+                ID_TOGGLE_WINDOW => {
+                    let cmd = if state.hidden { SW_SHOW } else { SW_HIDE };
+
+                    ShowWindow(*state.gui_handle.as_ref().unwrap(), cmd);
+
+                    state.hidden = !state.hidden;
+                }
+                ID_EXIT => {
+                    PostMessageW(hwnd, WM_CLOSE, 0, 0);
+                }
+                _ => {}
+            }
+
+            return 0;
+        }
+        WM_APP => {
+            match lparam as u32 {
+                WM_LBUTTONDBLCLK => {
+                    let cmd = if state.hidden { SW_SHOW } else { SW_HIDE };
+
+                    ShowWindow(*state.gui_handle.as_ref().unwrap(), cmd);
+
+                    state.hidden = !state.hidden;
+                }
+                WM_RBUTTONUP => {
+                    SetForegroundWindow(hwnd);
+                    show_popup_menu(hwnd, state);
+                    PostMessageW(hwnd, WM_APP + 1, 0, 0);
+                }
+                _ => {}
+            }
+
+            return 0;
+        }
+        _ => {}
+    }
+
+    DefWindowProcW(hwnd, msg, wparam, lparam)
+}
+
+unsafe extern "system" fn wndenumproc(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    let mut state = &mut *(lparam as *mut TrayState);
+
+    let mut info: WINDOWINFO = mem::zeroed();
+    info.cbSize = mem::size_of::<WINDOWINFO>() as u32;
+
+    GetWindowInfo(hwnd, &mut info);
+
+    let mut id = mem::zeroed();
+
+    GetWindowThreadProcessId(hwnd, &mut id);
+
+    if id == std::process::id() && info.dwWindowStatus == 1 {
+        state.gui_handle = Some(hwnd);
+
+        0
+    } else {
+        1
+    }
+}
