@@ -19,10 +19,10 @@ use winapi::um::winuser::{
     GetWindowThreadProcessId, InsertMenuW, LoadIconW, MessageBoxW, PostMessageW, PostQuitMessage,
     RegisterClassExW, SendMessageW, SetFocus, SetForegroundWindow, SetMenuDefaultItem,
     SetWindowLongPtrW, ShowWindow, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, GWLP_USERDATA,
-    MAKEINTRESOURCEW, MB_ICONINFORMATION, MB_OK, MF_BYPOSITION, MF_STRING, SW_HIDE, SW_RESTORE,
-    SW_SHOWMINIMIZED, TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON, WINDOWINFO,
-    WM_APP, WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP, WM_LBUTTONDBLCLK,
-    WM_RBUTTONUP, WNDCLASSEXW, WS_EX_NOACTIVATE,
+    MAKEINTRESOURCEW, MB_ICONINFORMATION, MB_OK, MF_BYPOSITION, MF_GRAYED, MF_SEPARATOR, MF_STRING,
+    SW_HIDE, SW_RESTORE, SW_SHOWMINIMIZED, TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD,
+    TPM_RIGHTBUTTON, WINDOWINFO, WM_APP, WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY,
+    WM_INITMENUPOPUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP, WNDCLASSEXW, WS_EX_NOACTIVATE,
 };
 
 pub static SHOULD_EXIT: AtomicBool = AtomicBool::new(false);
@@ -224,21 +224,13 @@ unsafe fn show_popup_menu(hwnd: HWND, state: &TrayState) {
 
     let hidden = state.gui_hidden;
 
-    let mut about = str_to_wide!("About...");
-    let mut toggle = str_to_wide!(if hidden { "Show window" } else { "Hide window" });
+    let mut about = str_to_wide!("About");
+    let mut toggle = str_to_wide!(if hidden { "Open Ajour" } else { "Hide Ajour" });
     let mut exit = str_to_wide!("Exit");
 
     InsertMenuW(
         menu,
         0,
-        MF_BYPOSITION | MF_STRING,
-        ID_ABOUT as usize,
-        about.as_mut_ptr(),
-    );
-
-    InsertMenuW(
-        menu,
-        1,
         MF_BYPOSITION | MF_STRING,
         ID_TOGGLE_WINDOW as usize,
         toggle.as_mut_ptr(),
@@ -246,13 +238,23 @@ unsafe fn show_popup_menu(hwnd: HWND, state: &TrayState) {
 
     InsertMenuW(
         menu,
-        2,
+        1,
+        MF_BYPOSITION | MF_STRING,
+        ID_ABOUT as usize,
+        about.as_mut_ptr(),
+    );
+
+    InsertMenuW(menu, 2, MF_SEPARATOR | MF_GRAYED, 0, ptr::null_mut());
+
+    InsertMenuW(
+        menu,
+        3,
         MF_BYPOSITION | MF_STRING,
         ID_EXIT as usize,
         exit.as_mut_ptr(),
     );
 
-    SetMenuDefaultItem(menu, ID_ABOUT as u32, 0);
+    SetMenuDefaultItem(menu, ID_TOGGLE_WINDOW as u32, 0);
     SetFocus(hwnd);
     SendMessageW(hwnd, WM_INITMENUPOPUP, menu as usize, 0);
 
