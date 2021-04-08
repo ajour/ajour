@@ -201,10 +201,7 @@ unsafe fn display_balloon_message(hwnd: HWND, message: &str) {
     icon_data.cbSize = mem::size_of::<NOTIFYICONDATAW>() as u32;
     icon_data.hWnd = hwnd;
     icon_data.uID = 1;
-    //icon_data.uCallbackMessage = WM_APP;
-    icon_data.uFlags = NIF_INFO; // NIF_ICON | NIF_MESSAGE | NIF_TIP;
-                                 //icon_data.hIcon = icon_handle;
-                                 //icon_data.szTip = tooltip_array;
+    icon_data.uFlags = NIF_INFO;
     icon_data.szInfo = info;
     icon_data.dwInfoFlags = NIIF_NONE | NIIF_NOSOUND;
 
