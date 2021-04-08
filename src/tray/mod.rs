@@ -2,7 +2,7 @@ use std::mem;
 use std::ptr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, SyncSender};
-use std::thread::{self};
+use std::thread;
 
 use once_cell::sync::OnceCell;
 use winapi::shared::minwindef::{BOOL, LOWORD, LPARAM, LRESULT, UINT, WPARAM};
