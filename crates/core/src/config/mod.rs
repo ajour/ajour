@@ -67,7 +67,12 @@ pub struct Config {
     pub compression_format: CompressionFormat,
 
     #[serde(default)]
+    #[cfg(target_os = "windows")]
     pub close_to_tray: bool,
+
+    #[serde(default)]
+    #[cfg(target_os = "windows")]
+    pub autostart: bool,
 }
 
 impl Config {

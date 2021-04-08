@@ -131,6 +131,8 @@ pub enum Interaction {
     ToggleAutoUpdateAddons(bool),
     #[cfg(target_os = "windows")]
     ToggleCloseToTray(bool),
+    #[cfg(target_os = "windows")]
+    ToggleAutoStart(bool),
 }
 
 #[derive(Debug)]

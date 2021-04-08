@@ -25,6 +25,10 @@ use winapi::um::winuser::{
     WM_INITMENUPOPUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP, WNDCLASSEXW, WS_EX_NOACTIVATE,
 };
 
+use crate::log_error;
+
+mod autostart;
+
 pub static SHOULD_EXIT: AtomicBool = AtomicBool::new(false);
 pub static TRAY_SENDER: OnceCell<SyncSender<TrayMessage>> = OnceCell::new();
 
@@ -38,6 +42,7 @@ pub enum TrayMessage {
     Disable,
     CloseToTray,
     TrayCreated(WindowHandle),
+    ToggleAutoStart(bool),
 }
 
 #[derive(Debug)]
@@ -57,6 +62,7 @@ pub struct WindowHandle(HWND);
 unsafe impl Send for WindowHandle {}
 unsafe impl Sync for WindowHandle {}
 
+#[macro_export]
 macro_rules! str_to_wide {
     ($str:expr) => {{
         $str.encode_utf16()
@@ -98,6 +104,11 @@ pub fn spawn_sys_tray(enabled: bool) {
                 TrayMessage::TrayCreated(win) => {
                     window = Some(win);
                 }
+                TrayMessage::ToggleAutoStart(enabled) => unsafe {
+                    if let Err(e) = autostart::toggle_autostart(enabled) {
+                        log_error(&e);
+                    }
+                },
             }
         }
     });

@@ -2285,6 +2285,19 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let _ = sender.try_send(msg);
             }
         }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleAutoStart(enable)) => {
+            log::debug!("Interaction::ToggleAutoStart({})", enable);
+
+            use crate::tray::{TrayMessage, TRAY_SENDER};
+
+            ajour.config.autostart = enable;
+            let _ = ajour.config.save();
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                let _ = sender.try_send(TrayMessage::ToggleAutoStart(enable));
+            }
+        }
         Message::RuntimeEvent(_) => {}
         Message::None(_) => {}
     }
