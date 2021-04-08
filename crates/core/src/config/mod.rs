@@ -73,6 +73,10 @@ pub struct Config {
     #[serde(default)]
     #[cfg(target_os = "windows")]
     pub autostart: bool,
+
+    #[serde(default)]
+    #[cfg(target_os = "windows")]
+    pub start_closed_to_tray: bool,
 }
 
 impl Config {

@@ -554,6 +554,38 @@ pub fn data_container<'a, 'b>(
         Column::new().push(checkbox_container)
     };
 
+    #[cfg(target_os = "windows")]
+    let start_closed_to_tray_column = {
+        let callback = if config.close_to_tray {
+            |enable| Message::Interaction(Interaction::ToggleStartClosedToTray(enable))
+        } else {
+            |_| Message::None(())
+        };
+
+        let mut checkbox = Checkbox::new(
+            if config.close_to_tray {
+                config.start_closed_to_tray
+            } else {
+                false
+            },
+            localized_string("start-closed-to-tray"),
+            callback,
+        )
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        if config.close_to_tray {
+            checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
+        } else {
+            // Not checked, but looks "disabled"
+            checkbox = checkbox.style(style::AlwaysCheckedCheckbox(color_palette));
+        }
+
+        let checkbox_container =
+            Container::new(checkbox).style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
+
     // General
     scrollable = scrollable
         .push(general_settings_title_container)
@@ -573,6 +605,8 @@ pub fn data_container<'a, 'b>(
         scrollable = scrollable
             .push(Space::new(Length::Units(0), Length::Units(10)))
             .push(close_to_tray_column)
+            .push(Space::new(Length::Units(0), Length::Units(10)))
+            .push(start_closed_to_tray_column)
             .push(Space::new(Length::Units(0), Length::Units(10)))
             .push(toggle_autostart_column);
     }

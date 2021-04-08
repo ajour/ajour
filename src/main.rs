@@ -94,7 +94,7 @@ pub fn main() {
                 Config::load_or_default().expect("loading config on application startup");
 
             #[cfg(target_os = "windows")]
-            tray::spawn_sys_tray(config.close_to_tray);
+            tray::spawn_sys_tray(config.close_to_tray, config.start_closed_to_tray);
 
             // Start the GUI
             gui::run(opts, config);

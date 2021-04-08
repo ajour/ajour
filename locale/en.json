@@ -121,5 +121,6 @@
     "donate": "Donate",
     "donate-http": "https://www.getajour.com/donate",
     "close-to-tray": "Close to System Tray",
-    "toggle-autostart": "Launch Ajour at boot"
+    "toggle-autostart": "Launch Ajour at boot",
+    "start-closed-to-tray": "Start Ajour closed to Tray"
 }

@@ -44,6 +44,11 @@ use {
     strfmt::strfmt,
 };
 
+#[cfg(target_os = "windows")]
+use crate::tray::{TrayMessage, SHOULD_EXIT, TRAY_SENDER};
+#[cfg(target_os = "windows")]
+use std::sync::atomic::Ordering;
+
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
         Message::CachesLoaded(result) => {
@@ -2232,9 +2237,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         )) => {
             log::debug!("Message::RuntimeEvent(CloseRequested)");
 
-            use crate::tray::{TrayMessage, SHOULD_EXIT, TRAY_SENDER};
-            use std::sync::atomic::Ordering;
-
             if let Some(sender) = TRAY_SENDER.get() {
                 if ajour.config.close_to_tray {
                     let _ = sender.try_send(TrayMessage::CloseToTray);
@@ -2270,9 +2272,21 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ToggleCloseToTray(enable)) => {
             log::debug!("Interaction::ToggleCloseToTray({})", enable);
 
-            use crate::tray::{TrayMessage, TRAY_SENDER};
-
             ajour.config.close_to_tray = enable;
+
+            // Remove start closed to tray if we are disabling
+            if !enable {
+                ajour.config.start_closed_to_tray = false;
+            } else {
+            }
+
+            // If autostart is enabled and user enables tray,
+            // sane default is to have it close to try. This can be disabled
+            // manually by user
+            if enable && ajour.config.autostart {
+                ajour.config.start_closed_to_tray = true;
+            }
+
             let _ = ajour.config.save();
 
             if let Some(sender) = TRAY_SENDER.get() {
@@ -2289,14 +2303,27 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ToggleAutoStart(enable)) => {
             log::debug!("Interaction::ToggleAutoStart({})", enable);
 
-            use crate::tray::{TrayMessage, TRAY_SENDER};
-
             ajour.config.autostart = enable;
+
+            // If tray is enabled and user wants to autostart Ajour,
+            // sane default is to have it close to try. This can be disabled
+            // manually by user
+            if enable && ajour.config.close_to_tray {
+                ajour.config.start_closed_to_tray = true;
+            }
+
             let _ = ajour.config.save();
 
             if let Some(sender) = TRAY_SENDER.get() {
                 let _ = sender.try_send(TrayMessage::ToggleAutoStart(enable));
             }
+        }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleStartClosedToTray(enable)) => {
+            log::debug!("Interaction::ToggleStartClosedToTray({})", enable);
+
+            ajour.config.start_closed_to_tray = enable;
+            let _ = ajour.config.save();
         }
         Message::RuntimeEvent(_) => {}
         Message::None(_) => {}

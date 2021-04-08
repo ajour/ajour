@@ -133,6 +133,8 @@ pub enum Interaction {
     ToggleCloseToTray(bool),
     #[cfg(target_os = "windows")]
     ToggleAutoStart(bool),
+    #[cfg(target_os = "windows")]
+    ToggleStartClosedToTray(bool),
 }
 
 #[derive(Debug)]

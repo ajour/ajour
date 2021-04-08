@@ -71,7 +71,7 @@ macro_rules! str_to_wide {
     }};
 }
 
-pub fn spawn_sys_tray(enabled: bool) {
+pub fn spawn_sys_tray(enabled: bool, start_closed_to_tray: bool) {
     thread::spawn(move || {
         let (sender, receiver) = sync_channel(1);
         let _ = TRAY_SENDER.set(sender);
@@ -83,6 +83,9 @@ pub fn spawn_sys_tray(enabled: bool) {
         if enabled {
             unsafe { create_window(false) };
         }
+
+        // Flag to control behavior specific only when launching ajour
+        let mut launched = false;
 
         while let Ok(msg) = receiver.recv() {
             match msg {
@@ -101,9 +104,21 @@ pub fn spawn_sys_tray(enabled: bool) {
                         PostMessageW(window.0, WM_HIDE_GUI, 0, 0);
                     }
                 },
-                TrayMessage::TrayCreated(win) => {
+                TrayMessage::TrayCreated(win) => unsafe {
                     window = Some(win);
-                }
+
+                    if !launched {
+                        launched = true;
+
+                        // Hide GUI window immediately after launching if this
+                        // option is enabled
+                        if start_closed_to_tray {
+                            if let Some(window) = window.as_ref() {
+                                PostMessageW(window.0, WM_HIDE_GUI, 0, 0);
+                            }
+                        }
+                    }
+                },
                 TrayMessage::ToggleAutoStart(enabled) => unsafe {
                     if let Err(e) = autostart::toggle_autostart(enabled) {
                         log_error(&e);
