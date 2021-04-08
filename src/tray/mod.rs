@@ -15,14 +15,14 @@ use winapi::um::shellapi::{
 use winapi::um::wingdi::{CreateSolidBrush, RGB};
 use winapi::um::winuser::{
     CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyMenu, DestroyWindow, DispatchMessageW,
-    EnumWindows, GetCursorPos, GetMessageW, GetWindowInfo, GetWindowLongPtrW,
+    EnumWindows, GetCursorPos, GetMessageW, GetWindowLongPtrW, GetWindowTextW,
     GetWindowThreadProcessId, InsertMenuW, LoadIconW, MessageBoxW, PostMessageW, PostQuitMessage,
     RegisterClassExW, SendMessageW, SetFocus, SetForegroundWindow, SetMenuDefaultItem,
     SetWindowLongPtrW, ShowWindow, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, GWLP_USERDATA,
     MAKEINTRESOURCEW, MB_ICONINFORMATION, MB_OK, MF_BYPOSITION, MF_GRAYED, MF_SEPARATOR, MF_STRING,
     SW_HIDE, SW_RESTORE, SW_SHOWMINIMIZED, TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD,
-    TPM_RIGHTBUTTON, WINDOWINFO, WM_APP, WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY,
-    WM_INITMENUPOPUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP, WNDCLASSEXW, WS_EX_NOACTIVATE,
+    TPM_RIGHTBUTTON, WM_APP, WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP,
+    WM_LBUTTONDBLCLK, WM_RBUTTONUP, WNDCLASSEXW, WS_EX_NOACTIVATE,
 };
 
 use crate::log_error;
@@ -418,20 +418,20 @@ unsafe extern "system" fn window_proc(
 unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
     let mut state = &mut *(lparam as *mut TrayState);
 
-    let mut info: WINDOWINFO = mem::zeroed();
-    info.cbSize = mem::size_of::<WINDOWINFO>() as u32;
-
-    GetWindowInfo(hwnd, &mut info);
-
     let mut id = mem::zeroed();
-
     GetWindowThreadProcessId(hwnd, &mut id);
 
-    if id == std::process::id() && info.dwWindowStatus == 1 {
-        state.gui_handle = Some(hwnd);
+    if id == std::process::id() {
+        let mut title = [0u16; 12];
+        let read_len = GetWindowTextW(hwnd, title.as_mut_ptr(), 12);
+        let title = String::from_utf16_lossy(&title[0..read_len.min(12) as usize]);
 
-        0
-    } else {
-        1
+        if title == "Ajour" {
+            state.gui_handle = Some(hwnd);
+
+            return 0;
+        }
     }
+
+    1
 }
