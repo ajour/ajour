@@ -20,9 +20,9 @@ use winapi::um::winuser::{
     RegisterClassExW, SendMessageW, SetFocus, SetForegroundWindow, SetMenuDefaultItem,
     SetWindowLongPtrW, ShowWindow, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, GWLP_USERDATA,
     MAKEINTRESOURCEW, MB_ICONINFORMATION, MB_OK, MF_BYPOSITION, MF_GRAYED, MF_SEPARATOR, MF_STRING,
-    SW_HIDE, SW_RESTORE, SW_SHOWMINIMIZED, TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD,
-    TPM_RIGHTBUTTON, WM_APP, WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP,
-    WM_LBUTTONDBLCLK, WM_RBUTTONUP, WNDCLASSEXW, WS_EX_NOACTIVATE,
+    SW_HIDE, SW_RESTORE, TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_APP,
+    WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP,
+    WNDCLASSEXW, WS_EX_NOACTIVATE,
 };
 
 use crate::log_error;
@@ -189,7 +189,7 @@ unsafe fn create_window(show_balloon: bool) {
             SHOULD_EXIT.store(true, Ordering::Relaxed);
 
             // Activate window to force event loop to run / see that it should now close
-            ShowWindow(tray_state.gui_handle.unwrap(), SW_SHOWMINIMIZED);
+            SetForegroundWindow(tray_state.gui_handle.unwrap());
         }
     });
 }
