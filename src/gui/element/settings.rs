@@ -598,7 +598,9 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(self_update_channel_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(config_column);
+        .push(config_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(auto_update_column);
 
     #[cfg(target_os = "windows")]
     {
@@ -637,9 +639,7 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(delete_saved_variables_column)
-        .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(auto_update_column);
+        .push(delete_saved_variables_column);
 
     let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_HEADER_FONT_SIZE);
     let columns_title_text_container =
