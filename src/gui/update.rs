@@ -2277,14 +2277,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Remove start closed to tray if we are disabling
             if !enable {
                 ajour.config.start_closed_to_tray = false;
-            } else {
-            }
-
-            // If autostart is enabled and user enables tray,
-            // sane default is to have it close to try. This can be disabled
-            // manually by user
-            if enable && ajour.config.autostart {
-                ajour.config.start_closed_to_tray = true;
             }
 
             let _ = ajour.config.save();
@@ -2305,13 +2297,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             ajour.config.autostart = enable;
 
-            // If tray is enabled and user wants to autostart Ajour,
-            // sane default is to have it close to try. This can be disabled
-            // manually by user
-            if enable && ajour.config.close_to_tray {
-                ajour.config.start_closed_to_tray = true;
-            }
-
             let _ = ajour.config.save();
 
             if let Some(sender) = TRAY_SENDER.get() {
@@ -2323,6 +2308,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             log::debug!("Interaction::ToggleStartClosedToTray({})", enable);
 
             ajour.config.start_closed_to_tray = enable;
+
+            // Enable tray if this feature is enabled
+            if enable && !ajour.config.close_to_tray {
+                ajour.config.close_to_tray = true;
+
+                if let Some(sender) = TRAY_SENDER.get() {
+                    let _ = sender.try_send(TrayMessage::Enable);
+                }
+            }
+
             let _ = ajour.config.save();
         }
         Message::RuntimeEvent(_) => {}

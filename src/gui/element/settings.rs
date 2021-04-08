@@ -556,33 +556,19 @@ pub fn data_container<'a, 'b>(
 
     #[cfg(target_os = "windows")]
     let start_closed_to_tray_column = {
-        let callback = if config.close_to_tray {
-            |enable| Message::Interaction(Interaction::ToggleStartClosedToTray(enable))
-        } else {
-            |_| Message::None(())
-        };
-
-        let mut checkbox = Checkbox::new(
-            if config.close_to_tray {
-                config.start_closed_to_tray
-            } else {
-                false
-            },
+        let checkbox = Checkbox::new(
+            config.start_closed_to_tray,
             localized_string("start-closed-to-tray"),
-            callback,
+            Interaction::ToggleStartClosedToTray,
         )
+        .style(style::DefaultCheckbox(color_palette))
         .text_size(DEFAULT_FONT_SIZE)
         .spacing(5);
 
-        if config.close_to_tray {
-            checkbox = checkbox.style(style::DefaultCheckbox(color_palette));
-        } else {
-            // Not checked, but looks "disabled"
-            checkbox = checkbox.style(style::AlwaysCheckedCheckbox(color_palette));
-        }
+        let checkbox: Element<Interaction> = checkbox.into();
 
-        let checkbox_container =
-            Container::new(checkbox).style(style::NormalBackgroundContainer(color_palette));
+        let checkbox_container = Container::new(checkbox.map(Message::Interaction))
+            .style(style::NormalBackgroundContainer(color_palette));
         Column::new().push(checkbox_container)
     };
 
