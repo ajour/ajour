@@ -14,9 +14,9 @@ wgpu = ["iced_wgpu"]
 opengl = ["iced_glow"]
 
 [dependencies]
-iced_native = { version = "0.4.0" }
-iced_graphics = { version = "0.2.0" }
-iced_core = { version = "0.4.0" }
+iced_native = { path= "../../../iced/native" }
+iced_graphics = { path= "../../../iced/graphics" }
+iced_core = { path= "../../../iced/core" }
 
-iced_wgpu = { version = "0.4.0", optional = true }
-iced_glow = { version = "0.2.0", optional = true }
+iced_wgpu = { path= "../../../iced/wgpu", optional = true }
+iced_glow = { path= "../../../iced/glow", optional = true }

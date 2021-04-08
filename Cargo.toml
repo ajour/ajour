@@ -21,9 +21,9 @@ ajour-core = { version = "1.1.0-rc.1", path = "crates/core", features=['gui'] }
 ajour-weak-auras = { version = "1.1.0-rc.1", path = "crates/weak_auras" }
 ajour-widgets = { version = "1.1.0-rc.1", path = "crates/widgets" }
 
-iced = { version = "0.3.0", default-features = false, features = ["debug"] }
-iced_futures = { version = "0.3.0", features = ["async-std"] }
-iced_native = { version = "0.4.0" }
+iced = { path= "../iced", default-features = false, features = ["debug"] }
+iced_futures = { path= "../iced/futures", features = ["async-std"] }
+iced_native = { path= "../iced/native" }
 async-std = "1.6.2"
 isahc = { version = "0.9.6", features = ["json"] }
 image = "0.23.8"
