@@ -46,6 +46,7 @@ struct TrayState {
     gui_hidden: bool,
     about_shown: bool,
     close_gui: bool,
+    show_balloon: bool,
 }
 
 unsafe impl Send for TrayState {}
@@ -74,14 +75,14 @@ pub fn spawn_sys_tray(enabled: bool) {
 
         // Spawn tray initially if enabled
         if enabled {
-            unsafe { create_window() };
+            unsafe { create_window(false) };
         }
 
         while let Ok(msg) = receiver.recv() {
             match msg {
                 TrayMessage::Enable => unsafe {
                     if window.is_none() {
-                        create_window();
+                        create_window(true);
                     }
                 },
                 TrayMessage::Disable => unsafe {
@@ -102,13 +103,14 @@ pub fn spawn_sys_tray(enabled: bool) {
     });
 }
 
-unsafe fn create_window() {
+unsafe fn create_window(show_balloon: bool) {
     thread::spawn(move || {
         let mut tray_state = TrayState {
             gui_handle: None,
             gui_hidden: false,
             about_shown: false,
             close_gui: false,
+            show_balloon,
         };
 
         // Keep searching for window handle until its found
@@ -305,7 +307,9 @@ unsafe extern "system" fn window_proc(
 
         add_icon(hwnd);
 
-        display_balloon_message(hwnd, "Running from Tray...");
+        if state.show_balloon {
+            display_balloon_message(hwnd, "Running from Tray...");
+        }
 
         return 0;
     } else {
