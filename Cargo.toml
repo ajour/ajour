@@ -64,10 +64,10 @@ members = [
 ]
 
 [patch.crates-io]
-iced = { git = "https://github.com/tarkah/iced", branch = "revert-wgpu-0.7" }
-iced_native = { git = "https://github.com/tarkah/iced", branch = "revert-wgpu-0.7" }
-iced_futures = { git = "https://github.com/tarkah/iced", branch = "revert-wgpu-0.7" }
-iced_graphics = { git = "https://github.com/tarkah/iced", branch = "revert-wgpu-0.7" }
-iced_core = { git = "https://github.com/tarkah/iced", branch = "revert-wgpu-0.7" }
-iced_wgpu = { git = "https://github.com/tarkah/iced", branch = "revert-wgpu-0.7" }
-iced_glow = { git = "https://github.com/tarkah/iced", branch = "revert-wgpu-0.7" }
+iced = { git = "https://github.com/ajour/iced", branch = "revert-wgpu-0.7" }
+iced_native = { git = "https://github.com/ajour/iced", branch = "revert-wgpu-0.7" }
+iced_futures = { git = "https://github.com/ajour/iced", branch = "revert-wgpu-0.7" }
+iced_graphics = { git = "https://github.com/ajour/iced", branch = "revert-wgpu-0.7" }
+iced_core = { git = "https://github.com/ajour/iced", branch = "revert-wgpu-0.7" }
+iced_wgpu = { git = "https://github.com/ajour/iced", branch = "revert-wgpu-0.7" }
+iced_glow = { git = "https://github.com/ajour/iced", branch = "revert-wgpu-0.7" }

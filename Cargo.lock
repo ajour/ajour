@@ -1900,7 +1900,7 @@ dependencies = [
 [[package]]
 name = "iced"
 version = "0.3.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1915,12 +1915,12 @@ dependencies = [
 [[package]]
 name = "iced_core"
 version = "0.4.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 
 [[package]]
 name = "iced_futures"
 version = "0.3.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "async-std",
  "futures",
@@ -1931,7 +1931,7 @@ dependencies = [
 [[package]]
 name = "iced_glow"
 version = "0.2.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "bytemuck",
  "euclid",
@@ -1946,7 +1946,7 @@ dependencies = [
 [[package]]
 name = "iced_glutin"
 version = "0.2.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "glutin",
  "iced_graphics",
@@ -1957,7 +1957,7 @@ dependencies = [
 [[package]]
 name = "iced_graphics"
 version = "0.2.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "bytemuck",
  "font-kit",
@@ -1971,7 +1971,7 @@ dependencies = [
 [[package]]
 name = "iced_native"
 version = "0.4.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1983,7 +1983,7 @@ dependencies = [
 [[package]]
 name = "iced_style"
 version = "0.3.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "iced_core",
 ]
@@ -1991,7 +1991,7 @@ dependencies = [
 [[package]]
 name = "iced_web"
 version = "0.4.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "dodrio",
  "iced_core",
@@ -2007,7 +2007,7 @@ dependencies = [
 [[package]]
 name = "iced_wgpu"
 version = "0.4.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "bytemuck",
  "futures",
@@ -2024,7 +2024,7 @@ dependencies = [
 [[package]]
 name = "iced_winit"
 version = "0.3.0"
-source = "git+https://github.com/tarkah/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
+source = "git+https://github.com/ajour/iced?branch=revert-wgpu-0.7#fb41fd2337528ebffbd261cf257f35fa6c7e3792"
 dependencies = [
  "iced_futures",
  "iced_graphics",
