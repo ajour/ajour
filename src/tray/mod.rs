@@ -18,11 +18,11 @@ use winapi::um::winuser::{
     EnumWindows, GetCursorPos, GetMessageW, GetWindowLongPtrW, GetWindowTextW,
     GetWindowThreadProcessId, InsertMenuW, LoadIconW, MessageBoxW, PostMessageW, PostQuitMessage,
     RegisterClassExW, SendMessageW, SetFocus, SetForegroundWindow, SetMenuDefaultItem,
-    SetWindowLongPtrW, ShowWindow, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, GWLP_USERDATA,
+    SetWindowLongPtrW, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, GWLP_USERDATA,
     MAKEINTRESOURCEW, MB_ICONINFORMATION, MB_OK, MF_BYPOSITION, MF_GRAYED, MF_SEPARATOR, MF_STRING,
-    SW_HIDE, SW_RESTORE, TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_APP,
-    WM_CLOSE, WM_COMMAND, WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP,
-    WNDCLASSEXW, WS_EX_NOACTIVATE,
+    TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_APP, WM_CLOSE, WM_COMMAND,
+    WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP, WNDCLASSEXW,
+    WS_EX_NOACTIVATE,
 };
 
 use crate::log_error;
@@ -30,6 +30,7 @@ use crate::log_error;
 mod autostart;
 
 pub static SHOULD_EXIT: AtomicBool = AtomicBool::new(false);
+pub static GUI_VISIBLE: AtomicBool = AtomicBool::new(false);
 pub static TRAY_SENDER: OnceCell<SyncSender<TrayMessage>> = OnceCell::new();
 
 const ID_ABOUT: u16 = 2000;
@@ -81,17 +82,19 @@ pub fn spawn_sys_tray(enabled: bool, start_closed_to_tray: bool) {
 
         // Spawn tray initially if enabled
         if enabled {
-            unsafe { create_window(false) };
+            unsafe { create_window(false, start_closed_to_tray) };
         }
 
-        // Flag to control behavior specific only when launching ajour
-        let mut launched = false;
+        // Make GUI visible if we don't start to tray
+        if !start_closed_to_tray {
+            GUI_VISIBLE.store(true, Ordering::Relaxed);
+        }
 
         while let Ok(msg) = receiver.recv() {
             match msg {
                 TrayMessage::Enable => unsafe {
                     if window.is_none() {
-                        create_window(true);
+                        create_window(true, false);
                     }
                 },
                 TrayMessage::Disable => unsafe {
@@ -104,21 +107,9 @@ pub fn spawn_sys_tray(enabled: bool, start_closed_to_tray: bool) {
                         PostMessageW(window.0, WM_HIDE_GUI, 0, 0);
                     }
                 },
-                TrayMessage::TrayCreated(win) => unsafe {
+                TrayMessage::TrayCreated(win) => {
                     window = Some(win);
-
-                    if !launched {
-                        launched = true;
-
-                        // Hide GUI window immediately after launching if this
-                        // option is enabled
-                        if start_closed_to_tray {
-                            if let Some(window) = window.as_ref() {
-                                PostMessageW(window.0, WM_HIDE_GUI, 0, 0);
-                            }
-                        }
-                    }
-                },
+                }
                 TrayMessage::ToggleAutoStart(enabled) => unsafe {
                     if let Err(e) = autostart::toggle_autostart(enabled) {
                         log_error(&e);
@@ -129,11 +120,11 @@ pub fn spawn_sys_tray(enabled: bool, start_closed_to_tray: bool) {
     });
 }
 
-unsafe fn create_window(show_balloon: bool) {
+unsafe fn create_window(show_balloon: bool, gui_hidden: bool) {
     thread::spawn(move || {
         let mut tray_state = TrayState {
             gui_handle: None,
-            gui_hidden: false,
+            gui_hidden,
             about_shown: false,
             close_gui: false,
             show_balloon,
@@ -376,15 +367,9 @@ unsafe extern "system" fn window_proc(
                     }
                 }
                 ID_TOGGLE_WINDOW => {
-                    let cmd = if state.gui_hidden {
-                        SW_RESTORE
-                    } else {
-                        SW_HIDE
-                    };
-
-                    ShowWindow(*state.gui_handle.as_ref().unwrap(), cmd);
-
+                    GUI_VISIBLE.store(state.gui_hidden, Ordering::Relaxed);
                     state.gui_hidden = !state.gui_hidden;
+                    SetForegroundWindow(*state.gui_handle.as_ref().unwrap());
 
                     return 0;
                 }
@@ -397,15 +382,9 @@ unsafe extern "system" fn window_proc(
         }
         WM_APP => match lparam as u32 {
             WM_LBUTTONDBLCLK => {
-                let cmd = if state.gui_hidden {
-                    SW_RESTORE
-                } else {
-                    SW_HIDE
-                };
-
-                ShowWindow(*state.gui_handle.as_ref().unwrap(), cmd);
-
+                GUI_VISIBLE.store(state.gui_hidden, Ordering::Relaxed);
                 state.gui_hidden = !state.gui_hidden;
+                SetForegroundWindow(*state.gui_handle.as_ref().unwrap());
 
                 return 0;
             }
@@ -419,8 +398,8 @@ unsafe extern "system" fn window_proc(
         },
         WM_HIDE_GUI => {
             state.gui_hidden = true;
-
-            ShowWindow(*state.gui_handle.as_ref().unwrap(), SW_HIDE);
+            GUI_VISIBLE.store(false, Ordering::Relaxed);
+            SetForegroundWindow(*state.gui_handle.as_ref().unwrap());
 
             return 0;
         }

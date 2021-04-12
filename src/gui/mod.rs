@@ -338,6 +338,19 @@ impl Application for Ajour {
         SHOULD_EXIT.load(Ordering::Relaxed)
     }
 
+    #[cfg(target_os = "windows")]
+    fn mode(&self) -> iced::window::Mode {
+        use crate::tray::GUI_VISIBLE;
+        use iced::window::Mode;
+        use std::sync::atomic::Ordering;
+
+        if GUI_VISIBLE.load(Ordering::Relaxed) {
+            Mode::Windowed
+        } else {
+            Mode::Hidden
+        }
+    }
+
     fn subscription(&self) -> Subscription<Self::Message> {
         let runtime_subscription = iced_native::subscription::events().map(Message::RuntimeEvent);
         let catalog_subscription =
