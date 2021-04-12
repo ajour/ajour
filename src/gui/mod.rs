@@ -129,6 +129,12 @@ pub enum Interaction {
     ToggleDeleteSavedVariables(bool),
     AddonsQuery(String),
     ToggleAutoUpdateAddons(bool),
+    #[cfg(target_os = "windows")]
+    ToggleCloseToTray(bool),
+    #[cfg(target_os = "windows")]
+    ToggleAutoStart(bool),
+    #[cfg(target_os = "windows")]
+    ToggleStartClosedToTray(bool),
 }
 
 #[derive(Debug)]
@@ -322,6 +328,27 @@ impl Application for Ajour {
 
     fn scale_factor(&self) -> f64 {
         self.scale_state.scale
+    }
+
+    #[cfg(target_os = "windows")]
+    fn should_exit(&self) -> bool {
+        use crate::tray::SHOULD_EXIT;
+        use std::sync::atomic::Ordering;
+
+        SHOULD_EXIT.load(Ordering::Relaxed)
+    }
+
+    #[cfg(target_os = "windows")]
+    fn mode(&self) -> iced::window::Mode {
+        use crate::tray::GUI_VISIBLE;
+        use iced::window::Mode;
+        use std::sync::atomic::Ordering;
+
+        if GUI_VISIBLE.load(Ordering::Relaxed) {
+            Mode::Windowed
+        } else {
+            Mode::Hidden
+        }
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
@@ -1095,9 +1122,7 @@ impl Application for Ajour {
 
 /// Starts the GUI.
 /// This function does not return.
-pub fn run(opts: Opts) {
-    let config: Config = Config::load_or_default().expect("loading config on application startup");
-
+pub fn run(opts: Opts, config: Config) {
     // Set LANG using config (defaults to "en_US")
     LANG.set(RwLock::new(config.language.language_code()))
         .expect("setting LANG from config");
@@ -1106,6 +1131,11 @@ pub fn run(opts: Opts) {
 
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
+
+    #[cfg(target_os = "windows")]
+    {
+        settings.exit_on_close_request = false;
+    }
 
     #[cfg(not(target_os = "linux"))]
     // TODO (casperstorm): Due to an upstream bug, min_size causes the window to become unresizable

@@ -518,6 +518,60 @@ pub fn data_container<'a, 'b>(
             .push(container)
     };
 
+    #[cfg(target_os = "windows")]
+    let close_to_tray_column = {
+        let checkbox = Checkbox::new(
+            config.close_to_tray,
+            localized_string("close-to-tray"),
+            Interaction::ToggleCloseToTray,
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        let checkbox: Element<Interaction> = checkbox.into();
+
+        let checkbox_container = Container::new(checkbox.map(Message::Interaction))
+            .style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
+
+    #[cfg(target_os = "windows")]
+    let toggle_autostart_column = {
+        let checkbox = Checkbox::new(
+            config.autostart,
+            localized_string("toggle-autostart"),
+            Interaction::ToggleAutoStart,
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        let checkbox: Element<Interaction> = checkbox.into();
+
+        let checkbox_container = Container::new(checkbox.map(Message::Interaction))
+            .style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
+
+    #[cfg(target_os = "windows")]
+    let start_closed_to_tray_column = {
+        let checkbox = Checkbox::new(
+            config.start_closed_to_tray,
+            localized_string("start-closed-to-tray"),
+            Interaction::ToggleStartClosedToTray,
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        let checkbox: Element<Interaction> = checkbox.into();
+
+        let checkbox_container = Container::new(checkbox.map(Message::Interaction))
+            .style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
+
     // General
     scrollable = scrollable
         .push(general_settings_title_container)
@@ -531,7 +585,21 @@ pub fn data_container<'a, 'b>(
         .push(self_update_channel_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(config_column)
-        .push(Space::new(Length::Units(0), Length::Units(30)));
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(auto_update_column);
+
+    #[cfg(target_os = "windows")]
+    {
+        scrollable = scrollable
+            .push(Space::new(Length::Units(0), Length::Units(10)))
+            .push(close_to_tray_column)
+            .push(Space::new(Length::Units(0), Length::Units(10)))
+            .push(start_closed_to_tray_column)
+            .push(Space::new(Length::Units(0), Length::Units(10)))
+            .push(toggle_autostart_column);
+    }
+
+    scrollable = scrollable.push(Space::new(Length::Units(0), Length::Units(30)));
 
     // Directories
     scrollable = scrollable
@@ -557,9 +625,7 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(delete_saved_variables_column)
-        .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(auto_update_column);
+        .push(delete_saved_variables_column);
 
     let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_HEADER_FONT_SIZE);
     let columns_title_text_container =

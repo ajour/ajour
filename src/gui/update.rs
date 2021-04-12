@@ -44,6 +44,11 @@ use {
     strfmt::strfmt,
 };
 
+#[cfg(target_os = "windows")]
+use crate::tray::{TrayMessage, SHOULD_EXIT, TRAY_SENDER};
+#[cfg(target_os = "windows")]
+use std::sync::atomic::Ordering;
+
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
         Message::CachesLoaded(result) => {
@@ -2226,6 +2231,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let _ = ajour.config.save();
             }
         }
+        #[cfg(target_os = "windows")]
+        Message::RuntimeEvent(iced_native::Event::Window(
+            iced_native::window::Event::CloseRequested,
+        )) => {
+            log::debug!("Message::RuntimeEvent(CloseRequested)");
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                if ajour.config.close_to_tray {
+                    let _ = sender.try_send(TrayMessage::CloseToTray);
+                } else {
+                    SHOULD_EXIT.store(true, Ordering::Relaxed);
+                }
+            }
+        }
         Message::RuntimeEvent(iced_native::Event::Keyboard(
             iced_native::keyboard::Event::KeyReleased { key_code, .. },
         )) => {
@@ -2247,6 +2266,58 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::PickBackupCompressionFormat(format)) => {
             log::debug!("Interaction::PickBackupCompressionFormat({:?})", format);
             ajour.config.compression_format = format;
+            let _ = ajour.config.save();
+        }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleCloseToTray(enable)) => {
+            log::debug!("Interaction::ToggleCloseToTray({})", enable);
+
+            ajour.config.close_to_tray = enable;
+
+            // Remove start closed to tray if we are disabling
+            if !enable {
+                ajour.config.start_closed_to_tray = false;
+            }
+
+            let _ = ajour.config.save();
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                let msg = if enable {
+                    TrayMessage::Enable
+                } else {
+                    TrayMessage::Disable
+                };
+
+                let _ = sender.try_send(msg);
+            }
+        }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleAutoStart(enable)) => {
+            log::debug!("Interaction::ToggleAutoStart({})", enable);
+
+            ajour.config.autostart = enable;
+
+            let _ = ajour.config.save();
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                let _ = sender.try_send(TrayMessage::ToggleAutoStart(enable));
+            }
+        }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleStartClosedToTray(enable)) => {
+            log::debug!("Interaction::ToggleStartClosedToTray({})", enable);
+
+            ajour.config.start_closed_to_tray = enable;
+
+            // Enable tray if this feature is enabled
+            if enable && !ajour.config.close_to_tray {
+                ajour.config.close_to_tray = true;
+
+                if let Some(sender) = TRAY_SENDER.get() {
+                    let _ = sender.try_send(TrayMessage::Enable);
+                }
+            }
+
             let _ = ajour.config.save();
         }
         Message::RuntimeEvent(_) => {}

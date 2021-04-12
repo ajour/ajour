@@ -16,6 +16,11 @@ and `Removed`.
 
 ### Added
 
+- Windows: Ajour can now be closed to the system tray. New options in Settings have
+  been added to Close to the Tray, Start Ajour closed to the Tray, and Launch Ajour
+  at boot.
+  - While closed to tray, the icon can be double clicked to toggle window visibility
+    or right clicked and toggled from the menu.
 - Small labels will now indicate if there are addons or Wago's ready to be updated.
 - Added CLI command `add-path`. More information can be found in CLI.md.
 
