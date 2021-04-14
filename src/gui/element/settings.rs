@@ -174,7 +174,7 @@ pub fn data_container<'a, 'b>(
         )
         .size(DEFAULT_FONT_SIZE)
         .padding(6)
-        .width(Length::Units(300))
+        .width(Length::Units(185))
         .style(style::AddonsQueryInput(color_palette));
 
         let theme_input: Element<Interaction> = theme_input.into();
