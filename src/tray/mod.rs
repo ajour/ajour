@@ -398,7 +398,6 @@ unsafe extern "system" fn window_proc(
         },
         WM_HIDE_GUI => {
             state.gui_hidden = true;
-            GUI_VISIBLE.store(false, Ordering::Relaxed);
             SetForegroundWindow(*state.gui_handle.as_ref().unwrap());
 
             return 0;

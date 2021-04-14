@@ -45,7 +45,7 @@ use {
 };
 
 #[cfg(target_os = "windows")]
-use crate::tray::{TrayMessage, SHOULD_EXIT, TRAY_SENDER};
+use crate::tray::{TrayMessage, GUI_VISIBLE, SHOULD_EXIT, TRAY_SENDER};
 #[cfg(target_os = "windows")]
 use std::sync::atomic::Ordering;
 
@@ -2239,6 +2239,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             if let Some(sender) = TRAY_SENDER.get() {
                 if ajour.config.close_to_tray {
+                    GUI_VISIBLE.store(false, Ordering::Relaxed);
                     let _ = sender.try_send(TrayMessage::CloseToTray);
                 } else {
                     SHOULD_EXIT.store(true, Ordering::Relaxed);
