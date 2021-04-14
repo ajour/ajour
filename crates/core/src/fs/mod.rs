@@ -16,7 +16,7 @@ mod theme;
 pub use addon::{delete_addons, delete_saved_variables, install_addon};
 pub use save::PersistentData;
 #[cfg(feature = "gui")]
-pub use theme::load_user_themes;
+pub use theme::{import_theme, load_user_themes};
 
 pub static CONFIG_DIR: Lazy<Mutex<PathBuf>> = Lazy::new(|| {
     // Returns the location of the config directory. Will create if it doesn't

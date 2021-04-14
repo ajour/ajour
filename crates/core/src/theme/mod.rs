@@ -1,6 +1,5 @@
 use crate::fs;
-use de::deserialize_color_hex_string;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
 pub async fn load_user_themes() -> Vec<Theme> {
@@ -9,45 +8,45 @@ pub async fn load_user_themes() -> Vec<Theme> {
     fs::load_user_themes().await
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Theme {
     pub name: String,
     pub palette: ColorPalette,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct BaseColors {
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub background: iced_native::Color,
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub foreground: iced_native::Color,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct NormalColors {
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub primary: iced_native::Color,
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub secondary: iced_native::Color,
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub surface: iced_native::Color,
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub error: iced_native::Color,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct BrightColors {
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub primary: iced_native::Color,
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub secondary: iced_native::Color,
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub surface: iced_native::Color,
-    #[serde(deserialize_with = "deserialize_color_hex_string")]
+    #[serde(with = "serde_color")]
     pub error: iced_native::Color,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct ColorPalette {
     pub base: BaseColors,
     pub normal: NormalColors,
@@ -55,6 +54,26 @@ pub struct ColorPalette {
 }
 
 impl Theme {
+    pub fn all() -> Vec<(String, Theme)> {
+        vec![
+            ("Alliance".to_string(), Theme::alliance()),
+            ("Ayu".to_string(), Theme::ayu()),
+            ("Dark".to_string(), Theme::dark()),
+            ("Dracula".to_string(), Theme::dracula()),
+            ("Ferra".to_string(), Theme::ferra()),
+            ("Forest Night".to_string(), Theme::forest_night()),
+            ("Gruvbox".to_string(), Theme::gruvbox()),
+            ("Horde".to_string(), Theme::horde()),
+            ("Light".to_string(), Theme::light()),
+            ("Nord".to_string(), Theme::nord()),
+            ("One Dark".to_string(), Theme::one_dark()),
+            ("Outrun".to_string(), Theme::outrun()),
+            ("Solarized Dark".to_string(), Theme::solarized_dark()),
+            ("Solarized Light".to_string(), Theme::solarized_light()),
+            ("Sort".to_string(), Theme::sort()),
+        ]
+    }
+
     pub fn dark() -> Theme {
         Theme {
             name: "Dark".to_string(),
@@ -437,6 +456,17 @@ fn hex_to_color(hex: &str) -> Option<iced_native::Color> {
     None
 }
 
+fn color_to_hex(color: &iced_native::Color) -> String {
+    let mut color_str = String::from("#");
+
+    let iced_native::Color { r, g, b, .. } = color;
+    color_str.push_str(&format!("{:02X}", (r * 255.0) as u8));
+    color_str.push_str(&format!("{:02X}", (g * 255.0) as u8));
+    color_str.push_str(&format!("{:02X}", (b * 255.0) as u8));
+
+    color_str
+}
+
 impl PartialEq for Theme {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
@@ -460,14 +490,13 @@ impl Ord for Theme {
 // Newtype on iced::Color so we can impl Deserialzer for it
 struct Color(iced_native::Color);
 
-mod de {
-    use super::{hex_to_color, Color};
+mod serde_color {
+    use super::{color_to_hex, hex_to_color, Color};
     use serde::de::{self, Error, Unexpected, Visitor};
+    use serde::ser;
     use std::fmt;
 
-    pub(crate) fn deserialize_color_hex_string<'de, D>(
-        deserializer: D,
-    ) -> Result<iced_native::Color, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<iced_native::Color, D::Error>
     where
         D: de::Deserializer<'de>,
     {
@@ -495,11 +524,18 @@ mod de {
 
         deserializer.deserialize_any(ColorVisitor).map(|c| c.0)
     }
+
+    pub(crate) fn serialize<S>(color: &iced_native::Color, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        serializer.serialize_str(&color_to_hex(color))
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{de::deserialize_color_hex_string, Theme};
+    use super::{serde_color::deserialize, Theme};
     use serde::de::value::{Error, StrDeserializer};
     use serde::de::IntoDeserializer;
 
@@ -512,7 +548,7 @@ mod tests {
         for (idx, color_str) in colors.iter().enumerate() {
             let deserializer: StrDeserializer<Error> = color_str.into_deserializer();
 
-            let color = deserialize_color_hex_string(deserializer);
+            let color = deserialize(deserializer);
 
             if idx < 4 {
                 assert!(color.is_err());
@@ -520,6 +556,20 @@ mod tests {
                 assert!(color.is_ok());
             }
         }
+    }
+
+    #[test]
+    fn test_hex_color_ser() {
+        let color = super::NormalColors {
+            primary: iced_native::Color::from_rgb(1.0, 1.0, 1.0),
+            secondary: iced_native::Color::from_rgb(0.5, 0.6, 0.75789),
+            surface: iced_native::Color::from_rgb(0.1, 0.2, 0.3),
+            error: iced_native::Color::from_rgb(0.0, 0.0, 0.0),
+        };
+
+        let ser = serde_yaml::to_string(&color).unwrap();
+
+        dbg!(&ser);
     }
 
     #[test]
