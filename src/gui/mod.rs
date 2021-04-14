@@ -135,6 +135,8 @@ pub enum Interaction {
     ToggleAutoStart(bool),
     #[cfg(target_os = "windows")]
     ToggleStartClosedToTray(bool),
+    ThemeUrlInput(String),
+    ImportTheme,
 }
 
 #[derive(Debug)]
@@ -181,6 +183,7 @@ pub enum Message {
     FetchedChangelog((Addon, Result<Changelog, RepositoryError>)),
     CheckRepositoryUpdates(Instant),
     RepositoryPackagesFetched((Flavor, Result<Vec<RepositoryPackage>, DownloadError>)),
+    ThemeImported(Result<(String, Vec<Theme>), ThemeError>),
 }
 
 pub struct Ajour {
@@ -1939,32 +1942,24 @@ pub struct ThemeState {
     themes: Vec<(String, Theme)>,
     current_theme_name: String,
     pick_list_state: pick_list::State<String>,
+    input_state: text_input::State,
+    input_url: String,
+    import_button_state: button::State,
+    open_builder_button_state: button::State,
 }
 
 impl Default for ThemeState {
     fn default() -> Self {
-        let themes = vec![
-            ("Alliance".to_string(), Theme::alliance()),
-            ("Ayu".to_string(), Theme::ayu()),
-            ("Dark".to_string(), Theme::dark()),
-            ("Dracula".to_string(), Theme::dracula()),
-            ("Ferra".to_string(), Theme::ferra()),
-            ("Forest Night".to_string(), Theme::forest_night()),
-            ("Gruvbox".to_string(), Theme::gruvbox()),
-            ("Horde".to_string(), Theme::horde()),
-            ("Light".to_string(), Theme::light()),
-            ("Nord".to_string(), Theme::nord()),
-            ("One Dark".to_string(), Theme::one_dark()),
-            ("Outrun".to_string(), Theme::outrun()),
-            ("Solarized Dark".to_string(), Theme::solarized_dark()),
-            ("Solarized Light".to_string(), Theme::solarized_light()),
-            ("Sort".to_string(), Theme::sort()),
-        ];
+        let themes = Theme::all();
 
         ThemeState {
             themes,
             current_theme_name: "Dark".to_string(),
             pick_list_state: Default::default(),
+            input_state: Default::default(),
+            input_url: Default::default(),
+            import_button_state: Default::default(),
+            open_builder_button_state: Default::default(),
         }
     }
 }

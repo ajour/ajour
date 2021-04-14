@@ -16,8 +16,8 @@ use {
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
-        error::{DownloadError, FilesystemError, ParseError, RepositoryError},
-        fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
+        error::{DownloadError, FilesystemError, ParseError, RepositoryError, ThemeError},
+        fs::{delete_addons, delete_saved_variables, import_theme, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
         repository::{
@@ -2321,6 +2321,56 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             let _ = ajour.config.save();
         }
+        Message::Interaction(Interaction::ThemeUrlInput(url)) => {
+            ajour.theme_state.input_url = url;
+        }
+        Message::Interaction(Interaction::ImportTheme) => {
+            // Reset error
+            ajour.error.take();
+
+            let url = ajour.theme_state.input_url.clone();
+
+            log::debug!("Interaction::ImportTheme({})", &url);
+
+            return Ok(Command::perform(import_theme(url), Message::ThemeImported));
+        }
+        Message::ThemeImported(result) => match result.context("Failed to Import Theme") {
+            Ok((new_theme_name, mut new_themes)) => {
+                log::debug!("Message::ThemeImported({})", &new_theme_name);
+
+                ajour.theme_state = Default::default();
+
+                new_themes.sort();
+
+                for theme in new_themes {
+                    ajour.theme_state.themes.push((theme.name.clone(), theme));
+                }
+
+                ajour.theme_state.current_theme_name = new_theme_name.clone();
+                ajour.config.theme = Some(new_theme_name);
+                let _ = ajour.config.save();
+            }
+            Err(mut error) => {
+                // Reset text input
+                ajour.theme_state.input_url = Default::default();
+                ajour.theme_state.input_state = Default::default();
+
+                // Assign special error message when updating failed due to
+                // collision
+                for cause in error.chain() {
+                    if let Some(theme_error) = cause.downcast_ref::<ThemeError>() {
+                        if matches!(theme_error, ThemeError::NameCollision { .. }) {
+                            error = error
+                                .context(localized_string("import-theme-error-name-collision"));
+                            break;
+                        }
+                    }
+                }
+
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
         Message::RuntimeEvent(_) => {}
         Message::None(_) => {}
     }

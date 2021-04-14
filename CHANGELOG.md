@@ -23,6 +23,12 @@ and `Removed`.
     or right clicked and toggled from the menu.
 - Small labels will now indicate if there are addons or Wago's ready to be updated.
 - Added CLI command `add-path`. More information can be found in CLI.md.
+- A Theme Builder website has been created where themes can be created and easily
+  imported into Ajour.
+  - Website can be accessed from Settings -> Open Theme Builder or directly via
+    [https://theme.getajour.com](https://theme.getajour.com)
+  - After editing theme, copy URL and paste in Settings -> Import Theme then click
+    Import
 
 ### Changed
 

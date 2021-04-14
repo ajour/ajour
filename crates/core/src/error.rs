@@ -168,3 +168,21 @@ impl From<std::io::Error> for ParseError {
         ParseError::Filesystem(FilesystemError::Io(e))
     }
 }
+
+#[derive(thiserror::Error, Debug)]
+pub enum ThemeError {
+    #[error(transparent)]
+    InvalidUri(#[from] isahc::http::uri::InvalidUri),
+    #[error(transparent)]
+    UrlEncoded(#[from] serde_urlencoded::de::Error),
+    #[error(transparent)]
+    SerdeYaml(#[from] serde_yaml::Error),
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error("Url is missing theme from query")]
+    MissingQuery,
+    #[error("Theme already exists with name: {name}")]
+    NameCollision { name: String },
+}

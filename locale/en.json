@@ -122,5 +122,9 @@
     "donate-http": "https://www.getajour.com/donate",
     "close-to-tray": "Close to System Tray",
     "toggle-autostart": "Launch Ajour at boot",
-    "start-closed-to-tray": "Start Ajour closed to Tray"
+    "start-closed-to-tray": "Start Ajour closed to Tray",
+    "import-theme": "Import Theme",
+    "import-theme-button": "Import",
+    "import-theme-error-name-collision": "Theme already exists with that name",
+    "open-theme-builder": "Open Theme Builder"
 }

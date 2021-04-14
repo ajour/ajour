@@ -13,7 +13,7 @@ use {
     ajour_core::{config::Config, theme::ColorPalette},
     iced::{
         button, pick_list, scrollable, Align, Button, Checkbox, Column, Container, Element, Length,
-        PickList, Row, Scrollable, Space, Text, VerticalAlignment,
+        PickList, Row, Scrollable, Space, Text, TextInput, VerticalAlignment,
     },
     std::collections::HashMap,
     strfmt::strfmt,
@@ -159,6 +159,67 @@ pub fn data_container<'a, 'b>(
             .push(scale_title_row)
             .push(Space::new(Length::Units(0), Length::Units(5)))
             .push(scale_buttons_row)
+    };
+
+    let import_theme_column = {
+        let title_container =
+            Container::new(Text::new(localized_string("import-theme")).size(DEFAULT_FONT_SIZE))
+                .style(style::NormalBackgroundContainer(color_palette));
+
+        let theme_input = TextInput::new(
+            &mut theme_state.input_state,
+            "Paste URL here...",
+            &theme_state.input_url,
+            Interaction::ThemeUrlInput,
+        )
+        .size(DEFAULT_FONT_SIZE)
+        .padding(6)
+        .width(Length::Units(300))
+        .style(style::AddonsQueryInput(color_palette));
+
+        let theme_input: Element<Interaction> = theme_input.into();
+
+        let mut import_button = Button::new(
+            &mut theme_state.import_button_state,
+            Text::new(localized_string("import-theme-button")).size(DEFAULT_FONT_SIZE),
+        )
+        .style(style::DefaultBoxedButton(color_palette));
+
+        if !theme_state.input_url.is_empty() {
+            import_button = import_button.on_press(Interaction::ImportTheme);
+        }
+
+        let import_button: Element<Interaction> = import_button.into();
+
+        let theme_input_row = Row::new()
+            .push(theme_input.map(Message::Interaction))
+            .push(import_button.map(Message::Interaction))
+            .spacing(DEFAULT_PADDING)
+            .align_items(Align::Center)
+            .height(Length::Units(26));
+
+        Column::new()
+            .push(title_container)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(theme_input_row)
+    };
+
+    let open_theme_row = {
+        let open_button = Button::new(
+            &mut theme_state.open_builder_button_state,
+            Text::new(localized_string("open-theme-builder")).size(DEFAULT_FONT_SIZE),
+        )
+        .on_press(Interaction::OpenLink(String::from(
+            "https://theme.getajour.com",
+        )))
+        .style(style::DefaultBoxedButton(color_palette));
+
+        let open_button: Element<Interaction> = open_button.into();
+
+        Row::new()
+            .push(open_button.map(Message::Interaction))
+            .align_items(Align::Center)
+            .height(Length::Units(26))
     };
 
     let (backup_title_row, backup_directory_row, backup_now_row) = {
@@ -448,6 +509,7 @@ pub fn data_container<'a, 'b>(
     let theme_scale_row = Row::new()
         .push(theme_column)
         .push(scale_column)
+        .push(import_theme_column)
         .spacing(DEFAULT_PADDING);
 
     let alternate_row_color_column = {
@@ -579,6 +641,8 @@ pub fn data_container<'a, 'b>(
         .push(language_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(theme_scale_row)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(open_theme_row)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(alternate_row_color_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
