@@ -1,4 +1,4 @@
-name: Update translations
+name: Pull POEditor translations
 on: workflow_dispatch
 
 jobs:
@@ -11,7 +11,7 @@ jobs:
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
-      - name: Fetch translations
+      - name: Pull translations
         run:
           while read -r lang; do curl "$(curl -X POST https://api.poeditor.com/v2/projects/export
           -d api_token="${{ secrets.POEDITOR_API_TOKEN }}"
