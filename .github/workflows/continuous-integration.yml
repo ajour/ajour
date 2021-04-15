@@ -103,3 +103,16 @@ jobs:
         with:
           command: clippy
           args: --all -- -D warnings
+  
+  poeditor:
+    name: POEditor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Push terms to POEditor
+        run: curl -X POST https://api.poeditor.com/v2/projects/upload
+          -F api_token="${{ secrets.POEDITOR_API_TOKEN }}"
+          -F id="${{ secrets.POEDITOR_PROJECT_ID }}"
+          -F updating="terms_translations"
+          -F language="en"
+          -F file=@"locale/en.json"

@@ -7,8 +7,11 @@ mod cli;
 mod command;
 mod gui;
 mod localization;
+#[cfg(target_os = "windows")]
+mod tray;
 
-use ajour_core::fs::CONFIG_DIR;
+use ajour_core::config::Config;
+use ajour_core::fs::{PersistentData, CONFIG_DIR};
 use ajour_core::utility::{remove_file, rename};
 
 #[cfg(target_os = "linux")]
@@ -79,15 +82,22 @@ pub fn main() {
                 } => command::backup(backup_folder, destination, flavors, compression_format),
                 cli::Command::Update => command::update_both(),
                 cli::Command::UpdateAddons => command::update_all_addons(),
-                cli::Command::UpdateWeakauras => command::update_all_weakauras(),
+                cli::Command::UpdateAuras => command::update_all_auras(),
                 cli::Command::Install { url, flavor } => command::install_from_source(url, flavor),
+                cli::Command::PathAdd { path, flavor } => command::path_add(path, flavor),
             } {
                 log_error(&e);
             }
         }
         None => {
+            let config: Config =
+                Config::load_or_default().expect("loading config on application startup");
+
+            #[cfg(target_os = "windows")]
+            tray::spawn_sys_tray(config.close_to_tray, config.start_closed_to_tray);
+
             // Start the GUI
-            gui::run(opts);
+            gui::run(opts, config);
         }
     }
 }

@@ -65,9 +65,40 @@ pub struct Config {
 
     #[serde(default)]
     pub compression_format: CompressionFormat,
+
+    #[serde(default)]
+    #[cfg(target_os = "windows")]
+    pub close_to_tray: bool,
+
+    #[serde(default)]
+    #[cfg(target_os = "windows")]
+    pub autostart: bool,
+
+    #[serde(default)]
+    #[cfg(target_os = "windows")]
+    pub start_closed_to_tray: bool,
 }
 
 impl Config {
+    pub fn add_wow_directories(&mut self, path: PathBuf, flavor: Option<Flavor>) {
+        if let Some(flavor) = flavor {
+            // If a flavor is supplied we only update path for that specific flavor.
+            let flavor_path = self.get_flavor_directory_for_flavor(&flavor, &path);
+            if flavor_path.exists() {
+                self.wow.directories.insert(flavor, flavor_path);
+            }
+        } else {
+            // If no flavor is supplied it will find as many flavors as possible in the path.
+            let flavors = &Flavor::ALL[..];
+            for flavor in flavors {
+                let flavor_path = self.get_flavor_directory_for_flavor(flavor, &path);
+                if flavor_path.exists() {
+                    self.wow.directories.insert(*flavor, flavor_path);
+                }
+            }
+        }
+    }
+
     /// Returns a `PathBuf` to the flavor directory.
     pub fn get_flavor_directory_for_flavor(&self, flavor: &Flavor, path: &Path) -> PathBuf {
         path.join(&flavor.folder_name())

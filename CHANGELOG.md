@@ -14,6 +14,32 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Windows: Ajour can now be closed to the system tray. New options in Settings have
+  been added to Close to the Tray, Start Ajour closed to the Tray, and Launch Ajour
+  at boot.
+  - While closed to tray, the icon can be double clicked to toggle window visibility
+    or right clicked and toggled from the menu.
+- Small labels will now indicate if there are addons or Wago's ready to be updated.
+- Added CLI command `add-path`. More information can be found in CLI.md.
+- A Theme Builder website has been created where themes can be created and easily
+  imported into Ajour.
+  - Website can be accessed from Settings -> Open Theme Builder or directly via
+    [https://theme.getajour.com](https://theme.getajour.com)
+  - After editing theme, copy URL and paste in Settings -> Import Theme then click
+    Import
+
+### Changed
+
+- Renamed CLI command `update-weakauras` to `update-auras`.
+
+### Fixed
+
+- Localization issues which were causing Ajour to crash has been resolved.
+- Resolved issue where single accounts was never saved to the
+  config casuing the CLI `update-weakauras` not to work properly.
+
 ## [1.0.1] - 2021-03-28
 
 ### Added
@@ -21,7 +47,7 @@ and `Removed`.
 - Added flavor for Classic Beta (which TBC Classic beta is using).
 - Support zstd compression when creating backups
 
-### Fix
+### Fixed
 
 - CLI now works properly with the new multiple path setup.
 - Turkish language no longer crash Ajour in the Wago screen.

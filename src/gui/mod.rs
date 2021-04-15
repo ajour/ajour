@@ -26,9 +26,9 @@ use ajour_widgets::header;
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::{
-    button, pick_list, scrollable, text_input, Align, Application, Button, Column, Command,
-    Container, Element, HorizontalAlignment, Length, PickList, Row, Scrollable, Settings, Space,
-    Subscription, Text, TextInput,
+    button, pick_list, scrollable, text_input, Align, Application, Button, Clipboard, Column,
+    Command, Container, Element, HorizontalAlignment, Length, PickList, Row, Scrollable, Settings,
+    Space, Subscription, Text, TextInput,
 };
 use image::ImageFormat;
 use isahc::http::Uri;
@@ -129,6 +129,14 @@ pub enum Interaction {
     ToggleDeleteSavedVariables(bool),
     AddonsQuery(String),
     ToggleAutoUpdateAddons(bool),
+    #[cfg(target_os = "windows")]
+    ToggleCloseToTray(bool),
+    #[cfg(target_os = "windows")]
+    ToggleAutoStart(bool),
+    #[cfg(target_os = "windows")]
+    ToggleStartClosedToTray(bool),
+    ThemeUrlInput(String),
+    ImportTheme,
 }
 
 #[derive(Debug)]
@@ -168,13 +176,14 @@ pub enum Message {
     RefreshCatalog(Instant),
     CheckLatestRelease(Instant),
     CheckWeakAurasInstalled((Flavor, bool)),
-    ListWeakAurasAccounts((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
+    ListWtfAccounts((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
     WeakAurasAccountSelected(String),
     ParsedAuras((Flavor, Result<Vec<Aura>, ajour_weak_auras::Error>)),
     AurasUpdated((Flavor, Result<Vec<String>, ajour_weak_auras::Error>)),
     FetchedChangelog((Addon, Result<Changelog, RepositoryError>)),
     CheckRepositoryUpdates(Instant),
     RepositoryPackagesFetched((Flavor, Result<Vec<RepositoryPackage>, DownloadError>)),
+    ThemeImported(Result<(String, Vec<Theme>), ThemeError>),
 }
 
 pub struct Ajour {
@@ -197,8 +206,6 @@ pub struct Ajour {
     theme_state: ThemeState,
     fingerprint_cache: Option<Arc<Mutex<FingerprintCache>>>,
     addon_cache: Option<Arc<Mutex<AddonCache>>>,
-    addon_mode_btn_state: button::State,
-    weakaura_mode_btn_state: button::State,
     catalog_mode_btn_state: button::State,
     install_mode_btn_state: button::State,
     scale_state: ScaleState,
@@ -251,8 +258,6 @@ impl Default for Ajour {
             theme_state: Default::default(),
             fingerprint_cache: None,
             addon_cache: None,
-            addon_mode_btn_state: Default::default(),
-            weakaura_mode_btn_state: Default::default(),
             catalog_mode_btn_state: Default::default(),
             install_mode_btn_state: Default::default(),
             scale_state: Default::default(),
@@ -328,6 +333,27 @@ impl Application for Ajour {
         self.scale_state.scale
     }
 
+    #[cfg(target_os = "windows")]
+    fn should_exit(&self) -> bool {
+        use crate::tray::SHOULD_EXIT;
+        use std::sync::atomic::Ordering;
+
+        SHOULD_EXIT.load(Ordering::Relaxed)
+    }
+
+    #[cfg(target_os = "windows")]
+    fn mode(&self) -> iced::window::Mode {
+        use crate::tray::GUI_VISIBLE;
+        use iced::window::Mode;
+        use std::sync::atomic::Ordering;
+
+        if GUI_VISIBLE.load(Ordering::Relaxed) {
+            Mode::Windowed
+        } else {
+            Mode::Hidden
+        }
+    }
+
     fn subscription(&self) -> Subscription<Self::Message> {
         let runtime_subscription = iced_native::subscription::events().map(Message::RuntimeEvent);
         let catalog_subscription =
@@ -345,7 +371,7 @@ impl Application for Ajour {
         ])
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, message: Message, _clipboard: &mut Clipboard) -> Command<Message> {
         match update::handle_message(self, message) {
             Ok(x) => x,
             Err(e) => Command::perform(async { e }, Message::Error),
@@ -388,16 +414,31 @@ impl Application for Ajour {
         };
 
         // Menu container at the top of the applications.
+        let updatable_addons = self
+            .addons
+            .entry(flavor)
+            .or_default()
+            .iter()
+            .filter(|a| a.state == AddonState::Updatable)
+            .count();
+        let updatable_wagos = self
+            .weak_auras_state
+            .entry(flavor)
+            .or_default()
+            .auras
+            .iter()
+            .filter(|a| a.status() == ajour_weak_auras::AuraStatus::UpdateAvailable)
+            .count();
         let menu_container = element::menu::data_container(
             color_palette,
             &self.mode,
             &self.state,
             &self.error,
             &self.config,
+            updatable_addons,
+            updatable_wagos,
             &mut self.settings_btn_state,
             &mut self.about_btn_state,
-            &mut self.addon_mode_btn_state,
-            &mut self.weakaura_mode_btn_state,
             &mut self.catalog_mode_btn_state,
             &mut self.install_mode_btn_state,
             &mut self.self_update_state,
@@ -1084,9 +1125,7 @@ impl Application for Ajour {
 
 /// Starts the GUI.
 /// This function does not return.
-pub fn run(opts: Opts) {
-    let config: Config = Config::load_or_default().expect("loading config on application startup");
-
+pub fn run(opts: Opts, config: Config) {
     // Set LANG using config (defaults to "en_US")
     LANG.set(RwLock::new(config.language.language_code()))
         .expect("setting LANG from config");
@@ -1095,6 +1134,11 @@ pub fn run(opts: Opts) {
 
     let mut settings = Settings::default();
     settings.window.size = config.window_size.unwrap_or((900, 620));
+
+    #[cfg(target_os = "windows")]
+    {
+        settings.exit_on_close_request = false;
+    }
 
     #[cfg(not(target_os = "linux"))]
     // TODO (casperstorm): Due to an upstream bug, min_size causes the window to become unresizable
@@ -1898,32 +1942,24 @@ pub struct ThemeState {
     themes: Vec<(String, Theme)>,
     current_theme_name: String,
     pick_list_state: pick_list::State<String>,
+    input_state: text_input::State,
+    input_url: String,
+    import_button_state: button::State,
+    open_builder_button_state: button::State,
 }
 
 impl Default for ThemeState {
     fn default() -> Self {
-        let themes = vec![
-            ("Alliance".to_string(), Theme::alliance()),
-            ("Ayu".to_string(), Theme::ayu()),
-            ("Dark".to_string(), Theme::dark()),
-            ("Dracula".to_string(), Theme::dracula()),
-            ("Ferra".to_string(), Theme::ferra()),
-            ("Forest Night".to_string(), Theme::forest_night()),
-            ("Gruvbox".to_string(), Theme::gruvbox()),
-            ("Horde".to_string(), Theme::horde()),
-            ("Light".to_string(), Theme::light()),
-            ("Nord".to_string(), Theme::nord()),
-            ("One Dark".to_string(), Theme::one_dark()),
-            ("Outrun".to_string(), Theme::outrun()),
-            ("Solarized Dark".to_string(), Theme::solarized_dark()),
-            ("Solarized Light".to_string(), Theme::solarized_light()),
-            ("Sort".to_string(), Theme::sort()),
-        ];
+        let themes = Theme::all();
 
         ThemeState {
             themes,
             current_theme_name: "Dark".to_string(),
             pick_list_state: Default::default(),
+            input_state: Default::default(),
+            input_url: Default::default(),
+            import_button_state: Default::default(),
+            open_builder_button_state: Default::default(),
         }
     }
 }

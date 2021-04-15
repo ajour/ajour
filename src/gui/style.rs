@@ -46,6 +46,33 @@ impl container::StyleSheet for HoverableForegroundContainer {
     }
 }
 
+pub struct HoverableSegmentContainer(pub ColorPalette);
+impl container::StyleSheet for HoverableSegmentContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: None,
+            text_color: Some(self.0.bright.primary),
+            ..container::Style::default()
+        }
+    }
+}
+
+pub struct HoverableSegmentAlternateContainer(pub ColorPalette);
+impl container::StyleSheet for HoverableSegmentAlternateContainer {
+    fn style(&self) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(self.0.base.foreground)),
+            text_color: Some(self.0.bright.primary),
+            border_radius: 15.0,
+            border_width: 1.0,
+            border_color: Color {
+                a: 1.0,
+                ..self.0.normal.primary
+            },
+        }
+    }
+}
+
 pub struct FadedNormalForegroundContainer(pub ColorPalette);
 impl container::StyleSheet for FadedNormalForegroundContainer {
     fn style(&self) -> container::Style {
@@ -501,6 +528,50 @@ impl table_row::StyleSheet for TableRow {
     }
 }
 
+pub struct SegmentTableRow(pub ColorPalette);
+impl table_row::StyleSheet for SegmentTableRow {
+    fn style(&self) -> table_row::Style {
+        table_row::Style {
+            text_color: None,
+            background: Some(Background::Color(self.0.base.foreground)),
+            border_radius: 3.0,
+            border_width: 1.0,
+            border_color: Color::TRANSPARENT,
+            offset_left: 0.0,
+            offset_right: 0.0,
+        }
+    }
+    fn hovered(&self) -> table_row::Style {
+        let style = self.style();
+        table_row::Style {
+            background: Some(Background::Color(Color {
+                a: 0.15,
+                ..self.0.normal.primary
+            })),
+            ..style
+        }
+    }
+}
+
+pub struct SelectedSegmentTableRow(pub ColorPalette);
+impl table_row::StyleSheet for SelectedSegmentTableRow {
+    fn style(&self) -> table_row::Style {
+        table_row::Style {
+            text_color: None,
+            background: Some(Background::Color(self.0.normal.primary)),
+            border_radius: 3.0,
+            border_width: 1.0,
+            border_color: Color::TRANSPARENT,
+            offset_left: 0.0,
+            offset_right: 0.0,
+        }
+    }
+    fn hovered(&self) -> table_row::Style {
+        let style = self.style();
+        table_row::Style { ..style }
+    }
+}
+
 pub struct TableRowAlternate(pub ColorPalette);
 impl table_row::StyleSheet for TableRowAlternate {
     fn style(&self) -> table_row::Style {
@@ -699,7 +770,7 @@ impl pick_list::StyleSheet for MenuPickList {
             text_color: self.0.bright.primary,
             background: self.0.base.foreground.into(),
             border_width: 0.0,
-            border_radius: 4.0,
+            border_radius: 2.0,
             border_color: Color {
                 a: 0.5,
                 ..self.0.normal.primary

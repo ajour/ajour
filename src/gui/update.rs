@@ -16,8 +16,8 @@ use {
         },
         catalog,
         config::{ColumnConfig, ColumnConfigV2, Flavor},
-        error::{DownloadError, FilesystemError, ParseError, RepositoryError},
-        fs::{delete_addons, delete_saved_variables, install_addon, PersistentData},
+        error::{DownloadError, FilesystemError, ParseError, RepositoryError, ThemeError},
+        fs::{delete_addons, delete_saved_variables, import_theme, install_addon, PersistentData},
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
         repository::{
@@ -43,6 +43,11 @@ use {
     std::path::{Path, PathBuf},
     strfmt::strfmt,
 };
+
+#[cfg(target_os = "windows")]
+use crate::tray::{TrayMessage, SHOULD_EXIT, TRAY_SENDER};
+#[cfg(target_os = "windows")]
+use std::sync::atomic::Ordering;
 
 pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Message>> {
     match message {
@@ -314,24 +319,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
             if let Some(path) = wow_path_resolution(chosen_path) {
                 log::debug!("Message::UpdateWowDirectory(Resolution({:?}))", &path);
-
-                if let Some(flavor) = flavor {
-                    // If a flavor is supplied we only update path for that specific flavor.
-                    let flavor_path = ajour.config.get_flavor_directory_for_flavor(&flavor, &path);
-                    if flavor_path.exists() {
-                        ajour.config.wow.directories.insert(flavor, flavor_path);
-                    }
-                } else {
-                    // If no flavor is supplied it will find as many flavors as possible in the path.
-                    let flavors = &Flavor::ALL[..];
-                    for flavor in flavors {
-                        let flavor_path =
-                            ajour.config.get_flavor_directory_for_flavor(flavor, &path);
-                        if flavor_path.exists() {
-                            ajour.config.wow.directories.insert(*flavor, flavor_path);
-                        }
-                    }
-                }
+                // Add directories
+                ajour.config.add_wow_directories(path, flavor);
 
                 // Clear addons.
                 ajour.addons = HashMap::new();
@@ -2066,15 +2055,15 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 if let Some(wtf_folder) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
                     return Ok(Command::perform(
                         list_accounts(flavor, wtf_folder),
-                        Message::ListWeakAurasAccounts,
+                        Message::ListWtfAccounts,
                     ));
                 }
             }
         }
-        Message::ListWeakAurasAccounts((flavor, result)) => match result {
+        Message::ListWtfAccounts((flavor, result)) => match result {
             Ok(accounts) => {
                 log::debug!(
-                    "Message::ListWeakAurasAccounts({}, num_accounts: {})",
+                    "Message::ListWtfAccounts({}, num_accounts: {})",
                     flavor,
                     accounts.len(),
                 );
@@ -2090,6 +2079,16 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     [a] => Some(a.clone()),
                     _ => None,
                 };
+
+                // If there is only a single account, we save it to the config.
+                if let Some(single_account) = get_single_account() {
+                    ajour
+                        .config
+                        .weak_auras_account
+                        .insert(flavor, single_account);
+                    let _ = ajour.config.save();
+                }
+
                 if let Some(account) = account_from_config.or_else(get_single_account) {
                     if let Some(wtf_path) = ajour.config.get_wtf_directory_for_flavor(&flavor) {
                         state.chosen_account = Some(account.clone());
@@ -2232,6 +2231,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let _ = ajour.config.save();
             }
         }
+        #[cfg(target_os = "windows")]
+        Message::RuntimeEvent(iced_native::Event::Window(
+            iced_native::window::Event::CloseRequested,
+        )) => {
+            log::debug!("Message::RuntimeEvent(CloseRequested)");
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                if ajour.config.close_to_tray {
+                    let _ = sender.try_send(TrayMessage::CloseToTray);
+                } else {
+                    SHOULD_EXIT.store(true, Ordering::Relaxed);
+                }
+            }
+        }
         Message::RuntimeEvent(iced_native::Event::Keyboard(
             iced_native::keyboard::Event::KeyReleased { key_code, .. },
         )) => {
@@ -2255,6 +2268,108 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.compression_format = format;
             let _ = ajour.config.save();
         }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleCloseToTray(enable)) => {
+            log::debug!("Interaction::ToggleCloseToTray({})", enable);
+
+            ajour.config.close_to_tray = enable;
+
+            // Remove start closed to tray if we are disabling
+            if !enable {
+                ajour.config.start_closed_to_tray = false;
+            }
+
+            let _ = ajour.config.save();
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                let msg = if enable {
+                    TrayMessage::Enable
+                } else {
+                    TrayMessage::Disable
+                };
+
+                let _ = sender.try_send(msg);
+            }
+        }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleAutoStart(enable)) => {
+            log::debug!("Interaction::ToggleAutoStart({})", enable);
+
+            ajour.config.autostart = enable;
+
+            let _ = ajour.config.save();
+
+            if let Some(sender) = TRAY_SENDER.get() {
+                let _ = sender.try_send(TrayMessage::ToggleAutoStart(enable));
+            }
+        }
+        #[cfg(target_os = "windows")]
+        Message::Interaction(Interaction::ToggleStartClosedToTray(enable)) => {
+            log::debug!("Interaction::ToggleStartClosedToTray({})", enable);
+
+            ajour.config.start_closed_to_tray = enable;
+
+            // Enable tray if this feature is enabled
+            if enable && !ajour.config.close_to_tray {
+                ajour.config.close_to_tray = true;
+
+                if let Some(sender) = TRAY_SENDER.get() {
+                    let _ = sender.try_send(TrayMessage::Enable);
+                }
+            }
+
+            let _ = ajour.config.save();
+        }
+        Message::Interaction(Interaction::ThemeUrlInput(url)) => {
+            ajour.theme_state.input_url = url;
+        }
+        Message::Interaction(Interaction::ImportTheme) => {
+            // Reset error
+            ajour.error.take();
+
+            let url = ajour.theme_state.input_url.clone();
+
+            log::debug!("Interaction::ImportTheme({})", &url);
+
+            return Ok(Command::perform(import_theme(url), Message::ThemeImported));
+        }
+        Message::ThemeImported(result) => match result.context("Failed to Import Theme") {
+            Ok((new_theme_name, mut new_themes)) => {
+                log::debug!("Message::ThemeImported({})", &new_theme_name);
+
+                ajour.theme_state = Default::default();
+
+                new_themes.sort();
+
+                for theme in new_themes {
+                    ajour.theme_state.themes.push((theme.name.clone(), theme));
+                }
+
+                ajour.theme_state.current_theme_name = new_theme_name.clone();
+                ajour.config.theme = Some(new_theme_name);
+                let _ = ajour.config.save();
+            }
+            Err(mut error) => {
+                // Reset text input
+                ajour.theme_state.input_url = Default::default();
+                ajour.theme_state.input_state = Default::default();
+
+                // Assign special error message when updating failed due to
+                // collision
+                for cause in error.chain() {
+                    if let Some(theme_error) = cause.downcast_ref::<ThemeError>() {
+                        if matches!(theme_error, ThemeError::NameCollision { .. }) {
+                            error = error
+                                .context(localized_string("import-theme-error-name-collision"));
+                            break;
+                        }
+                    }
+                }
+
+                log_error(&error);
+                ajour.error = Some(error);
+            }
+        },
         Message::RuntimeEvent(_) => {}
         Message::None(_) => {}
     }
