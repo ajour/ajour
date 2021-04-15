@@ -80,7 +80,20 @@ For everyone else, a detailed instruction can be found [here](https://github.com
 
 ## Themes
 
-Find instructions for building your own themes [here](./THEMES.md).
+Use the [theme builder](http://theme.getajour.com/)
+([source](https://github.com/ajour/ajour-theme-builder)) website to quickly
+generate custom themes. Once you are done press copy and paste the value into
+`Import Theme` inside `Settings` in Ajour.
+
+Custom themes will be saved in this location:
+
+macOS / Linux:
+
+- `$HOME/.config/ajour/themes`
+
+Windows:
+
+- `%APPDATA%\ajour\themes`
 
 ## Command Line
 
@@ -102,10 +115,6 @@ I welcome contributions of any kind, because together we can make Ajour even bet
 - Join our [Discord server](https://discord.gg/4838t9R) and say hey.
 
 ## FAQ
-
-**_What features are planned?_**
-
-We have a roadmap [here](https://github.com/ajour/ajour/projects/2).
 
 **_macOS won't let me open the app, what should I do?_**
 
@@ -140,11 +149,6 @@ hashed fingerprints for each addon and a theme folder with custom themes.
 
 We wanted to create an application which natively compiles to both Windows, Linux
 and macOS while at the same time is as performant and reliable as possible.
-
-## Other addon managers
-
-If Ajour isn't your cup of tea, then [Ogri'la](https://github.com/ogri-la) has
-done a great job of [cataloguing addon managers](https://ogri-la.github.io/wow-addon-managers/).
 
 ## Acknowledgement
 
