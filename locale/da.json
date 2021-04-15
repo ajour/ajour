@@ -119,5 +119,12 @@
     "type": "Type",
     "wow-directories": "World of Warcraft stier",
     "donate": "Donation",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Minimer til system tray",
+    "toggle-autostart": "Åben Ajour automatisk når du logger ind",
+    "start-closed-to-tray": "Start Ajour minimeret til System Tray",
+    "import-theme": "Importer tema",
+    "import-theme-button": "Importer",
+    "import-theme-error-name-collision": "Et tema med dette navn findes allerede",
+    "open-theme-builder": "Åben Theme Builder"
 }

@@ -119,5 +119,12 @@
     "type": "Type",
     "wow-directories": "Répertoires World of Warcraft",
     "donate": "Faire un don",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Fermer dans la zone de notification",
+    "toggle-autostart": "Lancer Ajour avec Windows",
+    "start-closed-to-tray": "Lancer Ajour dans la zone de notification",
+    "import-theme": "Importer un thème",
+    "import-theme-button": "Importer",
+    "import-theme-error-name-collision": "Un thème existe déjà avec ce nom",
+    "open-theme-builder": "Ouvrir l'éditeur de thème"
 }

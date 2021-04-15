@@ -119,5 +119,12 @@
     "type": "",
     "wow-directories": "",
     "donate": "",
-    "donate-http": ""
+    "donate-http": "",
+    "close-to-tray": "",
+    "toggle-autostart": "",
+    "start-closed-to-tray": "",
+    "import-theme": "",
+    "import-theme-button": "",
+    "import-theme-error-name-collision": "",
+    "open-theme-builder": ""
 }

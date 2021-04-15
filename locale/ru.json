@@ -56,7 +56,7 @@
     "num-downloads": "Кол-во загрузок",
     "open-data-directory": "Открыть директорию данных",
     "parsing-addons": "Обрабатываю {flavor} дополнения",
-    "parsing-weakauras": "В настоящее время парсинг {вкус} данные Wago",
+    "parsing-weakauras": "В настоящее время парсинг {flavor} данные Wago",
     "refresh": "Обновить",
     "release-channel-no-release": "нет доступных выпусков",
     "remote": "Удаленная версия",
@@ -108,7 +108,7 @@
     "error-update-ajour": "Не удалось обновить Ajour",
     "error-remove-cache": "Не удалось удалить запись кеша",
     "error-list-accounts": "Не удалось получить список учетных записей",
-    "error-parse-weakauras": "Не удалось разобрать {тип}",
+    "error-parse-weakauras": "Не удалось разобрать {type}",
     "error-update-weakauras": "Не удалось обновить",
     "categories": "Категории",
     "error-update-ajour-permission": "Проблема с разрешениями во время обновления Ajour",
@@ -119,5 +119,12 @@
     "type": "Введите .",
     "wow-directories": "Каталоги World of Warcraft",
     "donate": "Пожертвовать",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Рядом с лотком системы",
+    "toggle-autostart": "Откройте Ajour автоматически после входа в систему",
+    "start-closed-to-tray": "Стартовое окно закрыто для системного лотка.",
+    "import-theme": "Импортная тема",
+    "import-theme-button": "Импорт",
+    "import-theme-error-name-collision": "Тема уже существует с этим названием",
+    "open-theme-builder": "Открытый Тематический Строитель"
 }
