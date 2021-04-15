@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.1.0] - 2021-04-15
+
 ### Added
 
 - Windows: Ajour can now be closed to the system tray. New options in Settings have
