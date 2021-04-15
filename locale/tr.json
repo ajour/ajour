@@ -119,5 +119,12 @@
     "type": "Türü",
     "wow-directories": "World of Warcraft dizinleri",
     "donate": "Bağış",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Sistem Tepsisine Yakın",
+    "toggle-autostart": "Oturum açtıktan sonra Ajour'u otomatik olarak açın",
+    "start-closed-to-tray": "Ajour'u Sistem Tepsisine kapalı olarak başlatın",
+    "import-theme": "Temayı İçe Aktar",
+    "import-theme-button": "İthalat",
+    "import-theme-error-name-collision": "Bu isimde tema zaten mevcut",
+    "open-theme-builder": "Tema Oluşturucuyu Aç"
 }

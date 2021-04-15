@@ -119,5 +119,12 @@
     "type": "Típus",
     "wow-directories": "World of Warcraft könyvtárak",
     "donate": "Adományoz",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Bezárás a Rendszertálcához",
+    "toggle-autostart": "Ajour automatikus megnyitása bejelentkezés után",
+    "start-closed-to-tray": "Start Ajour bezárva a Rendszertálcára",
+    "import-theme": "Téma importálása",
+    "import-theme-button": "Import",
+    "import-theme-error-name-collision": "A téma már létezik ezzel a névvel",
+    "open-theme-builder": "Témaépítő megnyitása"
 }
