@@ -5,7 +5,6 @@ use std::sync::mpsc::{sync_channel, SyncSender};
 use std::thread;
 
 use once_cell::sync::OnceCell;
-use winapi::shared::minwindef::{BOOL, LOWORD, LPARAM, LRESULT, UINT, WPARAM};
 use winapi::shared::windef::{HWND, POINT};
 use winapi::um::libloaderapi::GetModuleHandleW;
 use winapi::um::shellapi::{
@@ -18,11 +17,15 @@ use winapi::um::winuser::{
     EnumWindows, GetCursorPos, GetMessageW, GetWindowLongPtrW, GetWindowTextW,
     GetWindowThreadProcessId, InsertMenuW, LoadIconW, MessageBoxW, PostMessageW, PostQuitMessage,
     RegisterClassExW, SendMessageW, SetFocus, SetForegroundWindow, SetMenuDefaultItem,
-    SetWindowLongPtrW, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, GWLP_USERDATA,
+    SetWindowLongPtrW, ShowWindow, TrackPopupMenu, TranslateMessage, CREATESTRUCTW, GWLP_USERDATA,
     MAKEINTRESOURCEW, MB_ICONINFORMATION, MB_OK, MF_BYPOSITION, MF_GRAYED, MF_SEPARATOR, MF_STRING,
-    TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_APP, WM_CLOSE, WM_COMMAND,
-    WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP, WNDCLASSEXW,
-    WS_EX_NOACTIVATE,
+    SW_HIDE, TPM_LEFTALIGN, TPM_NONOTIFY, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_APP, WM_CLOSE,
+    WM_COMMAND, WM_CREATE, WM_DESTROY, WM_INITMENUPOPUP, WM_LBUTTONDBLCLK, WM_RBUTTONUP,
+    WNDCLASSEXW, WS_EX_NOACTIVATE,
+};
+use winapi::{
+    shared::minwindef::{BOOL, LOWORD, LPARAM, LRESULT, UINT, WPARAM},
+    um::winuser::SW_SHOW,
 };
 
 use crate::log_error;
@@ -367,8 +370,11 @@ unsafe extern "system" fn window_proc(
                     }
                 }
                 ID_TOGGLE_WINDOW => {
-                    GUI_VISIBLE.store(state.gui_hidden, Ordering::Relaxed);
                     state.gui_hidden = !state.gui_hidden;
+                    ShowWindow(
+                        *state.gui_handle.as_ref().unwrap(),
+                        if state.gui_hidden { SW_HIDE } else { SW_SHOW },
+                    );
                     SetForegroundWindow(*state.gui_handle.as_ref().unwrap());
 
                     return 0;
@@ -382,8 +388,11 @@ unsafe extern "system" fn window_proc(
         }
         WM_APP => match lparam as u32 {
             WM_LBUTTONDBLCLK => {
-                GUI_VISIBLE.store(state.gui_hidden, Ordering::Relaxed);
                 state.gui_hidden = !state.gui_hidden;
+                ShowWindow(
+                    *state.gui_handle.as_ref().unwrap(),
+                    if state.gui_hidden { SW_HIDE } else { SW_SHOW },
+                );
                 SetForegroundWindow(*state.gui_handle.as_ref().unwrap());
 
                 return 0;
@@ -398,6 +407,7 @@ unsafe extern "system" fn window_proc(
         },
         WM_HIDE_GUI => {
             state.gui_hidden = true;
+            ShowWindow(*state.gui_handle.as_ref().unwrap(), SW_HIDE);
             SetForegroundWindow(*state.gui_handle.as_ref().unwrap());
 
             return 0;
