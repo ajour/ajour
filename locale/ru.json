@@ -119,5 +119,12 @@
     "type": "Введите .",
     "wow-directories": "Каталоги World of Warcraft",
     "donate": "Пожертвовать",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Рядом с лотком системы",
+    "toggle-autostart": "Откройте Ajour автоматически после входа в систему",
+    "start-closed-to-tray": "Стартовое окно закрыто для системного лотка.",
+    "import-theme": "Импортная тема",
+    "import-theme-button": "Импорт",
+    "import-theme-error-name-collision": "Тема уже существует с этим названием",
+    "open-theme-builder": "Открытый Тематический Строитель"
 }

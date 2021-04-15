@@ -119,5 +119,12 @@
     "type": "Typ",
     "wow-directories": "World of Warcraft adresáre",
     "donate": "Darovať",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Zavrieť do oblasti oznámení",
+    "toggle-autostart": "Automatický štart",
+    "start-closed-to-tray": "Štart do oblasti oznámení",
+    "import-theme": "Importovať vzhľad",
+    "import-theme-button": "Importuj",
+    "import-theme-error-name-collision": "Vzhľad s tým menom už existuje",
+    "open-theme-builder": "Otvoriť editor vzhľadu"
 }

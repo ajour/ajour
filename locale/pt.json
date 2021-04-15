@@ -119,5 +119,12 @@
     "type": "Tipo",
     "wow-directories": "Diretórios do World of Warcraft",
     "donate": "Doe",
-    "donate-http": "https://www.getajour.com/donate"
+    "donate-http": "https://www.getajour.com/donate",
+    "close-to-tray": "Perto da bandeja do sistema",
+    "toggle-autostart": "Abra o Ajour automaticamente após fazer o login",
+    "start-closed-to-tray": "Iniciar Ajour fechado para System Tray",
+    "import-theme": "Tema de Importação",
+    "import-theme-button": "Importar",
+    "import-theme-error-name-collision": "O tema já existe com esse nome",
+    "open-theme-builder": "Construtor de Temas Abertos"
 }
