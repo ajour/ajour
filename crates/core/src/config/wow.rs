@@ -55,7 +55,8 @@ impl Flavor {
     pub(crate) fn curse_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "wow_retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => "wow_classic".to_owned(),
+            Flavor::Classic | Flavor::ClassicPtr => "wow_classic".to_owned(),
+            Flavor::ClassicBeta => "wow_burning_crusade".to_owned(),
         }
     }
 
@@ -63,7 +64,8 @@ impl Flavor {
     pub(crate) fn hub_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => "classic".to_owned(),
+            Flavor::Classic | Flavor::ClassicPtr => "classic".to_owned(),
+            Flavor::ClassicBeta => "burningcrusade".to_owned(),
         }
     }
 
