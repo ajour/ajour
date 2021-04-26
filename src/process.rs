@@ -44,6 +44,13 @@ fn process_already_running() -> bool {
     };
 
     unsafe {
+        let current_pid = GetCurrentProcessId();
+
+        // In case new process somehow got recycled PID of old process
+        if current_pid == old_process.pid {
+            return false;
+        }
+
         let handle = OpenProcess(
             SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION,
             0,
