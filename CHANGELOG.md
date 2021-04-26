@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows: Only one instance of Ajour can be launched at a time.
+
 ## [1.1.0] - 2021-04-15
 
 ### Added
