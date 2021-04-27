@@ -30,7 +30,7 @@ pub fn avoid_multiple_instances() {
         log::info!("Another instance of Ajour is already running. Exiting...");
         std::process::exit(0);
     } else {
-        // Otherwise this is only instance. Save info about this process to the
+        // Otherwise this is the only instance. Save info about this process to the
         // pid file so future launches of Ajour can detect this running process.
         save_current_process_file();
     }
