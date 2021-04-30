@@ -126,5 +126,6 @@
     "import-theme": "Téma importálása",
     "import-theme-button": "Import",
     "import-theme-error-name-collision": "A téma már létezik ezzel a névvel",
-    "open-theme-builder": "Témaépítő megnyitása"
+    "open-theme-builder": "Témaépítő megnyitása",
+    "ajour-data": ""
 }

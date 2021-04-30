@@ -126,5 +126,6 @@
     "import-theme": "Импортная тема",
     "import-theme-button": "Импорт",
     "import-theme-error-name-collision": "Тема уже существует с этим названием",
-    "open-theme-builder": "Открытый Тематический Строитель"
+    "open-theme-builder": "Открытый Тематический Строитель",
+    "ajour-data": ""
 }

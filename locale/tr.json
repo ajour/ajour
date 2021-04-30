@@ -126,5 +126,6 @@
     "import-theme": "Temayı İçe Aktar",
     "import-theme-button": "İthalat",
     "import-theme-error-name-collision": "Bu isimde tema zaten mevcut",
-    "open-theme-builder": "Tema Oluşturucuyu Aç"
+    "open-theme-builder": "Tema Oluşturucuyu Aç",
+    "ajour-data": ""
 }

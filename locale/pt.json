@@ -126,5 +126,6 @@
     "import-theme": "Tema de Importação",
     "import-theme-button": "Importar",
     "import-theme-error-name-collision": "O tema já existe com esse nome",
-    "open-theme-builder": "Construtor de Temas Abertos"
+    "open-theme-builder": "Construtor de Temas Abertos",
+    "ajour-data": ""
 }

@@ -126,5 +126,6 @@
     "import-theme": "Importer tema",
     "import-theme-button": "Import",
     "import-theme-error-name-collision": "Tema eksisterer allerede med det navnet",
-    "open-theme-builder": "Åpne temabygger"
+    "open-theme-builder": "Åpne temabygger",
+    "ajour-data": ""
 }
