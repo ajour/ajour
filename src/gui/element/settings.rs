@@ -253,6 +253,18 @@ pub fn data_container<'a, 'b>(
         .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
+        let checkbox_title = &localized_string("ajour-data")[..];
+        let config_folder_checkbox: Element<_> = Container::new(
+            Checkbox::new(config.backup_config, checkbox_title, move |is_checked| {
+                Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::Config)
+            })
+            .text_size(DEFAULT_FONT_SIZE)
+            .spacing(5)
+            .style(style::DefaultCheckbox(color_palette)),
+        )
+        .style(style::BrightBackgroundContainer(color_palette))
+        .into();
+
         let backup_compr_fmt_pick_list: Element<_> = PickList::new(
             default_backup_compression_format,
             &CompressionFormat::ALL[..],
@@ -299,6 +311,8 @@ pub fn data_container<'a, 'b>(
             .push(addon_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(wtf_folder_checkbox.map(Message::Interaction))
+            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(config_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(backup_compr_fmt_pick_list.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
