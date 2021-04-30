@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Ability to select Ajour data folder when backing up.
+
 ### Fixed
 
 - Windows: Only one instance of Ajour can be launched at a time.
