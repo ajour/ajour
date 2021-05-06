@@ -22,6 +22,10 @@ and `Removed`.
 
 - Windows: Only one instance of Ajour can be launched at a time.
 
+### Changed
+
+- Renamed option `both` to `all` for `backup` CLI command.
+
 ## [1.1.0] - 2021-04-15
 
 ### Added

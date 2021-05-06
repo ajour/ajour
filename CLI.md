@@ -21,7 +21,7 @@ OPTIONS:
         --data <data-directory>    Path to a custom data directory for the app
 
 SUBCOMMANDS:
-    backup     Backup your WTF, AddOns, and/or Ajour data folders
+    backup     Backup your WTF, AddOns, and/or Ajour config folders
     install    Install an addon from the command line
     update              Update all addons, WeakAura and Plater auras
     update-addons       Update all addons
@@ -52,7 +52,7 @@ Currently available options:
 
 ### Backup
 
-Backup your WTF, AddOns, and/or Ajour data folders.
+Backup your WTF, AddOns, and/or Ajour config folders.
 
 ```sh
 USAGE:
