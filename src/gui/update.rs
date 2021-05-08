@@ -1348,7 +1348,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // Shouldn't panic since button is only shown if backup directory is chosen
             let dest = ajour.config.backup_directory.as_ref().unwrap();
 
-            // Backup WTF & AddOn directories for both flavors if they exist
+            // Backup WTF & AddOn directories for flavor if it exist
             for flavor in Flavor::ALL.iter() {
                 if let Some(wow_dir) = ajour.config.get_root_directory_for_flavor(flavor) {
                     if ajour.config.backup_addons {
@@ -1374,6 +1374,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
 
+            // Backup Ajour config.
+            if ajour.config.backup_config {
+                let config_path = ajour_core::fs::config_dir();
+                if let Some(config_prefix) = config_path.parent() {
+                    src_folders.push(BackupFolder::new(&config_path, config_prefix));
+                }
+            }
+
             return Ok(Command::perform(
                 backup_folders(
                     src_folders,
@@ -1396,6 +1404,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 BackupFolderKind::WTF => {
                     ajour.config.backup_wtf = is_checked;
+                }
+                BackupFolderKind::Config => {
+                    ajour.config.backup_config = is_checked;
                 }
             }
 
