@@ -56,7 +56,7 @@ impl Backend for Tukui {
                     }
                 }
             }
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => {}
+            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta | Flavor::ClassicEra => {}
         }
 
         Ok(None)
@@ -134,8 +134,12 @@ fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
             "-2" => "https://www.tukui.org/ui/elvui/changelog".to_owned(),
             _ => format!("https://www.tukui.org/addons.php?id={}&changelog", id),
         },
-        Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => format!(
+        Flavor::ClassicEra => format!(
             "https://www.tukui.org/classic-addons.php?id={}&changelog",
+            id
+        ),
+        Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => format!(
+            "https://www.tukui.org/classic-tbc-addons.php?id={}&changelog",
             id
         ),
     }
