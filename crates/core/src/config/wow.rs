@@ -34,9 +34,9 @@ pub enum Flavor {
     #[serde(alias = "RetailPTR")]
     RetailPtr,
     RetailBeta,
-    #[serde(alias = "classic", alias = "wow_classic")]
+    #[serde(rename = "classic", rename = "wow_classic", rename = "classic_era")]
     ClassicEra,
-    #[serde(alias = "wow_burning_crusade")]
+    #[serde(alias = "wow_burning_crusade", alias = "burningCrusade", alias = "burning_crusade")]
     Classic,
     #[serde(alias = "ClassicPTR")]
     ClassicPtr,
