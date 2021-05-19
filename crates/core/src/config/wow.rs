@@ -35,7 +35,7 @@ pub enum Flavor {
     RetailPtr,
     RetailBeta,
     #[serde(
-        rename = "Classic",
+        alias = "Classic",
         alias = "classic",
         alias = "wow_classic",
         alias = "classic_era"
