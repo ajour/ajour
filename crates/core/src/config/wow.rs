@@ -125,7 +125,7 @@ impl std::fmt::Display for Flavor {
                 Flavor::RetailPtr => "Retail PTR",
                 Flavor::RetailBeta => "Retail Beta",
                 Flavor::ClassicEra => "Classic Era",
-                Flavor::Classic => "Classic Tbc",
+                Flavor::Classic => "Classic TBC",
                 Flavor::ClassicBeta => "Classic Beta",
                 Flavor::ClassicPtr => "Classic PTR",
             }
