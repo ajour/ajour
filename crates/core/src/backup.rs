@@ -40,14 +40,13 @@ pub async fn latest_backup(backup_dir: PathBuf) -> Option<NaiveDateTime> {
 
     let mut backups = vec![];
 
-    for entry in glob::glob(&zip_pattern)
+    for path in glob::glob(&zip_pattern)
         .unwrap()
         .chain(glob::glob(&zstd_pattern).unwrap())
+        .flatten()
     {
-        if let Ok(path) = entry {
-            if let Ok(archive) = Archive::try_from(path) {
-                backups.push(archive.as_of);
-            }
+        if let Ok(archive) = Archive::try_from(path) {
+            backups.push(archive.as_of);
         }
     }
 

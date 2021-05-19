@@ -407,11 +407,7 @@ impl Application for Ajour {
         };
 
         // Used to display changelog later in the About screen.
-        let release_copy = if let Some(release) = &self.self_update_state.latest_release {
-            Some(release.clone())
-        } else {
-            None
-        };
+        let release_copy = self.self_update_state.latest_release.clone();
 
         // Menu container at the top of the applications.
         let updatable_addons = self

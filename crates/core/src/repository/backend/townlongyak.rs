@@ -173,8 +173,8 @@ pub struct TownlongYakRelease {
     pub prerelease: bool,
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct BatchRequest {
     addon_ids: Vec<i64>,
 }
