@@ -1981,6 +1981,7 @@ pub enum BackupFolderKind {
     AddOns,
     #[allow(clippy::upper_case_acronyms)]
     WTF,
+    Config,
 }
 
 #[derive(Default)]

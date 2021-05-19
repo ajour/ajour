@@ -8,6 +8,8 @@ mod command;
 mod gui;
 mod localization;
 #[cfg(target_os = "windows")]
+mod process;
+#[cfg(target_os = "windows")]
 mod tray;
 
 use ajour_core::config::Config;
@@ -69,6 +71,10 @@ pub fn main() {
     log_panics::init();
 
     log::info!("Ajour {} has started.", VERSION);
+
+    // Ensures another instance of Ajour isn't already running.
+    #[cfg(target_os = "windows")]
+    process::avoid_multiple_instances();
 
     match opts.command {
         Some(command) => {

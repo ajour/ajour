@@ -99,7 +99,7 @@ pub enum Command {
     },
     /// Backup your WTF and/or AddOns folders
     Backup {
-        #[structopt(short, long, default_value = "both", parse(try_from_str = str_to_backup_folder), possible_values = &["both","wtf","addons"])]
+        #[structopt(short, long, default_value = "all", parse(try_from_str = str_to_backup_folder), possible_values = &["all","wtf","addons","config"])]
         /// folder to backup
         backup_folder: BackupFolder,
         #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_ptr","classic_beta"])]
@@ -136,16 +136,18 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
 
 #[derive(Debug, Clone, Copy)]
 pub enum BackupFolder {
-    Both,
+    All,
     AddOns,
     Wtf,
+    Config,
 }
 
 fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {
     match s {
-        "both" => Ok(BackupFolder::Both),
+        "all" => Ok(BackupFolder::All),
         "wtf" => Ok(BackupFolder::Wtf),
         "addons" => Ok(BackupFolder::AddOns),
-        _ => Err("valid values are ['both','wtf','addons']"),
+        "config" => Ok(BackupFolder::Config),
+        _ => Err("valid values are ['all','wtf','addons','config']"),
     }
 }

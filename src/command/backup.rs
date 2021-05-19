@@ -65,7 +65,7 @@ pub fn backup(
             let wtf_folder = backup::BackupFolder::new(&wtf_directory, &wow_directory);
 
             match backup_folder {
-                BackupFolder::Both => {
+                BackupFolder::All => {
                     if addon_directory.exists() && wtf_directory.exists() {
                         src_folders.push(addons_folder);
                         src_folders.push(wtf_folder);
@@ -81,7 +81,18 @@ pub fn backup(
                         src_folders.push(wtf_folder);
                     }
                 }
+                _ => {}
             }
+        }
+
+        match backup_folder {
+            BackupFolder::Config | BackupFolder::All => {
+                let config_path = ajour_core::fs::config_dir();
+                if let Some(config_prefix) = config_path.parent() {
+                    src_folders.push(backup::BackupFolder::new(&config_path, config_prefix));
+                }
+            }
+            _ => {}
         }
 
         backup_folders(src_folders, destination, compression_format).await?;
