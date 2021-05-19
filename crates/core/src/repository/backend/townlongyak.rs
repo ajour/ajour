@@ -133,7 +133,6 @@ pub(crate) async fn fetch_remote_packages(
             .await
             .map(|r| r.addons);
 
-        println!("packages : {:?}", &packages);
         Ok(packages?)
     } else {
         Err(DownloadError::InvalidStatusCode {
