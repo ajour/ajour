@@ -90,7 +90,7 @@ pub enum Command {
     UpdateAuras,
     /// Install an addon
     Install {
-        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_era","classic_ptr","classic_beta"])]
+        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_ptr","classic_beta"])]
         /// flavor to install addon under
         flavor: Flavor,
         #[structopt()]
@@ -102,7 +102,7 @@ pub enum Command {
         #[structopt(short, long, default_value = "both", parse(try_from_str = str_to_backup_folder), possible_values = &["both","wtf","addons"])]
         /// folder to backup
         backup_folder: BackupFolder,
-        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_era","classic_ptr","classic_beta"])]
+        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_ptr","classic_beta"])]
         /// space separated list of flavors to include in backup. If ommited, all flavors will be included.
         flavors: Vec<Flavor>,
         #[structopt()]
@@ -126,11 +126,11 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
         "retail" => Ok(Flavor::Retail),
         "beta" => Ok(Flavor::RetailBeta),
         "ptr" => Ok(Flavor::RetailPtr),
-        "classic" => Ok(Flavor::Classic),
+        "classic_tbc" => Ok(Flavor::ClassicTbc),
         "classic_era" => Ok(Flavor::ClassicEra),
         "classic_ptr" => Ok(Flavor::ClassicPtr),
         "classic_beta" => Ok(Flavor::ClassicBeta),
-        _ => Err("valid values are ['retail','ptr','beta','classic','classic_era','classic_ptr','classic_beta']"),
+        _ => Err("valid values are ['retail','ptr','beta','classic_tbc','classic_era','classic_ptr','classic_beta']"),
     }
 }
 

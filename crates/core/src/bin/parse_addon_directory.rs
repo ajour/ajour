@@ -54,9 +54,10 @@ fn main() {
     task::block_on(async move {
         let addon_cache = Some(Arc::new(Mutex::new(load_addon_cache().await.unwrap())));
 
-        let addons = read_addon_directory(addon_cache, fingerprint_cache, &path, Flavor::Classic)
-            .await
-            .unwrap();
+        let addons =
+            read_addon_directory(addon_cache, fingerprint_cache, &path, Flavor::ClassicTbc)
+                .await
+                .unwrap();
 
         print!("{} addons parsed", addons.len());
     });

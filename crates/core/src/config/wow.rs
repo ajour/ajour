@@ -42,12 +42,11 @@ pub enum Flavor {
     )]
     ClassicEra,
     #[serde(
-        rename = "ClassicTbc",
         alias = "wow_burning_crusade",
         alias = "burningCrusade",
         alias = "burning_crusade"
     )]
-    Classic,
+    ClassicTbc,
     #[serde(alias = "ClassicPTR")]
     ClassicPtr,
     ClassicBeta,
@@ -59,7 +58,7 @@ impl Flavor {
         Flavor::RetailPtr,
         Flavor::RetailBeta,
         Flavor::ClassicEra,
-        Flavor::Classic,
+        Flavor::ClassicTbc,
         Flavor::ClassicPtr,
         Flavor::ClassicBeta,
     ];
@@ -68,7 +67,7 @@ impl Flavor {
     pub(crate) fn curse_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "wow_retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => {
+            Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => {
                 "wow_burning_crusade".to_owned()
             }
             Flavor::ClassicEra => "wow_classic".to_owned(),
@@ -79,7 +78,7 @@ impl Flavor {
     pub(crate) fn hub_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "retail".to_owned(),
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => {
+            Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => {
                 "burningCrusade".to_owned()
             }
             Flavor::ClassicEra => "classic".to_owned(),
@@ -90,7 +89,7 @@ impl Flavor {
     pub fn base_flavor(self) -> Flavor {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => Flavor::Retail,
-            Flavor::Classic | Flavor::ClassicPtr | Flavor::ClassicBeta => Flavor::Classic,
+            Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => Flavor::ClassicTbc,
             Flavor::ClassicEra => Flavor::ClassicEra,
         }
     }
@@ -102,7 +101,7 @@ impl Flavor {
             Flavor::RetailPtr => "_ptr_".to_owned(),
             Flavor::RetailBeta => "_beta_".to_owned(),
             Flavor::ClassicEra => "_classic_era_".to_owned(),
-            Flavor::Classic => "_classic_".to_owned(),
+            Flavor::ClassicTbc => "_classic_".to_owned(),
             Flavor::ClassicPtr => "_classic_ptr_".to_owned(),
             Flavor::ClassicBeta => "_classic_beta_".to_owned(),
         }
@@ -125,7 +124,7 @@ impl std::fmt::Display for Flavor {
                 Flavor::RetailPtr => "Retail PTR",
                 Flavor::RetailBeta => "Retail Beta",
                 Flavor::ClassicEra => "Classic Era",
-                Flavor::Classic => "Classic TBC",
+                Flavor::ClassicTbc => "Classic TBC",
                 Flavor::ClassicBeta => "Classic Beta",
                 Flavor::ClassicPtr => "Classic PTR",
             }
