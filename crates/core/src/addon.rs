@@ -497,10 +497,8 @@ impl Addon {
             Some(stable_package)
         } else if let Some(beta_package) = remote_packages.remove(&ReleaseChannel::Beta) {
             Some(beta_package)
-        } else if let Some(alpha_package) = remote_packages.remove(&ReleaseChannel::Alpha) {
-            Some(alpha_package)
         } else {
-            None
+            remote_packages.remove(&ReleaseChannel::Alpha)
         }
     }
 

@@ -67,7 +67,7 @@ mod de {
                 }
 
                 map.insert(Flavor::Retail, ignored.clone());
-                map.insert(Flavor::Classic, ignored);
+                map.insert(Flavor::ClassicTbc, ignored);
 
                 Ok(map)
             }

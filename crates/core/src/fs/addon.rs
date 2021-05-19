@@ -123,6 +123,8 @@ pub async fn install_addon(
         .filter_map(|p| parse_toc_path(&p))
         .collect();
     addon_folders.sort();
+    // Needed since multi-toc can now insert folder name more than once
+    addon_folders.dedup();
 
     Ok(addon_folders)
 }

@@ -6,7 +6,7 @@ use chrono::prelude::*;
 use isahc::AsyncReadResponseExt;
 use serde::{Deserialize, Serialize};
 
-const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog-2.0.json";
+const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog-3.0.json";
 
 type Etag = Option<String>;
 
@@ -85,22 +85,22 @@ impl std::fmt::Display for Source {
     }
 }
 
-#[serde(transparent)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Catalog {
     pub addons: Vec<CatalogAddon>,
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
+#[serde(rename_all = "camelCase")]
 pub struct GameVersion {
     #[serde(deserialize_with = "null_to_default::deserialize")]
     pub game_version: String,
     pub flavor: Flavor,
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CatalogAddon {
     #[serde(deserialize_with = "null_to_default::deserialize")]
     pub id: i32,

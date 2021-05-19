@@ -109,11 +109,10 @@ impl Config {
 
     /// Returns a `Option<PathBuf>` to the root directory of the Flavor.
     pub fn get_root_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        if let Some(flavor_dir) = self.wow.directories.get(flavor) {
-            Some(flavor_dir.parent().unwrap().to_path_buf())
-        } else {
-            None
-        }
+        self.wow
+            .directories
+            .get(flavor)
+            .map(|p| p.parent().unwrap().to_path_buf())
     }
 
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
@@ -137,10 +136,8 @@ impl Config {
                     // unless we add an actual pattern symbol, hence the `?`.
                     let pattern = format!("{}/?nterface/?ddons", dir.display());
 
-                    for entry in glob::glob_with(&pattern, options).unwrap() {
-                        if let Ok(path) = entry {
-                            addon_dir = path;
-                        }
+                    for path in glob::glob_with(&pattern, options).unwrap().flatten() {
+                        addon_dir = path;
                     }
                 }
 
@@ -185,10 +182,8 @@ impl Config {
                     // unless we add an actual pattern symbol, hence the `?`.
                     let pattern = format!("{}/?tf", dir.display());
 
-                    for entry in glob::glob_with(&pattern, options).unwrap() {
-                        if let Ok(path) = entry {
-                            addon_dir = path;
-                        }
+                    for path in glob::glob_with(&pattern, options).unwrap().flatten() {
+                        addon_dir = path;
                     }
                 }
 

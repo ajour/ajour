@@ -77,6 +77,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
             // Check if any new flavor has been added since last time.
             // Get missing flavors.
+            let mut missing_added = 0;
             let mut missing_flavors: Vec<&Flavor> = vec![];
             for flavor in Flavor::ALL.iter() {
                 if ajour.config.wow.directories.get(flavor).is_none() {
@@ -105,6 +106,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                                 .wow
                                 .directories
                                 .insert(**missing_flavor, flavor_dir);
+
+                            missing_added += 1;
                         }
                     }
                 }
@@ -116,6 +119,11 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         ajour.config.wow.directories.remove(&flavor);
                     }
                 }
+            }
+
+            // Persist any changes for missing flavors being added
+            if missing_added > 0 {
+                let _ = ajour.config.save();
             }
 
             let flavors = ajour.config.wow.directories.keys().collect::<Vec<_>>();
