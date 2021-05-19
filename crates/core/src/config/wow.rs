@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 /// Struct for settings related to World of Warcraft.
-#[serde(default)]
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[serde(default)]
 pub struct Wow {
     #[serde(default)]
     #[allow(deprecated)]

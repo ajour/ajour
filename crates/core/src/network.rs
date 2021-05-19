@@ -88,10 +88,8 @@ pub async fn download_addon(
     let package =
         if let Some(relevant_package) = addon.relevant_release_package(global_release_channel) {
             Some(relevant_package)
-        } else if let Some(fallback_package) = addon.fallback_release_package() {
-            Some(fallback_package)
         } else {
-            None
+            addon.fallback_release_package()
         };
 
     if let Some(package) = package {

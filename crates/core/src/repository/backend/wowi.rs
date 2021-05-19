@@ -138,8 +138,8 @@ pub(crate) async fn fetch_remote_packages(
     }
 }
 
-#[serde(rename_all = "camelCase")]
 #[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 /// Struct for applying wowi details to an `Addon`.
 pub struct WowIPackage {
     pub id: i64,
