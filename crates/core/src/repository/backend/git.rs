@@ -215,13 +215,13 @@ mod github {
             .count();
 
         if flavor.base_flavor() == Flavor::Retail && num_non_classic > 1
-            || flavor.base_flavor() == Flavor::Classic && num_classic == 0 && num_non_classic > 1
+            || flavor.base_flavor() == Flavor::ClassicEra && num_classic == 0 && num_non_classic > 1
         {
             return Err(RepositoryError::GitIndeterminableZip {
                 count: num_non_classic,
                 url: url.to_string(),
             });
-        } else if flavor.base_flavor() == Flavor::Classic && num_classic > 1 {
+        } else if flavor.base_flavor() == Flavor::ClassicEra && num_classic > 1 {
             return Err(RepositoryError::GitIndeterminableZipClassic {
                 count: num_classic,
                 url: url.to_string(),
@@ -345,7 +345,7 @@ mod gitlab {
                 .count();
 
             if self.flavor.base_flavor() == Flavor::Retail && num_non_classic > 1
-                || self.flavor.base_flavor() == Flavor::Classic
+                || self.flavor.base_flavor() == Flavor::ClassicEra
                     && num_classic == 0
                     && num_non_classic > 1
             {
@@ -353,7 +353,7 @@ mod gitlab {
                     count: num_non_classic,
                     url: url.clone(),
                 });
-            } else if self.flavor.base_flavor() == Flavor::Classic && num_classic > 1 {
+            } else if self.flavor.base_flavor() == Flavor::ClassicEra && num_classic > 1 {
                 return Err(RepositoryError::GitIndeterminableZipClassic {
                     count: num_classic,
                     url,
