@@ -126,5 +126,6 @@
     "import-theme": "Імпорт теми",
     "import-theme-button": "Імпорт",
     "import-theme-error-name-collision": "Тема вже існує з такою назвою",
-    "open-theme-builder": "Відкрийте Конструктор тем"
+    "open-theme-builder": "Відкрийте Конструктор тем",
+    "ajour-data": "Дані відшкодування"
 }

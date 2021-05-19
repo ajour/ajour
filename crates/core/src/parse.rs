@@ -273,8 +273,26 @@ async fn parse_addon_folders(
     let mut addon_folders: Vec<_> = all_dirs
         .par_iter()
         .filter_map(|id| {
-            // Generate .toc path.
-            let toc_path = root_dir.join(&id).join(format!("{}.toc", id));
+            // Generate .toc path. If `-BCC` or `-Mainline` exists for Tbc and Era,
+            // respectively, use that over the standard toc.
+            let toc_path = {
+                let multi_part = match flavor.base_flavor() {
+                    Flavor::Retail => "-Mainline",
+                    Flavor::ClassicEra => "-Classic",
+                    Flavor::ClassicTbc => "-BCC",
+                    _ => "",
+                };
+
+                let standard_path = root_dir.join(&id).join(format!("{}.toc", id));
+                let multi_path = root_dir.join(&id).join(format!("{}{}.toc", id, multi_part));
+
+                if multi_path.exists() {
+                    multi_path
+                } else {
+                    standard_path
+                }
+            };
+
             if !toc_path.exists() {
                 return None;
             }
