@@ -14,8 +14,17 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.2.0] - 2021-05-18
+
 ### Added
 
+- Support for TBC.
+  - If you are planning on playing **Classic Tbc**, you should check if any addon
+    has `-` in Source column, if thats the case, delete and re-download the addon
+    from Catalog.
+  - If you are planning on playing **Classic Era**, you can either copy your addon
+    from `_classic_` to `_classic_era_` or re-download them from Catalog. Ajour doesn't
+    migrate it for you.
 - Ability to select Ajour data folder when backing up.
 
 ### Fixed
