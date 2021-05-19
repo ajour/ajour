@@ -6,7 +6,7 @@ use chrono::prelude::*;
 use isahc::AsyncReadResponseExt;
 use serde::{Deserialize, Serialize};
 
-const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog-2.0.json";
+const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog-3.0.json";
 
 type Etag = Option<String>;
 
