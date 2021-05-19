@@ -2205,7 +2205,7 @@ async fn load_caches() -> Result<(FingerprintCache, AddonCache)> {
     Ok((fingerprint_cache, addon_cache))
 }
 
-fn apply_config(ajour: &mut Ajour, config: Config) {
+fn apply_config(ajour: &mut Ajour, mut config: Config) {
     // Set column widths from the config
     match &config.column_config {
         ColumnConfig::V1 {
@@ -2425,6 +2425,20 @@ fn apply_config(ajour: &mut Ajour, config: Config) {
 
     // Use scale from config. Set to 1.0 if not defined.
     ajour.scale_state.scale = config.scale.unwrap_or(1.0);
+
+    // Migration for the new TBC client. Link ClassicEra flavor to `_classic_era_` instead of
+    // `_classic_`
+    {
+        if let Some(classic_era_dir) = config.wow.directories.get(&Flavor::ClassicEra) {
+            if classic_era_dir.ends_with("_classic_") {
+                if let Some(parent) = classic_era_dir.parent() {
+                    let new_path = parent.join("_classic_era_");
+
+                    config.wow.directories.insert(Flavor::ClassicEra, new_path);
+                }
+            }
+        }
+    }
 
     // Set the inital mode flavor
     ajour.mode = Mode::MyAddons(config.wow.flavor);
