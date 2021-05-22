@@ -151,7 +151,7 @@ impl Config {
             Some(wow_flavor_dir) => {
                 let mut dir = wow_flavor_dir.join(relative_path);
 
-                // If path doesn't exist, it could have been modified by the user.
+                // If dir doesn't exist, it could have been modified by the user.
                 // Check for a case-insensitive version and use that instead.
                 if !dir.exists() {
                     let options = MatchOptions {
@@ -159,8 +159,6 @@ impl Config {
                         ..Default::default()
                     };
 
-                    // For some reason the case insensitive pattern doesn't work
-                    // unless we add an actual pattern symbol, hence the `?`.
                     let pattern = format!("{}/{}", wow_flavor_dir.display(), get_pattern_format(relative_path));
 
                     for path in glob::glob_with(&pattern, options).unwrap().flatten() {
@@ -179,10 +177,13 @@ impl Config {
     }
 }
 
+/// This method will take a relative path and make a case insentitive pattern
+// For some reason the case insensitive pattern doesn't work
+// unless we add an actual pattern symbol, hence the `?`.
 fn get_pattern_format(relative_path: &str) -> String {
-    let mut splitted_string = relative_path.split("/");
+    let splitted_string = relative_path.split('/');
     let mut return_string: Vec<String> = vec![];
-    while let Some(path) = splitted_string.next() {
+    for path in splitted_string {
         let mut to_lower_case = path.to_lowercase();
         to_lower_case.replace_range(0..1, "?");
         return_string.push(to_lower_case);
