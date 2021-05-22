@@ -140,6 +140,7 @@ pub enum BackupFolder {
     AddOns,
     Wtf,
     Config,
+    Screenshots
 }
 
 fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {
@@ -148,6 +149,7 @@ fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {
         "wtf" => Ok(BackupFolder::Wtf),
         "addons" => Ok(BackupFolder::AddOns),
         "config" => Ok(BackupFolder::Config),
-        _ => Err("valid values are ['all','wtf','addons','config']"),
+        "screenshots" => Ok(BackupFolder::Screenshots),
+        _ => Err("valid values are ['all','wtf','addons','config', 'screenshots']"),
     }
 }
