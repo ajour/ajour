@@ -1,4 +1,4 @@
-use crate::cli::BackupFolder;
+use crate::{cli::BackupFolder};
 use crate::Result;
 
 use ajour_core::backup::{self, backup_folders};
@@ -61,8 +61,14 @@ pub fn backup(
                 None => continue,
             };
 
+            let screenshot_directory = match config.get_screenshots_directory_for_flavor(&flavor) {
+                Some(path) => path,
+                None => continue,
+            };
+
             let addons_folder = backup::BackupFolder::new(&addon_directory, &wow_directory);
             let wtf_folder = backup::BackupFolder::new(&wtf_directory, &wow_directory);
+            let screenshots_folder = backup::BackupFolder::new(&screenshot_directory, &wow_directory);
 
             match backup_folder {
                 BackupFolder::All => {
@@ -79,6 +85,11 @@ pub fn backup(
                 BackupFolder::Wtf => {
                     if wtf_directory.exists() {
                         src_folders.push(wtf_folder);
+                    }
+                }
+                BackupFolder::Screenshots => {
+                    if screenshot_directory.exists() {
+                        src_folders.push(screenshots_folder);
                     }
                 }
                 _ => {}
