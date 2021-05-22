@@ -127,5 +127,6 @@
     "import-theme-button": "Import",
     "import-theme-error-name-collision": "Theme already exists with that name",
     "open-theme-builder": "Open Theme Builder",
-    "ajour-data": "Ajour data"
+    "ajour-data": "Ajour data",
+    "screenshots": "Screenshots"
 }

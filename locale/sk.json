@@ -127,5 +127,6 @@
     "import-theme-button": "Importuj",
     "import-theme-error-name-collision": "Vzhľad s tým menom už existuje",
     "open-theme-builder": "Otvoriť editor vzhľadu",
-    "ajour-data": "Ajour údaje"
+    "ajour-data": "Ajour údaje",
+    "screenshots": "Screenshots"
 }
