@@ -1379,6 +1379,13 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             src_folders.push(BackupFolder::new(&wtf_dir, &wow_dir));
                         }
                     }
+
+                    if ajour.config.backup_screenshots {
+                        let screenshot_dir = ajour.config.get_screenshots_directory_for_flavor(flavor).unwrap();
+                        if screenshot_dir.exists() {
+                            src_folders.push(BackupFolder::new(&screenshot_dir, &wow_dir));
+                        }
+                    }
                 }
             }
 
@@ -1415,6 +1422,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 BackupFolderKind::Config => {
                     ajour.config.backup_config = is_checked;
+                }
+                BackupFolderKind::Screenshots => {
+                    ajour.config.backup_screenshots = is_checked;
                 }
             }
 
