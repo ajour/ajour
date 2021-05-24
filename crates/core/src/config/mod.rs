@@ -344,7 +344,7 @@ impl Language {
             Language::Slovak => "sk_SK",
             Language::Turkish => "tr_TR",
             Language::Portuguese => "pt_PT",
-            Language::Polish => "csb_PL",
+            Language::Polish => "pl_PL",
             Language::Ukrainian => "uk_UA",
         }
     }

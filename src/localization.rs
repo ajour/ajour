@@ -32,7 +32,7 @@ pub static LOCALIZATION_CTX: Lazy<JSONGetText<'static>> = Lazy::new(|| {
         "locale/tr.json",
         "pt_PT",
         "locale/pt.json",
-        "csb_PL",
+        "pl_PL",
         "locale/pl.json",
         "uk_UA",
         "locale/uk.json"
