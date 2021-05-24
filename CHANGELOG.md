@@ -14,6 +14,11 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- New language added to Ajour:
+  - Polish (thanks KasprzykM)
+
 ## [1.2.0] - 2021-05-18
 
 ### Added
@@ -26,6 +31,7 @@ and `Removed`.
     from `_classic_` to `_classic_era_` or re-download them from Catalog. Ajour doesn't
     migrate it for you.
 - Ability to select Ajour data folder when backing up.
+
 
 ### Fixed
 
