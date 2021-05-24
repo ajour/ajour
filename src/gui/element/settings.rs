@@ -255,9 +255,13 @@ pub fn data_container<'a, 'b>(
 
         let checkbox_title = &localized_string("screenshots")[..];
         let screenshots_folder_checkbox: Element<_> = Container::new(
-            Checkbox::new(config.backup_screenshots, checkbox_title, move |is_checked| {
-                Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::Screenshots)
-            })
+            Checkbox::new(
+                config.backup_screenshots,
+                checkbox_title,
+                move |is_checked| {
+                    Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::Screenshots)
+                },
+            )
             .text_size(DEFAULT_FONT_SIZE)
             .spacing(5)
             .style(style::DefaultCheckbox(color_palette)),

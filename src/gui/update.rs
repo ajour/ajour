@@ -1381,7 +1381,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
 
                     if ajour.config.backup_screenshots {
-                        let screenshot_dir = ajour.config.get_screenshots_directory_for_flavor(flavor).unwrap();
+                        let screenshot_dir = ajour
+                            .config
+                            .get_screenshots_directory_for_flavor(flavor)
+                            .unwrap();
                         if screenshot_dir.exists() {
                             src_folders.push(BackupFolder::new(&screenshot_dir, &wow_dir));
                         }

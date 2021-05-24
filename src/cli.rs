@@ -140,7 +140,7 @@ pub enum BackupFolder {
     AddOns,
     Wtf,
     Config,
-    Screenshots
+    Screenshots,
 }
 
 fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {

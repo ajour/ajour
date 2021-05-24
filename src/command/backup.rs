@@ -1,4 +1,4 @@
-use crate::{cli::BackupFolder};
+use crate::cli::BackupFolder;
 use crate::Result;
 
 use ajour_core::backup::{self, backup_folders};
@@ -68,7 +68,8 @@ pub fn backup(
 
             let addons_folder = backup::BackupFolder::new(&addon_directory, &wow_directory);
             let wtf_folder = backup::BackupFolder::new(&wtf_directory, &wow_directory);
-            let screenshots_folder = backup::BackupFolder::new(&screenshot_directory, &wow_directory);
+            let screenshots_folder =
+                backup::BackupFolder::new(&screenshot_directory, &wow_directory);
 
             match backup_folder {
                 BackupFolder::All => {

@@ -3,7 +3,7 @@ use crate::error::FilesystemError;
 use crate::repository::CompressionFormat;
 use glob::MatchOptions;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap};
+use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
@@ -159,7 +159,11 @@ impl Config {
                         ..Default::default()
                     };
 
-                    let pattern = format!("{}/{}", wow_flavor_dir.display(), get_pattern_format(relative_path));
+                    let pattern = format!(
+                        "{}/{}",
+                        wow_flavor_dir.display(),
+                        get_pattern_format(relative_path)
+                    );
 
                     for path in glob::glob_with(&pattern, options).unwrap().flatten() {
                         dir = path;
@@ -367,8 +371,14 @@ mod test {
 
     #[test]
     fn test_get_format_interface_addons() {
-        assert_eq!(get_pattern_format("Interface/Addons"), String::from("?nterface/?ddons"));
-        assert_eq!(get_pattern_format("iNtErFaCe/aDdoNs"), String::from("?nterface/?ddons"));
+        assert_eq!(
+            get_pattern_format("Interface/Addons"),
+            String::from("?nterface/?ddons")
+        );
+        assert_eq!(
+            get_pattern_format("iNtErFaCe/aDdoNs"),
+            String::from("?nterface/?ddons")
+        );
     }
 
     #[test]
@@ -379,11 +389,19 @@ mod test {
         assert_eq!(get_pattern_format("wTf"), String::from("?tf"));
     }
 
-    
     #[test]
     fn test_get_format_screenshots() {
-        assert_eq!(get_pattern_format("Screenshots"), String::from("?creenshots"));
-        assert_eq!(get_pattern_format("sCREENSHOTS"), String::from("?creenshots"));
-        assert_eq!(get_pattern_format("ScreeNShots"), String::from("?creenshots"));
+        assert_eq!(
+            get_pattern_format("Screenshots"),
+            String::from("?creenshots")
+        );
+        assert_eq!(
+            get_pattern_format("sCREENSHOTS"),
+            String::from("?creenshots")
+        );
+        assert_eq!(
+            get_pattern_format("ScreeNShots"),
+            String::from("?creenshots")
+        );
     }
 }
