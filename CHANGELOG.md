@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Ability to select Screenshots when backing up.
+
 ## [1.2.0] - 2021-05-18
 
 ### Added
