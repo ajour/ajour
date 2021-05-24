@@ -99,7 +99,7 @@ pub enum Command {
     },
     /// Backup your WTF and/or AddOns folders
     Backup {
-        #[structopt(short, long, default_value = "all", parse(try_from_str = str_to_backup_folder), possible_values = &["all","wtf","addons","config"])]
+        #[structopt(short, long, default_value = "all", parse(try_from_str = str_to_backup_folder), possible_values = &["all","wtf","addons","config", "screenshots"])]
         /// folder to backup
         backup_folder: BackupFolder,
         #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_ptr","classic_beta"])]
