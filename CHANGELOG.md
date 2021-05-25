@@ -18,6 +18,7 @@ and `Removed`.
 
 - New language added to Ajour:
   - Polish (thanks KasprzykM)
+- Ability to select Screenshots when backing up.
 
 ## [1.2.0] - 2021-05-18
 

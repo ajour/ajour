@@ -46,6 +46,9 @@ pub struct Config {
     pub backup_config: bool,
 
     #[serde(default)]
+    pub backup_screenshots: bool,
+
+    #[serde(default)]
     pub hide_ignored_addons: bool,
 
     #[serde(default)]
@@ -118,40 +121,7 @@ impl Config {
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        let dir = self.wow.directories.get(flavor);
-        match dir {
-            Some(dir) => {
-                // The path to the addons directory
-                let mut addon_dir = dir.join("Interface/AddOns");
-
-                // If path doesn't exist, it could have been modified by the user.
-                // Check for a case-insensitive version and use that instead.
-                if !addon_dir.exists() {
-                    let options = MatchOptions {
-                        case_sensitive: false,
-                        ..Default::default()
-                    };
-
-                    // For some reason the case insensitive pattern doesn't work
-                    // unless we add an actual pattern symbol, hence the `?`.
-                    let pattern = format!("{}/?nterface/?ddons", dir.display());
-
-                    for path in glob::glob_with(&pattern, options).unwrap().flatten() {
-                        addon_dir = path;
-                    }
-                }
-
-                // If flavor dir exists but not addon dir we try to create it.
-                // This state can happen if you do a fresh install of WoW and
-                // launch Ajour before you launch WoW.
-                if dir.exists() && !addon_dir.exists() {
-                    let _ = create_dir_all(&addon_dir);
-                }
-
-                Some(addon_dir)
-            }
-            None => None,
-        }
+        self.get_directory_for_flavor(flavor, "Interface/AddOns")
     }
 
     /// Returns a `Option<PathBuf>` to the directory which will hold the
@@ -164,34 +134,65 @@ impl Config {
     /// Returns a `Option<PathBuf>` to the WTF directory.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_wtf_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        let dir = self.wow.directories.get(flavor);
-        match dir {
-            Some(dir) => {
-                // The path to the WTF directory
-                let mut addon_dir = dir.join("WTF");
+        self.get_directory_for_flavor(flavor, "WTF")
+    }
 
-                // If path doesn't exist, it could have been modified by the user.
+    /// Returns a `Option<PathBuf>` to the Screenshots directory.
+    /// This will return `None` if no `wow_directory` is set in the config.
+    pub fn get_screenshots_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
+        self.get_directory_for_flavor(flavor, "Screenshots")
+    }
+
+    /// Return a `Option<PathBuf` to a directory.
+    /// This will return none if no `wow_directory` is set in the config.
+    fn get_directory_for_flavor(&self, flavor: &Flavor, relative_path: &str) -> Option<PathBuf> {
+        let wow_flavor_dir = self.wow.directories.get(flavor);
+        match wow_flavor_dir {
+            Some(wow_flavor_dir) => {
+                let mut dir = wow_flavor_dir.join(relative_path);
+
+                // If dir doesn't exist, it could have been modified by the user.
                 // Check for a case-insensitive version and use that instead.
-                if !addon_dir.exists() {
+                if !dir.exists() {
                     let options = MatchOptions {
                         case_sensitive: false,
                         ..Default::default()
                     };
 
-                    // For some reason the case insensitive pattern doesn't work
-                    // unless we add an actual pattern symbol, hence the `?`.
-                    let pattern = format!("{}/?tf", dir.display());
+                    let pattern = format!(
+                        "{}/{}",
+                        wow_flavor_dir.display(),
+                        get_pattern_format(relative_path)
+                    );
 
                     for path in glob::glob_with(&pattern, options).unwrap().flatten() {
-                        addon_dir = path;
+                        dir = path;
                     }
                 }
 
-                Some(addon_dir)
+                if wow_flavor_dir.exists() && !dir.exists() {
+                    let _ = create_dir_all(&dir);
+                }
+
+                Some(dir)
             }
             None => None,
         }
     }
+}
+
+/// This method will take a relative path and make a case insentitive pattern
+// For some reason the case insensitive pattern doesn't work
+// unless we add an actual pattern symbol, hence the `?`.
+fn get_pattern_format(relative_path: &str) -> String {
+    let splitted_string = relative_path.split('/');
+    let mut return_string: Vec<String> = vec![];
+    for path in splitted_string {
+        let mut to_lower_case = path.to_lowercase();
+        to_lower_case.replace_range(0..1, "?");
+        return_string.push(to_lower_case);
+    }
+    return_string.join("/")
 }
 
 impl PersistentData for Config {
@@ -367,4 +368,44 @@ pub async fn load_config() -> Result<Config, FilesystemError> {
 
 const fn default_true() -> bool {
     true
+}
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_get_format_interface_addons() {
+        assert_eq!(
+            get_pattern_format("Interface/Addons"),
+            String::from("?nterface/?ddons")
+        );
+        assert_eq!(
+            get_pattern_format("iNtErFaCe/aDdoNs"),
+            String::from("?nterface/?ddons")
+        );
+    }
+
+    #[test]
+    fn test_get_format_wtf() {
+        assert_eq!(get_pattern_format("WTF"), String::from("?tf"));
+        assert_eq!(get_pattern_format("wTF"), String::from("?tf"));
+        assert_eq!(get_pattern_format("Wtf"), String::from("?tf"));
+        assert_eq!(get_pattern_format("wTf"), String::from("?tf"));
+    }
+
+    #[test]
+    fn test_get_format_screenshots() {
+        assert_eq!(
+            get_pattern_format("Screenshots"),
+            String::from("?creenshots")
+        );
+        assert_eq!(
+            get_pattern_format("sCREENSHOTS"),
+            String::from("?creenshots")
+        );
+        assert_eq!(
+            get_pattern_format("ScreeNShots"),
+            String::from("?creenshots")
+        );
+    }
 }
