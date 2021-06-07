@@ -128,5 +128,6 @@
     "import-theme-error-name-collision": "Тема уже существует с этим названием",
     "open-theme-builder": "Открытый Тематический Строитель",
     "ajour-data": "Данные Ajour",
-    "screenshots": "Screenshots"
+    "screenshots": "",
+    "open-addons-directory": ""
 }

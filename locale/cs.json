@@ -128,5 +128,6 @@
     "import-theme-error-name-collision": "Motiv s tímto jménem již existuje",
     "open-theme-builder": "Otevřít editor motivů",
     "ajour-data": "Ajour data",
-    "screenshots": "Screenshots"
+    "screenshots": "",
+    "open-addons-directory": ""
 }
