@@ -128,5 +128,6 @@
     "import-theme-error-name-collision": "Tema eksisterer allerede med det navnet",
     "open-theme-builder": "Åpne temabygger",
     "ajour-data": "Ajour data",
-    "screenshots": "Screenshots"
+    "screenshots": "",
+    "open-addons-directory": ""
 }

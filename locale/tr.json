@@ -128,5 +128,6 @@
     "import-theme-error-name-collision": "Bu isimde tema zaten mevcut",
     "open-theme-builder": "Tema Oluşturucuyu Aç",
     "ajour-data": "Ajour verileri",
-    "screenshots": "Screenshots"
+    "screenshots": "",
+    "open-addons-directory": ""
 }
