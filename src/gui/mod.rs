@@ -222,6 +222,7 @@ pub struct Ajour {
     website_btn_state: button::State,
     donation_btn_state: button::State,
     open_config_dir_btn_state: button::State,
+    open_addons_dir_btn_state: button::State,
     install_from_scm_state: InstallFromScmState,
     self_update_channel_state: SelfUpdateChannelState,
     default_addon_release_channel_picklist_state: pick_list::State<GlobalReleaseChannel>,
@@ -274,6 +275,7 @@ impl Default for Ajour {
             website_btn_state: Default::default(),
             donation_btn_state: Default::default(),
             open_config_dir_btn_state: Default::default(),
+            open_addons_dir_btn_state: Default::default(),
             install_from_scm_state: Default::default(),
             self_update_channel_state: SelfUpdateChannelState {
                 picklist: Default::default(),
@@ -974,6 +976,7 @@ impl Application for Ajour {
                     &mut self.catalog_column_settings,
                     &catalog_column_config,
                     &mut self.open_config_dir_btn_state,
+                    &mut self.open_addons_dir_btn_state,
                     &mut self.self_update_channel_state,
                     &mut self.default_addon_release_channel_picklist_state,
                     &mut self.reset_columns_btn_state,
