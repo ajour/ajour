@@ -20,6 +20,10 @@ and `Removed`.
   - Polish (thanks KasprzykM)
 - Ability to select Screenshots when backing up.
 
+### Fixed
+
+- Fixed error importing Gitlab addons from repos under a nested subgroup
+
 ## [1.2.0] - 2021-05-18
 
 ### Added
