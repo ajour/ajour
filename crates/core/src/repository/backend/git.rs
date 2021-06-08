@@ -301,21 +301,20 @@ mod gitlab {
     #[async_trait]
     impl Backend for Gitlab {
         async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
-            let mut path = self.url.path().split('/');
-            // Get rid of leading slash
-            path.next();
+            let mut path = self.url.path();
+            // Remove leading slash
+            path = path.trim_start_matches('/');
 
-            let author = path.next().ok_or(RepositoryError::GitMissingAuthor {
+            // Encode entire path for API
+            let encoded = urlencoding::encode(path);
+
+            // Get last path part as repo name
+            let path_parts = path.split('/');
+            let repo = path_parts.last().ok_or(RepositoryError::GitMissingRepo {
                 url: self.url.to_string(),
             })?;
-            let repo = path.next().ok_or(RepositoryError::GitMissingRepo {
-                url: self.url.to_string(),
-            })?;
 
-            let url = format!(
-                "https://gitlab.com/api/v4/projects/{}%2F{}/releases",
-                author, repo
-            );
+            let url = format!("https://gitlab.com/api/v4/projects/{}/releases", &encoded);
 
             let mut resp = request_async(&url, vec![], None).await?;
 
@@ -407,20 +406,16 @@ mod gitlab {
         ) -> Result<Option<String>, RepositoryError> {
             let tag_name = tag_name.ok_or(RepositoryError::GitChangelogTagName)?;
 
-            let mut path = self.url.path().split('/');
-            // Get rid of leading slash
-            path.next();
+            let mut path = self.url.path();
+            // Remove leading slash
+            path = path.trim_start_matches('/');
 
-            let author = path.next().ok_or(RepositoryError::GitMissingAuthor {
-                url: self.url.to_string(),
-            })?;
-            let repo = path.next().ok_or(RepositoryError::GitMissingRepo {
-                url: self.url.to_string(),
-            })?;
+            // Encode entire path for API
+            let encoded = urlencoding::encode(path);
 
             let url = format!(
-                "https://gitlab.com/api/v4/projects/{}%2F{}/releases/{}",
-                author, repo, tag_name
+                "https://gitlab.com/api/v4/projects/{}/releases/{}",
+                encoded, tag_name
             );
 
             let mut resp = request_async(&url, vec![], None).await?;
