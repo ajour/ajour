@@ -128,5 +128,6 @@
     "import-theme-error-name-collision": "A téma már létezik ezzel a névvel",
     "open-theme-builder": "Témaépítő megnyitása",
     "ajour-data": "Ajour adatok",
-    "screenshots": "Screenshots"
+    "screenshots": "",
+    "open-addons-directory": ""
 }

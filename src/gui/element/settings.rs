@@ -32,6 +32,7 @@ pub fn data_container<'a, 'b>(
     catalog_column_settings: &'a mut CatalogColumnSettings,
     catalog_column_config: &'b [(CatalogColumnKey, Length, bool)],
     open_config_dir_button_state: &'a mut button::State,
+    open_addons_dir_button_state: &'a mut button::State,
     self_update_channel_state: &'a mut SelfUpdateChannelState,
     default_addon_release_channel_picklist_state: &'a mut pick_list::State<GlobalReleaseChannel>,
     reset_columns_button_state: &'a mut button::State,
@@ -524,6 +525,26 @@ pub fn data_container<'a, 'b>(
         Column::new().push(open_config_row)
     };
 
+    let open_addons_column = {
+        let addons_dir = config.get_addon_directory_for_flavor(&config.wow.flavor);
+
+        let title_container = Container::new(
+            Text::new(localized_string("open-addons-directory")).size(DEFAULT_FONT_SIZE),
+        )
+        .center_x()
+        .align_x(Align::Center);
+        let mut button = Button::new(open_addons_dir_button_state, title_container)
+            .style(style::DefaultBoxedButton(color_palette));
+
+        if let Some(dir) = addons_dir {
+            button = button.on_press(Interaction::OpenDirectory(dir));
+        }
+
+        let button: Element<Interaction> = button.into();
+
+        Column::new().push(button.map(Message::Interaction))
+    };
+
     let addon_title = Text::new(localized_string("addons")).size(DEFAULT_HEADER_FONT_SIZE);
     let addon_title_container =
         Container::new(addon_title).style(style::BrightBackgroundContainer(color_palette));
@@ -718,6 +739,8 @@ pub fn data_container<'a, 'b>(
         .push(addon_title_container)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(global_release_channel_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(open_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))

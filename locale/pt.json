@@ -128,5 +128,6 @@
     "import-theme-error-name-collision": "O tema já existe com esse nome",
     "open-theme-builder": "Construtor de Temas Abertos",
     "ajour-data": "Dados Ajour",
-    "screenshots": "Screenshots"
+    "screenshots": "",
+    "open-addons-directory": ""
 }

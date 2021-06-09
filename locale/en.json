@@ -128,5 +128,6 @@
     "import-theme-error-name-collision": "Theme already exists with that name",
     "open-theme-builder": "Open Theme Builder",
     "ajour-data": "Ajour data",
-    "screenshots": "Screenshots"
+    "screenshots": "Screenshots",
+    "open-addons-directory": "Open AddOns Directory"
 }
