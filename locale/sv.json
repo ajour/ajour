@@ -128,6 +128,6 @@
     "import-theme-error-name-collision": "Det finns redan ett tema med det namnet",
     "open-theme-builder": "Öppna Tema Builder",
     "ajour-data": "Ajour data",
-    "screenshots": "",
-    "open-addons-directory": ""
+    "screenshots": "Skärmdumpar",
+    "open-addons-directory": "Öppna AddOns-katalogen"
 }
