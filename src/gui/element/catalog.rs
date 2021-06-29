@@ -279,11 +279,13 @@ pub fn data_row_container<'a, 'b>(
             .versions
             .iter()
             .find(|v| v.flavor == config.wow.flavor.base_flavor())
-            .map(|v| match addon_data.source {
-                Source::TownlongYak => format_interface_into_game_version(&v.game_version[..]),
-                _ => v.game_version.clone(),
+            .map(|v| v.game_version.clone())
+            .flatten()
+            .map(|gv| match addon_data.source {
+                Source::TownlongYak => format_interface_into_game_version(&gv[..]),
+                _ => gv,
             })
-            .unwrap_or_else(|| "-".to_owned());
+            .unwrap_or_else(|| localized_string("unknown"));
 
         let game_version_text = Text::new(game_version_text).size(DEFAULT_FONT_SIZE);
         let game_version_container = Container::new(game_version_text)

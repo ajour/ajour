@@ -85,8 +85,7 @@ pub struct Catalog {
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Version {
     pub flavor: Flavor,
-    #[serde(deserialize_with = "null_to_default::deserialize")]
-    pub game_version: String,
+    pub game_version: Option<String>,
     #[serde(deserialize_with = "date_parser::deserialize")]
     pub date: Option<DateTime<Utc>>,
 }
