@@ -375,12 +375,11 @@ async fn get_curse_fingerprint_info(
         // Remove all addon folders that exist in the cache, since we
         // will extract the proper repository to query from the cache entry
         .filter(|folder| {
-            cache_entries
+            !cache_entries
                 .iter()
                 .map(|e| &e.folder_names)
                 .flatten()
-                .position(|name| name == &folder.id)
-                .is_none()
+                .any(|name| name == &folder.id)
         })
         .filter_map(|folder| folder.fingerprint)
         .collect();
