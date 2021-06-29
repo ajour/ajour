@@ -41,7 +41,7 @@ async fn get_catalog_addons_from(
         }
         status => {
             log::error!("Catalog failed to download with status: {}", status);
-            return Err(DownloadError::CatalogFailed);
+            Err(DownloadError::CatalogFailed)
         }
     }
 }
