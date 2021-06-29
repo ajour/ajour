@@ -260,7 +260,7 @@ mod tests {
     fn test_null_fields() {
         let tests = [
             r"[]",
-            r#"[{"id": null,"websiteUrl": null,"dateReleased":"2020-11-20T02:29:43.46Z","name": null,"summary": null,"numberOfDownloads": null,"categories": null,"flavors": null,"gameVersions": null,"source":"curse"}]"#,
+            r#"[{"id": null,"url": null,"name": null,"summary": null,"number_of_downloads": null,"categories": null,"flavors": null,"versions": null,"source":"Curse"}]"#,
         ];
 
         for test in tests.iter() {
@@ -281,23 +281,21 @@ mod tests {
             // Will return 0 results
             r#"null"#,
             // Will return 2 results
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": "retail"}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": "asdf", "flavor": "retail", "date": "2000-01-01 00:00:00"}]"#,
             // Will return 2 results, gameVersion as null will be String::default
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": null, "flavor": "retail"}]"#,
-            // Test skipping when GameVersion has an unknown flavor variant. Will return only first result.
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": "unknown"}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": null, "flavor": "retail", "date": "2000-01-01 00:00:00"}]"#,
             // All other deser error on elements will fail... missing field
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf"}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": "asdf", "date": "2000-01-01 00:00:00"}]"#,
             // All other deser error on elements will fail... null flavor
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": null}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": "asdf", "flavor": null, "date": "2000-01-01 00:00:00"}]"#,
             // All other deser error on elements will fail... invalid type for a field
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": {}, "flavor": "unknown"}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": {}, "flavor": "unknown", "date": "2000-01-01 00:00:00"}]"#,
         ];
 
         for (idx, test) in tests.iter().enumerate() {
             let result = serde_json::from_str::<Test>(test);
             match idx {
-                _ if idx < 5 => {
+                _ if idx < 4 => {
                     dbg!(&result);
                     assert!(result.is_ok());
                 }
