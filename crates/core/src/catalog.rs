@@ -6,7 +6,7 @@ use chrono::prelude::*;
 use isahc::AsyncReadResponseExt;
 use serde::{Deserialize, Serialize};
 
-const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog-3.0.json";
+const CATALOG_URL: &str = "https://raw.githubusercontent.com/ajour/catalog/main/catalog-0.1.0.json";
 
 type Etag = Option<String>;
 
@@ -31,7 +31,7 @@ async fn get_catalog_addons_from(
                 .and_then(|h| h.to_str().map(String::from).ok());
 
             let mut addons = response.json::<Vec<CatalogAddon>>().await?;
-            addons.retain(|a| !a.game_versions.is_empty());
+            addons.retain(|a| !a.versions.is_empty());
 
             Ok(Some((etag, addons)))
         }
@@ -58,13 +58,9 @@ pub(crate) async fn download_catalog(
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Source {
-    #[serde(alias = "curse")]
     Curse,
-    #[serde(alias = "tukui")]
     Tukui,
-    #[serde(alias = "wowi")]
     WowI,
-    #[serde(alias = "townlong-yak")]
     TownlongYak,
     #[serde(other)]
     Other,
@@ -92,22 +88,20 @@ pub struct Catalog {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
-#[serde(rename_all = "camelCase")]
-pub struct GameVersion {
+pub struct Version {
+    pub flavor: Flavor,
     #[serde(deserialize_with = "null_to_default::deserialize")]
     pub game_version: String,
-    pub flavor: Flavor,
+    #[serde(deserialize_with = "date_parser::deserialize")]
+    pub date: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct CatalogAddon {
     #[serde(deserialize_with = "null_to_default::deserialize")]
     pub id: i32,
     #[serde(deserialize_with = "null_to_default::deserialize")]
-    pub website_url: String,
-    #[serde(deserialize_with = "date_parser::deserialize")]
-    pub date_released: Option<DateTime<Utc>>,
+    pub url: String,
     #[serde(deserialize_with = "null_to_default::deserialize")]
     pub name: String,
     #[serde(deserialize_with = "null_to_default::deserialize")]
@@ -118,7 +112,7 @@ pub struct CatalogAddon {
     pub number_of_downloads: u64,
     pub source: Source,
     #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")]
-    pub game_versions: Vec<GameVersion>,
+    pub versions: Vec<Version>,
 }
 
 mod null_to_default {
@@ -284,8 +278,7 @@ mod tests {
     fn test_skip_failed_element() {
         #[derive(Debug, Deserialize)]
         struct Test(
-            #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")]
-            Vec<GameVersion>,
+            #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")] Vec<Version>,
         );
 
         let tests = [

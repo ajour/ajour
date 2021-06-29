@@ -117,7 +117,7 @@ pub fn data_row_container<'a, 'b>(
     let install_button_state = &mut addon.install_button_state;
 
     let flavor_exists_for_addon = addon_data
-        .game_versions
+        .versions
         .iter()
         .any(|gc| gc.flavor == config.wow.flavor.base_flavor());
 
@@ -276,12 +276,12 @@ pub fn data_row_container<'a, 'b>(
         .next()
     {
         let game_version_text = addon_data
-            .game_versions
+            .versions
             .iter()
-            .find(|gv| gv.flavor == config.wow.flavor.base_flavor())
-            .map(|gv| match addon_data.source {
-                Source::TownlongYak => format_interface_into_game_version(&gv.game_version[..]),
-                _ => gv.game_version.clone(),
+            .find(|v| v.flavor == config.wow.flavor.base_flavor())
+            .map(|v| match addon_data.source {
+                Source::TownlongYak => format_interface_into_game_version(&v.game_version[..]),
+                _ => v.game_version.clone(),
             })
             .unwrap_or_else(|| "-".to_owned());
 
@@ -308,7 +308,13 @@ pub fn data_row_container<'a, 'b>(
         })
         .next()
     {
-        let release_date_text: String = if let Some(date_released) = addon_data.date_released {
+        let version_date = addon_data
+            .versions
+            .iter()
+            .find(|v| v.flavor == config.wow.flavor.base_flavor())
+            .map(|v| v.date)
+            .flatten();
+        let release_date_text: String = if let Some(date_released) = version_date {
             let f = localized_timeago_formatter();
             let now = Local::now();
             f.convert_chrono(date_released, now)
@@ -393,9 +399,7 @@ pub fn data_row_container<'a, 'b>(
     let mut table_row = TableRow::new(row)
         .width(Length::Fill)
         .inner_row_height(default_row_height)
-        .on_press(move |_| {
-            Message::Interaction(Interaction::OpenLink(addon_data.website_url.clone()))
-        });
+        .on_press(move |_| Message::Interaction(Interaction::OpenLink(addon_data.url.clone())));
 
     if is_odd == Some(true) {
         table_row = table_row.style(style::TableRowAlternate(color_palette))
