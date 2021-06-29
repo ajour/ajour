@@ -24,6 +24,7 @@ and `Removed`.
 ### Fixed
 
 - Fixed error importing Gitlab addons from repos under a nested subgroup
+- Fixed inconsistent size & styling in the segmented mode button
 
 ## [1.2.0] - 2021-05-18
 
