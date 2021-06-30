@@ -1929,7 +1929,6 @@ impl std::fmt::Display for CatalogSource {
                 catalog::Source::Tukui => "Tukui",
                 catalog::Source::WowI => "WowInterface",
                 catalog::Source::TownlongYak => "TownlongYak",
-                catalog::Source::Other => panic!("Unsupported catalog source"),
             },
             CatalogSource::None => empty_display_string,
         };
