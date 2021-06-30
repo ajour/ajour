@@ -6,7 +6,7 @@ use chrono::prelude::*;
 use isahc::AsyncReadResponseExt;
 use serde::{Deserialize, Serialize};
 
-const CATALOG_URL: &str = "https://github.com/ajour/ajour-catalog/raw/master/catalog-3.0.json";
+const CATALOG_URL: &str = "https://raw.githubusercontent.com/ajour/catalog/main/catalog-0.1.0.json";
 
 type Etag = Option<String>;
 
@@ -31,7 +31,7 @@ async fn get_catalog_addons_from(
                 .and_then(|h| h.to_str().map(String::from).ok());
 
             let mut addons = response.json::<Vec<CatalogAddon>>().await?;
-            addons.retain(|a| !a.game_versions.is_empty());
+            addons.retain(|a| !a.versions.is_empty());
 
             Ok(Some((etag, addons)))
         }
@@ -41,7 +41,7 @@ async fn get_catalog_addons_from(
         }
         status => {
             log::error!("Catalog failed to download with status: {}", status);
-            return Err(DownloadError::CatalogFailed);
+            Err(DownloadError::CatalogFailed)
         }
     }
 }
@@ -58,16 +58,10 @@ pub(crate) async fn download_catalog(
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Source {
-    #[serde(alias = "curse")]
     Curse,
-    #[serde(alias = "tukui")]
     Tukui,
-    #[serde(alias = "wowi")]
     WowI,
-    #[serde(alias = "townlong-yak")]
     TownlongYak,
-    #[serde(other)]
-    Other,
 }
 
 impl std::fmt::Display for Source {
@@ -77,9 +71,6 @@ impl std::fmt::Display for Source {
             Source::Tukui => "Tukui",
             Source::WowI => "WowInterface",
             Source::TownlongYak => "TownlongYak",
-
-            // This is a fallback option.
-            Source::Other => "Unknown",
         };
         write!(f, "{}", s)
     }
@@ -92,22 +83,19 @@ pub struct Catalog {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
-#[serde(rename_all = "camelCase")]
-pub struct GameVersion {
-    #[serde(deserialize_with = "null_to_default::deserialize")]
-    pub game_version: String,
+pub struct Version {
     pub flavor: Flavor,
+    pub game_version: Option<String>,
+    #[serde(deserialize_with = "date_parser::deserialize")]
+    pub date: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct CatalogAddon {
     #[serde(deserialize_with = "null_to_default::deserialize")]
     pub id: i32,
     #[serde(deserialize_with = "null_to_default::deserialize")]
-    pub website_url: String,
-    #[serde(deserialize_with = "date_parser::deserialize")]
-    pub date_released: Option<DateTime<Utc>>,
+    pub url: String,
     #[serde(deserialize_with = "null_to_default::deserialize")]
     pub name: String,
     #[serde(deserialize_with = "null_to_default::deserialize")]
@@ -118,7 +106,7 @@ pub struct CatalogAddon {
     pub number_of_downloads: u64,
     pub source: Source,
     #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")]
-    pub game_versions: Vec<GameVersion>,
+    pub versions: Vec<Version>,
 }
 
 mod null_to_default {
@@ -272,7 +260,7 @@ mod tests {
     fn test_null_fields() {
         let tests = [
             r"[]",
-            r#"[{"id": null,"websiteUrl": null,"dateReleased":"2020-11-20T02:29:43.46Z","name": null,"summary": null,"numberOfDownloads": null,"categories": null,"flavors": null,"gameVersions": null,"source":"curse"}]"#,
+            r#"[{"id": null,"url": null,"name": null,"summary": null,"number_of_downloads": null,"categories": null,"flavors": null,"versions": null,"source":"Curse"}]"#,
         ];
 
         for test in tests.iter() {
@@ -284,8 +272,7 @@ mod tests {
     fn test_skip_failed_element() {
         #[derive(Debug, Deserialize)]
         struct Test(
-            #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")]
-            Vec<GameVersion>,
+            #[serde(deserialize_with = "skip_element_unknown_variant::deserialize")] Vec<Version>,
         );
 
         let tests = [
@@ -294,23 +281,21 @@ mod tests {
             // Will return 0 results
             r#"null"#,
             // Will return 2 results
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": "retail"}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": "asdf", "flavor": "retail", "date": "2000-01-01 00:00:00"}]"#,
             // Will return 2 results, gameVersion as null will be String::default
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": null, "flavor": "retail"}]"#,
-            // Test skipping when GameVersion has an unknown flavor variant. Will return only first result.
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": "unknown"}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": null, "flavor": "retail", "date": "2000-01-01 00:00:00"}]"#,
             // All other deser error on elements will fail... missing field
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf"}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": "asdf", "date": "2000-01-01 00:00:00"}]"#,
             // All other deser error on elements will fail... null flavor
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": "asdf", "flavor": null}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": "asdf", "flavor": null, "date": "2000-01-01 00:00:00"}]"#,
             // All other deser error on elements will fail... invalid type for a field
-            r#"[{"gameVersion": "asdf", "flavor": "classic"}, {"gameVersion": {}, "flavor": "unknown"}]"#,
+            r#"[{"game_version": "asdf", "flavor": "classic", "date": "2000-01-01 00:00:00"}, {"game_version": {}, "flavor": "unknown", "date": "2000-01-01 00:00:00"}]"#,
         ];
 
         for (idx, test) in tests.iter().enumerate() {
             let result = serde_json::from_str::<Test>(test);
             match idx {
-                _ if idx < 5 => {
+                _ if idx < 4 => {
                     dbg!(&result);
                     assert!(result.is_ok());
                 }

@@ -2516,9 +2516,6 @@ async fn perform_fetch_latest_addon(
                     catalog::Source::Tukui => RepositoryKind::Tukui,
                     catalog::Source::WowI => RepositoryKind::WowI,
                     catalog::Source::TownlongYak => RepositoryKind::TownlongYak,
-                    catalog::Source::Other => {
-                        panic!("Unsupported catalog source")
-                    }
                 };
 
                 RepositoryPackage::from_repo_id(flavor, kind, id)?
@@ -2771,21 +2768,49 @@ fn sort_catalog_addons(
         }
         (CatalogColumnKey::Install, SortDirection::Asc) => {}
         (CatalogColumnKey::Install, SortDirection::Desc) => {}
-        (CatalogColumnKey::DateReleased, SortDirection::Asc) => {
-            addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released));
-        }
-        (CatalogColumnKey::DateReleased, SortDirection::Desc) => {
-            addons.sort_by(|a, b| a.addon.date_released.cmp(&b.addon.date_released).reverse());
-        }
+        (CatalogColumnKey::DateReleased, SortDirection::Asc) => addons.sort_by(|a, b| {
+            let v_a = a
+                .addon
+                .versions
+                .iter()
+                .find(|v| &v.flavor == flavor)
+                .map(|v| v.date)
+                .flatten();
+            let v_b = b
+                .addon
+                .versions
+                .iter()
+                .find(|v| &v.flavor == flavor)
+                .map(|v| v.date)
+                .flatten();
+            v_a.cmp(&v_b)
+        }),
+        (CatalogColumnKey::DateReleased, SortDirection::Desc) => addons.sort_by(|a, b| {
+            let v_a = a
+                .addon
+                .versions
+                .iter()
+                .find(|v| &v.flavor == flavor)
+                .map(|v| v.date)
+                .flatten();
+            let v_b = b
+                .addon
+                .versions
+                .iter()
+                .find(|v| &v.flavor == flavor)
+                .map(|v| v.date)
+                .flatten();
+            v_a.cmp(&v_b).reverse()
+        }),
         (CatalogColumnKey::GameVersion, SortDirection::Asc) => addons.sort_by(|a, b| {
-            let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
-            let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
-            gv_a.cmp(&gv_b)
+            let v_a = a.addon.versions.iter().find(|v| &v.flavor == flavor);
+            let v_b = b.addon.versions.iter().find(|v| &v.flavor == flavor);
+            v_a.cmp(&v_b)
         }),
         (CatalogColumnKey::GameVersion, SortDirection::Desc) => addons.sort_by(|a, b| {
-            let gv_a = a.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
-            let gv_b = b.addon.game_versions.iter().find(|gc| &gc.flavor == flavor);
-            gv_a.cmp(&gv_b).reverse()
+            let v_a = a.addon.versions.iter().find(|v| &v.flavor == flavor);
+            let v_b = b.addon.versions.iter().find(|v| &v.flavor == flavor);
+            v_a.cmp(&v_b).reverse()
         }),
         (CatalogColumnKey::Categories, SortDirection::Desc) => {
             addons.sort_by(|a, b| {
@@ -2897,7 +2922,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let mut catalog_rows_and_score = catalog
             .addons
             .iter()
-            .filter(|a| !a.game_versions.is_empty())
+            .filter(|a| !a.versions.is_empty())
             .filter_map(|a| {
                 if let Some(query) = &query {
                     let title_score = fuzzy_matcher
@@ -2919,11 +2944,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                     Some((a, 0))
                 }
             })
-            .filter(|(a, _)| {
-                a.game_versions
-                    .iter()
-                    .any(|gc| gc.flavor == flavor.base_flavor())
-            })
+            .filter(|(a, _)| a.versions.iter().any(|v| v.flavor == flavor.base_flavor()))
             .filter(|(a, _)| Some(a.source) == *source)
             .filter(|(a, _)| match category {
                 CatalogCategory::All => true,
