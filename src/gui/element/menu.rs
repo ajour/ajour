@@ -255,14 +255,14 @@ pub fn data_container<'a>(
         .push(install_mode_button.map(Message::Interaction))
         .spacing(1);
 
-    let mut segmented_mode_row = Row::new().push(my_addons_table_row);
+    let mut segmented_mode_row = Row::new().push(my_addons_table_row).spacing(1);
 
     if weak_auras_is_installed {
         segmented_mode_row = segmented_mode_row.push(my_wago_table_row);
     }
 
     let segmented_mode_container = Container::new(segmented_mode_row)
-        .padding(1)
+        .padding(2)
         .style(style::SegmentedContainer(color_palette));
 
     let segmented_addon_container = Container::new(segmented_addons_row)

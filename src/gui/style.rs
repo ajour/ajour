@@ -534,8 +534,8 @@ impl table_row::StyleSheet for SegmentTableRow {
         table_row::Style {
             text_color: None,
             background: Some(Background::Color(self.0.base.foreground)),
-            border_radius: 3.0,
-            border_width: 1.0,
+            border_radius: 2.0,
+            border_width: 0.0,
             border_color: Color::TRANSPARENT,
             offset_left: 0.0,
             offset_right: 0.0,
@@ -559,8 +559,8 @@ impl table_row::StyleSheet for SelectedSegmentTableRow {
         table_row::Style {
             text_color: None,
             background: Some(Background::Color(self.0.normal.primary)),
-            border_radius: 3.0,
-            border_width: 1.0,
+            border_radius: 2.0,
+            border_width: 0.0,
             border_color: Color::TRANSPARENT,
             offset_left: 0.0,
             offset_right: 0.0,
