@@ -33,7 +33,7 @@ pub enum AddonState {
 
 /// Struct that stores the metadata parsed from an Addon folder's
 /// `.toc` file
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AddonFolder {
     /// ID is always the folder name
     pub id: String,
