@@ -65,7 +65,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 - Supports both Retail, Classic Era, Classic Tbc, Ptr and Beta versions of
   World of Warcraft
 - 10+ handcrafted themes to choose between
-  - [Ability to add your own custom themes](./THEMES.md)
+  - [Ability to add your own custom themes](#themes)
 - Ability to backup your whole UI, including all settings from WTF
 - Ability to run as a [command line application](#command-line) for advanced users
 - WeakAuras and Plater import strings from [Wago.io](https://wago.io/) will automatically
