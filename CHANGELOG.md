@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.2.1] - 2021-07-02
+
 ### Added
 
 - New language added to Ajour:
