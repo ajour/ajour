@@ -27,6 +27,7 @@ and `Removed`.
 
 - Fixed error importing Gitlab addons from repos under a nested subgroup
 - Fixed inconsistent size & styling in the segmented mode button
+- Fixed bug where SavedVariables files ending in `.bak` weren't deleted
 
 ## [1.2.0] - 2021-05-18
 
