@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Ability to open backup directory directly from Settings
+
 ## [1.2.1] - 2021-07-02
 
 ### Added
