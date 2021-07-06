@@ -129,5 +129,6 @@
     "open-theme-builder": "Theme Builder öffnen",
     "ajour-data": "Ajour Daten",
     "screenshots": "Screenshots",
-    "open-addons-directory": "AddOns-Verzeichnis öffnen"
+    "open-addons-directory": "AddOns-Verzeichnis öffnen",
+    "open-backup-directory": "Backup-Verzeichnis öffnen"
 }
