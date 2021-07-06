@@ -346,7 +346,7 @@ pub fn data_container<'a, 'b>(
 
         // Show button / last backup info if directory is shown, otherwise
         // show description about the backup process
-        if config.backup_directory.is_some() {
+        if let Some(backup_directory) = config.backup_directory.clone() {
             let backup_button_title_container =
                 Container::new(Text::new(localized_string("backup-now")).size(DEFAULT_FONT_SIZE))
                     .width(Length::FillPortion(1))
@@ -356,6 +356,19 @@ pub fn data_container<'a, 'b>(
                 &mut backup_state.backup_now_btn_state,
                 backup_button_title_container,
             )
+            .style(style::DefaultBoxedButton(color_palette));
+
+            let open_backup_dir_button_title_container = Container::new(
+                Text::new(localized_string("open-backup-directory")).size(DEFAULT_FONT_SIZE),
+            )
+            .width(Length::FillPortion(1))
+            .center_x()
+            .align_x(Align::Center);
+            let open_backup_dir_button = Button::new(
+                &mut backup_state.open_directory_btn_state,
+                open_backup_dir_button_title_container,
+            )
+            .on_press(Interaction::OpenDirectory(backup_directory))
             .style(style::DefaultBoxedButton(color_palette));
 
             // Only show button as clickable if it's not currently backing up and
@@ -393,8 +406,11 @@ pub fn data_container<'a, 'b>(
                 .style(style::NormalBackgroundContainer(color_palette));
 
             let backup_button: Element<Interaction> = backup_button.into();
+            let open_backup_dir_button: Element<Interaction> = open_backup_dir_button.into();
 
             backup_now_row = backup_now_row
+                .push(open_backup_dir_button.map(Message::Interaction))
+                .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                 .push(backup_button.map(Message::Interaction))
                 .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
                 .push(backup_status_text_container);

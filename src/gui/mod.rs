@@ -1993,6 +1993,7 @@ pub struct BackupState {
     last_backup: Option<NaiveDateTime>,
     directory_btn_state: button::State,
     backup_now_btn_state: button::State,
+    open_directory_btn_state: button::State,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
