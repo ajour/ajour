@@ -14,6 +14,12 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.2.2] - 2021-07-06
+
+### Fixed
+
+- Ability to correctly match multi toc addons
+
 ## [1.2.1] - 2021-07-02
 
 ### Added
