@@ -129,5 +129,6 @@
     "open-theme-builder": "Otvoriť editor vzhľadu",
     "ajour-data": "Ajour údaje",
     "screenshots": "Snímky obrazovky",
-    "open-addons-directory": "Otvor zložku s addonmi"
+    "open-addons-directory": "Otvor zložku s addonmi",
+    "open-backup-directory": "Otvor zložku zálohovania"
 }

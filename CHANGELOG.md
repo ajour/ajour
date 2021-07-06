@@ -16,9 +16,13 @@ and `Removed`.
 
 ## [1.2.2] - 2021-07-06
 
+### Added
+
+- Ability to open backup directory directly from Settings
+
 ### Fixed
 
-- Ability to correctly match multi toc addons
+- Correctly match multi toc addons
 
 ## [1.2.1] - 2021-07-02
 
