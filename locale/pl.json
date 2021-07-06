@@ -129,5 +129,6 @@
     "open-theme-builder": "Otwórz kreator motywów",
     "ajour-data": "Dane Ajour-a",
     "screenshots": "Zrzuty ekranu",
-    "open-addons-directory": "Otwórz katalog dodatków"
+    "open-addons-directory": "Otwórz katalog dodatków",
+    "open-backup-directory": "Otwórz katalog kopii zapasowej"
 }

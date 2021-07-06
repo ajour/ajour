@@ -129,5 +129,6 @@
     "open-theme-builder": "Tema Oluşturucuyu Aç",
     "ajour-data": "Ajour verileri",
     "screenshots": "Ekran görüntüleri",
-    "open-addons-directory": "Eklenti Dizinini Aç"
+    "open-addons-directory": "Eklenti Dizinini Aç",
+    "open-backup-directory": "Yedekleme Dizinini Aç"
 }

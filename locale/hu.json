@@ -129,5 +129,6 @@
     "open-theme-builder": "Témaépítő megnyitása",
     "ajour-data": "Ajour adatok",
     "screenshots": "Pillanatképek",
-    "open-addons-directory": "Nyissa meg az AddOns könyvtárat"
+    "open-addons-directory": "Nyissa meg az AddOns könyvtárat",
+    "open-backup-directory": "Nyissa meg a Biztonsági másolat könyvtárat"
 }

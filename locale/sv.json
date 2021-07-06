@@ -129,5 +129,6 @@
     "open-theme-builder": "Öppna Tema Builder",
     "ajour-data": "Ajour data",
     "screenshots": "Skärmdumpar",
-    "open-addons-directory": "Öppna AddOns-katalogen"
+    "open-addons-directory": "Öppna AddOns-katalogen",
+    "open-backup-directory": "Öppna Backup-katalogen"
 }
