@@ -775,10 +775,8 @@ pub fn menu_container<'a>(
     config: &Config,
 ) -> Container<'a, Message> {
     // MyAddons state.
-    let state = state
-        .get(&Mode::MyAddons(flavor))
-        .cloned()
-        .unwrap_or_default();
+    // TODO: lets try to make this prettier.
+    let state = state.get(&Mode::MyAddons(flavor));
 
     // A row contain general settings.
     let mut settings_row = Row::new().align_items(Align::Center);
@@ -817,7 +815,7 @@ pub fn menu_container<'a>(
     // Enable refresh_button if:
     //   - No addon is performing any task.
     //   - Mode state isn't start or loading
-    if !addons_performing_actions && !matches!(state, State::Start | State::Loading) {
+    if !addons_performing_actions && !matches!(state, Some(State::Start) | Some(State::Loading)) {
         refresh_button = refresh_button.on_press(Interaction::Refresh(Mode::MyAddons(flavor)));
     }
 
@@ -829,7 +827,7 @@ pub fn menu_container<'a>(
     let ignored_addons = config.addons.ignored.get(&flavor);
 
     let status_text = match state {
-        State::Ready => {
+        Some(State::Ready) => {
             let flavor = flavor.to_string().to_lowercase();
             let addons_count = addons
                 .iter()

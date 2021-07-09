@@ -336,10 +336,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Save config.
                 let _ = &ajour.config.save();
 
-                let state = ajour.state.clone();
-                for (mode, _) in state {
+                for (mode, state) in ajour.state.iter_mut() {
                     if matches!(mode, Mode::MyAddons(_)) {
-                        ajour.state.insert(mode, State::Loading);
+                        *state = State::Loading;
                     }
                 }
 
@@ -787,6 +786,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 Err(error) => {
                     log_error(&error);
+                    ajour.error = Some(error);
                 }
             }
         }
