@@ -775,7 +775,6 @@ pub fn menu_container<'a>(
     config: &Config,
 ) -> Container<'a, Message> {
     // MyAddons state.
-    // TODO: lets try to make this prettier.
     let state = state.get(&Mode::MyAddons(flavor));
 
     // A row contain general settings.
@@ -815,7 +814,7 @@ pub fn menu_container<'a>(
     // Enable refresh_button if:
     //   - No addon is performing any task.
     //   - Mode state isn't start or loading
-    if !addons_performing_actions && !matches!(state, Some(State::Start) | Some(State::Loading)) {
+    if !addons_performing_actions && !matches!(state, None | Some(State::Loading)) {
         refresh_button = refresh_button.on_press(Interaction::Refresh(Mode::MyAddons(flavor)));
     }
 

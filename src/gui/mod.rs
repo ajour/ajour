@@ -43,15 +43,14 @@ static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
 
 #[derive(Debug)]
 pub enum State {
-    Start,
     Ready,
     Loading,
-    Error(Option<anyhow::Error>),
+    Error(anyhow::Error),
 }
 
 impl Default for State {
     fn default() -> Self {
-        State::Start
+        State::Ready
     }
 }
 
@@ -1007,12 +1006,6 @@ impl Application for Ajour {
             Mode::MyAddons(flavor) => {
                 let state = self.state.get(&Mode::MyAddons(flavor));
                 match state {
-                    Some(State::Start) => Some(element::status::data_container(
-                        color_palette,
-                        &localized_string("setup-ajour-title")[..],
-                        &localized_string("setup-ajour-description")[..],
-                        Some(&mut self.onboarding_directory_btn_state),
-                    )),
                     Some(State::Loading) => {
                         let flavor = flavor.to_string().to_lowercase();
                         let mut vars = HashMap::new();
@@ -1044,7 +1037,12 @@ impl Application for Ajour {
                         }
                     }
                     Some(State::Error(error)) => None,
-                    None => None,
+                    None => Some(element::status::data_container(
+                        color_palette,
+                        &localized_string("setup-ajour-title")[..],
+                        &localized_string("setup-ajour-description")[..],
+                        Some(&mut self.onboarding_directory_btn_state),
+                    )),
                 }
             }
             Mode::Settings => None,
@@ -1054,12 +1052,6 @@ impl Application for Ajour {
                 let state = self.state.get(&Mode::MyWeakAuras(flavor));
 
                 match state {
-                    Some(State::Start) => Some(element::status::data_container(
-                        color_palette,
-                        &localized_string("setup-weakauras-title")[..],
-                        &localized_string("setup-weakauras-description")[..],
-                        None,
-                    )),
                     Some(State::Loading) => {
                         let flavor = flavor.to_string().to_lowercase();
                         let mut vars = HashMap::new();
@@ -1091,7 +1083,12 @@ impl Application for Ajour {
                         }
                     }
                     Some(State::Error(error)) => None,
-                    None => None,
+                    None => Some(element::status::data_container(
+                        color_palette,
+                        &localized_string("setup-weakauras-title")[..],
+                        &localized_string("setup-weakauras-description")[..],
+                        None,
+                    )),
                 }
             }
             Mode::Catalog => {

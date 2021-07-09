@@ -156,11 +156,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ));
                 } else {
                     log::debug!("addon directory is not set, showing welcome screen");
-
-                    // Assume we are welcoming a user because directory is not set.
-                    let flavor = ajour.config.wow.flavor;
-                    ajour.state.insert(Mode::MyAddons(flavor), State::Start);
-
                     break;
                 }
             }

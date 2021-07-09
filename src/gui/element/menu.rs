@@ -230,7 +230,7 @@ pub fn data_container<'a>(
         }
     }
 
-    if matches!(myaddons_state, Some(State::Start)) {
+    if matches!(myaddons_state, None) {
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
         install_mode_button =
