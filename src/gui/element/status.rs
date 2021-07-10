@@ -1,6 +1,6 @@
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
-    crate::gui::{style, Interaction, Message, State},
+    crate::gui::{style, Interaction, Message},
     crate::localization::localized_string,
     ajour_core::theme::ColorPalette,
     iced::{
