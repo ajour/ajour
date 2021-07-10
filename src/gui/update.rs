@@ -781,7 +781,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 Err(error) => {
                     log_error(&error);
-                    ajour.error = Some(error);
+                    ajour
+                        .state
+                        .insert(Mode::MyAddons(flavor), State::Error(error));
                 }
             }
         }
@@ -2003,7 +2005,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::CatalogDownloaded(error @ Err(_)) => {
             let error = error.context("Failed to download catalog").unwrap_err();
             log_error(&error);
-            ajour.error = Some(error);
+            ajour.state.insert(Mode::Catalog, State::Error(error));
         }
         Message::AddonCacheUpdated(error @ Err(_)) => {
             let error = error.context("Failed to update addon cache").unwrap_err();
@@ -2202,7 +2204,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let error = error.context(strfmt(&fmt, &vars).unwrap()).unwrap_err();
 
                 log_error(&error);
-                ajour.error = Some(error);
+                ajour
+                    .state
+                    .insert(Mode::MyWeakAuras(flavor), State::Error(error));
             }
         },
         Message::AurasUpdated((flavor, result)) => match result {

@@ -1036,7 +1036,22 @@ impl Application for Ajour {
                             None
                         }
                     }
-                    Some(State::Error(error)) => None,
+                    Some(State::Error(error)) => {
+                        let error_title = format!("{}", error);
+                        let mut error_description = String::new();
+                        let cause = error.chain().last();
+
+                        if let Some(cause) = cause {
+                            error_description.push_str(&format!("Caused by {}", cause)[..]);
+                        }
+
+                        Some(element::status::data_container(
+                            color_palette,
+                            &error_title,
+                            &error_description,
+                            None,
+                        ))
+                    }
                     None => Some(element::status::data_container(
                         color_palette,
                         &localized_string("setup-ajour-title")[..],
@@ -1082,7 +1097,22 @@ impl Application for Ajour {
                             None
                         }
                     }
-                    Some(State::Error(error)) => None,
+                    Some(State::Error(error)) => {
+                        let error_title = format!("{}", error);
+                        let mut error_description = String::new();
+                        let cause = error.chain().last();
+
+                        if let Some(cause) = cause {
+                            error_description.push_str(&format!("Caused by {}", cause)[..]);
+                        }
+
+                        Some(element::status::data_container(
+                            color_palette,
+                            &error_title,
+                            &error_description,
+                            None,
+                        ))
+                    }
                     None => Some(element::status::data_container(
                         color_palette,
                         &localized_string("setup-weakauras-title")[..],
@@ -1100,6 +1130,22 @@ impl Application for Ajour {
                         &localized_string("loading-catalog")[..],
                         None,
                     )),
+                    Some(State::Error(error)) => {
+                        let error_title = format!("{}", error);
+                        let mut error_description = String::new();
+                        let cause = error.chain().last();
+
+                        if let Some(cause) = cause {
+                            error_description.push_str(&format!("Caused by {}", cause)[..]);
+                        }
+
+                        Some(element::status::data_container(
+                            color_palette,
+                            &error_title,
+                            &error_description,
+                            None,
+                        ))
+                    }
                     _ => None,
                 }
             }
