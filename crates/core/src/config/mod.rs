@@ -72,6 +72,9 @@ pub struct Config {
     #[serde(default)]
     pub compression_format: CompressionFormat,
 
+    #[serde(default = "default_compression_level")]
+    pub compression_level: i32,
+
     #[serde(default)]
     #[cfg(target_os = "windows")]
     pub close_to_tray: bool,
@@ -369,6 +372,11 @@ pub async fn load_config() -> Result<Config, FilesystemError> {
 const fn default_true() -> bool {
     true
 }
+
+const fn default_compression_level() -> i32 {
+    3
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
