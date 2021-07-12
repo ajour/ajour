@@ -21,8 +21,7 @@ use {
         network::download_addon,
         parse::{read_addon_directory, update_addon_fingerprint},
         repository::{
-            batch_refresh_repository_packages, Changelog, CompressionFormat, RepositoryKind,
-            RepositoryPackage,
+            batch_refresh_repository_packages, Changelog, RepositoryKind, RepositoryPackage,
         },
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
@@ -2248,7 +2247,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             let _ = ajour.config.save();
         }
         Message::Interaction(Interaction::CompressionLevelChanged(level)) => {
-            ajour.config.compression_format = CompressionFormat::Zstd(level);
+            ajour.config.zstd_compression_level = level;
             let _ = ajour.config.save();
         }
         Message::Error(error) => {
@@ -2302,14 +2301,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
         Message::Interaction(Interaction::PickBackupCompressionFormat(format)) => {
             log::debug!("Interaction::PickBackupCompressionFormat({:?})", format);
-            match format {
-                CompressionFormat::Zstd(_) => {
-                    ajour.config.compression_format = CompressionFormat::Zstd(3);
-                }
-                _ => {
-                    ajour.config.compression_format = format;
-                }
-            }
+            ajour.config.compression_format = format;
             let _ = ajour.config.save();
         }
         #[cfg(target_os = "windows")]

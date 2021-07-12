@@ -16,11 +16,6 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-/// Tries to downcast i64 to i32.
-pub fn downcast_i64_to_i32(v: i64) -> Option<i32> {
-    i32::try_from(v).ok()
-}
-
 /// Takes a `&str` and formats it into a proper
 /// World of Warcraft release version.
 ///

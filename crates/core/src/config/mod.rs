@@ -69,8 +69,11 @@ pub struct Config {
     #[serde(default)]
     pub auto_update: bool,
 
-    #[serde(deserialize_with = "compression_format::deserialize")]
+    #[serde(default)]
     pub compression_format: CompressionFormat,
+
+    #[serde(default)]
+    pub zstd_compression_level: i32,
 
     #[serde(default)]
     #[cfg(target_os = "windows")]
@@ -177,49 +180,6 @@ impl Config {
                 Some(dir)
             }
             None => None,
-        }
-    }
-}
-
-pub mod compression_format {
-    use crate::{repository::CompressionFormat, utility::downcast_i64_to_i32};
-    use serde::{self, de, Deserialize, Deserializer};
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(
-        deserializer: D,
-    ) -> Result<CompressionFormat, D::Error> {
-        match serde_json::Value::deserialize(deserializer)? {
-            serde_json::Value::Object(obj) => {
-                let key = obj
-                    .keys()
-                    .last()
-                    .ok_or_else(|| de::Error::custom("No keys found in map"))?;
-                let value = obj
-                    .get(key)
-                    .map(|v| v.as_i64())
-                    .flatten()
-                    .ok_or_else(|| de::Error::custom("Value was not expected"))?;
-                let value_i32 = downcast_i64_to_i32(value).unwrap_or(0);
-
-                if key == "Zstd" {
-                    return Ok(CompressionFormat::Zstd(value_i32));
-                }
-
-                Ok(CompressionFormat::default())
-            }
-            serde_json::Value::String(compression) => {
-                let compression_lowercase = compression.to_lowercase();
-                let compression_str = compression_lowercase.as_str();
-                match compression_str {
-                    "zstd" => Ok(CompressionFormat::Zstd(3)),
-                    "zip" => Ok(CompressionFormat::Zip),
-                    _ => Ok(CompressionFormat::default()),
-                }
-            }
-            _ => {
-                // All failed, we just return default.
-                Ok(CompressionFormat::default())
-            }
         }
     }
 }

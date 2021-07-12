@@ -348,16 +348,16 @@ impl std::fmt::Display for ReleaseChannel {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash, PartialOrd, Ord, Deserialize)]
 pub enum CompressionFormat {
     Zip,
-    Zstd(i32),
+    Zstd,
 }
 
 impl CompressionFormat {
-    pub const ALL: [CompressionFormat; 2] = [CompressionFormat::Zip, CompressionFormat::Zstd(0)];
+    pub const ALL: [CompressionFormat; 2] = [CompressionFormat::Zip, CompressionFormat::Zstd];
 
     pub(crate) const fn file_ext(&self) -> &'static str {
         match self {
             CompressionFormat::Zip => "zip",
-            CompressionFormat::Zstd(_) => "tar.zst",
+            CompressionFormat::Zstd => "tar.zst",
         }
     }
 }
@@ -372,7 +372,7 @@ impl Display for CompressionFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CompressionFormat::Zip => f.write_str("Zip"),
-            CompressionFormat::Zstd(_) => f.write_str("Zstd"),
+            CompressionFormat::Zstd => f.write_str("Zstd"),
         }
     }
 }
@@ -383,7 +383,7 @@ impl FromStr for CompressionFormat {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "zip" | "Zip" => Ok(CompressionFormat::Zip),
-            "zstd" | "Zstd" => Ok(CompressionFormat::Zstd(0)),
+            "zstd" | "Zstd" => Ok(CompressionFormat::Zstd),
             _ => Err("valid values are: zip, zstd"),
         }
     }
