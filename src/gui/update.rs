@@ -2246,8 +2246,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.alternating_row_colors = is_set;
             let _ = ajour.config.save();
         }
-        Message::Interaction(Interaction::ZstdCompressionLevelChanged(level)) => {
-            ajour.config.compression_level = level;
+        Message::Interaction(Interaction::CompressionLevelChanged(level)) => {
+            if ajour.config.compression_format == ajour_core::repository::CompressionFormat::Zstd {
+                ajour.config.zstd_compression_level = level;
+            }
             let _ = ajour.config.save();
         }
         Message::Error(error) => {

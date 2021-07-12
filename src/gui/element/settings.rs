@@ -27,7 +27,7 @@ pub fn data_container<'a, 'b>(
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
-    zstd_compression_level_slider_state: &'a mut slider::State,
+    compression_level_slider_state: &'a mut slider::State,
     default_backup_compression_format: &'a mut pick_list::State<CompressionFormat>,
     column_settings: &'a mut ColumnSettings,
     column_config: &'b [(ColumnKey, Length, bool)],
@@ -428,18 +428,18 @@ pub fn data_container<'a, 'b>(
             backup_now_row = backup_now_row.push(backup_status_text_container);
         }
 
-        let zstd_compression_level_slider = Slider::new(
-            zstd_compression_level_slider_state,
+        let compression_level = config.zstd_compression_level;
+        let compression_level_slider = Slider::new(
+            compression_level_slider_state,
             3..=22,
-            config.compression_level,
-            Interaction::ZstdCompressionLevelChanged,
+            compression_level,
+            Interaction::CompressionLevelChanged,
         )
         .step(1)
         .width(Length::Units(600))
         .style(style::Slider(color_palette));
 
-        let zstd_compression_level_slider: Element<Interaction> =
-            zstd_compression_level_slider.into();
+        let compression_level_slider: Element<Interaction> = compression_level_slider.into();
 
         let title =
             Text::new(localized_string("compression_level_explanation")).size(DEFAULT_FONT_SIZE);
@@ -475,7 +475,7 @@ pub fn data_container<'a, 'b>(
         let compression_level_column = Column::new()
             .push(title)
             .push(Space::new(Length::Units(0), Length::Units(4)))
-            .push(zstd_compression_level_slider.map(Message::Interaction))
+            .push(compression_level_slider.map(Message::Interaction))
             .push(Space::new(Length::Units(0), Length::Units(4)))
             .push(interval_row);
 

@@ -72,8 +72,8 @@ pub struct Config {
     #[serde(default)]
     pub compression_format: CompressionFormat,
 
-    #[serde(default = "default_compression_level")]
-    pub compression_level: i32,
+    #[serde(default = "default_zstd_compression_level")]
+    pub zstd_compression_level: i32,
 
     #[serde(default)]
     #[cfg(target_os = "windows")]
@@ -373,7 +373,7 @@ const fn default_true() -> bool {
     true
 }
 
-const fn default_compression_level() -> i32 {
+const fn default_zstd_compression_level() -> i32 {
     3
 }
 

@@ -137,7 +137,7 @@ pub enum Interaction {
     ToggleStartClosedToTray(bool),
     ThemeUrlInput(String),
     ImportTheme,
-    ZstdCompressionLevelChanged(i32),
+    CompressionLevelChanged(i32),
 }
 
 #[derive(Debug)]
