@@ -10,7 +10,6 @@ use retry::delay::Fibonacci;
 use retry::{retry, Error as RetryError, OperationResult};
 use serde::Deserialize;
 
-use std::convert::TryFrom;
 use std::ffi::OsStr;
 use std::fs;
 use std::io;
