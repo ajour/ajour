@@ -1405,6 +1405,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     src_folders,
                     dest.to_owned(),
                     ajour.config.compression_format,
+                    ajour.config.zstd_compression_level,
                 ),
                 Message::BackupFinished,
             ));
