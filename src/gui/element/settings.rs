@@ -428,7 +428,10 @@ pub fn data_container<'a, 'b>(
             backup_now_row = backup_now_row.push(backup_status_text_container);
         }
 
-        let compression_level = config.zstd_compression_level;
+        let compression_level = match config.compression_format {
+            CompressionFormat::Zstd(level) => level,
+            _ => 0,
+        };
         let compression_level_slider = Slider::new(
             compression_level_slider_state,
             3..=22,
@@ -803,7 +806,7 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row);
 
-    if matches!(config.compression_format, CompressionFormat::Zstd) {
+    if matches!(config.compression_format, CompressionFormat::Zstd(_)) {
         scrollable = scrollable
             .push(Space::new(Length::Units(0), Length::Units(10)))
             .push(compression_level_column);

@@ -10,10 +10,16 @@ use retry::delay::Fibonacci;
 use retry::{retry, Error as RetryError, OperationResult};
 use serde::Deserialize;
 
+use std::convert::TryFrom;
 use std::ffi::OsStr;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+
+/// Tries to downcast i64 to i32.
+pub fn downcast_i64_to_i32(v: i64) -> Option<i32> {
+    i32::try_from(v).ok()
+}
 
 /// Takes a `&str` and formats it into a proper
 /// World of Warcraft release version.
