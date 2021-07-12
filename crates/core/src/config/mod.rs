@@ -413,10 +413,6 @@ const fn default_true() -> bool {
     true
 }
 
-const fn default_zstd_compression_level() -> i32 {
-    3
-}
-
 #[cfg(test)]
 mod test {
     use super::*;

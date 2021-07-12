@@ -11,7 +11,7 @@ use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
 /// A trait defining a way to back things up to the fs
 pub trait Backup {
-    fn backup(&self) -> Result<()>;
+    fn backup(&self, level: Option<i32>) -> Result<()>;
 }
 
 /// Back up folders to a zip archive and save on the fs
@@ -30,7 +30,7 @@ impl ZipBackup {
 }
 
 impl Backup for ZipBackup {
-    fn backup(&self) -> Result<()> {
+    fn backup(&self, _: Option<i32>) -> Result<()> {
         let output = BufWriter::new(File::create(&self.dest)?);
 
         let mut zip_writer = ZipWriter::new(output);
@@ -127,11 +127,11 @@ impl ZstdBackup {
 }
 
 impl Backup for ZstdBackup {
-    fn backup(&self) -> Result<()> {
+    fn backup(&self, level: Option<i32>) -> Result<()> {
         use zstd::stream::write::Encoder as ZstdEncoder;
 
         let output = File::create(&self.dest)?;
-        let mut enc = ZstdEncoder::new(output, 0)?;
+        let mut enc = ZstdEncoder::new(output, level.unwrap_or_default())?;
         enc.multithread(num_cpus::get() as u32)?;
         let mut tar = tar::Builder::new(enc.auto_finish());
 
