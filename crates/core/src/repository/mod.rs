@@ -2,9 +2,8 @@ use crate::config::Flavor;
 use crate::error::{DownloadError, RepositoryError};
 
 use chrono::{DateTime, Utc};
-use flate2::Compress;
 use isahc::http::uri::Uri;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
