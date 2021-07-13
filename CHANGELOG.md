@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Missing translations
+
 ## [1.2.2] - 2021-07-06
 
 ### Added
