@@ -606,9 +606,23 @@ pub fn data_row_container<'a, 'b>(
 
                 let ignore_button: Element<Interaction> = ignore_button.into();
 
+                let mut vars = HashMap::new();
+                vars.insert("addon".to_string(), addon_cloned.title());
+                let fmt = localized_string("delete-addon");
+
+                strfmt(&fmt, &vars).unwrap();
                 let delete_button: Element<Interaction> = Button::new(
                     &mut addon.delete_btn_state,
-                    Text::new(localized_string("delete")).size(DEFAULT_FONT_SIZE),
+                    Text::new(strfmt(&fmt, &vars).unwrap()).size(DEFAULT_FONT_SIZE),
+                )
+                .on_press(Interaction::Delete(addon.primary_folder_id.clone()))
+                .style(style::DefaultDeleteButton(color_palette))
+                .into();
+
+                let delete_savedvariables_button: Element<Interaction> = Button::new(
+                    &mut addon.delete_saved_variables_btn_state,
+                    Text::new(localized_string("delete-addon-saved-variables"))
+                        .size(DEFAULT_FONT_SIZE),
                 )
                 .on_press(Interaction::Delete(addon.primary_folder_id.clone()))
                 .style(style::DefaultDeleteButton(color_palette))
@@ -641,6 +655,8 @@ pub fn data_row_container<'a, 'b>(
                     .push(changelog_button.map(Message::Interaction))
                     .push(Space::new(Length::Units(5), Length::Units(0)))
                     .push(ignore_button.map(Message::Interaction))
+                    .push(Space::new(Length::Units(5), Length::Units(0)))
+                    .push(delete_savedvariables_button.map(Message::Interaction))
                     .push(Space::new(Length::Units(5), Length::Units(0)))
                     .push(delete_button.map(Message::Interaction))
                     .width(Length::Fill);

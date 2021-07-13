@@ -502,6 +502,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
         }
+        Message::Interaction(Interaction::DeleteSavedVariables(id)) => {
+            log::debug!("Interaction::DeleteSavedVariables({})", &id);
+            let flavor = ajour.config.wow.flavor;
+            let addons = ajour.addons.entry(flavor).or_default();
+
+            if let Some(addon) = addons.iter().find(|a| a.primary_folder_id == id).cloned() {
+                // Delete SavedVariable(s) if enabled.
+                let wtf_path = &ajour
+                    .config
+                    .get_wtf_directory_for_flavor(&flavor)
+                    .expect("No World of Warcraft directory set.");
+                let _ = delete_saved_variables(&addon.folders, wtf_path);
+            }
+        }
         Message::Interaction(Interaction::Update(id)) => {
             log::debug!("Interaction::Update({})", &id);
 
