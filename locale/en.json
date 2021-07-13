@@ -132,5 +132,6 @@
   "open-addons-directory": "Open AddOns Directory",
   "open-backup-directory": "Open Backup Directory",
   "delete-addon-saved-variables": "Delete SavedVariables",
+  "confirm-deletion": "Confirm deletion",
   "delete-addon": "Delete {addon}"
 }

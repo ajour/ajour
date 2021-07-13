@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+## Added
+
+- SavedVariables can be removed for a single addon under details.
+
 ## [1.2.2] - 2021-07-06
 
 ### Added
