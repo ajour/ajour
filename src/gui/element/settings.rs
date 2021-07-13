@@ -225,7 +225,13 @@ pub fn data_container<'a, 'b>(
             .height(Length::Units(26))
     };
 
-    let (backup_title_row, backup_directory_row, backup_now_row, compression_level_column) = {
+    let (
+        backup_title_row,
+        backup_directory_row,
+        backup_action_row,
+        backup_now_row,
+        compression_level_column,
+    ) = {
         // Title for the Backup section.
         let backup_title_text =
             Text::new(localized_string("backup")).size(DEFAULT_HEADER_FONT_SIZE);
@@ -284,6 +290,18 @@ pub fn data_container<'a, 'b>(
         .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
+        let checkbox_title = &localized_string("fonts")[..];
+        let fonts_folder_checkbox: Element<_> = Container::new(
+            Checkbox::new(config.backup_fonts, checkbox_title, move |is_checked| {
+                Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::Fonts)
+            })
+            .text_size(DEFAULT_FONT_SIZE)
+            .spacing(5)
+            .style(style::DefaultCheckbox(color_palette)),
+        )
+        .style(style::BrightBackgroundContainer(color_palette))
+        .into();
+
         let backup_compr_fmt_pick_list: Element<_> = PickList::new(
             default_backup_compression_format,
             &CompressionFormat::ALL[..],
@@ -333,8 +351,13 @@ pub fn data_container<'a, 'b>(
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(screenshots_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-            .push(config_folder_checkbox.map(Message::Interaction))
+            .push(fonts_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(config_folder_checkbox.map(Message::Interaction));
+
+        // Data row for the Backup action selection.
+        let backup_action_row = Row::new()
+            .align_items(Align::Center)
             .push(backup_compr_fmt_pick_list.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_button.map(Message::Interaction))
@@ -378,7 +401,11 @@ pub fn data_container<'a, 'b>(
             // for backup
             if !backup_state.backing_up
                 && config.wow.directories.keys().next().is_some()
-                && (config.backup_addons || config.backup_wtf || config.backup_screenshots)
+                && (config.backup_addons
+                    || config.backup_wtf
+                    || config.backup_screenshots
+                    || config.backup_config
+                    || config.backup_fonts)
             {
                 backup_button = backup_button.on_press(Interaction::Backup);
             }
@@ -482,6 +509,7 @@ pub fn data_container<'a, 'b>(
         (
             backup_title_text_container,
             backup_directory_row,
+            backup_action_row,
             backup_now_row,
             compression_level_column,
         )
@@ -800,6 +828,8 @@ pub fn data_container<'a, 'b>(
         .push(backup_title_row)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_now_row)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(backup_action_row)
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_directory_row);
 

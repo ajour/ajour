@@ -1389,6 +1389,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             src_folders.push(BackupFolder::new(&screenshot_dir, &wow_dir));
                         }
                     }
+
+                    if ajour.config.backup_fonts {
+                        let fonts_dir =
+                            ajour.config.get_fonts_directory_for_flavor(flavor).unwrap();
+                        if fonts_dir.exists() {
+                            src_folders.push(BackupFolder::new(&fonts_dir, &wow_dir));
+                        }
+                    }
                 }
             }
 
@@ -1429,6 +1437,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 BackupFolderKind::Screenshots => {
                     ajour.config.backup_screenshots = is_checked;
+                }
+                BackupFolderKind::Fonts => {
+                    ajour.config.backup_fonts = is_checked;
                 }
             }
 

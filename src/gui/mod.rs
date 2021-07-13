@@ -1989,6 +1989,7 @@ pub enum BackupFolderKind {
     WTF,
     Config,
     Screenshots,
+    Fonts,
 }
 
 #[derive(Default)]
