@@ -273,8 +273,6 @@ mod github {
                 _ => a.name.ends_with("zip"),
             });
 
-            eprint!("asset: -- {:?}", asset);
-
             Ok(asset)
         };
 
@@ -329,6 +327,24 @@ mod gitlab {
 
     use std::collections::HashMap;
 
+    #[derive(Debug, Clone, Deserialize)]
+    pub struct ReleaseFileMetadata {
+        flavor: Flavor,
+        interface: i32,
+    }
+
+    #[derive(Debug, Clone, Deserialize)]
+    pub struct ReleaseFilePackage {
+        filename: String,
+        nolib: bool,
+        metadata: Vec<ReleaseFileMetadata>,
+    }
+
+    #[derive(Debug, Clone, Deserialize)]
+    pub struct ReleaseFile {
+        releases: Vec<ReleaseFilePackage>,
+    }
+
     #[derive(Debug, Clone)]
     pub struct Gitlab {
         pub url: Uri,
@@ -365,111 +381,94 @@ mod gitlab {
 
             let version = release.tag_name.clone();
 
-            let num_mainline = release
-                .assets
-                .links
-                .iter()
-                .filter(|a| a.name.ends_with("zip"))
-                .filter(|a| !a.name.to_lowercase().contains("classic"))
-                .filter(|a| !a.name.to_lowercase().contains("bcc"))
-                .count();
+            let asset: Result<Option<&ReleaseLink>, serde_json::Error> = if let Some(release_file) =
+                release
+                    .assets
+                    .links
+                    .iter()
+                    .find(|a| a.name == "release.json")
+            {
+                // If we find `release.json`, we download content, and parse it.
+                let mut resp = request_async(&release_file.url, vec![], None).await?;
+                let release_file: ReleaseFile = resp.json().await?;
 
-            let num_classic = release
-                .assets
-                .links
-                .iter()
-                .filter(|a| a.name.ends_with("zip"))
-                .filter(|a| a.name.to_lowercase().contains("classic"))
-                .filter(|a| !a.name.to_lowercase().contains("bcc"))
-                .count();
-
-            let num_bcc = release
-                .assets
-                .links
-                .iter()
-                .filter(|a| a.name.ends_with("zip"))
-                .filter(|a| a.name.to_lowercase().contains("bcc"))
-                .filter(|a| !a.name.to_lowercase().contains("classic"))
-                .count();
-
-            match self.flavor.base_flavor() {
-                Flavor::Retail => {
-                    if num_mainline > 1 {
-                        return Err(RepositoryError::GitIndeterminableZip {
-                            count: num_mainline,
-                            url: url.to_string(),
-                        });
-                    }
+                // Try to find the package, which contains the flavor we are looking for.
+                if let Some(release_file) = release_file
+                    .releases
+                    .iter()
+                    .find(|r| r.metadata.iter().any(|m| m.flavor == self.flavor))
+                {
+                    // Find the asset, based on what we know from the `release.json`.
+                    let asset = release
+                        .assets
+                        .links
+                        .iter()
+                        .find(|a| a.name == release_file.filename);
+                    Ok(asset)
+                } else {
+                    Ok(None)
                 }
-                Flavor::ClassicEra => {
-                    if num_classic > 1 {
-                        return Err(RepositoryError::GitIndeterminableZipClassicEra {
-                            count: num_classic,
-                            url: url.to_string(),
-                        });
-                    }
-                }
-                Flavor::ClassicTbc => {
-                    if num_bcc > 1 {
-                        return Err(RepositoryError::GitIndeterminableZipClassicTbc {
-                            count: num_bcc,
-                            url: url.to_string(),
-                        });
-                    }
-                }
-                _ => unreachable!("Not a base flavor."),
-            }
+            } else {
+                // Fallback solution where we try to look at the asset name to determine the correct file.
+                // Eg:
+                // `foobar-classic` => ClassicEra file.
+                // `foobar-bcc` => ClassicTbc file.
+                let asset = release
+                    .assets
+                    .links
+                    .iter()
+                    .find(|a| match self.flavor.base_flavor() {
+                        Flavor::Retail => {
+                            a.name.ends_with("zip")
+                                && !a.name.to_lowercase().contains("classic")
+                                && !a.name.to_lowercase().contains("bcc")
+                        }
+                        Flavor::ClassicEra => {
+                            a.name.ends_with("zip")
+                                && a.name.to_lowercase().contains("classic")
+                                && !a.name.to_lowercase().contains("bcc")
+                        }
+                        Flavor::ClassicTbc => {
+                            a.name.ends_with("zip")
+                                && !a.name.to_lowercase().contains("classic")
+                                && a.name.to_lowercase().contains("bcc")
+                        }
+                        _ => a.name.ends_with("zip"),
+                    });
 
-            let asset = release
-                .assets
-                .links
-                .iter()
-                .find(|a| match self.flavor.base_flavor() {
-                    Flavor::Retail => {
-                        a.name.ends_with("zip")
-                            && !a.name.to_lowercase().contains("classic")
-                            && !a.name.to_lowercase().contains("bcc")
-                    }
-                    Flavor::ClassicEra => {
-                        a.name.ends_with("zip")
-                            && a.name.to_lowercase().contains("classic")
-                            && !a.name.to_lowercase().contains("bcc")
-                    }
-                    Flavor::ClassicTbc => {
-                        a.name.ends_with("zip")
-                            && !a.name.to_lowercase().contains("classic")
-                            && a.name.to_lowercase().contains("bcc")
-                    }
-                    _ => a.name.ends_with("zip"),
-                })
-                .ok_or(RepositoryError::GitNoZip {
+                Ok(asset)
+            };
+
+            if let Some(asset) = asset? {
+                let download_url = asset.url.clone();
+                let date_time = Some(release.released_at);
+
+                let mut remote_packages = HashMap::new();
+                let remote_package = RemotePackage {
+                    version: version.clone(),
+                    download_url,
+                    date_time,
+                    file_id: None,
+                    modules: vec![],
+                };
+
+                remote_packages.insert(ReleaseChannel::Stable, remote_package);
+
+                let metadata = RepositoryMetadata {
+                    website_url: Some(self.url.to_string()),
+                    changelog_url: Some(format!("{}/-/tags/{}", self.url, version)),
+                    remote_packages,
+                    title: Some(repo.to_string()),
+                    ..Default::default()
+                };
+
+                Ok(metadata)
+            } else {
+                Err(RepositoryError::GitNoZip {
                     flavor: self.flavor,
-                    url,
-                })?;
-
-            let download_url = asset.url.clone();
-            let date_time = Some(release.released_at);
-
-            let mut remote_packages = HashMap::new();
-            let remote_package = RemotePackage {
-                version: version.clone(),
-                download_url,
-                date_time,
-                file_id: None,
-                modules: vec![],
-            };
-
-            remote_packages.insert(ReleaseChannel::Stable, remote_package);
-
-            let metadata = RepositoryMetadata {
-                website_url: Some(self.url.to_string()),
-                changelog_url: Some(format!("{}/-/tags/{}", self.url, version)),
-                remote_packages,
-                title: Some(repo.to_string()),
-                ..Default::default()
-            };
-
-            Ok(metadata)
+                    url: self.url.to_string(),
+                })
+            }
         }
 
         async fn get_changelog(

@@ -97,16 +97,6 @@ pub enum RepositoryError {
     GitMissingRepo { url: String },
     #[error("No release at {url}")]
     GitMissingRelease { url: String },
-    #[error("{count} zip files on release, can't determine which to download for {url}")]
-    GitIndeterminableZip { count: usize, url: String },
-    #[error(
-        "{count} classic era zip files on release, can't determine which to download for {url}"
-    )]
-    GitIndeterminableZipClassicEra { count: usize, url: String },
-    #[error(
-        "{count} classic tbc zip files on release, can't determine which to download for {url}"
-    )]
-    GitIndeterminableZipClassicTbc { count: usize, url: String },
     #[error("No zip available for {flavor} at {url}")]
     GitNoZip { flavor: Flavor, url: String },
     #[error("Tag name must be specified for git changelog")]
