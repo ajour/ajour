@@ -1,4 +1,4 @@
-use crate::repository::ReleaseChannel;
+use crate::{config::Flavor, repository::ReleaseChannel};
 
 use std::path::PathBuf;
 
@@ -99,10 +99,16 @@ pub enum RepositoryError {
     GitMissingRelease { url: String },
     #[error("{count} zip files on release, can't determine which to download for {url}")]
     GitIndeterminableZip { count: usize, url: String },
-    #[error("{count} classic zip files on release, can't determine which to download for {url}")]
-    GitIndeterminableZipClassic { count: usize, url: String },
-    #[error("No zip available for {url}")]
-    GitNoZip { url: String },
+    #[error(
+        "{count} classic era zip files on release, can't determine which to download for {url}"
+    )]
+    GitIndeterminableZipClassicEra { count: usize, url: String },
+    #[error(
+        "{count} classic tbc zip files on release, can't determine which to download for {url}"
+    )]
+    GitIndeterminableZipClassicTbc { count: usize, url: String },
+    #[error("No zip available for {flavor} at {url}")]
+    GitNoZip { flavor: Flavor, url: String },
     #[error("Tag name must be specified for git changelog")]
     GitChangelogTagName,
     #[error(transparent)]
@@ -111,6 +117,8 @@ pub enum RepositoryError {
     Filesystem(#[from] FilesystemError),
     #[error(transparent)]
     Uri(#[from] isahc::http::uri::InvalidUri),
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
 }
 
 impl From<std::io::Error> for RepositoryError {
