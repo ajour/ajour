@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Correctly uses `release.json` when installing addons through Github.
+
 ## [1.2.2] - 2021-07-06
 
 ### Added
