@@ -370,6 +370,7 @@ mod gitlab {
 
             let version = release.tag_name.clone();
 
+            // Check if release has a `release.json` file, else use fallback solution..
             let asset: Result<Option<&ReleaseLink>, serde_json::Error> = if let Some(release_file) =
                 release
                     .assets
