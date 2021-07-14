@@ -16,7 +16,7 @@ and `Removed`.
 
 ### Added
 
-- Correctly uses `release.json` when installing addons through Github.
+- Correctly uses `release.json` when installing addons through Github and Gitlab.
 
 ## [1.2.2] - 2021-07-06
 
