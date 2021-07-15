@@ -143,5 +143,6 @@
     "fonts": "Schriftarten",
     "delete-addon-saved-variables": "Gespeicherte Variablen löschen",
     "delete-addon": "{addon} löschen",
-    "confirm-deletion": "Löschung bestätigen"
+    "confirm-deletion": "Löschung bestätigen",
+    "paste-url": "URL hier einfügen..."
 }

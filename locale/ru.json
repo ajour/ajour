@@ -143,5 +143,6 @@
     "fonts": "Шрифты",
     "delete-addon-saved-variables": "Удалить сохраненные переменные",
     "delete-addon": "Удалить {addon}",
-    "confirm-deletion": "Подтвердить удаление"
+    "confirm-deletion": "Подтвердить удаление",
+    "paste-url": "Вставьте сюда URL ..."
 }
