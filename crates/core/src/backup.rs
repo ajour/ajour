@@ -23,8 +23,8 @@ pub async fn backup_folders(
     ));
 
     match compression {
-        CompressionFormat::Zip => ZipBackup::new(src_folders, &dest).backup(None)?,
-        CompressionFormat::Zstd => ZstdBackup::new(src_folders, &dest).backup(Some(zstd_level))?,
+        CompressionFormat::Zip => ZipBackup::new(src_folders, &dest).backup()?,
+        CompressionFormat::Zstd => ZstdBackup::new(src_folders, &dest, zstd_level).backup()?,
     }
 
     // Won't fail since we pass it the correct format

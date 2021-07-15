@@ -11,7 +11,7 @@ use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
 /// A trait defining a way to back things up to the fs
 pub trait Backup {
-    fn backup(&self, level: Option<i32>) -> Result<()>;
+    fn backup(&self) -> Result<()>;
 }
 
 /// Back up folders to a zip archive and save on the fs
@@ -30,7 +30,7 @@ impl ZipBackup {
 }
 
 impl Backup for ZipBackup {
-    fn backup(&self, _: Option<i32>) -> Result<()> {
+    fn backup(&self) -> Result<()> {
         let output = BufWriter::new(File::create(&self.dest)?);
 
         let mut zip_writer = ZipWriter::new(output);
@@ -115,23 +115,25 @@ fn zip_write(
 pub struct ZstdBackup {
     src: Vec<BackupFolder>,
     dest: PathBuf,
+    level: i32,
 }
 
 impl ZstdBackup {
-    pub(crate) fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>) -> ZstdBackup {
+    pub(crate) fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>, level: i32) -> ZstdBackup {
         ZstdBackup {
             src,
             dest: dest.as_ref().to_owned(),
+            level,
         }
     }
 }
 
 impl Backup for ZstdBackup {
-    fn backup(&self, level: Option<i32>) -> Result<()> {
+    fn backup(&self) -> Result<()> {
         use zstd::stream::write::Encoder as ZstdEncoder;
 
         let output = File::create(&self.dest)?;
-        let mut enc = ZstdEncoder::new(output, level.unwrap_or_default())?;
+        let mut enc = ZstdEncoder::new(output, self.level)?;
         enc.multithread(num_cpus::get() as u32)?;
         let mut tar = tar::Builder::new(enc.auto_finish());
 
