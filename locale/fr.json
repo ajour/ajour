@@ -130,5 +130,18 @@
     "ajour-data": "Données Ajour",
     "screenshots": "Captures d'écran",
     "open-addons-directory": "Afficher le dossier de l'AddOn",
-    "open-backup-directory": "Ouvrir le dossier des sauvegardes"
+    "open-backup-directory": "Ouvrir le dossier des sauvegardes",
+    "compression_level_explanation": "Choisissez le niveau de compression le mieux adapté. Une compression plus rapide se traduit par des fichiers plus volumineux.",
+    "fastest": "Le plus rapide",
+    "faster": "Très rapide",
+    "fast": "Rapide",
+    "slower": "Très lent",
+    "slowest": "Le plus lent",
+    "open-ajour": "Ouvrir Ajour",
+    "hide-ajour": "Masquer Ajour",
+    "exit": "Quitter",
+    "fonts": "Polices",
+    "delete-addon-saved-variables": "Supprimer les réglages (SavedVariables)",
+    "delete-addon": "Supprimer {addon}",
+    "confirm-deletion": "Confirmer la suppression"
 }
