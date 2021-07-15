@@ -133,5 +133,12 @@
   "open-backup-directory": "Open Backup Directory",
   "open-ajour": "Open Ajour",
   "hide-ajour": "Hide Ajour",
-  "exit": "Exit"
+  "exit": "Exit",
+  "compression_level_explanation": "Choose the most optimal compression level. Faster compression results in larger files.",
+  "fastest": "Fastest",
+  "faster": "Faster",
+  "fast": "Fast",
+  "slower": "Slower",
+  "slowest": "Slowest",
+  "fonts": "Fonts"
 }

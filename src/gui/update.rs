@@ -1389,6 +1389,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             src_folders.push(BackupFolder::new(&screenshot_dir, &wow_dir));
                         }
                     }
+
+                    if ajour.config.backup_fonts {
+                        let fonts_dir =
+                            ajour.config.get_fonts_directory_for_flavor(flavor).unwrap();
+                        if fonts_dir.exists() {
+                            src_folders.push(BackupFolder::new(&fonts_dir, &wow_dir));
+                        }
+                    }
                 }
             }
 
@@ -1405,6 +1413,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     src_folders,
                     dest.to_owned(),
                     ajour.config.compression_format,
+                    ajour.config.zstd_compression_level,
                 ),
                 Message::BackupFinished,
             ));
@@ -1428,6 +1437,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 BackupFolderKind::Screenshots => {
                     ajour.config.backup_screenshots = is_checked;
+                }
+                BackupFolderKind::Fonts => {
+                    ajour.config.backup_fonts = is_checked;
                 }
             }
 
@@ -2244,6 +2256,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             ajour.config.alternating_row_colors = is_set;
+            let _ = ajour.config.save();
+        }
+        Message::Interaction(Interaction::CompressionLevelChanged(level)) => {
+            ajour.config.zstd_compression_level = level;
             let _ = ajour.config.save();
         }
         Message::Error(error) => {
