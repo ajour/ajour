@@ -41,16 +41,16 @@ use strfmt::strfmt;
 use element::{DEFAULT_FONT_SIZE, DEFAULT_PADDING};
 static WINDOW_ICON: &[u8] = include_bytes!("../../resources/windows/ajour.ico");
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum State {
-    Start,
     Ready,
     Loading,
+    Error(anyhow::Error),
 }
 
 impl Default for State {
     fn default() -> Self {
-        State::Start
+        State::Ready
     }
 }
 
@@ -251,8 +251,11 @@ pub struct Ajour {
 
 impl Default for Ajour {
     fn default() -> Self {
+        let mut state = HashMap::new();
+        state.insert(Mode::Catalog, State::Loading);
+
         Self {
-            state: [(Mode::Catalog, State::Loading)].iter().cloned().collect(),
+            state,
             error: None,
             mode: Mode::MyAddons(Flavor::Retail),
             addons: HashMap::new(),
@@ -1017,19 +1020,9 @@ impl Application for Ajour {
 
         let container: Option<Container<Message>> = match self.mode {
             Mode::MyAddons(flavor) => {
-                let state = self
-                    .state
-                    .get(&Mode::MyAddons(flavor))
-                    .cloned()
-                    .unwrap_or_default();
+                let state = self.state.get(&Mode::MyAddons(flavor));
                 match state {
-                    State::Start => Some(element::status::data_container(
-                        color_palette,
-                        &localized_string("setup-ajour-title")[..],
-                        &localized_string("setup-ajour-description")[..],
-                        Some(&mut self.onboarding_directory_btn_state),
-                    )),
-                    State::Loading => {
+                    Some(State::Loading) => {
                         let flavor = flavor.to_string().to_lowercase();
                         let mut vars = HashMap::new();
                         vars.insert("flavor".to_string(), &flavor);
@@ -1042,7 +1035,7 @@ impl Application for Ajour {
                             None,
                         ))
                     }
-                    State::Ready => {
+                    Some(State::Ready) => {
                         let flavor = flavor.to_string().to_lowercase();
                         let mut vars = HashMap::new();
                         vars.insert("flavor".to_string(), &flavor);
@@ -1059,26 +1052,38 @@ impl Application for Ajour {
                             None
                         }
                     }
+                    Some(State::Error(error)) => {
+                        let error_title = format!("{}", error);
+                        let mut error_description = String::new();
+                        let cause = error.chain().last();
+
+                        if let Some(cause) = cause {
+                            error_description.push_str(&format!("Caused by {}", cause)[..]);
+                        }
+
+                        Some(element::status::data_container(
+                            color_palette,
+                            &error_title,
+                            &error_description,
+                            None,
+                        ))
+                    }
+                    None => Some(element::status::data_container(
+                        color_palette,
+                        &localized_string("setup-ajour-title")[..],
+                        &localized_string("setup-ajour-description")[..],
+                        Some(&mut self.onboarding_directory_btn_state),
+                    )),
                 }
             }
             Mode::Settings => None,
             Mode::About => None,
             Mode::Install => None,
             Mode::MyWeakAuras(flavor) => {
-                let state = self
-                    .state
-                    .get(&Mode::MyWeakAuras(flavor))
-                    .cloned()
-                    .unwrap_or_default();
+                let state = self.state.get(&Mode::MyWeakAuras(flavor));
 
                 match state {
-                    State::Start => Some(element::status::data_container(
-                        color_palette,
-                        &localized_string("setup-weakauras-title")[..],
-                        &localized_string("setup-weakauras-description")[..],
-                        None,
-                    )),
-                    State::Loading => {
+                    Some(State::Loading) => {
                         let flavor = flavor.to_string().to_lowercase();
                         let mut vars = HashMap::new();
                         vars.insert("flavor".to_string(), &flavor);
@@ -1091,7 +1096,7 @@ impl Application for Ajour {
                             None,
                         ))
                     }
-                    State::Ready => {
+                    Some(State::Ready) => {
                         if !has_auras {
                             let flavor = flavor.to_string();
                             let mut vars = HashMap::new();
@@ -1108,19 +1113,56 @@ impl Application for Ajour {
                             None
                         }
                     }
+                    Some(State::Error(error)) => {
+                        let error_title = format!("{}", error);
+                        let mut error_description = String::new();
+                        let cause = error.chain().last();
+
+                        if let Some(cause) = cause {
+                            error_description.push_str(&format!("Caused by {}", cause)[..]);
+                        }
+
+                        Some(element::status::data_container(
+                            color_palette,
+                            &error_title,
+                            &error_description,
+                            None,
+                        ))
+                    }
+                    None => Some(element::status::data_container(
+                        color_palette,
+                        &localized_string("setup-weakauras-title")[..],
+                        &localized_string("setup-weakauras-description")[..],
+                        None,
+                    )),
                 }
             }
             Mode::Catalog => {
-                let state = self.state.get(&Mode::Catalog).cloned().unwrap_or_default();
+                let state = self.state.get(&Mode::Catalog);
                 match state {
-                    State::Start => None,
-                    State::Loading => Some(element::status::data_container(
+                    Some(State::Loading) => Some(element::status::data_container(
                         color_palette,
                         &localized_string("loading")[..],
                         &localized_string("loading-catalog")[..],
                         None,
                     )),
-                    State::Ready => None,
+                    Some(State::Error(error)) => {
+                        let error_title = format!("{}", error);
+                        let mut error_description = String::new();
+                        let cause = error.chain().last();
+
+                        if let Some(cause) = cause {
+                            error_description.push_str(&format!("Caused by {}", cause)[..]);
+                        }
+
+                        Some(element::status::data_container(
+                            color_palette,
+                            &error_title,
+                            &error_description,
+                            None,
+                        ))
+                    }
+                    _ => None,
                 }
             }
         };

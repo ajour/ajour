@@ -157,11 +157,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ));
                 } else {
                     log::debug!("addon directory is not set, showing welcome screen");
-
-                    // Assume we are welcoming a user because directory is not set.
-                    let flavor = ajour.config.wow.flavor;
-                    ajour.state.insert(Mode::MyAddons(flavor), State::Start);
-
                     break;
                 }
             }
@@ -337,10 +332,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Save config.
                 let _ = &ajour.config.save();
 
-                let state = ajour.state.clone();
-                for (mode, _) in state {
+                for (mode, state) in ajour.state.iter_mut() {
                     if matches!(mode, Mode::MyAddons(_)) {
-                        ajour.state.insert(mode, State::Loading);
+                        *state = State::Loading;
                     }
                 }
 
@@ -821,6 +815,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 Err(error) => {
                     log_error(&error);
+                    ajour
+                        .state
+                        .insert(Mode::MyAddons(flavor), State::Error(error));
                 }
             }
         }
@@ -2054,7 +2051,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::CatalogDownloaded(error @ Err(_)) => {
             let error = error.context("Failed to download catalog").unwrap_err();
             log_error(&error);
-            ajour.error = Some(error);
+            ajour.state.insert(Mode::Catalog, State::Error(error));
         }
         Message::AddonCacheUpdated(error @ Err(_)) => {
             let error = error.context("Failed to update addon cache").unwrap_err();
@@ -2253,7 +2250,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let error = error.context(strfmt(&fmt, &vars).unwrap()).unwrap_err();
 
                 log_error(&error);
-                ajour.error = Some(error);
+                ajour
+                    .state
+                    .insert(Mode::MyWeakAuras(flavor), State::Error(error));
             }
         },
         Message::AurasUpdated((flavor, result)) => match result {

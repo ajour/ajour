@@ -44,10 +44,7 @@ pub fn data_container<'a>(
     valid_flavors.sort();
 
     // State.
-    let myaddons_state = state
-        .get(&Mode::MyAddons(flavor))
-        .cloned()
-        .unwrap_or_default();
+    let myaddons_state = state.get(&Mode::MyAddons(flavor));
 
     // A row contain general settings.
     let mut settings_row = Row::new()
@@ -233,7 +230,7 @@ pub fn data_container<'a>(
         }
     }
 
-    if matches!(myaddons_state, State::Start) {
+    if matches!(myaddons_state, None) {
         catalog_mode_button =
             catalog_mode_button.style(style::DisabledDefaultButton(color_palette));
         install_mode_button =
