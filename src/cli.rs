@@ -99,7 +99,7 @@ pub enum Command {
     },
     /// Backup your WTF and/or AddOns folders
     Backup {
-        #[structopt(short, long, default_value = "all", parse(try_from_str = str_to_backup_folder), possible_values = &["all","wtf","addons","config", "screenshots"])]
+        #[structopt(short, long, default_value = "all", parse(try_from_str = str_to_backup_folder), possible_values = &["all","wtf","addons","config", "screenshots", "fonts"])]
         /// folder to backup
         backup_folder: BackupFolder,
         #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_ptr","classic_beta"])]
@@ -110,6 +110,8 @@ pub enum Command {
         destination: PathBuf,
         #[structopt(short, long, default_value = "zip", possible_values = &["zip", "zstd"])]
         compression_format: CompressionFormat,
+        #[structopt(short, long, default_value = "0")]
+        level: i32,
     },
     /// Add a World of Warcraft path
     PathAdd {
@@ -141,6 +143,7 @@ pub enum BackupFolder {
     Wtf,
     Config,
     Screenshots,
+    Fonts,
 }
 
 fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {
@@ -150,6 +153,7 @@ fn str_to_backup_folder(s: &str) -> Result<BackupFolder, &'static str> {
         "addons" => Ok(BackupFolder::AddOns),
         "config" => Ok(BackupFolder::Config),
         "screenshots" => Ok(BackupFolder::Screenshots),
-        _ => Err("valid values are ['all','wtf','addons','config', 'screenshots']"),
+        "fonts" => Ok(BackupFolder::Fonts),
+        _ => Err("valid values are ['all','wtf','addons','config','screenshots','fonts']"),
     }
 }
