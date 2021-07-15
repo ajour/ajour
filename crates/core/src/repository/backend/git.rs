@@ -226,17 +226,15 @@ mod github {
         }
     }
 
-    async fn set_remote_package(
-        flavor: Flavor,
-        remote_packages: &mut HashMap<ReleaseChannel, RemotePackage>,
-        release_channel: ReleaseChannel,
+    /// Tries to find asset by looking for a `release.json` file in the assets.
+    /// If we find any, we download and parse it.
+    /// If we don't find it we return, to use our fallback solution.
+    async fn find_asset(
         release: &Release,
-    ) -> Result<(), RepositoryError> {
-        // Check if release has a `release.json` file, else use fallback solution..
-        let asset: Result<Option<&ReleaseAsset>, serde_json::Error> = if let Some(release_file) =
-            release.assets.iter().find(|a| a.name == "release.json")
-        {
-            // If we find `release.json`, we download content, and parse it.
+        flavor: Flavor,
+    ) -> Result<Option<&ReleaseAsset>, RepositoryError> {
+        // If we find `release.json`, we download content, and parse it.
+        if let Some(release_file) = release.assets.iter().find(|a| a.name == "release.json") {
             let mut resp = request_async(&release_file.browser_download_url, vec![], None).await?;
             let release_file: ReleaseFile = resp.json().await?;
 
@@ -251,39 +249,55 @@ mod github {
                     .assets
                     .iter()
                     .find(|a| a.name == release_file.filename);
-                Ok(asset)
+                return Ok(asset);
             } else {
-                Ok(None)
+                return Ok(None);
             }
-        } else {
-            // Fallback solution where we try to look at the asset name to determine the correct file.
-            // Eg:
-            // `foobar-classic` => ClassicEra file.
-            // `foobar-bcc` => ClassicTbc file.
-            let asset = release.assets.iter().find(|a| match flavor.base_flavor() {
-                Flavor::Retail => {
-                    a.name.ends_with("zip")
-                        && !a.name.to_lowercase().contains("classic")
-                        && !a.name.to_lowercase().contains("bcc")
-                }
-                Flavor::ClassicEra => {
-                    a.name.ends_with("zip")
-                        && a.name.to_lowercase().contains("classic")
-                        && !a.name.to_lowercase().contains("bcc")
-                }
-                Flavor::ClassicTbc => {
-                    a.name.ends_with("zip")
-                        && !a.name.to_lowercase().contains("classic")
-                        && a.name.to_lowercase().contains("bcc")
-                }
-                _ => a.name.ends_with("zip"),
-            });
+        }
 
-            Ok(asset)
+        Ok(None)
+    }
+
+    /// Fallback solution where we try to look at the asset name to determine the correct file.
+    /// Eg:
+    /// `foobar-classic` => ClassicEra file.
+    /// `foobar-bcc` => ClassicTbc file.
+    fn find_asset_fallback(release: &Release, flavor: Flavor) -> Option<&ReleaseAsset> {
+        let asset = release.assets.iter().find(|a| match flavor.base_flavor() {
+            Flavor::Retail => {
+                a.name.ends_with("zip")
+                    && !a.name.to_lowercase().contains("classic")
+                    && !a.name.to_lowercase().contains("bcc")
+            }
+            Flavor::ClassicEra => {
+                a.name.ends_with("zip")
+                    && a.name.to_lowercase().contains("classic")
+                    && !a.name.to_lowercase().contains("bcc")
+            }
+            Flavor::ClassicTbc => {
+                a.name.ends_with("zip")
+                    && !a.name.to_lowercase().contains("classic")
+                    && a.name.to_lowercase().contains("bcc")
+            }
+            _ => a.name.ends_with("zip"),
+        });
+
+        asset
+    }
+
+    async fn set_remote_package(
+        flavor: Flavor,
+        remote_packages: &mut HashMap<ReleaseChannel, RemotePackage>,
+        release_channel: ReleaseChannel,
+        release: &Release,
+    ) -> Result<(), RepositoryError> {
+        let asset = match find_asset(release, flavor).await.ok().flatten() {
+            Some(asset) => Some(asset),
+            None => find_asset_fallback(release, flavor),
         };
 
         // If we find a proper asset, we add it.
-        if let Some(asset) = asset.ok().flatten() {
+        if let Some(asset) = asset {
             let version = release.tag_name.clone();
             let download_url = asset.browser_download_url.clone();
             let date_time = Some(release.published_at);
@@ -340,6 +354,75 @@ mod gitlab {
         pub flavor: Flavor,
     }
 
+    /// Tries to find asset by looking for a `release.json` file in the assets.
+    /// If we find any, we download and parse it.
+    /// If we don't find it we return, to use our fallback solution.
+    async fn find_asset(
+        release: &Release,
+        flavor: Flavor,
+    ) -> Result<Option<&ReleaseLink>, RepositoryError> {
+        // If we find `release.json`, we download content, and parse it.
+        if let Some(release_file) = release
+            .assets
+            .links
+            .iter()
+            .find(|a| a.name == "release.json")
+        {
+            let mut resp = request_async(&release_file.url, vec![], None).await?;
+            let release_file: ReleaseFile = resp.json().await?;
+
+            // Try to find the package, which contains the flavor we are looking for.
+            if let Some(release_file) = release_file
+                .releases
+                .iter()
+                .find(|r| r.metadata.iter().any(|m| m.flavor == flavor))
+            {
+                // Find the asset, based on what we know from the `release.json`.
+                let asset = release
+                    .assets
+                    .links
+                    .iter()
+                    .find(|a| a.name == release_file.filename);
+                return Ok(asset);
+            } else {
+                return Ok(None);
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Fallback solution where we try to look at the asset name to determine the correct file.
+    /// Eg:
+    /// `foobar-classic` => ClassicEra file.
+    /// `foobar-bcc` => ClassicTbc file.
+    fn find_asset_fallback(release: &Release, flavor: Flavor) -> Option<&ReleaseLink> {
+        let asset = release
+            .assets
+            .links
+            .iter()
+            .find(|a| match flavor.base_flavor() {
+                Flavor::Retail => {
+                    a.name.ends_with("zip")
+                        && !a.name.to_lowercase().contains("classic")
+                        && !a.name.to_lowercase().contains("bcc")
+                }
+                Flavor::ClassicEra => {
+                    a.name.ends_with("zip")
+                        && a.name.to_lowercase().contains("classic")
+                        && !a.name.to_lowercase().contains("bcc")
+                }
+                Flavor::ClassicTbc => {
+                    a.name.ends_with("zip")
+                        && !a.name.to_lowercase().contains("classic")
+                        && a.name.to_lowercase().contains("bcc")
+                }
+                _ => a.name.ends_with("zip"),
+            });
+
+        asset
+    }
+
     #[async_trait]
     impl Backend for Gitlab {
         async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
@@ -370,66 +453,12 @@ mod gitlab {
 
             let version = release.tag_name.clone();
 
-            // Check if release has a `release.json` file, else use fallback solution..
-            let asset: Result<Option<&ReleaseLink>, serde_json::Error> = if let Some(release_file) =
-                release
-                    .assets
-                    .links
-                    .iter()
-                    .find(|a| a.name == "release.json")
-            {
-                // If we find `release.json`, we download content, and parse it.
-                let mut resp = request_async(&release_file.url, vec![], None).await?;
-                let release_file: ReleaseFile = resp.json().await?;
-
-                // Try to find the package, which contains the flavor we are looking for.
-                if let Some(release_file) = release_file
-                    .releases
-                    .iter()
-                    .find(|r| r.metadata.iter().any(|m| m.flavor == self.flavor))
-                {
-                    // Find the asset, based on what we know from the `release.json`.
-                    let asset = release
-                        .assets
-                        .links
-                        .iter()
-                        .find(|a| a.name == release_file.filename);
-                    Ok(asset)
-                } else {
-                    Ok(None)
-                }
-            } else {
-                // Fallback solution where we try to look at the asset name to determine the correct file.
-                // Eg:
-                // `foobar-classic` => ClassicEra file.
-                // `foobar-bcc` => ClassicTbc file.
-                let asset = release
-                    .assets
-                    .links
-                    .iter()
-                    .find(|a| match self.flavor.base_flavor() {
-                        Flavor::Retail => {
-                            a.name.ends_with("zip")
-                                && !a.name.to_lowercase().contains("classic")
-                                && !a.name.to_lowercase().contains("bcc")
-                        }
-                        Flavor::ClassicEra => {
-                            a.name.ends_with("zip")
-                                && a.name.to_lowercase().contains("classic")
-                                && !a.name.to_lowercase().contains("bcc")
-                        }
-                        Flavor::ClassicTbc => {
-                            a.name.ends_with("zip")
-                                && !a.name.to_lowercase().contains("classic")
-                                && a.name.to_lowercase().contains("bcc")
-                        }
-                        _ => a.name.ends_with("zip"),
-                    });
-
-                Ok(asset)
+            let asset = match find_asset(release, self.flavor).await.ok().flatten() {
+                Some(asset) => Some(asset),
+                None => find_asset_fallback(release, self.flavor),
             };
 
-            if let Some(asset) = asset? {
+            if let Some(asset) = asset {
                 let download_url = asset.url.clone();
                 let date_time = Some(release.released_at);
 
