@@ -345,7 +345,7 @@ impl std::fmt::Display for ReleaseChannel {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash, PartialOrd, Ord, Deserialize)]
 pub enum CompressionFormat {
     Zip,
     Zstd,

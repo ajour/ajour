@@ -12,6 +12,7 @@ pub async fn backup_folders(
     src_folders: Vec<BackupFolder>,
     mut dest: PathBuf,
     compression: CompressionFormat,
+    zstd_level: i32,
 ) -> Result<NaiveDateTime, FilesystemError> {
     let now = Local::now();
 
@@ -23,7 +24,7 @@ pub async fn backup_folders(
 
     match compression {
         CompressionFormat::Zip => ZipBackup::new(src_folders, &dest).backup()?,
-        CompressionFormat::Zstd => ZstdBackup::new(src_folders, &dest).backup()?,
+        CompressionFormat::Zstd => ZstdBackup::new(src_folders, &dest, zstd_level).backup()?,
     }
 
     // Won't fail since we pass it the correct format

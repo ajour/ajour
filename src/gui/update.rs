@@ -1405,6 +1405,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     src_folders,
                     dest.to_owned(),
                     ajour.config.compression_format,
+                    ajour.config.zstd_compression_level,
                 ),
                 Message::BackupFinished,
             ));
@@ -2244,6 +2245,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             ajour.config.alternating_row_colors = is_set;
+            let _ = ajour.config.save();
+        }
+        Message::Interaction(Interaction::CompressionLevelChanged(level)) => {
+            ajour.config.zstd_compression_level = level;
             let _ = ajour.config.save();
         }
         Message::Error(error) => {

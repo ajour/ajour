@@ -85,7 +85,7 @@ pub fn main() {
                     destination,
                     flavors,
                     compression_format,
-                } => command::backup(backup_folder, destination, flavors, compression_format),
+                } => command::backup(backup_folder, destination, flavors, compression_format, 0),
                 cli::Command::Update => command::update_both(),
                 cli::Command::UpdateAddons => command::update_all_addons(),
                 cli::Command::UpdateAuras => command::update_all_auras(),

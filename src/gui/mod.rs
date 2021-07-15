@@ -26,9 +26,9 @@ use ajour_widgets::header;
 use async_std::sync::{Arc, Mutex};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::{
-    button, pick_list, scrollable, text_input, Align, Application, Button, Clipboard, Column,
-    Command, Container, Element, HorizontalAlignment, Length, PickList, Row, Scrollable, Settings,
-    Space, Subscription, Text, TextInput,
+    button, pick_list, scrollable, slider, text_input, Align, Application, Button, Clipboard,
+    Column, Command, Container, Element, HorizontalAlignment, Length, PickList, Row, Scrollable,
+    Settings, Space, Subscription, Text, TextInput,
 };
 use image::ImageFormat;
 use isahc::http::Uri;
@@ -137,6 +137,7 @@ pub enum Interaction {
     ToggleStartClosedToTray(bool),
     ThemeUrlInput(String),
     ImportTheme,
+    CompressionLevelChanged(i32),
 }
 
 #[derive(Debug)]
@@ -235,6 +236,7 @@ pub struct Ajour {
     addons_search_state: AddonsSearchState,
     wow_directories: Vec<WowDirectoryState>,
     default_backup_compression_format: pick_list::State<CompressionFormat>,
+    zstd_compression_level_slider_state: slider::State,
 }
 
 impl Default for Ajour {
@@ -297,6 +299,7 @@ impl Default for Ajour {
                 })
                 .collect::<Vec<WowDirectoryState>>(),
             default_backup_compression_format: Default::default(),
+            zstd_compression_level_slider_state: Default::default(),
         }
     }
 }
@@ -970,6 +973,7 @@ impl Application for Ajour {
                     &mut self.theme_state,
                     &mut self.scale_state,
                     &mut self.backup_state,
+                    &mut self.zstd_compression_level_slider_state,
                     &mut self.default_backup_compression_format,
                     &mut self.column_settings,
                     &column_config,

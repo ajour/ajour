@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Ability to select compression level for when using Zstd backups.
+
 ## [1.2.2] - 2021-07-06
 
 ### Added
