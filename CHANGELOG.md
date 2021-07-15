@@ -19,6 +19,10 @@ and `Removed`.
 - Ability to select compression level for when using Zstd backups.
 - Ability to backup Fonts folder.
 
+### Fixed
+
+- Missing translations
+
 ## [1.2.2] - 2021-07-06
 
 ### Added

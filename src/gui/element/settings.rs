@@ -171,7 +171,7 @@ pub fn data_container<'a, 'b>(
 
         let theme_input = TextInput::new(
             &mut theme_state.input_state,
-            "Paste URL here...",
+            &localized_string("paste-url")[..],
             &theme_state.input_url,
             Interaction::ThemeUrlInput,
         )
