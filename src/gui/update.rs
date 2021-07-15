@@ -44,6 +44,7 @@ use {
     strfmt::strfmt,
 };
 
+use crate::gui::Confirm;
 #[cfg(target_os = "windows")]
 use crate::tray::{TrayMessage, SHOULD_EXIT, TRAY_SENDER};
 #[cfg(target_os = "windows")]
@@ -156,11 +157,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ));
                 } else {
                     log::debug!("addon directory is not set, showing welcome screen");
-
-                    // Assume we are welcoming a user because directory is not set.
-                    let flavor = ajour.config.wow.flavor;
-                    ajour.state.insert(Mode::MyAddons(flavor), State::Start);
-
                     break;
                 }
             }
@@ -336,10 +332,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 // Save config.
                 let _ = &ajour.config.save();
 
-                let state = ajour.state.clone();
-                for (mode, _) in state {
+                for (mode, state) in ajour.state.iter_mut() {
                     if matches!(mode, Mode::MyAddons(_)) {
-                        ajour.state.insert(mode, State::Loading);
+                        *state = State::Loading;
                     }
                 }
 
@@ -372,6 +367,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ModeSelected(mode)) => {
             log::debug!("Interaction::ModeSelected({:?})", mode);
 
+            // Remove any pending confirms.
+            ajour.pending_confirmation = None;
+
             // Toggle off About or Settings if button is clicked again
             if ajour.mode == mode && (mode == Mode::About || mode == Mode::Settings) {
                 ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
@@ -383,6 +381,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
 
         Message::Interaction(Interaction::Expand(expand_type)) => {
+            // Remove any pending confirms.
+            ajour.pending_confirmation = None;
+
             // An addon can be exanded in two ways.
             match &expand_type {
                 ExpandType::Details(addon) => {
@@ -450,7 +451,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
             error @ Err(_) => {
-                // let error = error.context("Failed to fetch changelog").unwrap_err();
                 let error = error
                     .context(localized_string("error-fetch-changelog"))
                     .unwrap_err();
@@ -458,8 +458,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.error = Some(error);
             }
         },
-        Message::Interaction(Interaction::Delete(id)) => {
-            log::debug!("Interaction::Delete({})", &id);
+        Message::Interaction(Interaction::DeleteAddon()) => {
+            log::debug!("Interaction::DeleteAddon()");
+            ajour.pending_confirmation = Some(Confirm::DeleteAddon);
+        }
+        Message::Interaction(Interaction::ConfirmDeleteAddon(id)) => {
+            log::debug!("Interaction::ConfirmDeleteAddon({})", &id);
 
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
@@ -500,7 +504,31 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     }
                 }
+
+                // Remove any pending confirms.
+                ajour.pending_confirmation = None;
             }
+        }
+        Message::Interaction(Interaction::DeleteSavedVariables()) => {
+            log::debug!("Interaction::DeleteSavedVariables()");
+            ajour.pending_confirmation = Some(Confirm::DeleteSavedVariables);
+        }
+        Message::Interaction(Interaction::ConfirmDeleteSavedVariables(id)) => {
+            log::debug!("Interaction::ConfirmDeleteSavedVariables({})", &id);
+            let flavor = ajour.config.wow.flavor;
+            let addons = ajour.addons.entry(flavor).or_default();
+
+            if let Some(addon) = addons.iter().find(|a| a.primary_folder_id == id).cloned() {
+                let wtf_path = &ajour
+                    .config
+                    .get_wtf_directory_for_flavor(&flavor)
+                    .expect("No World of Warcraft directory set.");
+                let _ = delete_saved_variables(&addon.folders, wtf_path);
+            }
+
+            // Remove any pending confirms.
+            ajour.pending_confirmation = None;
+            ajour.expanded_type = ExpandType::None;
         }
         Message::Interaction(Interaction::Update(id)) => {
             log::debug!("Interaction::Update({})", &id);
@@ -787,6 +815,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 Err(error) => {
                     log_error(&error);
+                    ajour
+                        .state
+                        .insert(Mode::MyAddons(flavor), State::Error(error));
                 }
             }
         }
@@ -1389,6 +1420,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             src_folders.push(BackupFolder::new(&screenshot_dir, &wow_dir));
                         }
                     }
+
+                    if ajour.config.backup_fonts {
+                        let fonts_dir =
+                            ajour.config.get_fonts_directory_for_flavor(flavor).unwrap();
+                        if fonts_dir.exists() {
+                            src_folders.push(BackupFolder::new(&fonts_dir, &wow_dir));
+                        }
+                    }
                 }
             }
 
@@ -1405,6 +1444,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     src_folders,
                     dest.to_owned(),
                     ajour.config.compression_format,
+                    ajour.config.zstd_compression_level,
                 ),
                 Message::BackupFinished,
             ));
@@ -1428,6 +1468,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 BackupFolderKind::Screenshots => {
                     ajour.config.backup_screenshots = is_checked;
+                }
+                BackupFolderKind::Fonts => {
+                    ajour.config.backup_fonts = is_checked;
                 }
             }
 
@@ -2008,7 +2051,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::CatalogDownloaded(error @ Err(_)) => {
             let error = error.context("Failed to download catalog").unwrap_err();
             log_error(&error);
-            ajour.error = Some(error);
+            ajour.state.insert(Mode::Catalog, State::Error(error));
         }
         Message::AddonCacheUpdated(error @ Err(_)) => {
             let error = error.context("Failed to update addon cache").unwrap_err();
@@ -2207,7 +2250,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 let error = error.context(strfmt(&fmt, &vars).unwrap()).unwrap_err();
 
                 log_error(&error);
-                ajour.error = Some(error);
+                ajour
+                    .state
+                    .insert(Mode::MyWeakAuras(flavor), State::Error(error));
             }
         },
         Message::AurasUpdated((flavor, result)) => match result {
@@ -2244,6 +2289,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             );
 
             ajour.config.alternating_row_colors = is_set;
+            let _ = ajour.config.save();
+        }
+        Message::Interaction(Interaction::CompressionLevelChanged(level)) => {
+            ajour.config.zstd_compression_level = level;
             let _ = ajour.config.save();
         }
         Message::Error(error) => {

@@ -34,10 +34,7 @@ pub fn menu_container<'a>(
     chosen_account: Option<String>,
 ) -> Container<'a, Message> {
     // MyWeakAuras state.
-    let state = state
-        .get(&Mode::MyWeakAuras(flavor))
-        .cloned()
-        .unwrap_or_default();
+    let state = state.get(&Mode::MyWeakAuras(flavor));
 
     // A row contain general settings.
     let mut row = Row::new().align_items(Align::Center);
@@ -73,7 +70,7 @@ pub fn menu_container<'a>(
     let update_all_button: Element<Interaction> = update_all_button.into();
     let refresh_button: Element<Interaction> = refresh_button.into();
     let status_text = match state {
-        State::Ready => {
+        Some(State::Ready) => {
             if updates_queued {
                 Text::new(localized_string("weakaura-updates-queued")).size(DEFAULT_FONT_SIZE)
             } else {

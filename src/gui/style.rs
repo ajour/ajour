@@ -1,6 +1,8 @@
 use ajour_core::theme::ColorPalette;
 use ajour_widgets::table_row;
-use iced::{button, checkbox, container, pick_list, scrollable, text_input, Background, Color};
+use iced::{
+    button, checkbox, container, pick_list, scrollable, slider, text_input, Background, Color,
+};
 
 pub struct BrightForegroundContainer(pub ColorPalette);
 impl container::StyleSheet for BrightForegroundContainer {
@@ -885,6 +887,45 @@ impl text_input::StyleSheet for CatalogQueryInput {
     /// Produces the style of an hovered text input.
     fn hovered(&self) -> text_input::Style {
         self.focused()
+    }
+}
+
+pub struct Slider(pub ColorPalette);
+impl slider::StyleSheet for Slider {
+    fn active(&self) -> slider::Style {
+        slider::Style {
+            rail_colors: (self.0.base.foreground, self.0.base.foreground),
+            handle: slider::Handle {
+                shape: slider::HandleShape::Circle { radius: 9.0 },
+                color: self.0.bright.primary,
+                border_width: 0.0,
+                border_color: Color::TRANSPARENT,
+            },
+        }
+    }
+
+    fn hovered(&self) -> slider::Style {
+        let active = self.active();
+
+        slider::Style {
+            handle: slider::Handle {
+                color: self.0.bright.primary,
+                ..active.handle
+            },
+            ..active
+        }
+    }
+
+    fn dragging(&self) -> slider::Style {
+        let active = self.active();
+
+        slider::Style {
+            handle: slider::Handle {
+                color: self.0.bright.primary,
+                ..active.handle
+            },
+            ..active
+        }
     }
 }
 

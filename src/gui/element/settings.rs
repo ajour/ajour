@@ -12,8 +12,9 @@ use {
     crate::localization::localized_string,
     ajour_core::{config::Config, theme::ColorPalette},
     iced::{
-        button, pick_list, scrollable, Align, Button, Checkbox, Column, Container, Element, Length,
-        PickList, Row, Scrollable, Space, Text, TextInput, VerticalAlignment,
+        button, pick_list, scrollable, slider, Align, Button, Checkbox, Column, Container, Element,
+        HorizontalAlignment, Length, PickList, Row, Scrollable, Slider, Space, Text, TextInput,
+        VerticalAlignment,
     },
     std::collections::HashMap,
     strfmt::strfmt,
@@ -26,6 +27,7 @@ pub fn data_container<'a, 'b>(
     theme_state: &'a mut ThemeState,
     scale_state: &'a mut ScaleState,
     backup_state: &'a mut BackupState,
+    compression_level_slider_state: &'a mut slider::State,
     default_backup_compression_format: &'a mut pick_list::State<CompressionFormat>,
     column_settings: &'a mut ColumnSettings,
     column_config: &'b [(ColumnKey, Length, bool)],
@@ -169,7 +171,7 @@ pub fn data_container<'a, 'b>(
 
         let theme_input = TextInput::new(
             &mut theme_state.input_state,
-            "Paste URL here...",
+            &localized_string("paste-url")[..],
             &theme_state.input_url,
             Interaction::ThemeUrlInput,
         )
@@ -223,7 +225,13 @@ pub fn data_container<'a, 'b>(
             .height(Length::Units(26))
     };
 
-    let (backup_title_row, backup_directory_row, backup_now_row) = {
+    let (
+        backup_title_row,
+        backup_directory_row,
+        backup_action_row,
+        backup_now_row,
+        compression_level_column,
+    ) = {
         // Title for the Backup section.
         let backup_title_text =
             Text::new(localized_string("backup")).size(DEFAULT_HEADER_FONT_SIZE);
@@ -282,6 +290,18 @@ pub fn data_container<'a, 'b>(
         .style(style::BrightBackgroundContainer(color_palette))
         .into();
 
+        let checkbox_title = &localized_string("fonts")[..];
+        let fonts_folder_checkbox: Element<_> = Container::new(
+            Checkbox::new(config.backup_fonts, checkbox_title, move |is_checked| {
+                Interaction::ToggleBackupFolder(is_checked, BackupFolderKind::Fonts)
+            })
+            .text_size(DEFAULT_FONT_SIZE)
+            .spacing(5)
+            .style(style::DefaultCheckbox(color_palette)),
+        )
+        .style(style::BrightBackgroundContainer(color_palette))
+        .into();
+
         let backup_compr_fmt_pick_list: Element<_> = PickList::new(
             default_backup_compression_format,
             &CompressionFormat::ALL[..],
@@ -331,8 +351,13 @@ pub fn data_container<'a, 'b>(
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(screenshots_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-            .push(config_folder_checkbox.map(Message::Interaction))
+            .push(fonts_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+            .push(config_folder_checkbox.map(Message::Interaction));
+
+        // Data row for the Backup action selection.
+        let backup_action_row = Row::new()
+            .align_items(Align::Center)
             .push(backup_compr_fmt_pick_list.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(directory_button.map(Message::Interaction))
@@ -376,7 +401,11 @@ pub fn data_container<'a, 'b>(
             // for backup
             if !backup_state.backing_up
                 && config.wow.directories.keys().next().is_some()
-                && (config.backup_addons || config.backup_wtf || config.backup_screenshots)
+                && (config.backup_addons
+                    || config.backup_wtf
+                    || config.backup_screenshots
+                    || config.backup_config
+                    || config.backup_fonts)
             {
                 backup_button = backup_button.on_press(Interaction::Backup);
             }
@@ -426,10 +455,63 @@ pub fn data_container<'a, 'b>(
             backup_now_row = backup_now_row.push(backup_status_text_container);
         }
 
+        let compression_level = config.zstd_compression_level;
+        let compression_level_slider = Slider::new(
+            compression_level_slider_state,
+            3..=22,
+            compression_level,
+            Interaction::CompressionLevelChanged,
+        )
+        .step(1)
+        .width(Length::Units(600))
+        .style(style::Slider(color_palette));
+
+        let compression_level_slider: Element<Interaction> = compression_level_slider.into();
+
+        let title =
+            Text::new(localized_string("compression_level_explanation")).size(DEFAULT_FONT_SIZE);
+        let interval_fastest = Text::new(localized_string("fastest"))
+            .size(DEFAULT_FONT_SIZE)
+            .horizontal_alignment(HorizontalAlignment::Left)
+            .width(Length::FillPortion(1));
+        let interval_faster = Text::new(localized_string("faster"))
+            .size(DEFAULT_FONT_SIZE)
+            .horizontal_alignment(HorizontalAlignment::Center)
+            .width(Length::FillPortion(2));
+        let interval_fast = Text::new(localized_string("fast"))
+            .size(DEFAULT_FONT_SIZE)
+            .horizontal_alignment(HorizontalAlignment::Center)
+            .width(Length::FillPortion(2));
+        let interval_slower = Text::new(localized_string("slower"))
+            .size(DEFAULT_FONT_SIZE)
+            .horizontal_alignment(HorizontalAlignment::Center)
+            .width(Length::FillPortion(2));
+        let interval_slowest = Text::new(localized_string("slowest"))
+            .size(DEFAULT_FONT_SIZE)
+            .horizontal_alignment(HorizontalAlignment::Right)
+            .width(Length::FillPortion(1));
+
+        let interval_row = Row::new()
+            .push(interval_fastest)
+            .push(interval_faster)
+            .push(interval_fast)
+            .push(interval_slower)
+            .push(interval_slowest)
+            .width(Length::Units(600));
+
+        let compression_level_column = Column::new()
+            .push(title)
+            .push(Space::new(Length::Units(0), Length::Units(4)))
+            .push(compression_level_slider.map(Message::Interaction))
+            .push(Space::new(Length::Units(0), Length::Units(4)))
+            .push(interval_row);
+
         (
             backup_title_text_container,
             backup_directory_row,
+            backup_action_row,
             backup_now_row,
+            compression_level_column,
         )
     };
 
@@ -747,8 +829,17 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(5)))
         .push(backup_now_row)
         .push(Space::new(Length::Units(0), Length::Units(5)))
-        .push(backup_directory_row)
-        .push(Space::new(Length::Units(0), Length::Units(30)));
+        .push(backup_action_row)
+        .push(Space::new(Length::Units(0), Length::Units(5)))
+        .push(backup_directory_row);
+
+    if matches!(config.compression_format, CompressionFormat::Zstd) {
+        scrollable = scrollable
+            .push(Space::new(Length::Units(0), Length::Units(10)))
+            .push(compression_level_column);
+    }
+
+    scrollable = scrollable.push(Space::new(Length::Units(0), Length::Units(30)));
 
     // Addons
     scrollable = scrollable

@@ -17,6 +17,13 @@ and `Removed`.
 ### Added
 
 - Correctly uses `release.json` when installing addons through Github and Gitlab.
+- Ability to select compression level for when using Zstd backups.
+- Ability to backup Fonts folder.
+- SavedVariables can be removed for a single addon under details.
+
+### Fixed
+
+- Missing translations
 
 ## [1.2.2] - 2021-07-06
 
