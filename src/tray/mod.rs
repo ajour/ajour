@@ -28,6 +28,7 @@ use winapi::{
     um::winuser::SW_SHOW,
 };
 
+use crate::localization::localized_string;
 use crate::log_error;
 
 mod autostart;
@@ -244,9 +245,13 @@ unsafe fn show_popup_menu(hwnd: HWND, state: &TrayState) {
 
     let hidden = state.gui_hidden;
 
-    let mut about = str_to_wide!("About");
-    let mut toggle = str_to_wide!(if hidden { "Open Ajour" } else { "Hide Ajour" });
-    let mut exit = str_to_wide!("Exit");
+    let mut about = str_to_wide!(localized_string("about"));
+    let mut toggle = str_to_wide!(if hidden {
+        localized_string("open-ajour")
+    } else {
+        localized_string("hide-ajour")
+    });
+    let mut exit = str_to_wide!(localized_string("exit"));
 
     InsertMenuW(
         menu,

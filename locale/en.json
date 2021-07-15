@@ -133,5 +133,15 @@
   "open-backup-directory": "Open Backup Directory",
   "delete-addon-saved-variables": "Delete SavedVariables",
   "confirm-deletion": "Confirm deletion",
-  "delete-addon": "Delete {addon}"
+  "delete-addon": "Delete {addon}",
+  "open-ajour": "Open Ajour",
+  "hide-ajour": "Hide Ajour",
+  "exit": "Exit",
+  "compression_level_explanation": "Choose the most optimal compression level. Faster compression results in larger files.",
+  "fastest": "Fastest",
+  "faster": "Faster",
+  "fast": "Fast",
+  "slower": "Slower",
+  "slowest": "Slowest",
+  "fonts": "Fonts"
 }

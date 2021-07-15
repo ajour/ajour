@@ -15,6 +15,7 @@ pub fn backup(
     destination: PathBuf,
     flavors: Vec<Flavor>,
     compression_format: CompressionFormat,
+    zstd_level: i32,
 ) -> Result<()> {
     task::block_on(async {
         let config = load_config().await?;
@@ -108,7 +109,7 @@ pub fn backup(
             _ => {}
         }
 
-        backup_folders(src_folders, destination, compression_format).await?;
+        backup_folders(src_folders, destination, compression_format, zstd_level).await?;
 
         log::info!("Backup complete!");
 
