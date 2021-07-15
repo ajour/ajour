@@ -130,5 +130,18 @@
     "ajour-data": "Ajour verileri",
     "screenshots": "Ekran görüntüleri",
     "open-addons-directory": "Eklenti Dizinini Aç",
-    "open-backup-directory": "Yedekleme Dizinini Aç"
+    "open-backup-directory": "Yedekleme Dizinini Aç",
+    "compression_level_explanation": "En uygun sıkıştırma seviyesini seçin. Daha hızlı sıkıştırma, daha büyük dosyalara neden olur.",
+    "fastest": "en hızlı",
+    "faster": "Daha hızlı",
+    "fast": "Hızlı",
+    "slower": "Yavaş",
+    "slowest": "en yavaş",
+    "open-ajour": "Ajour'u aç",
+    "hide-ajour": "Ajour'u Gizle",
+    "exit": "çıkış",
+    "fonts": "Yazı Tipleri",
+    "delete-addon-saved-variables": "Kayıtlı Değişkenleri Sil",
+    "delete-addon": "{addon}'u sil",
+    "confirm-deletion": "Silmeyi onayla"
 }

@@ -130,5 +130,18 @@
     "ajour-data": "Данные Ajour",
     "screenshots": "Скриншоты",
     "open-addons-directory": "Открыть каталог дополнений",
-    "open-backup-directory": "Открыть каталог резервных копий"
+    "open-backup-directory": "Открыть каталог резервных копий",
+    "compression_level_explanation": "Выберите наиболее оптимальный уровень сжатия. Более быстрое сжатие приводит к большим файлам.",
+    "fastest": "Самый быстрый",
+    "faster": "Быстрее",
+    "fast": "Быстрый",
+    "slower": "Помедленнее",
+    "slowest": "Самый медленный",
+    "open-ajour": "Открыть Ajour",
+    "hide-ajour": "Скрыть Ajour",
+    "exit": "Выход",
+    "fonts": "Шрифты",
+    "delete-addon-saved-variables": "Удалить сохраненные переменные",
+    "delete-addon": "Удалить {addon}",
+    "confirm-deletion": "Подтвердить удаление"
 }

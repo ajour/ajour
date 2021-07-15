@@ -130,5 +130,18 @@
     "ajour-data": "Ajour data",
     "screenshots": "Skärmdumpar",
     "open-addons-directory": "Öppna AddOns-katalogen",
-    "open-backup-directory": "Öppna Backup-katalogen"
+    "open-backup-directory": "Öppna Backup-katalogen",
+    "compression_level_explanation": "Välj den mest optimala kompressionsnivån. Snabbar komprimering resulterar i större filer.",
+    "fastest": "Snabbast",
+    "faster": "Snabbare",
+    "fast": "Snabbt",
+    "slower": "Långsammare",
+    "slowest": "Långsammast",
+    "open-ajour": "Öppna Ajour",
+    "hide-ajour": "Göm Ajour",
+    "exit": "Avsluta",
+    "fonts": "Fonter",
+    "delete-addon-saved-variables": "Ta bort SavedVariables",
+    "delete-addon": "Ta bort {addon}",
+    "confirm-deletion": "Bekräfta borttagning"
 }
