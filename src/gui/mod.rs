@@ -64,6 +64,12 @@ pub enum Mode {
     About,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Confirm {
+    DeleteAddon,
+    DeleteSavedVariables,
+}
+
 impl std::fmt::Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -84,7 +90,10 @@ impl std::fmt::Display for Mode {
 #[derive(Debug, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum Interaction {
-    Delete(String),
+    DeleteAddon(),
+    ConfirmDeleteAddon(String),
+    DeleteSavedVariables(),
+    ConfirmDeleteSavedVariables(String),
     Expand(ExpandType),
     Ignore(String),
     SelectBackupDirectory(),
@@ -236,6 +245,7 @@ pub struct Ajour {
     addons_search_state: AddonsSearchState,
     wow_directories: Vec<WowDirectoryState>,
     default_backup_compression_format: pick_list::State<CompressionFormat>,
+    pending_confirmation: Option<Confirm>,
     zstd_compression_level_slider_state: slider::State,
 }
 
@@ -299,6 +309,7 @@ impl Default for Ajour {
                 })
                 .collect::<Vec<WowDirectoryState>>(),
             default_backup_compression_format: Default::default(),
+            pending_confirmation: None,
             zstd_compression_level_slider_state: Default::default(),
         }
     }
@@ -536,6 +547,7 @@ impl Application for Ajour {
                         &self.config,
                         &column_config,
                         is_odd,
+                        &self.pending_confirmation,
                     );
 
                     // Adds the addon data cell to the scrollable.

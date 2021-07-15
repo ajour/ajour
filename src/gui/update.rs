@@ -44,6 +44,7 @@ use {
     strfmt::strfmt,
 };
 
+use crate::gui::Confirm;
 #[cfg(target_os = "windows")]
 use crate::tray::{TrayMessage, SHOULD_EXIT, TRAY_SENDER};
 #[cfg(target_os = "windows")]
@@ -372,6 +373,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::ModeSelected(mode)) => {
             log::debug!("Interaction::ModeSelected({:?})", mode);
 
+            // Remove any pending confirms.
+            ajour.pending_confirmation = None;
+
             // Toggle off About or Settings if button is clicked again
             if ajour.mode == mode && (mode == Mode::About || mode == Mode::Settings) {
                 ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
@@ -383,6 +387,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         }
 
         Message::Interaction(Interaction::Expand(expand_type)) => {
+            // Remove any pending confirms.
+            ajour.pending_confirmation = None;
+
             // An addon can be exanded in two ways.
             match &expand_type {
                 ExpandType::Details(addon) => {
@@ -450,7 +457,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
             }
             error @ Err(_) => {
-                // let error = error.context("Failed to fetch changelog").unwrap_err();
                 let error = error
                     .context(localized_string("error-fetch-changelog"))
                     .unwrap_err();
@@ -458,8 +464,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ajour.error = Some(error);
             }
         },
-        Message::Interaction(Interaction::Delete(id)) => {
-            log::debug!("Interaction::Delete({})", &id);
+        Message::Interaction(Interaction::DeleteAddon()) => {
+            log::debug!("Interaction::DeleteAddon()");
+            ajour.pending_confirmation = Some(Confirm::DeleteAddon);
+        }
+        Message::Interaction(Interaction::ConfirmDeleteAddon(id)) => {
+            log::debug!("Interaction::ConfirmDeleteAddon({})", &id);
 
             // Close details if shown.
             ajour.expanded_type = ExpandType::None;
@@ -500,7 +510,31 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     }
                 }
+
+                // Remove any pending confirms.
+                ajour.pending_confirmation = None;
             }
+        }
+        Message::Interaction(Interaction::DeleteSavedVariables()) => {
+            log::debug!("Interaction::DeleteSavedVariables()");
+            ajour.pending_confirmation = Some(Confirm::DeleteSavedVariables);
+        }
+        Message::Interaction(Interaction::ConfirmDeleteSavedVariables(id)) => {
+            log::debug!("Interaction::ConfirmDeleteSavedVariables({})", &id);
+            let flavor = ajour.config.wow.flavor;
+            let addons = ajour.addons.entry(flavor).or_default();
+
+            if let Some(addon) = addons.iter().find(|a| a.primary_folder_id == id).cloned() {
+                let wtf_path = &ajour
+                    .config
+                    .get_wtf_directory_for_flavor(&flavor)
+                    .expect("No World of Warcraft directory set.");
+                let _ = delete_saved_variables(&addon.folders, wtf_path);
+            }
+
+            // Remove any pending confirms.
+            ajour.pending_confirmation = None;
+            ajour.expanded_type = ExpandType::None;
         }
         Message::Interaction(Interaction::Update(id)) => {
             log::debug!("Interaction::Update({})", &id);
