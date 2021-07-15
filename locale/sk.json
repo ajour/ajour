@@ -143,5 +143,6 @@
     "fonts": "Fonty",
     "delete-addon-saved-variables": "Zmaž SavedVariables",
     "delete-addon": "Zmaž {addon}",
-    "confirm-deletion": "Potvrdiť zmazanie"
+    "confirm-deletion": "Potvrdiť zmazanie",
+    "paste-url": "Sem vložte adresu URL ..."
 }

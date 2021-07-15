@@ -143,5 +143,6 @@
     "fonts": "Yazı Tipleri",
     "delete-addon-saved-variables": "Kayıtlı Değişkenleri Sil",
     "delete-addon": "{addon}'u sil",
-    "confirm-deletion": "Silmeyi onayla"
+    "confirm-deletion": "Silmeyi onayla",
+    "paste-url": "URL'yi buraya yapıştırın..."
 }

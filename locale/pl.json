@@ -143,5 +143,6 @@
     "fonts": "Czcionki",
     "delete-addon-saved-variables": "Usuń zapisane zmienne",
     "delete-addon": "Usuń {addon}",
-    "confirm-deletion": "Potwierdź usunięcie"
+    "confirm-deletion": "Potwierdź usunięcie",
+    "paste-url": "Tutaj wklej adres URL..."
 }

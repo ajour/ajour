@@ -143,5 +143,6 @@
     "fonts": "Skrifttyper",
     "delete-addon-saved-variables": "Slett SavedVariables",
     "delete-addon": "Slett {addon}",
-    "confirm-deletion": "Bekreft sletting"
+    "confirm-deletion": "Bekreft sletting",
+    "paste-url": "Lim inn URL her ..."
 }

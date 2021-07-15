@@ -143,5 +143,6 @@
     "fonts": "Polices",
     "delete-addon-saved-variables": "Supprimer les réglages (SavedVariables)",
     "delete-addon": "Supprimer {addon}",
-    "confirm-deletion": "Confirmer la suppression"
+    "confirm-deletion": "Confirmer la suppression",
+    "paste-url": "Collez l'URL ici..."
 }

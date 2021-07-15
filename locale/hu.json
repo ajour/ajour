@@ -143,5 +143,6 @@
     "fonts": "Betűtípusok",
     "delete-addon-saved-variables": "A SavedVariables törlése",
     "delete-addon": "{addon} törlése",
-    "confirm-deletion": "A törlés megerősítésére"
+    "confirm-deletion": "A törlés megerősítésére",
+    "paste-url": "Illessze ide az URL-t ..."
 }

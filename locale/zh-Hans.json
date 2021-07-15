@@ -143,5 +143,6 @@
     "fonts": "",
     "delete-addon-saved-variables": "",
     "delete-addon": "",
-    "confirm-deletion": ""
+    "confirm-deletion": "",
+    "paste-url": ""
 }

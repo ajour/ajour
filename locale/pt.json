@@ -143,5 +143,6 @@
     "fonts": "Fontes",
     "delete-addon-saved-variables": "Excluir SavedVariables",
     "delete-addon": "Excluir {addon}",
-    "confirm-deletion": "Confirme a exclusão"
+    "confirm-deletion": "Confirme a exclusão",
+    "paste-url": "Cole o URL aqui ..."
 }
