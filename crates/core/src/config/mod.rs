@@ -49,6 +49,9 @@ pub struct Config {
     pub backup_screenshots: bool,
 
     #[serde(default)]
+    pub backup_fonts: bool,
+
+    #[serde(default)]
     pub hide_ignored_addons: bool,
 
     #[serde(default)]
@@ -132,6 +135,12 @@ impl Config {
     /// This will return `None` if flavor does not have a directory.
     pub fn get_download_directory_for_flavor(&self, flavor: Flavor) -> Option<PathBuf> {
         self.wow.directories.get(&flavor).cloned()
+    }
+
+    /// Returns a `Option<PathBuf>` to the Fonts directory.
+    /// This will return `None` if no `wow_directory` is set in the config.
+    pub fn get_fonts_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
+        self.get_directory_for_flavor(flavor, "Fonts")
     }
 
     /// Returns a `Option<PathBuf>` to the WTF directory.
