@@ -2327,7 +2327,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             }
         }
         Message::RuntimeEvent(iced_native::Event::Keyboard(
-            iced_native::keyboard::Event::KeyReleased { key_code, .. },
+            iced_native::keyboard::Event::KeyReleased {
+                key_code,
+                modifiers,
+            },
         )) => match key_code {
             iced::keyboard::KeyCode::A | iced::keyboard::KeyCode::M => {
                 let flavor = ajour.config.wow.flavor;
@@ -2368,7 +2371,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             },
             iced::keyboard::KeyCode::Tab => {
                 let flavor = ajour.config.wow.flavor;
-                ajour.mode = ajour.mode.next(flavor);
+
+                if modifiers.control {
+                    ajour.mode = ajour.mode.previous(flavor);
+                } else {
+                    ajour.mode = ajour.mode.next(flavor);
+                }
             }
             _ => (),
         },

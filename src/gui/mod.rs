@@ -76,6 +76,18 @@ impl Mode {
             Settings => MyAddons(flavor),
         }
     }
+
+    fn previous(&self, flavor: Flavor) -> Self {
+        use Mode::*;
+        match *self {
+            MyAddons(_) => Settings,
+            MyWeakAuras(_) => MyAddons(flavor),
+            Catalog => MyWeakAuras(flavor),
+            Install => Catalog,
+            About => Install,
+            Settings => About,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
