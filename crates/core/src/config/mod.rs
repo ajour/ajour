@@ -127,7 +127,7 @@ impl Config {
     /// Returns a `Option<PathBuf>` to the directory containing the addons.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_addon_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        self.get_directory_for_flavor(flavor, "Interface/AddOns")
+        self.get_directory_for_flavor(flavor, "Interface/AddOns", true)
     }
 
     /// Returns a `Option<PathBuf>` to the directory which will hold the
@@ -139,25 +139,31 @@ impl Config {
 
     /// Returns a `Option<PathBuf>` to the Fonts directory.
     /// This will return `None` if no `wow_directory` is set in the config.
+    /// This is a optional folder, so it will not be created if nonexistent.
     pub fn get_fonts_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        self.get_directory_for_flavor(flavor, "Fonts")
+        self.get_directory_for_flavor(flavor, "Fonts", false)
     }
 
     /// Returns a `Option<PathBuf>` to the WTF directory.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_wtf_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        self.get_directory_for_flavor(flavor, "WTF")
+        self.get_directory_for_flavor(flavor, "WTF", true)
     }
 
     /// Returns a `Option<PathBuf>` to the Screenshots directory.
     /// This will return `None` if no `wow_directory` is set in the config.
     pub fn get_screenshots_directory_for_flavor(&self, flavor: &Flavor) -> Option<PathBuf> {
-        self.get_directory_for_flavor(flavor, "Screenshots")
+        self.get_directory_for_flavor(flavor, "Screenshots", true)
     }
 
     /// Return a `Option<PathBuf` to a directory.
     /// This will return none if no `wow_directory` is set in the config.
-    fn get_directory_for_flavor(&self, flavor: &Flavor, relative_path: &str) -> Option<PathBuf> {
+    fn get_directory_for_flavor(
+        &self,
+        flavor: &Flavor,
+        relative_path: &str,
+        create_if_nonexistent: bool,
+    ) -> Option<PathBuf> {
         let wow_flavor_dir = self.wow.directories.get(flavor);
         match wow_flavor_dir {
             Some(wow_flavor_dir) => {
@@ -182,7 +188,8 @@ impl Config {
                     }
                 }
 
-                if wow_flavor_dir.exists() && !dir.exists() {
+                // Create directory if missing, and it is allowed.
+                if wow_flavor_dir.exists() && (!dir.exists() && create_if_nonexistent) {
                     let _ = create_dir_all(&dir);
                 }
 

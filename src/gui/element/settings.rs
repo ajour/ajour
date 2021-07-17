@@ -343,15 +343,25 @@ pub fn data_container<'a, 'b>(
             .style(style::NormalBackgroundContainer(color_palette));
 
         // Data row for the Backup directory selection.
-        let backup_directory_row = Row::new()
+        let mut backup_directory_row = Row::new()
             .align_items(Align::Center)
             .push(addon_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(wtf_folder_checkbox.map(Message::Interaction))
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-            .push(screenshots_folder_checkbox.map(Message::Interaction))
-            .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-            .push(fonts_folder_checkbox.map(Message::Interaction))
+            .push(screenshots_folder_checkbox.map(Message::Interaction));
+
+        // Check if Fonts dir exists, since its a user generated folder.
+        // We only show this backup option if it's been created.
+        if let Some(fonts_dir) = config.get_fonts_directory_for_flavor(&config.wow.flavor) {
+            if fonts_dir.exists() {
+                backup_directory_row = backup_directory_row
+                    .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                    .push(fonts_folder_checkbox.map(Message::Interaction));
+            }
+        }
+
+        let backup_directory_row = backup_directory_row
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(config_folder_checkbox.map(Message::Interaction));
 
