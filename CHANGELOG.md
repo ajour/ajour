@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.2.3] - 2021-07-17
+
 ### Added
 
 - Uses `release.json` when installing addons through Github and Gitlab to determine
