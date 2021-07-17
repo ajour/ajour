@@ -58,10 +58,36 @@ impl Default for State {
 pub enum Mode {
     MyAddons(Flavor),
     MyWeakAuras(Flavor),
-    Install,
     Catalog,
+    Install,
     Settings,
     About,
+}
+
+impl Mode {
+    fn next(&self, flavor: Flavor) -> Self {
+        use Mode::*;
+        match *self {
+            MyAddons(_) => MyWeakAuras(flavor),
+            MyWeakAuras(_) => Catalog,
+            Catalog => Install,
+            Install => About,
+            About => Settings,
+            Settings => MyAddons(flavor),
+        }
+    }
+
+    fn previous(&self, flavor: Flavor) -> Self {
+        use Mode::*;
+        match *self {
+            MyAddons(_) => Settings,
+            MyWeakAuras(_) => MyAddons(flavor),
+            Catalog => MyWeakAuras(flavor),
+            Install => Catalog,
+            About => Install,
+            Settings => About,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
