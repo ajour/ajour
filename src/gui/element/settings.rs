@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use ajour_core::repository::CompressionFormat;
+use ajour_core::{config::Flavor, repository::CompressionFormat};
 
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_HEADER_FONT_SIZE, DEFAULT_PADDING},
@@ -351,14 +351,17 @@ pub fn data_container<'a, 'b>(
             .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
             .push(screenshots_folder_checkbox.map(Message::Interaction));
 
-        // Check if Fonts dir exists, since its a user generated folder.
-        // We only show this backup option if it's been created.
-        if let Some(fonts_dir) = config.get_fonts_directory_for_flavor(&config.wow.flavor) {
-            if fonts_dir.exists() {
-                backup_directory_row = backup_directory_row
-                    .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
-                    .push(fonts_folder_checkbox.map(Message::Interaction));
-            }
+        // Check if any `Fonts` dir exists for any Flavor.
+        // We only show the option if any exists.
+        let any_fonts_folders = &Flavor::ALL[..]
+            .iter()
+            .map(|f| config.get_fonts_directory_for_flavor(f))
+            .flatten()
+            .any(|p| p.exists());
+        if *any_fonts_folders {
+            backup_directory_row = backup_directory_row
+                .push(Space::new(Length::Units(DEFAULT_PADDING), Length::Units(0)))
+                .push(fonts_folder_checkbox.map(Message::Interaction));
         }
 
         let backup_directory_row = backup_directory_row
