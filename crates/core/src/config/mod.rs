@@ -158,7 +158,6 @@ impl Config {
 
     /// Return a `Option<PathBuf` to a directory.
     /// This will return none if no `wow_directory` is set in the config.
-    ///
     fn get_directory_for_flavor(
         &self,
         flavor: &Flavor,
