@@ -61,7 +61,7 @@ USAGE:
 OPTIONS:
     # Folder to backup
     # [default: all]
-    # [possible values: all, wtf, addons, config]
+    # [possible values: all, wtf, addons, config, screenshots, fonts]
 
     -b, --backup-folder <backup-folder>
 
@@ -76,6 +76,12 @@ OPTIONS:
     # [possible values: zip, zstd]
 
     -c, --compression-format <compression-format>
+
+    # Compression level to use, when using zstd format
+    # [default: 0]
+
+    -l, --level <level>
+
 
 ARGS:
     # folder to save backups to

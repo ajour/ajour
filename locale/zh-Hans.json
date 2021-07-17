@@ -130,5 +130,19 @@
     "ajour-data": "",
     "screenshots": "",
     "open-addons-directory": "",
-    "open-backup-directory": ""
+    "open-backup-directory": "",
+    "compression_level_explanation": "",
+    "fastest": "",
+    "faster": "",
+    "fast": "",
+    "slower": "",
+    "slowest": "",
+    "open-ajour": "",
+    "hide-ajour": "",
+    "exit": "",
+    "fonts": "",
+    "delete-addon-saved-variables": "",
+    "delete-addon": "",
+    "confirm-deletion": "",
+    "paste-url": ""
 }

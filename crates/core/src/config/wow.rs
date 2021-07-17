@@ -29,7 +29,7 @@ impl Default for Wow {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash, PartialOrd, Ord)]
 pub enum Flavor {
-    #[serde(alias = "retail", alias = "wow_retail")]
+    #[serde(alias = "retail", alias = "mainline", alias = "wow_retail")]
     Retail,
     #[serde(alias = "RetailPTR")]
     RetailPtr,
@@ -44,7 +44,8 @@ pub enum Flavor {
     #[serde(
         alias = "wow_burning_crusade",
         alias = "burningCrusade",
-        alias = "burning_crusade"
+        alias = "burning_crusade",
+        alias = "bcc"
     )]
     ClassicTbc,
     #[serde(alias = "ClassicPTR")]

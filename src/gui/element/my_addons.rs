@@ -1,3 +1,5 @@
+use crate::gui::Confirm;
+
 use {
     super::{DEFAULT_FONT_SIZE, DEFAULT_PADDING},
     crate::gui::{
@@ -110,6 +112,7 @@ pub fn data_row_container<'a, 'b>(
     config: &Config,
     column_config: &'b [(ColumnKey, Length, bool)],
     is_odd: Option<bool>,
+    pending_confirmation: &Option<Confirm>,
 ) -> TableRow<'a, Message> {
     let default_height = Length::Units(26);
     let default_row_height = 26;
@@ -606,11 +609,45 @@ pub fn data_row_container<'a, 'b>(
 
                 let ignore_button: Element<Interaction> = ignore_button.into();
 
+                let (title, interaction) = if Some(Confirm::DeleteAddon) == *pending_confirmation {
+                    (
+                        localized_string("confirm-deletion"),
+                        Interaction::ConfirmDeleteAddon(addon.primary_folder_id.clone()),
+                    )
+                } else {
+                    let mut vars = HashMap::new();
+                    vars.insert("addon".to_string(), addon_cloned.title());
+                    let fmt = localized_string("delete-addon");
+
+                    (strfmt(&fmt, &vars).unwrap(), Interaction::DeleteAddon())
+                };
+
                 let delete_button: Element<Interaction> = Button::new(
                     &mut addon.delete_btn_state,
-                    Text::new(localized_string("delete")).size(DEFAULT_FONT_SIZE),
+                    Text::new(title).size(DEFAULT_FONT_SIZE),
                 )
-                .on_press(Interaction::Delete(addon.primary_folder_id.clone()))
+                .on_press(interaction)
+                .style(style::DefaultDeleteButton(color_palette))
+                .into();
+
+                let (title, interaction) = if Some(Confirm::DeleteSavedVariables)
+                    == *pending_confirmation
+                {
+                    (
+                        localized_string("confirm-deletion"),
+                        Interaction::ConfirmDeleteSavedVariables(addon.primary_folder_id.clone()),
+                    )
+                } else {
+                    (
+                        localized_string("delete-addon-saved-variables"),
+                        Interaction::DeleteSavedVariables(),
+                    )
+                };
+                let delete_savedvariables_button: Element<Interaction> = Button::new(
+                    &mut addon.delete_saved_variables_btn_state,
+                    Text::new(title).size(DEFAULT_FONT_SIZE),
+                )
+                .on_press(interaction)
                 .style(style::DefaultDeleteButton(color_palette))
                 .into();
 
@@ -641,6 +678,8 @@ pub fn data_row_container<'a, 'b>(
                     .push(changelog_button.map(Message::Interaction))
                     .push(Space::new(Length::Units(5), Length::Units(0)))
                     .push(ignore_button.map(Message::Interaction))
+                    .push(Space::new(Length::Units(5), Length::Units(0)))
+                    .push(delete_savedvariables_button.map(Message::Interaction))
                     .push(Space::new(Length::Units(5), Length::Units(0)))
                     .push(delete_button.map(Message::Interaction))
                     .width(Length::Fill);
@@ -775,10 +814,7 @@ pub fn menu_container<'a>(
     config: &Config,
 ) -> Container<'a, Message> {
     // MyAddons state.
-    let state = state
-        .get(&Mode::MyAddons(flavor))
-        .cloned()
-        .unwrap_or_default();
+    let state = state.get(&Mode::MyAddons(flavor));
 
     // A row contain general settings.
     let mut settings_row = Row::new().align_items(Align::Center);
@@ -817,7 +853,7 @@ pub fn menu_container<'a>(
     // Enable refresh_button if:
     //   - No addon is performing any task.
     //   - Mode state isn't start or loading
-    if !addons_performing_actions && !matches!(state, State::Start | State::Loading) {
+    if !addons_performing_actions && !matches!(state, None | Some(State::Loading)) {
         refresh_button = refresh_button.on_press(Interaction::Refresh(Mode::MyAddons(flavor)));
     }
 
@@ -829,7 +865,7 @@ pub fn menu_container<'a>(
     let ignored_addons = config.addons.ignored.get(&flavor);
 
     let status_text = match state {
-        State::Ready => {
+        Some(State::Ready) => {
             let flavor = flavor.to_string().to_lowercase();
             let addons_count = addons
                 .iter()

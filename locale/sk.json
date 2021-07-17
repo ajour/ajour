@@ -130,5 +130,19 @@
     "ajour-data": "Ajour údaje",
     "screenshots": "Snímky obrazovky",
     "open-addons-directory": "Otvor zložku s addonmi",
-    "open-backup-directory": "Otvor zložku zálohovania"
+    "open-backup-directory": "Otvor zložku zálohovania",
+    "compression_level_explanation": "Vyberte optimálny stupeň kompresie. Rýchlejšia kompresia má za následok väčšie súbory.",
+    "fastest": "Najrýchlejšia",
+    "faster": "Rýchlejšia",
+    "fast": "Rýchla",
+    "slower": "Pomalšia",
+    "slowest": "Najpomalšia",
+    "open-ajour": "Otvor Ajour",
+    "hide-ajour": "Skry Ajour",
+    "exit": "Koniec",
+    "fonts": "Fonty",
+    "delete-addon-saved-variables": "Zmaž SavedVariables",
+    "delete-addon": "Zmaž {addon}",
+    "confirm-deletion": "Potvrdiť zmazanie",
+    "paste-url": "Sem vložte adresu URL ..."
 }

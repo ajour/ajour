@@ -128,6 +128,8 @@ pub struct Addon {
     #[cfg(feature = "gui")]
     pub delete_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
+    pub delete_saved_variables_btn_state: iced_native::button::State,
+    #[cfg(feature = "gui")]
     pub ignore_btn_state: iced_native::button::State,
     #[cfg(feature = "gui")]
     pub unignore_btn_state: iced_native::button::State,
@@ -158,6 +160,8 @@ impl Addon {
             update_btn_state: Default::default(),
             #[cfg(feature = "gui")]
             delete_btn_state: Default::default(),
+            #[cfg(feature = "gui")]
+            delete_saved_variables_btn_state: Default::default(),
             #[cfg(feature = "gui")]
             ignore_btn_state: Default::default(),
             #[cfg(feature = "gui")]

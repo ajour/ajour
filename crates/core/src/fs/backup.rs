@@ -115,13 +115,15 @@ fn zip_write(
 pub struct ZstdBackup {
     src: Vec<BackupFolder>,
     dest: PathBuf,
+    level: i32,
 }
 
 impl ZstdBackup {
-    pub(crate) fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>) -> ZstdBackup {
+    pub(crate) fn new(src: Vec<BackupFolder>, dest: impl AsRef<Path>, level: i32) -> ZstdBackup {
         ZstdBackup {
             src,
             dest: dest.as_ref().to_owned(),
+            level,
         }
     }
 }
@@ -131,7 +133,7 @@ impl Backup for ZstdBackup {
         use zstd::stream::write::Encoder as ZstdEncoder;
 
         let output = File::create(&self.dest)?;
-        let mut enc = ZstdEncoder::new(output, 0)?;
+        let mut enc = ZstdEncoder::new(output, self.level)?;
         enc.multithread(num_cpus::get() as u32)?;
         let mut tar = tar::Builder::new(enc.auto_finish());
 

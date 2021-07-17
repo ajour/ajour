@@ -130,5 +130,19 @@
     "ajour-data": "Ajour Daten",
     "screenshots": "Screenshots",
     "open-addons-directory": "AddOns-Verzeichnis öffnen",
-    "open-backup-directory": "Backup-Verzeichnis öffnen"
+    "open-backup-directory": "Backup-Verzeichnis öffnen",
+    "compression_level_explanation": "Wählen Sie die optimale Komprimierungsstufe. Eine schnellere Komprimierung führt zu größeren Dateien.",
+    "fastest": "Schnellste",
+    "faster": "Schneller",
+    "fast": "Schnell",
+    "slower": "Langsamer",
+    "slowest": "Langsamste",
+    "open-ajour": "Ajour öffnen",
+    "hide-ajour": "Ajour ausblenden",
+    "exit": "Ausgang",
+    "fonts": "Schriftarten",
+    "delete-addon-saved-variables": "Gespeicherte Variablen löschen",
+    "delete-addon": "{addon} löschen",
+    "confirm-deletion": "Löschung bestätigen",
+    "paste-url": "URL hier einfügen..."
 }
