@@ -1027,9 +1027,9 @@ static RE_PARSING_PATTERNS: Lazy<ParsingPatterns> = Lazy::new(|| {
     );
 
     ParsingPatterns {
-        extra_inclusion_regex: Regex::new("(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
+        extra_inclusion_regex: Regex::new(r"(?i)^[^/\\]+[/\\]Bindings\.xml$").unwrap(),
         initial_inclusion_regex: Regex::new(
-            "(?i)^([^/]+)[\\\\/]\\1(-mainline|-bcc|-classic)?\\.toc$",
+            r"(?i)^([^/\\]+)[/\\]\1(-mainline|-bcc|-classic)?\.toc$",
         )
         .unwrap(),
         file_parsing_regex,
