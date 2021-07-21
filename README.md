@@ -158,4 +158,4 @@ and macOS while at the same time is as performant and reliable as possible.
 
 ## License
 
-Ajour is released under the [MIT License.](https://github.com/ajour/ajour/blob/master/LICENSE)
+Ajour is released under the [GPL-3.0 License.](https://github.com/ajour/ajour/blob/master/LICENSE)
