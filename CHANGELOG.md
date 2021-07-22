@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Keybindings have been added to navigate around quickly.
+
 ## [1.2.3] - 2021-07-17
 
 ### Added

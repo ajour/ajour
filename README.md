@@ -20,6 +20,7 @@
 - [Features](#features)
 - [Install](#install)
 - [Themes](#themes)
+- [Keybindings](#keybindings)
 - [Command Line](#command-line)
 - [Contribute](#contribute)
 - [FAQ](#faq)
@@ -95,6 +96,20 @@ macOS / Linux:
 Windows:
 
 - `%APPDATA%\ajour\themes`
+
+## Keybindings
+
+| key                              | action                 |
+| -------------------------------- | ---------------------- |
+| <kbd>a</kbd>/<kbd>m</kbd>        | Go to MyAddons         |
+| <kbd>w</kbd>                     | Go to Wago             |
+| <kbd>c</kbd>                     | Go to Catalog          |
+| <kbd>i</kbd>                     | Go to Install from URL |
+| <kbd>s</kbd>                     | Go to Settings         |
+| <kbd>r</kbd>                     | Refresh                |
+| <kbd>u</kbd>                     | Update                 |
+| <kbd>Tab</kbd>                   | Go to next tab         |
+| <kbd>Ctrl</kbd> + <kbd>Tab</kbd> | Go to previous tab     |
 
 ## Command Line
 
