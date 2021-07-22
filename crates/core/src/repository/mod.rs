@@ -444,7 +444,7 @@ pub async fn batch_refresh_repository_packages(
     // Get all wowi repo packages
     let wowi_repo_packages = wowi::batch_fetch_repo_packages(flavor, &wowi_ids).await?;
 
-    // Get all hb repo packages
+    // Get all hub repo packages
     let hub_repo_packages = hub::batch_fetch_repo_packages(flavor, &hub_ids).await?;
 
     // Get all git repo packages
