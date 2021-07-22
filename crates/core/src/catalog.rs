@@ -7,7 +7,7 @@ use isahc::AsyncReadResponseExt;
 use serde::{Deserialize, Serialize};
 
 const CATALOG_URL: &str =
-    "https://raw.githubusercontent.com/ajour/catalog/feat/hub-source/catalog-0.1.0.json";
+    "https://raw.githubusercontent.com/ajour/catalog/feat/hub-source/catalog-0.2.0.json";
 
 type Etag = Option<String>;
 
