@@ -2,7 +2,7 @@ use crate::catalog;
 use crate::error::FilesystemError;
 use crate::repository::CompressionFormat;
 use glob::MatchOptions;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::fs::create_dir_all;
@@ -66,7 +66,7 @@ pub struct Config {
     #[serde(default)]
     pub language: Language,
 
-    #[serde(default)]
+    #[serde(deserialize_with = "from_catalog_source")]
     pub catalog_source: Option<catalog::Source>,
 
     #[serde(default)]
@@ -89,6 +89,15 @@ pub struct Config {
     #[serde(default)]
     #[cfg(target_os = "windows")]
     pub start_closed_to_tray: bool,
+}
+
+/// Deserialize `catalog::Source`.
+/// If we find a unknown type, we return None rather than panic.
+fn from_catalog_source<'de, D>(deserializer: D) -> Result<Option<catalog::Source>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(Deserialize::deserialize(deserializer).unwrap_or(None))
 }
 
 impl Config {

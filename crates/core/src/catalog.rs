@@ -6,7 +6,8 @@ use chrono::prelude::*;
 use isahc::AsyncReadResponseExt;
 use serde::{Deserialize, Serialize};
 
-const CATALOG_URL: &str = "https://raw.githubusercontent.com/ajour/catalog/main/catalog-0.1.0.json";
+const CATALOG_URL: &str =
+    "https://raw.githubusercontent.com/ajour/catalog/feat/hub-source/catalog-0.1.0.json";
 
 type Etag = Option<String>;
 
@@ -58,19 +59,19 @@ pub(crate) async fn download_catalog(
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Source {
-    Curse,
     Tukui,
     WowI,
-    TownlongYak,
+    Hub,
+    Curse,
 }
 
 impl std::fmt::Display for Source {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Source::Curse => "Curse",
+            Source::Curse => "CurseForge",
             Source::Tukui => "Tukui",
             Source::WowI => "WowInterface",
-            Source::TownlongYak => "TownlongYak",
+            Source::Hub => "Hub",
         };
         write!(f, "{}", s)
     }

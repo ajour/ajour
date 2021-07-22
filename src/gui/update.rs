@@ -989,7 +989,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                 }
 
-                // If we are updating / installing a Tukui / WowI / Townlong / Git
+                // If we are updating / installing a Tukui / WowI / Hub / Git
                 // addon, we want to update the cache. If we are installing a Curse
                 // addon, we want to make sure cache entry exists for those folders
                 if let Some(addon_cache) = &ajour.addon_cache {
@@ -1005,7 +1005,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             // Update the entry for this cached addon
                             Some(RepositoryKind::Tukui)
                             | Some(RepositoryKind::WowI)
-                            | Some(RepositoryKind::TownlongYak)
+                            | Some(RepositoryKind::Hub)
                             | Some(RepositoryKind::Git(_)) => {
                                 commands.push(Command::perform(
                                     update_addon_cache(addon_cache.clone(), entry, flavor),
@@ -2564,7 +2564,7 @@ async fn perform_fetch_latest_addon(
                     catalog::Source::Curse => RepositoryKind::Curse,
                     catalog::Source::Tukui => RepositoryKind::Tukui,
                     catalog::Source::WowI => RepositoryKind::WowI,
-                    catalog::Source::TownlongYak => RepositoryKind::TownlongYak,
+                    catalog::Source::Hub => RepositoryKind::Hub,
                 };
 
                 RepositoryPackage::from_repo_id(flavor, kind, id)?

@@ -935,7 +935,7 @@ impl Application for Ajour {
                                 || (a.wowi_id() == Some(&addon.addon.id.to_string())
                                     && addon.addon.source == catalog::Source::WowI)
                                 || (a.hub_id() == Some(addon.addon.id)
-                                    && addon.addon.source == catalog::Source::TownlongYak)
+                                    && addon.addon.source == catalog::Source::Hub)
                         });
 
                         let install_addon = install_addons.iter().find(|a| {
@@ -1973,7 +1973,7 @@ impl CatalogSource {
             CatalogSource::Choice(catalog::Source::Curse),
             CatalogSource::Choice(catalog::Source::Tukui),
             CatalogSource::Choice(catalog::Source::WowI),
-            CatalogSource::Choice(catalog::Source::TownlongYak),
+            CatalogSource::Choice(catalog::Source::Hub),
         ]
     }
 }
@@ -1983,10 +1983,10 @@ impl std::fmt::Display for CatalogSource {
         let empty_display_string = &localized_string("select-catalog-source-picklist")[..];
         let s = match self {
             CatalogSource::Choice(source) => match source {
-                catalog::Source::Curse => "Curse",
+                catalog::Source::Curse => "CurseForge",
                 catalog::Source::Tukui => "Tukui",
                 catalog::Source::WowI => "WowInterface",
-                catalog::Source::TownlongYak => "TownlongYak",
+                catalog::Source::Hub => "Hub",
             },
             CatalogSource::None => empty_display_string,
         };
