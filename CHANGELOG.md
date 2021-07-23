@@ -28,6 +28,10 @@ and `Removed`.
   - Townlong Yak addons are still available through both CurseForge and the newly
     added source, Hub.
 
+### Changed
+
+- Speed up parsing addons by improving regex expessions.
+
 ## [1.2.3] - 2021-07-17
 
 ### Added

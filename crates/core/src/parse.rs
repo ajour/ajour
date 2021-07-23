@@ -1002,32 +1002,31 @@ where
 }
 
 static RE_TOC_LINE: Lazy<regex::Regex> =
-    Lazy::new(|| regex::Regex::new(r"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)").unwrap());
+    Lazy::new(|| regex::Regex::new(r#"^##\s*(?P<key>.*?)\s*:\s?(?P<value>.*)"#).unwrap());
 static RE_TOC_TITLE: Lazy<regex::Regex> =
-    Lazy::new(|| regex::Regex::new(r"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)").unwrap());
+    Lazy::new(|| regex::Regex::new(r#"\|(?:[a-fA-F\d]{9}|T[^|]*|t|r|$)"#).unwrap());
 static RE_PARSING_PATTERNS: Lazy<ParsingPatterns> = Lazy::new(|| {
     let mut file_parsing_regex = HashMap::new();
     file_parsing_regex.insert(
         ".xml".to_string(),
         (
-            regex::Regex::new("(?s)<!--.*?-->").unwrap(),
-            Regex::new("(?i)<(?:Include|Script)\\s+file=[\"\"']((?:(?<!\\.\\.).)+)[\"\"']\\s*/>")
-                .unwrap(),
+            regex::Regex::new(r#"(?s)<!--.*?-->"#).unwrap(),
+            Regex::new(r#"(?i)<(?:Include|Script)\s+file=["']((?:(?<!\.\.).)+)["']\s*/>"#).unwrap(),
         ),
     );
 
     file_parsing_regex.insert(
         ".toc".to_string(),
         (
-            regex::Regex::new("(?m)\\s*#.*$").unwrap(),
-            Regex::new("(?mi)^\\s*((?:(?<!\\.\\.).)+\\.(?:xml|lua))\\s*$").unwrap(),
+            regex::Regex::new(r#"(?m)\s*#.*$"#).unwrap(),
+            Regex::new(r#"(?mi)^\s*((?:(?<!\.\.).)+\.(?:xml|lua))\s*$"#).unwrap(),
         ),
     );
 
     ParsingPatterns {
-        extra_inclusion_regex: Regex::new("(?i)^[^/\\\\]+[/\\\\]Bindings\\.xml$").unwrap(),
+        extra_inclusion_regex: Regex::new(r#"(?i)^[^/\\]+[/\\]Bindings\.xml$"#).unwrap(),
         initial_inclusion_regex: Regex::new(
-            "(?i)^([^/]+)[\\\\/]\\1(-mainline|-bcc|-classic)?\\.toc$",
+            r#"(?i)^([^/\\]+)[/\\]\1(-mainline|-bcc|-classic)?\.toc$"#,
         )
         .unwrap(),
         file_parsing_regex,
