@@ -1835,11 +1835,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::Interaction(Interaction::CatalogSourceSelected(source)) => {
             log::debug!("Interaction::CatalogSourceSelected({:?})", source);
 
-            // Catalog source
-            if let CatalogSource::Choice(source) = source {
-                ajour.config.catalog_source = Some(source);
-            } else {
-                ajour.config.catalog_source = None;
+            // Save the specific source to the config, otherwise we set `None`
+            match source {
+                CatalogSource::All => {
+                    ajour.config.catalog_source = None;
+                }
+                CatalogSource::Choice(source) => {
+                    ajour.config.catalog_source = Some(source);
+                }
             }
 
             // Save to config
