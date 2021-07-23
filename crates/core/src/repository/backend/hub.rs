@@ -14,13 +14,13 @@ use std::collections::HashMap;
 const API_ENDPOINT: &str = "https://hub.wowup.io";
 
 #[derive(Debug, Clone)]
-pub struct TownlongYak {
+pub struct Hub {
     pub id: String,
     pub flavor: Flavor,
 }
 
 #[async_trait]
-impl Backend for TownlongYak {
+impl Backend for Hub {
     async fn get_metadata(&self) -> Result<RepositoryMetadata, RepositoryError> {
         let packages = fetch_remote_packages(self.flavor, &[self.id.clone()]).await?;
 
@@ -31,7 +31,7 @@ impl Backend for TownlongYak {
                 id: self.id.clone(),
             })?;
 
-        let metadata = metadata_from_townlong_package(self.flavor, package);
+        let metadata = metadata_from_hub_package(self.flavor, package);
 
         Ok(metadata)
     }
@@ -45,10 +45,7 @@ impl Backend for TownlongYak {
     }
 }
 
-pub(crate) fn metadata_from_townlong_package(
-    flavor: Flavor,
-    package: TownlongYakPackage,
-) -> RepositoryMetadata {
+pub(crate) fn metadata_from_hub_package(flavor: Flavor, package: HubPackage) -> RepositoryMetadata {
     let mut remote_packages = HashMap::new();
 
     for release in package.releases.iter() {
@@ -84,33 +81,33 @@ pub(crate) fn metadata_from_townlong_package(
 
 pub(crate) async fn batch_fetch_repo_packages(
     flavor: Flavor,
-    townlong_ids: &[String],
+    hub_ids: &[String],
 ) -> Result<Vec<RepositoryPackage>, DownloadError> {
-    let mut townlong_repo_packages = vec![];
+    let mut hub_repo_packages = vec![];
 
-    if townlong_ids.is_empty() {
-        return Ok(townlong_repo_packages);
+    if hub_ids.is_empty() {
+        return Ok(hub_repo_packages);
     }
 
-    let townlong_packages = townlongyak::fetch_remote_packages(flavor, &townlong_ids).await?;
+    let hub_packages = hub::fetch_remote_packages(flavor, &hub_ids).await?;
 
-    townlong_repo_packages.extend(
-        townlong_packages
+    hub_repo_packages.extend(
+        hub_packages
             .into_iter()
             .map(|package| {
                 (
                     package.id.to_string(),
-                    townlongyak::metadata_from_townlong_package(flavor, package),
+                    hub::metadata_from_hub_package(flavor, package),
                 )
             })
             .filter_map(|(id, metadata)| {
-                RepositoryPackage::from_repo_id(flavor, RepositoryKind::TownlongYak, id)
+                RepositoryPackage::from_repo_id(flavor, RepositoryKind::Hub, id)
                     .ok()
                     .map(|r| r.with_metadata(metadata))
             }),
     );
 
-    Ok(townlong_repo_packages)
+    Ok(hub_repo_packages)
 }
 
 /// Function to fetch a remote addon package which contains
@@ -118,7 +115,7 @@ pub(crate) async fn batch_fetch_repo_packages(
 pub(crate) async fn fetch_remote_packages(
     flavor: Flavor,
     ids: &[String],
-) -> Result<Vec<TownlongYakPackage>, DownloadError> {
+) -> Result<Vec<HubPackage>, DownloadError> {
     let url = format!("{}/addons/batch/{}", API_ENDPOINT, flavor.hub_format());
 
     let addon_ids = ids.iter().filter_map(|i| i.parse::<i64>().ok()).collect();
@@ -128,10 +125,7 @@ pub(crate) async fn fetch_remote_packages(
     let mut resp = post_json_async(&url, BatchRequest { addon_ids }, vec![], timeout).await?;
 
     if resp.status().is_success() {
-        let packages = resp
-            .json::<TownlongYakBatchResponse>()
-            .await
-            .map(|r| r.addons);
+        let packages = resp.json::<HubBatchResponse>().await.map(|r| r.addons);
 
         Ok(packages?)
     } else {
@@ -143,14 +137,14 @@ pub(crate) async fn fetch_remote_packages(
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct TownlongYakBatchResponse {
-    pub addons: Vec<TownlongYakPackage>,
+pub struct HubBatchResponse {
+    pub addons: Vec<HubPackage>,
     pub count: i64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 /// Struct for applying wowi details to an `Addon`.
-pub struct TownlongYakPackage {
+pub struct HubPackage {
     pub id: i64,
     pub repository: String,
     pub repository_name: String,
@@ -158,11 +152,11 @@ pub struct TownlongYakPackage {
     pub description: Option<String>,
     pub homepage: Option<String>,
     pub owner_name: Option<String>,
-    pub releases: Vec<TownlongYakRelease>,
+    pub releases: Vec<HubRelease>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct TownlongYakRelease {
+pub struct HubRelease {
     pub id: i64,
     pub download_url: String,
     pub game_type: String,

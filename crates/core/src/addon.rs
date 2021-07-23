@@ -229,9 +229,8 @@ impl Addon {
                         RepositoryKind::WowI => {
                             self.repository_id() == f.repository_identifiers.wowi.as_deref()
                         }
-                        // For git & townlong sources, prioritize the folder that has a version in it
-                        RepositoryKind::TownlongYak => f.version.is_some(),
-                        RepositoryKind::Git(_) => f.version.is_some(),
+                        // For git and hub sources, prioritize the folder that has a version in it
+                        RepositoryKind::Hub | RepositoryKind::Git(_) => f.version.is_some(),
                     }
                 } else {
                     false
@@ -433,7 +432,7 @@ impl Addon {
 
     /// Returns the hub id of the addon, if applicable.
     pub fn hub_id(&self) -> Option<i32> {
-        if self.repository_kind() == Some(RepositoryKind::TownlongYak) {
+        if self.repository_kind() == Some(RepositoryKind::Hub) {
             self.repository()
                 .map(|r| r.id.parse::<i32>().ok())
                 .flatten()

@@ -824,7 +824,7 @@ impl Application for Ajour {
                         .config
                         .catalog_source
                         .map(CatalogSource::Choice)
-                        .unwrap_or(CatalogSource::None);
+                        .unwrap_or(CatalogSource::All);
 
                     let source_picklist = PickList::new(
                         &mut self.catalog_search_state.sources_state,
@@ -935,7 +935,7 @@ impl Application for Ajour {
                                 || (a.wowi_id() == Some(&addon.addon.id.to_string())
                                     && addon.addon.source == catalog::Source::WowI)
                                 || (a.hub_id() == Some(addon.addon.id)
-                                    && addon.addon.source == catalog::Source::TownlongYak)
+                                    && addon.addon.source == catalog::Source::Hub)
                         });
 
                         let install_addon = install_addons.iter().find(|a| {
@@ -964,19 +964,7 @@ impl Application for Ajour {
                         .push(catalog_query_container)
                         .push(Space::new(Length::Fill, Length::Units(5)));
 
-                    if self.config.catalog_source.is_none() {
-                        let status = element::status::data_container(
-                            color_palette,
-                            &localized_string("select-catalog-source-title")[..],
-                            &localized_string("select-catalog-source-description")[..],
-                            None,
-                        );
-
-                        content = content.push(status);
-                    } else {
-                        content = content.push(catalog_row_titles).push(catalog_scrollable);
-                    }
-
+                    content = content.push(catalog_row_titles).push(catalog_scrollable);
                     content = content.push(bottom_space)
                 }
             }
@@ -1684,7 +1672,7 @@ impl Default for CatalogHeaderState {
                     key: CatalogColumnKey::Source,
                     btn_state: Default::default(),
                     width: Length::Units(110),
-                    hidden: true,
+                    hidden: false,
                     order: 2,
                 },
                 CatalogColumnState {
@@ -1963,32 +1951,33 @@ impl std::fmt::Display for CatalogResultSize {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum CatalogSource {
+    All,
     Choice(catalog::Source),
-    None,
 }
 
 impl CatalogSource {
     pub fn all() -> Vec<CatalogSource> {
         vec![
+            CatalogSource::All,
             CatalogSource::Choice(catalog::Source::Curse),
+            CatalogSource::Choice(catalog::Source::Hub),
             CatalogSource::Choice(catalog::Source::Tukui),
             CatalogSource::Choice(catalog::Source::WowI),
-            CatalogSource::Choice(catalog::Source::TownlongYak),
         ]
     }
 }
 
 impl std::fmt::Display for CatalogSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let empty_display_string = &localized_string("select-catalog-source-picklist")[..];
+        let all_sources_str = &localized_string("all-sources")[..];
         let s = match self {
             CatalogSource::Choice(source) => match source {
-                catalog::Source::Curse => "Curse",
+                catalog::Source::Curse => "CurseForge",
                 catalog::Source::Tukui => "Tukui",
                 catalog::Source::WowI => "WowInterface",
-                catalog::Source::TownlongYak => "TownlongYak",
+                catalog::Source::Hub => "Hub",
             },
-            CatalogSource::None => empty_display_string,
+            CatalogSource::All => all_sources_str,
         };
         write!(f, "{}", s)
     }

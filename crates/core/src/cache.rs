@@ -208,7 +208,7 @@ impl TryFrom<&Addon> for AddonCacheEntry {
             let mut folder_names: Vec<_> = addon.folders.iter().map(|a| a.id.clone()).collect();
             folder_names.sort();
 
-            let external_release_id = if repository == RepositoryKind::TownlongYak {
+            let external_release_id = if repository == RepositoryKind::Hub {
                 addon.file_id().map(ExternalReleaseId::FileId)
             } else {
                 addon

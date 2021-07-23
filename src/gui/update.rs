@@ -989,7 +989,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     }
                 }
 
-                // If we are updating / installing a Tukui / WowI / Townlong / Git
+                // If we are updating / installing a Tukui / WowI / Hub / Git
                 // addon, we want to update the cache. If we are installing a Curse
                 // addon, we want to make sure cache entry exists for those folders
                 if let Some(addon_cache) = &ajour.addon_cache {
@@ -1005,7 +1005,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             // Update the entry for this cached addon
                             Some(RepositoryKind::Tukui)
                             | Some(RepositoryKind::WowI)
-                            | Some(RepositoryKind::TownlongYak)
+                            | Some(RepositoryKind::Hub)
                             | Some(RepositoryKind::Git(_)) => {
                                 commands.push(Command::perform(
                                     update_addon_cache(addon_cache.clone(), entry, flavor),
@@ -1709,7 +1709,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 .config
                 .catalog_source
                 .map(CatalogSource::Choice)
-                .unwrap_or(CatalogSource::None);
+                .unwrap_or(CatalogSource::All);
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
@@ -1833,13 +1833,20 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             query_and_sort_catalog(ajour);
         }
         Message::Interaction(Interaction::CatalogSourceSelected(source)) => {
-            log::debug!("Interaction::CatalogResultSizeSelected({:?})", source);
+            log::debug!("Interaction::CatalogSourceSelected({:?})", source);
 
-            // Catalog source
-            if let CatalogSource::Choice(source) = source {
-                ajour.config.catalog_source = Some(source);
-                let _ = ajour.config.save();
+            // Save the specific source to the config, otherwise we set `None`
+            match source {
+                CatalogSource::All => {
+                    ajour.config.catalog_source = None;
+                }
+                CatalogSource::Choice(source) => {
+                    ajour.config.catalog_source = Some(source);
+                }
             }
+
+            // Save to config
+            let _ = ajour.config.save();
 
             ajour.catalog_search_state.categories = ajour
                 .catalog_categories_per_source_cache
@@ -2564,7 +2571,7 @@ async fn perform_fetch_latest_addon(
                     catalog::Source::Curse => RepositoryKind::Curse,
                     catalog::Source::Tukui => RepositoryKind::Tukui,
                     catalog::Source::WowI => RepositoryKind::WowI,
-                    catalog::Source::TownlongYak => RepositoryKind::TownlongYak,
+                    catalog::Source::Hub => RepositoryKind::Hub,
                 };
 
                 RepositoryPackage::from_repo_id(flavor, kind, id)?
@@ -2994,7 +3001,10 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
                 }
             })
             .filter(|(a, _)| a.versions.iter().any(|v| v.flavor == flavor.base_flavor()))
-            .filter(|(a, _)| Some(a.source) == *source)
+            .filter(|(a, _)| match source {
+                Some(source) => a.source == *source,
+                None => true,
+            })
             .filter(|(a, _)| match category {
                 CatalogCategory::All => true,
                 CatalogCategory::Choice(name) => a.categories.iter().any(|c| c == name),

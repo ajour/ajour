@@ -54,7 +54,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
   - [Tukui](https://www.tukui.org/)
   - [CurseForge](https://www.curseforge.com/wow/addons)
   - [WoWInterface](https://www.wowinterface.com/)
-  - [Townlong Yak](https://www.townlong-yak.com/)
+  - [Hub](https://wowup.io/)
 - Install new addons from the catalog or directly from a GitHub/GitLab URL
 - Support for release channels, so it's possible to select either `alpha`, `beta`
   or `stable` for each addon

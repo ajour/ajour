@@ -6,8 +6,7 @@ use crate::{
     fs::PersistentData,
     murmur2::calculate_hash,
     repository::{
-        curse, git, townlongyak, tukui, wowi, RepositoryIdentifiers, RepositoryKind,
-        RepositoryPackage,
+        curse, git, hub, tukui, wowi, RepositoryIdentifiers, RepositoryKind, RepositoryPackage,
     },
     utility::format_interface_into_game_version,
 };
@@ -452,7 +451,7 @@ async fn get_all_repo_packages(
     let mut curse_ids = vec![];
     let mut tukui_ids = vec![];
     let mut wowi_ids = vec![];
-    let mut townlong_ids = vec![];
+    let mut hub_ids = vec![];
     let mut git_urls = vec![];
 
     let cached_folder_names: Vec<_> = cache_entries
@@ -514,15 +513,15 @@ async fn get_all_repo_packages(
         wowi_ids.dedup();
     }
 
-    // Get all possible townlong_ids (hub) ids
+    // Get all possible hub ids
     {
-        townlong_ids.extend(
+        hub_ids.extend(
             cache_entries
                 .iter()
-                .filter(|e| e.repository == RepositoryKind::TownlongYak)
+                .filter(|e| e.repository == RepositoryKind::Hub)
                 .map(|e| e.repository_id.clone()),
         );
-        townlong_ids.dedup();
+        hub_ids.dedup();
     }
 
     // Get all possible git urls
@@ -564,14 +563,13 @@ async fn get_all_repo_packages(
         wowi_repo_packages.len()
     );
 
-    // Get all townlong repo packages
-    let townlong_repo_packages =
-        townlongyak::batch_fetch_repo_packages(flavor, &townlong_ids).await?;
+    // Get all hub repo packages
+    let hub_repo_packages = hub::batch_fetch_repo_packages(flavor, &hub_ids).await?;
 
     log::debug!(
-        "{} - {} townlong packages fetched",
+        "{} - {} hub packages fetched",
         flavor,
-        townlong_repo_packages.len()
+        hub_repo_packages.len()
     );
 
     // Get all git repo packages
@@ -587,7 +585,7 @@ async fn get_all_repo_packages(
         &curse_repo_packages[..],
         &tukui_repo_packages[..],
         &wowi_repo_packages[..],
-        &townlong_repo_packages[..],
+        &hub_repo_packages[..],
         &git_repo_packages[..],
     ]
     .concat())
@@ -764,11 +762,11 @@ fn build_addons(
     );
 
     log::debug!(
-        "{} - {} addons built from townlong-yak packages",
+        "{} - {} addons built from hub packages",
         flavor,
         concatenated_addons
             .iter()
-            .filter(|a| a.repository_kind() == Some(RepositoryKind::TownlongYak))
+            .filter(|a| a.repository_kind() == Some(RepositoryKind::Hub))
             .count()
     );
 
