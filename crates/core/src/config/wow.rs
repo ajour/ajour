@@ -75,7 +75,7 @@ impl Flavor {
         }
     }
 
-    /// Returns flavor `String` in WowUp.Hub format
+    /// Returns flavor `String` in Hub format
     pub(crate) fn hub_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "retail".to_owned(),
