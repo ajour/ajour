@@ -2332,7 +2332,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 modifiers,
             },
         )) => match key_code {
-            iced::keyboard::KeyCode::A | iced::keyboard::KeyCode::M => {
+            iced::keyboard::KeyCode::A => {
                 let flavor = ajour.config.wow.flavor;
                 ajour.mode = Mode::MyAddons(flavor);
             }

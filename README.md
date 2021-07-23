@@ -101,7 +101,7 @@ Windows:
 
 | key                              | action                 |
 | -------------------------------- | ---------------------- |
-| <kbd>a</kbd>/<kbd>m</kbd>        | Go to MyAddons         |
+| <kbd>a</kbd>                     | Go to MyAddons         |
 | <kbd>w</kbd>                     | Go to Wago             |
 | <kbd>c</kbd>                     | Go to Catalog          |
 | <kbd>i</kbd>                     | Go to Install from URL |
