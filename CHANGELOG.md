@@ -14,13 +14,15 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.2.4] - ?
+
 ### Added
 
+- Hub catalog source.
+  - This is a new source which the [WowUp](https://wowup.io/) team has created.
 - Keybindings have been added to navigate around quickly.
 - Possible to see all addons from all sources when browsing the Catalog by selecting
   "All Sources" in the list.
-- Hub catalog source.
-  - This is a new source which the [WowUp](https://wowup.io/) team has created.
 
 ### Removed
 
