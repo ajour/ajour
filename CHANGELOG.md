@@ -16,6 +16,7 @@ and `Removed`.
 
 ### Added
 
+- Keybindings have been added to navigate around quickly.
 - Possible to see all addons from all sources when browsing the Catalog by selecting
   "All Sources" in the list.
 - Hub catalog source.
