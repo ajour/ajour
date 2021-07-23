@@ -16,7 +16,7 @@ and `Removed`.
 
 ### Changed
 
-- Speed up parsing addons by improved regex expessions.
+- Speed up parsing addons by improving regex expessions.
 
 ## [1.2.3] - 2021-07-17
 
