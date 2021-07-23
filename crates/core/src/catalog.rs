@@ -61,6 +61,7 @@ pub(crate) async fn download_catalog(
 pub enum Source {
     Tukui,
     WowI,
+    #[serde(alias = "TownlongYak")]
     Hub,
     Curse,
 }
