@@ -59,9 +59,10 @@ pub fn export(
 
 pub fn parse_only_needed(
     existing_addons: HashMap<Flavor, Vec<Addon>>,
-    import_string: String,
-) -> Result<HashMap<Flavor, Vec<Data>>, serde_yaml::Error> {
-    let data = serde_yaml::from_str::<HashMap<Flavor, Vec<Data>>>(&import_string)?;
+    path: impl AsRef<Path>,
+) -> Result<HashMap<Flavor, Vec<Data>>, error::FilesystemError> {
+    let file = fs::File::open(&path)?;
+    let data = serde_yaml::from_reader::<_, HashMap<Flavor, Vec<Data>>>(file)?;
 
     Ok(data
         .into_iter()
