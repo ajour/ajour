@@ -21,8 +21,6 @@ pub enum FilesystemError {
     NormalizingPathSlash { path: PathBuf },
     #[error("Could not strip prefix {prefix:?} from {from:?}")]
     StripPrefix { prefix: String, from: String },
-    #[error(transparent)]
-    SerdeJson(#[from] serde_json::Error),
 }
 
 #[derive(thiserror::Error, Debug)]

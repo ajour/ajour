@@ -48,9 +48,9 @@ pub fn export(
         })
         .collect::<HashMap<_, Vec<_>>>();
 
-    let file = output_dir.as_ref().join("ajour-addons.json");
+    let file = output_dir.as_ref().join("ajour-addons.yml");
 
-    let contents = serde_json::to_string(&data)?;
+    let contents = serde_yaml::to_string(&data)?;
 
     fs::write(file, contents)?;
 
@@ -60,8 +60,8 @@ pub fn export(
 pub fn parse_only_needed(
     existing_addons: HashMap<Flavor, Vec<Addon>>,
     import_string: String,
-) -> Result<HashMap<Flavor, Vec<Data>>, serde_json::Error> {
-    let data = serde_json::from_str::<HashMap<Flavor, Vec<Data>>>(&import_string)?;
+) -> Result<HashMap<Flavor, Vec<Data>>, serde_yaml::Error> {
+    let data = serde_yaml::from_str::<HashMap<Flavor, Vec<Data>>>(&import_string)?;
 
     Ok(data
         .into_iter()
