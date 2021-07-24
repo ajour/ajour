@@ -57,37 +57,50 @@ pub fn export(
     Ok(())
 }
 
+pub struct Parsed {
+    pub data: Vec<Data>,
+    pub ignored: usize,
+}
+
 pub fn parse_only_needed(
     existing_addons: HashMap<Flavor, Vec<Addon>>,
     path: impl AsRef<Path>,
-) -> Result<HashMap<Flavor, Vec<Data>>, error::FilesystemError> {
+) -> Result<HashMap<Flavor, Parsed>, error::FilesystemError> {
     let file = fs::File::open(&path)?;
     let data = serde_yaml::from_reader::<_, HashMap<Flavor, Vec<Data>>>(file)?;
 
     Ok(data
         .into_iter()
         .map(|(flavor, data)| {
+            let original_len = data.len();
+            let needed = data
+                .into_iter()
+                .filter(|data| {
+                    if let Some(existing) = existing_addons.get(&flavor) {
+                        !existing.iter().any(|a| {
+                            if let Some(existing_repo) = a.repository() {
+                                let kind = data.repo_kind;
+
+                                existing_repo.id == data.id && existing_repo.kind == kind
+                            } else {
+                                false
+                            }
+                        })
+                    } else {
+                        true
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            let ignored = original_len - needed.len();
+
             (
                 flavor,
-                data.into_iter()
-                    .filter(|data| {
-                        if let Some(existing) = existing_addons.get(&flavor) {
-                            !existing.iter().any(|a| {
-                                if let Some(existing_repo) = a.repository() {
-                                    let kind = data.repo_kind;
-
-                                    existing_repo.id == data.id && existing_repo.kind == kind
-                                } else {
-                                    false
-                                }
-                            })
-                        } else {
-                            true
-                        }
-                    })
-                    .collect::<Vec<_>>(),
+                Parsed {
+                    data: needed,
+                    ignored,
+                },
             )
         })
-        .filter(|(_, data)| !data.is_empty())
         .collect())
 }
