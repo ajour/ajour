@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{addon::Addon, config::Flavor, error, repository::RepositoryKind};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Data {
     pub flavor: Flavor,
     pub repo_kind: RepositoryKind,
@@ -32,7 +32,7 @@ impl TryFrom<(Flavor, Addon)> for Data {
 
 pub fn export(
     addons: HashMap<Flavor, Vec<Addon>>,
-    output_dir: impl AsRef<Path>,
+    output_file: impl AsRef<Path>,
 ) -> Result<(), error::FilesystemError> {
     let data = addons
         .into_iter()
@@ -48,15 +48,14 @@ pub fn export(
         })
         .collect::<HashMap<_, Vec<_>>>();
 
-    let file = output_dir.as_ref().join("ajour-addons.yml");
-
     let contents = serde_yaml::to_string(&data)?;
 
-    fs::write(file, contents)?;
+    fs::write(output_file.as_ref(), contents)?;
 
     Ok(())
 }
 
+#[derive(Debug, Clone)]
 pub struct Parsed {
     pub data: Vec<Data>,
     pub ignored: usize,

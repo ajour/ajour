@@ -28,7 +28,7 @@ iced_native = { version = "0.4.0" }
 async-std = "1.6.2"
 isahc = { version = "0.9.6", features = ["json"] }
 image = "0.23.8"
-native-dialog = "0.4.2"
+native-dialog = "0.5.5"
 opener = "0.4.1"
 chrono = { version = "0.4", features = ['serde'] }
 log = "0.4"

@@ -5,6 +5,8 @@ mod update;
 use crate::cli::Opts;
 use crate::localization::{localized_string, LANG};
 use crate::Result;
+use ajour_core::repository::RepositoryKind;
+use ajour_core::share;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
     cache::catalog_download_latest_or_use_cache,
@@ -222,6 +224,10 @@ pub enum Message {
     CheckRepositoryUpdates(Instant),
     RepositoryPackagesFetched((Flavor, Result<Vec<RepositoryPackage>, DownloadError>)),
     ThemeImported(Result<(String, Vec<Theme>), ThemeError>),
+    ExportAddons(Option<PathBuf>),
+    AddonsExported(Result<(), FilesystemError>),
+    ImportAddons(Option<PathBuf>),
+    ImportParsed(Result<HashMap<Flavor, share::Parsed>, FilesystemError>),
 }
 
 pub struct Ajour {
@@ -1910,6 +1916,7 @@ pub enum InstallStatus {
 pub enum InstallKind {
     Catalog { source: catalog::Source },
     Source,
+    Import { repo_kind: RepositoryKind },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
