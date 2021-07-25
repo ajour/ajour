@@ -2298,6 +2298,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.alternating_row_colors = is_set;
             let _ = ajour.config.save();
         }
+        Message::Interaction(Interaction::ExportAddons) => {
+            log::debug!("Interaction::ExportAddons");
+        }
+        Message::Interaction(Interaction::ImportAddons) => {
+            log::debug!("Interaction::ImportAddons");
+        }
         Message::Interaction(Interaction::CompressionLevelChanged(level)) => {
             ajour.config.zstd_compression_level = level;
             let _ = ajour.config.save();

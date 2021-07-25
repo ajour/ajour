@@ -173,6 +173,8 @@ pub enum Interaction {
     ThemeUrlInput(String),
     ImportTheme,
     CompressionLevelChanged(i32),
+    ExportAddons,
+    ImportAddons,
 }
 
 #[derive(Debug)]
@@ -273,6 +275,7 @@ pub struct Ajour {
     default_backup_compression_format: pick_list::State<CompressionFormat>,
     pending_confirmation: Option<Confirm>,
     zstd_compression_level_slider_state: slider::State,
+    share_state: ShareState,
 }
 
 impl Default for Ajour {
@@ -340,6 +343,7 @@ impl Default for Ajour {
             default_backup_compression_format: Default::default(),
             pending_confirmation: None,
             zstd_compression_level_slider_state: Default::default(),
+            share_state: Default::default(),
         }
     }
 }
@@ -1015,6 +1019,7 @@ impl Application for Ajour {
                     &mut self.reset_columns_btn_state,
                     &mut self.localization_picklist_state,
                     &mut self.wow_directories,
+                    &mut self.share_state,
                 );
 
                 content = content.push(settings_container)
@@ -2049,6 +2054,12 @@ impl Default for ScaleState {
             down_btn_state: Default::default(),
         }
     }
+}
+
+#[derive(Default)]
+pub struct ShareState {
+    import_btn_state: button::State,
+    export_btn_state: button::State,
 }
 
 #[allow(clippy::upper_case_acronyms)]
