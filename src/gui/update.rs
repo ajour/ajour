@@ -2351,7 +2351,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 ));
             }
         }
-        Message::ImportParsed(result) => match result.context("Failed to import addons") {
+        Message::ImportParsed(result) => match result.context("Failed to parse import file") {
             Ok(parsed) => {
                 log::debug!("Message::ImportParsed");
 
