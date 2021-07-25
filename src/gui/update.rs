@@ -23,6 +23,7 @@ use {
         repository::{
             batch_refresh_repository_packages, Changelog, RepositoryKind, RepositoryPackage,
         },
+        share,
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
     ajour_weak_auras::{Aura, AuraStatus},
@@ -43,8 +44,6 @@ use {
     std::path::{Path, PathBuf},
     strfmt::strfmt,
 };
-
-use ajour_core::share;
 
 use crate::gui::Confirm;
 #[cfg(target_os = "windows")]
