@@ -41,7 +41,7 @@ pub fn export(
                 flavor,
                 addons
                     .into_iter()
-                    .map(|a| Data::try_from((flavor, a)))
+                    .map(|addon| Data::try_from((flavor, addon)))
                     .flatten()
                     .collect::<Vec<_>>(),
             )
@@ -76,8 +76,8 @@ pub fn parse_only_needed(
                 .into_iter()
                 .filter(|data| {
                     if let Some(existing) = existing_addons.get(&flavor) {
-                        !existing.iter().any(|a| {
-                            if let Some(existing_repo) = a.repository() {
+                        !existing.iter().any(|addon| {
+                            if let Some(existing_repo) = addon.repository() {
                                 let kind = data.repo_kind;
 
                                 existing_repo.id == data.id && existing_repo.kind == kind
