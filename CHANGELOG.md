@@ -14,6 +14,12 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.2.5] - 2021-07-26
+
+### Fixed
+
+- Addons from Hub was not always correctly installed.
+
 ## [1.2.4] - 2021-07-26
 
 ### Added

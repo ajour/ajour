@@ -49,8 +49,12 @@ pub(crate) fn metadata_from_hub_package(flavor: Flavor, package: HubPackage) -> 
     let mut remote_packages = HashMap::new();
 
     for release in package.releases.iter() {
-        if release.game_type == flavor.hub_format() {
-            let version = release.tag_name.clone();
+        if let Some(game_version) = release
+            .game_versions
+            .iter()
+            .find(|gv| gv.game_type == flavor)
+        {
+            let version = game_version.version.clone();
             let download_url = release.download_url.clone();
             let date_time = Some(release.published_at);
 
@@ -156,11 +160,18 @@ pub struct HubPackage {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct HubGameVersion {
+    game_type: Flavor,
+    interface: String,
+    title: String,
+    version: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct HubRelease {
     pub id: i64,
     pub download_url: String,
-    pub game_type: String,
-    pub game_version: String,
+    pub game_versions: Vec<HubGameVersion>,
     pub tag_name: String,
     pub published_at: DateTime<Utc>,
     #[serde(default)]
