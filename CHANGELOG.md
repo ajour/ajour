@@ -14,7 +14,7 @@ and `Removed`.
 
 ## [Unreleased]
 
-## [1.2.4] - ?
+## [1.2.4] - 2021-07-26
 
 ### Added
 
