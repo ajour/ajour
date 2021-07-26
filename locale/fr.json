@@ -144,5 +144,6 @@
     "delete-addon-saved-variables": "Supprimer les réglages (SavedVariables)",
     "delete-addon": "Supprimer {addon}",
     "confirm-deletion": "Confirmer la suppression",
-    "paste-url": "Collez l'URL ici..."
+    "paste-url": "Collez l'URL ici...",
+    "all-sources": "Toutes les sources"
 }

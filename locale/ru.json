@@ -144,5 +144,6 @@
     "delete-addon-saved-variables": "Удалить сохраненные переменные",
     "delete-addon": "Удалить {addon}",
     "confirm-deletion": "Подтвердить удаление",
-    "paste-url": "Вставьте сюда URL ..."
+    "paste-url": "Вставьте сюда URL ...",
+    "all-sources": "Все источники"
 }

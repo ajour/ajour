@@ -141,8 +141,9 @@
     "hide-ajour": "Ajour elrejtése",
     "exit": "Kilépés",
     "fonts": "Betűtípusok",
-    "delete-addon-saved-variables": "A SavedVariables törlése",
+    "delete-addon-saved-variables": "SavedVariables mappa törlése",
     "delete-addon": "{addon} törlése",
-    "confirm-deletion": "A törlés megerősítésére",
-    "paste-url": "Illessze ide az URL-t ..."
+    "confirm-deletion": "A törlés megerősítése",
+    "paste-url": "Illeszd ide az URL-t...",
+    "all-sources": "Összes forrás"
 }

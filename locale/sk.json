@@ -144,5 +144,6 @@
     "delete-addon-saved-variables": "Zmaž SavedVariables",
     "delete-addon": "Zmaž {addon}",
     "confirm-deletion": "Potvrdiť zmazanie",
-    "paste-url": "Sem vložte adresu URL ..."
+    "paste-url": "Sem vložte adresu URL ...",
+    "all-sources": "Všetky zdroje"
 }

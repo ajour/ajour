@@ -282,7 +282,7 @@ pub fn data_row_container<'a, 'b>(
             .map(|v| v.game_version.clone())
             .flatten()
             .map(|gv| match addon_data.source {
-                Source::TownlongYak => format_interface_into_game_version(&gv[..]),
+                Source::Hub => format_interface_into_game_version(&gv[..]),
                 _ => gv,
             })
             .unwrap_or_else(|| localized_string("unknown"));

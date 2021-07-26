@@ -144,5 +144,6 @@
     "delete-addon-saved-variables": "Kayıtlı Değişkenleri Sil",
     "delete-addon": "{addon}'u sil",
     "confirm-deletion": "Silmeyi onayla",
-    "paste-url": "URL'yi buraya yapıştırın..."
+    "paste-url": "URL'yi buraya yapıştırın...",
+    "all-sources": "Tüm Kaynaklar"
 }

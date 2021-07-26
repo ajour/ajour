@@ -144,5 +144,6 @@
     "delete-addon-saved-variables": "Ta bort SavedVariables",
     "delete-addon": "Ta bort {addon}",
     "confirm-deletion": "Bekräfta borttagning",
-    "paste-url": "Klistra in URL här ..."
+    "paste-url": "Klistra in URL här ...",
+    "all-sources": "Alla källor"
 }

@@ -144,5 +144,6 @@
     "delete-addon-saved-variables": "Usuń zapisane zmienne",
     "delete-addon": "Usuń {addon}",
     "confirm-deletion": "Potwierdź usunięcie",
-    "paste-url": "Tutaj wklej adres URL..."
+    "paste-url": "Tutaj wklej adres URL...",
+    "all-sources": "Wszystkie źródła"
 }

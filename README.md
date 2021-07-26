@@ -20,6 +20,7 @@
 - [Features](#features)
 - [Install](#install)
 - [Themes](#themes)
+- [Keybindings](#keybindings)
 - [Command Line](#command-line)
 - [Contribute](#contribute)
 - [FAQ](#faq)
@@ -54,7 +55,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
   - [Tukui](https://www.tukui.org/)
   - [CurseForge](https://www.curseforge.com/wow/addons)
   - [WoWInterface](https://www.wowinterface.com/)
-  - [Townlong Yak](https://www.townlong-yak.com/)
+  - [Hub](https://wowup.io/)
 - Install new addons from the catalog or directly from a GitHub/GitLab URL
 - Support for release channels, so it's possible to select either `alpha`, `beta`
   or `stable` for each addon
@@ -95,6 +96,20 @@ macOS / Linux:
 Windows:
 
 - `%APPDATA%\ajour\themes`
+
+## Keybindings
+
+| key                              | action                 |
+| -------------------------------- | ---------------------- |
+| <kbd>a</kbd>                     | Go to MyAddons         |
+| <kbd>w</kbd>                     | Go to Wago             |
+| <kbd>c</kbd>                     | Go to Catalog          |
+| <kbd>i</kbd>                     | Go to Install from URL |
+| <kbd>s</kbd>                     | Go to Settings         |
+| <kbd>r</kbd>                     | Refresh                |
+| <kbd>u</kbd>                     | Update                 |
+| <kbd>Tab</kbd>                   | Go to next tab         |
+| <kbd>Ctrl</kbd> + <kbd>Tab</kbd> | Go to previous tab     |
 
 ## Command Line
 
