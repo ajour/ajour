@@ -37,7 +37,7 @@ use {
     },
     iced::{Command, Length},
     isahc::http::Uri,
-    rfd::FileDialog,
+    rfd::AsyncFileDialog,
     std::collections::{hash_map::DefaultHasher, HashMap},
     std::convert::TryFrom,
     std::hash::Hasher,
@@ -2584,35 +2584,35 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 }
 
 async fn select_directory() -> Option<PathBuf> {
-    let dialog = FileDialog::new();
-    if let Some(show) = dialog.pick_folder() {
-        return Some(show);
+    let dialog = AsyncFileDialog::new();
+    if let Some(show) = dialog.pick_folder().await {
+        return Some(show.path().to_path_buf());
     }
 
     None
 }
 
 async fn select_wow_directory(flavor: Option<Flavor>) -> (Option<PathBuf>, Option<Flavor>) {
-    let dialog = FileDialog::new();
-    if let Some(show) = dialog.pick_folder() {
-        return (Some(show), flavor);
+    let dialog = AsyncFileDialog::new();
+    if let Some(show) = dialog.pick_folder().await {
+        return (Some(show.path().to_path_buf()), flavor);
     }
 
     (None, flavor)
 }
 
 async fn select_export_file() -> Option<PathBuf> {
-    let dialog = FileDialog::new()
+    let dialog = AsyncFileDialog::new()
         .set_file_name("ajour-addons.yml")
         .add_filter("YML File", &["yml"]);
 
-    dialog.save_file()
+    dialog.save_file().await.map(|f| f.path().to_path_buf())
 }
 
 async fn select_import_file() -> Option<PathBuf> {
-    let dialog = FileDialog::new().add_filter("YML File", &["yml"]);
+    let dialog = AsyncFileDialog::new().add_filter("YML File", &["yml"]);
 
-    dialog.pick_file()
+    dialog.pick_file().await.map(|f| f.path().to_path_buf())
 }
 
 async fn perform_read_addon_directory(
