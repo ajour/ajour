@@ -21,6 +21,10 @@ and `Removed`.
 - Adds 2 new release assets, one for Windows and Macos, both with this feature
   activated. These can be picked up by Chocolatey & Homebrew respectively.
 
+### Fixed
+
+- Fixed bug where `alt+tab` would change tabs in Ajour.
+
 ## [1.2.5] - 2021-07-26
 
 ### Fixed
