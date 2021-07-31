@@ -183,7 +183,7 @@ pub(crate) async fn batch_fetch_repo_packages(
         return Ok(curse_repo_packages);
     }
 
-    let mut curse_packages = curse::fetch_remote_packages_by_ids(&curse_ids).await?;
+    let mut curse_packages = curse::fetch_remote_packages_by_ids(curse_ids).await?;
 
     if let Some(fingerprint_info) = fingerprint_info {
         // Get repo packages from fingerprint exact matches

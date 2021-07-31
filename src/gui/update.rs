@@ -2721,7 +2721,7 @@ fn sort_addons(
             addons.sort_by(|a, b| {
                 a.version()
                     .cmp(&b.version())
-                    .then_with(|| a.title().cmp(&b.title()))
+                    .then_with(|| a.title().cmp(b.title()))
             });
         }
         (ColumnKey::LocalVersion, SortDirection::Desc) => {
@@ -2729,14 +2729,14 @@ fn sort_addons(
                 a.version()
                     .cmp(&b.version())
                     .reverse()
-                    .then_with(|| a.title().cmp(&b.title()))
+                    .then_with(|| a.title().cmp(b.title()))
             });
         }
         (ColumnKey::RemoteVersion, SortDirection::Asc) => {
             addons.sort_by(|a, b| {
                 a.relevant_release_package(global_release_channel)
                     .cmp(&b.relevant_release_package(global_release_channel))
-                    .then_with(|| a.cmp(&b))
+                    .then_with(|| a.cmp(b))
             });
         }
         (ColumnKey::RemoteVersion, SortDirection::Desc) => {
@@ -2744,14 +2744,14 @@ fn sort_addons(
                 a.relevant_release_package(global_release_channel)
                     .cmp(&b.relevant_release_package(global_release_channel))
                     .reverse()
-                    .then_with(|| a.cmp(&b))
+                    .then_with(|| a.cmp(b))
             });
         }
         (ColumnKey::Status, SortDirection::Asc) => {
-            addons.sort_by(|a, b| a.state.cmp(&b.state).then_with(|| a.cmp(&b)));
+            addons.sort_by(|a, b| a.state.cmp(&b.state).then_with(|| a.cmp(b)));
         }
         (ColumnKey::Status, SortDirection::Desc) => {
-            addons.sort_by(|a, b| a.state.cmp(&b.state).reverse().then_with(|| a.cmp(&b)));
+            addons.sort_by(|a, b| a.state.cmp(&b.state).reverse().then_with(|| a.cmp(b)));
         }
         (ColumnKey::Channel, SortDirection::Asc) => addons.sort_by(|a, b| {
             a.release_channel
@@ -2941,7 +2941,7 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
             auras.sort_by(|a, b| {
                 a.installed_symver()
                     .cmp(&b.installed_symver())
-                    .then_with(|| a.name().cmp(&b.name()))
+                    .then_with(|| a.name().cmp(b.name()))
             });
         }
         (AuraColumnKey::LocalVersion, SortDirection::Desc) => {
@@ -2949,29 +2949,29 @@ fn sort_auras(auras: &mut [Aura], sort_direction: SortDirection, column_key: Aur
                 a.installed_symver()
                     .cmp(&b.installed_symver())
                     .reverse()
-                    .then_with(|| a.name().cmp(&b.name()))
+                    .then_with(|| a.name().cmp(b.name()))
             });
         }
         (AuraColumnKey::RemoteVersion, SortDirection::Asc) => {
             auras.sort_by(|a, b| {
                 a.remote_symver()
-                    .cmp(&b.remote_symver())
-                    .then_with(|| a.name().cmp(&b.name()))
+                    .cmp(b.remote_symver())
+                    .then_with(|| a.name().cmp(b.name()))
             });
         }
         (AuraColumnKey::RemoteVersion, SortDirection::Desc) => {
             auras.sort_by(|a, b| {
                 a.remote_symver()
-                    .cmp(&b.remote_symver())
+                    .cmp(b.remote_symver())
                     .reverse()
-                    .then_with(|| a.name().cmp(&b.name()))
+                    .then_with(|| a.name().cmp(b.name()))
             });
         }
         (AuraColumnKey::Author, SortDirection::Asc) => {
-            auras.sort_by(|a, b| a.author().cmp(&b.author()))
+            auras.sort_by(|a, b| a.author().cmp(b.author()))
         }
         (AuraColumnKey::Author, SortDirection::Desc) => {
-            auras.sort_by(|a, b| a.author().cmp(&b.author()).reverse())
+            auras.sort_by(|a, b| a.author().cmp(b.author()).reverse())
         }
         (AuraColumnKey::Type, SortDirection::Asc) => auras.sort_by(|a, b| a.kind().cmp(&b.kind())),
         (AuraColumnKey::Type, SortDirection::Desc) => {
@@ -3018,10 +3018,10 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
             .filter_map(|a| {
                 if let Some(query) = &query {
                     let title_score = fuzzy_matcher
-                        .fuzzy_match(&a.name, &query)
+                        .fuzzy_match(&a.name, query)
                         .unwrap_or_default();
                     let description_score = fuzzy_matcher
-                        .fuzzy_match(&a.summary, &query)
+                        .fuzzy_match(&a.summary, query)
                         .unwrap_or_default()
                         / 2;
 
@@ -3051,7 +3051,7 @@ fn query_and_sort_catalog(ajour: &mut Ajour) {
         let mut catalog_rows = if query.is_some() {
             // If a query is defined, the default sort is the fuzzy match score
             catalog_rows_and_score.sort_by(|(addon_a, score_a), (addon_b, score_b)| {
-                score_a.cmp(&score_b).reverse().then_with(|| {
+                score_a.cmp(score_b).reverse().then_with(|| {
                     addon_a
                         .addon
                         .number_of_downloads

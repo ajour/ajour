@@ -331,25 +331,12 @@ mod tests {
         let root_alternate_path = PathBuf::from(r"/Applications/Wow");
         let root_path = PathBuf::from(r"/Applications/World of Warcraft");
 
-        assert_eq!(
-            root_path.eq(&wow_path_resolution(Some(classic_addon_path)).unwrap()),
-            true
-        );
-        assert_eq!(
-            root_path.eq(&wow_path_resolution(Some(retail_addon_path)).unwrap()),
-            true
-        );
-        assert_eq!(
-            root_path.eq(&wow_path_resolution(Some(retail_interface_path)).unwrap()),
-            true
-        );
-        assert_eq!(
-            root_path.eq(&wow_path_resolution(Some(classic_interface_path)).unwrap()),
-            true
-        );
-        assert_eq!(
+        assert!(root_path.eq(&wow_path_resolution(Some(classic_addon_path)).unwrap()),);
+        assert!(root_path.eq(&wow_path_resolution(Some(retail_addon_path)).unwrap()),);
+        assert!(root_path.eq(&wow_path_resolution(Some(retail_interface_path)).unwrap()),);
+        assert!(root_path.eq(&wow_path_resolution(Some(classic_interface_path)).unwrap()),);
+        assert!(
             root_alternate_path.eq(&wow_path_resolution(Some(classic_alternate_path)).unwrap()),
-            true
         );
     }
 
