@@ -2345,6 +2345,8 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 
                 let current_addons = ajour.addons.clone();
 
+                ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+
                 return Ok(Command::perform(
                     async { share::parse_only_needed(current_addons, path) },
                     Message::ImportParsed,
