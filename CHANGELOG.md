@@ -14,13 +14,6 @@ and `Removed`.
 
 ## [Unreleased]
 
-### Packaging
-
-- Adds a new cargo feature flag `no-self-update`. When used, Ajour won't check for
-  newer updates.
-- Adds 2 new release assets, one for Windows and Macos, both with this feature
-  activated. These can be picked up by Chocolatey & Homebrew respectively.
-
 ## [1.2.5] - 2021-07-26
 
 ### Fixed
