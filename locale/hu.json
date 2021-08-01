@@ -145,5 +145,8 @@
     "delete-addon": "{addon} törlése",
     "confirm-deletion": "A törlés megerősítése",
     "paste-url": "Illeszd ide az URL-t...",
-    "all-sources": "Összes forrás"
+    "all-sources": "Összes forrás",
+    "share-addons-title": "Importálja és exportálja a kiegészítők YAML -fájlját",
+    "share-addons-import": "Importálás",
+    "share-addons-export": "Export"
 }

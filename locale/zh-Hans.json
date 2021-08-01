@@ -145,5 +145,8 @@
     "delete-addon": "",
     "confirm-deletion": "",
     "paste-url": "",
-    "all-sources": ""
+    "all-sources": "",
+    "share-addons-title": "",
+    "share-addons-import": "",
+    "share-addons-export": ""
 }

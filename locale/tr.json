@@ -145,5 +145,8 @@
     "delete-addon": "{addon}'u sil",
     "confirm-deletion": "Silmeyi onayla",
     "paste-url": "URL'yi buraya yapıştırın...",
-    "all-sources": "Tüm Kaynaklar"
+    "all-sources": "Tüm Kaynaklar",
+    "share-addons-title": "Eklentilerinizin bir YAML dosyasını içe ve dışa aktarın",
+    "share-addons-import": "İçe aktarmak",
+    "share-addons-export": "İhracat"
 }
