@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: apt install libgtk-3-dev
+        run: sudo apt install libgtk-3-dev
       - uses: actions/cache@v2
         with:
           path: |
@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: apt install libgtk-3-dev
+        run: sudo apt install libgtk-3-dev
       - uses: actions/cache@v2
         with:
           path: |
@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: apt install libgtk-3-dev
+        run: sudo apt install libgtk-3-dev
       - uses: actions/cache@v2
         with:
           path: |
