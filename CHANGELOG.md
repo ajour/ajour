@@ -23,8 +23,9 @@ and `Removed`.
 
 ### Added
 
-- Addons can now be exported to a `.yml` file and reimported to Ajour. When importing, any addons that don't currently
-  exist on the system will be installed. Export and Import buttons have been added to the Addons section of Settings.
+- Addons can now be exported to a `.yml` file and reimported to Ajour. When
+  importing, any addons that don't currently exist on the system will be installed.
+  Export and Import buttons have been added to the Addons section of Settings.
 
 ### Fixed
 
