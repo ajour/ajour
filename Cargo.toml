@@ -15,6 +15,7 @@ edition = "2018"
 default = ["wgpu"]
 wgpu = ["ajour-widgets/wgpu", "iced/wgpu", "iced/default_system_font"]
 opengl = ["ajour-widgets/opengl", "iced/glow", "iced/glow_default_system_font"]
+no-self-update = ["ajour-core/no-self-update"]
 
 [dependencies]
 ajour-core = { version = "1.2.5", path = "crates/core", features=['gui'] }

@@ -11,6 +11,7 @@ edition = "2018"
 [features]
 default = []
 gui = ['iced_native']
+no-self-update = []
 
 [[bin]]
 name = "fingerprint_addon"

@@ -48,7 +48,7 @@ pub async fn import_theme(url: String) -> Result<(String, Vec<Theme>), ThemeErro
 
     let query = uri.query().ok_or(ThemeError::MissingQuery)?;
 
-    let theme = serde_urlencoded::from_str::<Vec<(String, String)>>(&query)?
+    let theme = serde_urlencoded::from_str::<Vec<(String, String)>>(query)?
         .into_iter()
         .find(|(name, _)| name == "theme")
         .map(|(_, theme_json)| serde_json::from_str::<Theme>(&theme_json))

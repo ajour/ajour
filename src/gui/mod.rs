@@ -2051,10 +2051,10 @@ impl Default for ScaleState {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone)]
 pub enum BackupFolderKind {
     AddOns,
-    #[allow(clippy::upper_case_acronyms)]
     WTF,
     Config,
     Screenshots,
