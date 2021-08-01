@@ -145,5 +145,8 @@
     "delete-addon": "Usuń {addon}",
     "confirm-deletion": "Potwierdź usunięcie",
     "paste-url": "Tutaj wklej adres URL...",
-    "all-sources": "Wszystkie źródła"
+    "all-sources": "Wszystkie źródła",
+    "share-addons-title": "Importuj i eksportuj plik YAML swoich dodatków",
+    "share-addons-import": "Import",
+    "share-addons-export": "Eksport"
 }

@@ -145,5 +145,8 @@
     "delete-addon": "Slett {addon}",
     "confirm-deletion": "Bekreft sletting",
     "paste-url": "Lim inn URL her ...",
-    "all-sources": "Alle kilder"
+    "all-sources": "Alle kilder",
+    "share-addons-title": "Importer og eksporter en YAML -fil med tilleggene dine",
+    "share-addons-import": "Import",
+    "share-addons-export": "Eksport"
 }

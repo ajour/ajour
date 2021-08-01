@@ -145,5 +145,8 @@
     "delete-addon": "Smaž {addon}",
     "confirm-deletion": "Potvrdit smazání",
     "paste-url": "Sem vložte adresu URL ...",
-    "all-sources": "Všechny zdroje"
+    "all-sources": "Všechny zdroje",
+    "share-addons-title": "Importujte a exportujte soubor YAML svých doplňků",
+    "share-addons-import": "Import",
+    "share-addons-export": "Vývozní"
 }
