@@ -21,6 +21,11 @@ and `Removed`.
 - Adds 2 new release assets, one for Windows and Macos, both with this feature
   activated. These can be picked up by Chocolatey & Homebrew respectively.
 
+### Added
+
+- Addons can now be exported to a `.yml` file and reimported to Ajour. When importing, any addons that don't currently
+  exist on the system will be installed. Export and Import buttons have been added to the Addons section of Settings.
+
 ### Fixed
 
 - Fixed bug where `alt+tab` would change tabs in Ajour.
