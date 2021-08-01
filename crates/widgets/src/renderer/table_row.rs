@@ -31,7 +31,7 @@ where
         };
 
         let (content, mouse_interaction) =
-            content.draw(self, defaults, content_layout, cursor_position, viewport);
+            content.draw(self, &defaults, content_layout, cursor_position, viewport);
 
         (
             if style.background.is_some() {

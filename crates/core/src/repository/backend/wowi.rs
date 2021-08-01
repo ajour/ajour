@@ -97,7 +97,7 @@ pub(crate) async fn batch_fetch_repo_packages(
         return Ok(wowi_repo_packages);
     }
 
-    let wowi_packages = wowi::fetch_remote_packages(wowi_ids).await?;
+    let wowi_packages = wowi::fetch_remote_packages(&wowi_ids).await?;
 
     wowi_repo_packages.extend(
         wowi_packages
