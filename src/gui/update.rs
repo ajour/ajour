@@ -37,7 +37,6 @@ use {
     },
     iced::{Command, Length},
     isahc::http::Uri,
-    rfd::AsyncFileDialog,
     std::collections::{hash_map::DefaultHasher, HashMap},
     std::convert::TryFrom,
     std::hash::Hasher,
@@ -2585,7 +2584,10 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
     Ok(Command::none())
 }
 
+#[cfg(not(target_os = "linux"))]
 async fn select_directory() -> Option<PathBuf> {
+    use rfd::AsyncFileDialog;
+
     let dialog = AsyncFileDialog::new();
     if let Some(show) = dialog.pick_folder().await {
         return Some(show.path().to_path_buf());
@@ -2594,7 +2596,10 @@ async fn select_directory() -> Option<PathBuf> {
     None
 }
 
+#[cfg(not(target_os = "linux"))]
 async fn select_wow_directory(flavor: Option<Flavor>) -> (Option<PathBuf>, Option<Flavor>) {
+    use rfd::AsyncFileDialog;
+
     let dialog = AsyncFileDialog::new();
     if let Some(show) = dialog.pick_folder().await {
         return (Some(show.path().to_path_buf()), flavor);
@@ -2603,7 +2608,10 @@ async fn select_wow_directory(flavor: Option<Flavor>) -> (Option<PathBuf>, Optio
     (None, flavor)
 }
 
+#[cfg(not(target_os = "linux"))]
 async fn select_export_file() -> Option<PathBuf> {
+    use rfd::AsyncFileDialog;
+
     let dialog = AsyncFileDialog::new()
         .set_file_name("ajour-addons.yml")
         .add_filter("YML File", &["yml"]);
@@ -2611,10 +2619,57 @@ async fn select_export_file() -> Option<PathBuf> {
     dialog.save_file().await.map(|f| f.path().to_path_buf())
 }
 
+#[cfg(not(target_os = "linux"))]
 async fn select_import_file() -> Option<PathBuf> {
+    use rfd::AsyncFileDialog;
+
     let dialog = AsyncFileDialog::new().add_filter("YML File", &["yml"]);
 
     dialog.pick_file().await.map(|f| f.path().to_path_buf())
+}
+
+#[cfg(target_os = "linux")]
+async fn select_directory() -> Option<PathBuf> {
+    use native_dialog::FileDialog;
+
+    let dialog = FileDialog::new();
+    if let Ok(Some(show)) = dialog.show_open_single_dir() {
+        return Some(show);
+    }
+
+    None
+}
+
+#[cfg(target_os = "linux")]
+async fn select_wow_directory(flavor: Option<Flavor>) -> (Option<PathBuf>, Option<Flavor>) {
+    use native_dialog::FileDialog;
+
+    let dialog = FileDialog::new();
+    if let Ok(Some(show)) = dialog.show_open_single_dir() {
+        return (Some(show), flavor);
+    }
+
+    (None, flavor)
+}
+
+#[cfg(target_os = "linux")]
+async fn select_export_file() -> Option<PathBuf> {
+    use native_dialog::FileDialog;
+
+    let dialog = FileDialog::new()
+        .set_filename("ajour-addons.yml")
+        .add_filter("YML File", &["yml"]);
+
+    dialog.show_save_single_file().ok().flatten()
+}
+
+#[cfg(target_os = "linux")]
+async fn select_import_file() -> Option<PathBuf> {
+    use native_dialog::FileDialog;
+
+    let dialog = FileDialog::new().add_filter("YML File", &["yml"]);
+
+    dialog.show_open_single_file().ok().flatten()
 }
 
 async fn perform_read_addon_directory(
