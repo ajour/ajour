@@ -23,6 +23,7 @@ use {
         repository::{
             batch_refresh_repository_packages, Changelog, RepositoryKind, RepositoryPackage,
         },
+        share,
         utility::{download_update_to_temp_file, get_latest_release, wow_path_resolution},
     },
     ajour_weak_auras::{Aura, AuraStatus},
@@ -36,7 +37,7 @@ use {
     },
     iced::{Command, Length},
     isahc::http::Uri,
-    native_dialog::*,
+    rfd::AsyncFileDialog,
     std::collections::{hash_map::DefaultHasher, HashMap},
     std::convert::TryFrom,
     std::hash::Hasher,
@@ -1799,7 +1800,9 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             // to try and download it again. For InstallKind::Source, we should only
             // ever have one entry here so we just remove it
             install_addons.retain(|a| match kind {
-                InstallKind::Catalog { .. } => !(id == a.id && a.kind == kind),
+                InstallKind::Catalog { .. } | InstallKind::Import { .. } => {
+                    !(id == a.id && a.kind == kind)
+                }
                 InstallKind::Source => a.kind != kind,
             });
 
@@ -1902,7 +1905,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                             InstallKind::Catalog { .. } => {
                                 install_addon.status = InstallStatus::Unavailable;
                             }
-                            InstallKind::Source => {
+                            InstallKind::Source | InstallKind::Import { .. } => {
                                 install_addon.status = InstallStatus::Error(error.to_string());
                             }
                         }
@@ -2298,6 +2301,87 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.alternating_row_colors = is_set;
             let _ = ajour.config.save();
         }
+        Message::Interaction(Interaction::ExportAddons) => {
+            log::debug!("Interaction::ExportAddons");
+
+            return Ok(Command::perform(
+                select_export_file(),
+                Message::ExportAddons,
+            ));
+        }
+        Message::ExportAddons(path) => {
+            if let Some(path) = path {
+                log::debug!("Message::ExportAddons({:?})", &path);
+
+                let addons = ajour.addons.clone();
+
+                return Ok(Command::perform(
+                    async { share::export(addons, path) },
+                    Message::AddonsExported,
+                ));
+            }
+        }
+        Message::AddonsExported(result) => match result.context("Failed to export addons") {
+            Ok(_) => {
+                log::debug!("Message::AddonsExported");
+            }
+            Err(error) => {
+                log_error(&error);
+
+                ajour.error = Some(error);
+            }
+        },
+        Message::Interaction(Interaction::ImportAddons) => {
+            log::debug!("Interaction::ImportAddons");
+
+            return Ok(Command::perform(
+                select_import_file(),
+                Message::ImportAddons,
+            ));
+        }
+        Message::ImportAddons(path) => {
+            if let Some(path) = path {
+                log::debug!("Message::ImportAddons({:?})", &path);
+
+                let current_addons = ajour.addons.clone();
+
+                ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+
+                return Ok(Command::perform(
+                    async { share::parse_only_needed(current_addons, path) },
+                    Message::ImportParsed,
+                ));
+            }
+        }
+        Message::ImportParsed(result) => match result.context("Failed to parse import file") {
+            Ok(parsed) => {
+                log::debug!("Message::ImportParsed");
+
+                let mut commands = vec![];
+
+                for (flavor, parsed) in parsed.into_iter() {
+                    for data in parsed.data {
+                        let id = data.id.clone();
+                        let repo_kind = data.repo_kind;
+                        let install_kind = InstallKind::Import { repo_kind };
+
+                        let command = Command::perform(
+                            async move { (flavor, id, install_kind) },
+                            |(a, b, c)| Message::Interaction(Interaction::InstallAddon(a, b, c)),
+                        );
+
+                        commands.push(command);
+                    }
+                }
+
+                return Ok(Command::batch(commands));
+            }
+            Err(error) => {
+                log_error(&error);
+
+                ajour.error = Some(error);
+            }
+        },
         Message::Interaction(Interaction::CompressionLevelChanged(level)) => {
             ajour.config.zstd_compression_level = level;
             let _ = ajour.config.save();
@@ -2502,21 +2586,35 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
 }
 
 async fn select_directory() -> Option<PathBuf> {
-    let dialog = OpenSingleDir { dir: None };
-    if let Ok(show) = dialog.show() {
-        return show;
+    let dialog = AsyncFileDialog::new();
+    if let Some(show) = dialog.pick_folder().await {
+        return Some(show.path().to_path_buf());
     }
 
     None
 }
 
 async fn select_wow_directory(flavor: Option<Flavor>) -> (Option<PathBuf>, Option<Flavor>) {
-    let dialog = OpenSingleDir { dir: None };
-    if let Ok(show) = dialog.show() {
-        return (show, flavor);
+    let dialog = AsyncFileDialog::new();
+    if let Some(show) = dialog.pick_folder().await {
+        return (Some(show.path().to_path_buf()), flavor);
     }
 
     (None, flavor)
+}
+
+async fn select_export_file() -> Option<PathBuf> {
+    let dialog = AsyncFileDialog::new()
+        .set_file_name("ajour-addons.yml")
+        .add_filter("YML File", &["yml"]);
+
+    dialog.save_file().await.map(|f| f.path().to_path_buf())
+}
+
+async fn select_import_file() -> Option<PathBuf> {
+    let dialog = AsyncFileDialog::new().add_filter("YML File", &["yml"]);
+
+    dialog.pick_file().await.map(|f| f.path().to_path_buf())
 }
 
 async fn perform_read_addon_directory(
@@ -2618,6 +2716,9 @@ async fn perform_fetch_latest_addon(
                     .map_err(|_| RepositoryError::GitInvalidUrl { url: id.clone() })?;
 
                 RepositoryPackage::from_source_url(flavor, url)?
+            }
+            InstallKind::Import { repo_kind } => {
+                RepositoryPackage::from_repo_id(flavor, repo_kind, id)?
             }
         };
         repo_package.resolve_metadata().await?;

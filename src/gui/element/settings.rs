@@ -7,7 +7,7 @@ use {
     crate::gui::{
         style, BackupFolderKind, BackupState, CatalogColumnKey, CatalogColumnSettings, ColumnKey,
         ColumnSettings, GlobalReleaseChannel, Interaction, Language, Message, ScaleState,
-        SelfUpdateChannelState, ThemeState, WowDirectoryState,
+        SelfUpdateChannelState, ShareState, ThemeState, WowDirectoryState,
     },
     crate::localization::localized_string,
     ajour_core::{config::Config, theme::ColorPalette},
@@ -40,6 +40,7 @@ pub fn data_container<'a, 'b>(
     reset_columns_button_state: &'a mut button::State,
     localization_picklist_state: &'a mut pick_list::State<Language>,
     wow_directories: &'a mut Vec<WowDirectoryState>,
+    share_state: &'a mut ShareState,
 ) -> Container<'a, Message> {
     let mut scrollable = Scrollable::new(scrollable_state)
         .spacing(1)
@@ -603,6 +604,45 @@ pub fn data_container<'a, 'b>(
             .push(data_row)
     };
 
+    let share_column = {
+        let description = Text::new(localized_string("share-addons-title")).size(DEFAULT_FONT_SIZE);
+        let import_button_title_container = Container::new(
+            Text::new(localized_string("share-addons-import")).size(DEFAULT_FONT_SIZE),
+        )
+        .center_x()
+        .align_x(Align::Center);
+        let import_button: Element<Interaction> = Button::new(
+            &mut share_state.import_btn_state,
+            import_button_title_container,
+        )
+        .style(style::DefaultBoxedButton(color_palette))
+        .on_press(Interaction::ImportAddons)
+        .into();
+
+        let export_button_title_container = Container::new(
+            Text::new(localized_string("share-addons-export")).size(DEFAULT_FONT_SIZE),
+        )
+        .center_x()
+        .align_x(Align::Center);
+        let export_button: Element<Interaction> = Button::new(
+            &mut share_state.export_btn_state,
+            export_button_title_container,
+        )
+        .style(style::DefaultBoxedButton(color_palette))
+        .on_press(Interaction::ExportAddons)
+        .into();
+
+        let row = Row::new()
+            .push(import_button.map(Message::Interaction))
+            .push(Space::new(Length::Units(5), Length::Units(0)))
+            .push(export_button.map(Message::Interaction));
+
+        Column::new()
+            .push(description)
+            .push(Space::new(Length::Units(0), Length::Units(5)))
+            .push(row)
+    };
+
     let config_column = {
         let config_dir = ajour_core::fs::config_dir();
         let config_dir_string = config_dir.as_path().display().to_string();
@@ -864,7 +904,9 @@ pub fn data_container<'a, 'b>(
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(hide_addons_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
-        .push(delete_saved_variables_column);
+        .push(delete_saved_variables_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(share_column);
 
     let columns_title_text = Text::new(localized_string("columns")).size(DEFAULT_HEADER_FONT_SIZE);
     let columns_title_text_container =
