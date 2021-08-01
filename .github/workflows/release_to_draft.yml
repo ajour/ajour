@@ -66,6 +66,10 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install dependencies
+        if: ${{ matrix.target.os == 'ubuntu-16.04' }}
+        run: apt install libgtk-3-dev
+
       - name: Do we need linuxdeploy?
         if: ${{ matrix.target.os == 'ubuntu-16.04' }}
         run: |
