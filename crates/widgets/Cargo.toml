@@ -1,7 +1,7 @@
 [package]
 name = "ajour-widgets"
 description = "Widget library for Ajour"
-version = "1.2.5"
+version = "1.3.0-rc.1"
 authors = ["Casper Rogild Storm", "tarkah <admin@tarkah.dev>"]
 license = "MIT"
 homepage = "https://github.com/ajour/ajour"
