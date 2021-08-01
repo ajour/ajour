@@ -2376,7 +2376,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                 }
                 _ => (),
             },
-            iced::keyboard::KeyCode::Tab => {
+            iced::keyboard::KeyCode::Tab if !modifiers.alt => {
                 let flavor = ajour.config.wow.flavor;
 
                 if modifiers.control {
