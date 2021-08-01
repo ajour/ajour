@@ -166,7 +166,7 @@ pub async fn remove_addon_entries_with_missing_folders(
         .iter()
         .cloned()
         .enumerate()
-        .filter(|(_, entry)| !entry.folder_names.iter().all(|f| folder_names.contains(&f)))
+        .filter(|(_, entry)| !entry.folder_names.iter().all(|f| folder_names.contains(f)))
         .map(|(idx, _)| idx)
         .collect::<Vec<_>>();
 
