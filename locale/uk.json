@@ -145,5 +145,8 @@
     "delete-addon": "Видалити {addon}",
     "confirm-deletion": "Підтвердьте видалення",
     "paste-url": "Вставте URL сюди ...",
-    "all-sources": "Усі джерела"
+    "all-sources": "Усі джерела",
+    "share-addons-title": "Імпортуйте та експортуйте YAML -файл ваших доповнень",
+    "share-addons-import": "Імпорт",
+    "share-addons-export": "Експорт"
 }

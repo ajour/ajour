@@ -146,7 +146,7 @@
     "confirm-deletion": "Confirm deletion",
     "paste-url": "Paste URL here...",
     "all-sources": "All Sources",
-    "share-addons-title": "Export and import something something something..",
+    "share-addons-title": "Import and Export a YAML file of your addons",
     "share-addons-import": "Import",
     "share-addons-export": "Export"
 }
