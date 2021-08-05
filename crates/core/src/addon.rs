@@ -485,7 +485,7 @@ impl Addon {
     fn is_updatable_by_version_comparison(&self, remote_package: &RemotePackage) -> bool {
         if let Some(version) = self.version() {
             let srv = strip_non_digits(&remote_package.version);
-            let slv = strip_non_digits(&version);
+            let slv = strip_non_digits(version);
 
             return !slv.contains(&srv);
         }
@@ -584,13 +584,13 @@ impl PartialEq for Addon {
 
 impl PartialOrd for Addon {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.title().cmp(&other.title()))
+        Some(self.title().cmp(other.title()))
     }
 }
 
 impl Ord for Addon {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.title().cmp(&other.title())
+        self.title().cmp(other.title())
     }
 }
 
