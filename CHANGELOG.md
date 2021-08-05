@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.3.0] - 2021-08-05
+
 ### Packaging
 
 - Adds a new cargo feature flag `no-self-update`. When used, Ajour won't check for
