@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Specify tag to create"
+        description: 'Specify tag to create'
         required: true
 
 jobs:
+  
   build:
     name: Build
     strategy:
@@ -20,10 +21,6 @@ jobs:
           - target: windows-opengl
             os: windows-latest
             make: make binary OPENGL=1
-            binary_path: target/release/ajour.exe
-          - target: windows-noselfupdate
-            os: windows-latest
-            make: make binary NOSELFUPDATE=1
             binary_path: target/release/ajour.exe
 
           - target: linux-wgpu
@@ -51,10 +48,6 @@ jobs:
             os: macos-latest
             make: make tar OPENGL=1 MACOS=1
             binary_path: target/release/ajour.tar.gz
-          - target: macos-noselfupdate
-            os: macos-latest
-            make: make tar MACOS=1 NOSELFUPDATE=1
-            binary_path: target/release/ajour.tar.gz
 
     runs-on: ${{ matrix.target.os }}
 
@@ -71,7 +64,7 @@ jobs:
         run: sudo apt install libxkbcommon-dev
 
       - name: Do we need linuxdeploy?
-        if: ${{ matrix.target.os == 'ubuntu-16.04' }}
+        if: ${{ matrix.target.os == 'ubuntu-16.04' }} 
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
@@ -87,7 +80,7 @@ jobs:
 
       - name: Code signing
         if: ${{ matrix.target.os == 'windows-latest' }}
-        env:
+        env: 
           codesign_cert: ${{ secrets.CODESIGN_CERT }}
           codesign_cert_password: ${{ secrets.CODESIGN_CERT_PASSWORD }}
         run: |
@@ -136,10 +129,6 @@ jobs:
             artifact_name: ajour.exe
             asset_name: ajour-opengl.exe
             asset_type: application/x-dosexec
-          - artifact: windows-noselfupdate
-            artifact_name: ajour.exe
-            asset_name: ajour-noselfupdate.exe
-            asset_type: application/x-dosexec
 
           - artifact: linux-wgpu
             artifact_name: ajour.AppImage
@@ -165,10 +154,6 @@ jobs:
           - artifact: macos-opengl-tar
             artifact_name: ajour.tar.gz
             asset_name: ajour-opengl-macos.tar.gz
-            asset_type: application/gzip
-          - artifact: macos-noselfupdate
-            artifact_name: ajour.tar.gz
-            asset_name: ajour-noselfupdate-macos.tar.gz
             asset_type: application/gzip
 
     runs-on: ubuntu-latest

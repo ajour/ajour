@@ -22,7 +22,6 @@ DMG_DIR = $(RELEASE_DIR)/osx
 
 OPENGL ?=
 MACOS ?=
-NOSELFUPDATE ?=
 
 ifdef MACOS
   ENV :=MACOSX_DEPLOYMENT_TARGET="10.11"
@@ -36,10 +35,6 @@ else
   DMG_NAME :=ajour.dmg
   APPIMAGE_NAME :=ajour.AppImage
   FEATURE_FLAG :=
-endif
-
-ifdef NOSELFUPDATE
-  FEATURE_FLAG +=--features no-self-update
 endif
 
 vpath $(TARGET) $(RELEASE_DIR)
