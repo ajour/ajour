@@ -64,7 +64,7 @@ might be required.
 ##### Debian/Ubuntu
 
 ```sh
-sudo apt install build-essential cmake libxft-dev libssl-dev libx11-dev
+sudo apt install build-essential cmake libxft-dev libssl-dev libx11-dev libxkbcommon-dev
 ```
 
 ##### Other
