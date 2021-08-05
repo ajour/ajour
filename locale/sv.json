@@ -145,5 +145,8 @@
     "delete-addon": "Ta bort {addon}",
     "confirm-deletion": "Bekräfta borttagning",
     "paste-url": "Klistra in URL här ...",
-    "all-sources": "Alla källor"
+    "all-sources": "Alla källor",
+    "share-addons-title": "Importera och exportera en YAML-fil med dina addons",
+    "share-addons-import": "Importera",
+    "share-addons-export": "Exportera"
 }

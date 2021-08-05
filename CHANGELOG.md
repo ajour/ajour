@@ -14,6 +14,25 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.3.0] - 2021-08-05
+
+### Packaging
+
+- Adds a new cargo feature flag `no-self-update`. When used, Ajour won't check for
+  newer updates.
+- Adds 2 new release assets, one for Windows and Macos, both with this feature
+  activated. These can be picked up by Chocolatey & Homebrew respectively.
+
+### Added
+
+- Addons can now be exported to a `.yml` file and reimported to Ajour. When
+  importing, any addons that don't currently exist on the system will be installed.
+  Export and Import buttons have been added to the Addons section of Settings.
+
+### Fixed
+
+- Fixed bug where `alt+tab` would change tabs in Ajour.
+
 ## [1.2.5] - 2021-07-26
 
 ### Fixed

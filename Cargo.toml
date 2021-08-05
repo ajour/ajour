@@ -1,9 +1,9 @@
 [package]
 name = "ajour"
 description = "A World of Warcraft addon manager"
-version = "1.2.5"
+version = "1.3.0"
 authors = ["Casper Rogild Storm"]
-license = "MIT"
+license = "GPL-3.0"
 homepage = "https://github.com/ajour/ajour"
 repository = "https://github.com/ajour/ajour"
 readme = "README.md"
@@ -17,9 +17,9 @@ wgpu = ["ajour-widgets/wgpu", "iced/wgpu", "iced/default_system_font"]
 opengl = ["ajour-widgets/opengl", "iced/glow", "iced/glow_default_system_font"]
 
 [dependencies]
-ajour-core = { version = "1.2.5", path = "crates/core", features=['gui'] }
-ajour-weak-auras = { version = "1.2.5", path = "crates/weak_auras" }
-ajour-widgets = { version = "1.2.5", path = "crates/widgets" }
+ajour-core = { version = "1.3.0", path = "crates/core", features=['gui'] }
+ajour-weak-auras = { version = "1.3.0", path = "crates/weak_auras" }
+ajour-widgets = { version = "1.3.0", path = "crates/widgets" }
 
 iced = { version = "0.3.0", default-features = false, features = ["debug"] }
 iced_futures = { version = "0.3.0", features = ["async-std"] }
@@ -27,7 +27,6 @@ iced_native = { version = "0.4.0" }
 async-std = "1.6.2"
 isahc = { version = "0.9.6", features = ["json"] }
 image = "0.23.8"
-native-dialog = "0.4.2"
 opener = "0.4.1"
 chrono = { version = "0.4", features = ['serde'] }
 log = "0.4"
@@ -48,6 +47,11 @@ once_cell = "1.6.0"
 serde = { version = "1.0.114", features=['derive'] }
 serde_json = "1.0.57"
 
+[target.'cfg(target_os =  "linux")'.dependencies]
+native-dialog = "0.5.5"
+
+[target.'cfg(not(target_os =  "linux"))'.dependencies]
+rfd = "0.4.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"

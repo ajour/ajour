@@ -162,13 +162,12 @@ mod github {
             // use the url from the API response instead to ensure the title we
             // use for the addon has the correct letter casing.
             let title = {
-                let release = if stable_release.is_some() {
-                    stable_release.unwrap()
-                } else {
-                    beta_release.unwrap()
-                };
+                let release = stable_release.or(beta_release);
 
-                let html_url = release.html_url.parse::<Uri>()?;
+                let html_url = release
+                    .map(|r| r.html_url.parse::<Uri>().ok())
+                    .flatten()
+                    .unwrap_or_default();
 
                 let mut path = html_url.path().split('/');
                 path.next();

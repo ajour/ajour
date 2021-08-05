@@ -5,6 +5,8 @@ mod update;
 use crate::cli::Opts;
 use crate::localization::{localized_string, LANG};
 use crate::Result;
+use ajour_core::repository::RepositoryKind;
+use ajour_core::share;
 use ajour_core::{
     addon::{Addon, AddonFolder, AddonState},
     cache::catalog_download_latest_or_use_cache,
@@ -173,6 +175,8 @@ pub enum Interaction {
     ThemeUrlInput(String),
     ImportTheme,
     CompressionLevelChanged(i32),
+    ExportAddons,
+    ImportAddons,
 }
 
 #[derive(Debug)]
@@ -220,6 +224,10 @@ pub enum Message {
     CheckRepositoryUpdates(Instant),
     RepositoryPackagesFetched((Flavor, Result<Vec<RepositoryPackage>, DownloadError>)),
     ThemeImported(Result<(String, Vec<Theme>), ThemeError>),
+    ExportAddons(Option<PathBuf>),
+    AddonsExported(Result<(), FilesystemError>),
+    ImportAddons(Option<PathBuf>),
+    ImportParsed(Result<HashMap<Flavor, share::Parsed>, FilesystemError>),
 }
 
 pub struct Ajour {
@@ -273,6 +281,7 @@ pub struct Ajour {
     default_backup_compression_format: pick_list::State<CompressionFormat>,
     pending_confirmation: Option<Confirm>,
     zstd_compression_level_slider_state: slider::State,
+    share_state: ShareState,
 }
 
 impl Default for Ajour {
@@ -340,6 +349,7 @@ impl Default for Ajour {
             default_backup_compression_format: Default::default(),
             pending_confirmation: None,
             zstd_compression_level_slider_state: Default::default(),
+            share_state: Default::default(),
         }
     }
 }
@@ -1015,6 +1025,7 @@ impl Application for Ajour {
                     &mut self.reset_columns_btn_state,
                     &mut self.localization_picklist_state,
                     &mut self.wow_directories,
+                    &mut self.share_state,
                 );
 
                 content = content.push(settings_container)
@@ -1905,6 +1916,7 @@ pub enum InstallStatus {
 pub enum InstallKind {
     Catalog { source: catalog::Source },
     Source,
+    Import { repo_kind: RepositoryKind },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -2051,6 +2063,13 @@ impl Default for ScaleState {
     }
 }
 
+#[derive(Default)]
+pub struct ShareState {
+    import_btn_state: button::State,
+    export_btn_state: button::State,
+}
+
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone)]
 pub enum BackupFolderKind {
     AddOns,
