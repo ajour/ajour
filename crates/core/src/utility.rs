@@ -2,9 +2,8 @@ use crate::config::{Flavor, SelfUpdateChannel};
 use crate::error::DownloadError;
 #[cfg(target_os = "macos")]
 use crate::error::FilesystemError;
-use crate::network::{download_file, request_async};
+use crate::network::download_file;
 
-use isahc::AsyncReadResponseExt;
 use regex::Regex;
 use retry::delay::Fibonacci;
 use retry::{retry, Error as RetryError, OperationResult};
@@ -58,7 +57,16 @@ pub struct ReleaseAsset {
     pub download_url: String,
 }
 
+#[cfg(feature = "no-self-update")]
+pub async fn get_latest_release(_channel: SelfUpdateChannel) -> Option<Release> {
+    None
+}
+
+#[cfg(not(feature = "no-self-update"))]
 pub async fn get_latest_release(channel: SelfUpdateChannel) -> Option<Release> {
+    use crate::network::request_async;
+    use isahc::AsyncReadResponseExt;
+
     log::debug!("checking for application update");
 
     let mut resp = request_async(
@@ -323,25 +331,12 @@ mod tests {
         let root_alternate_path = PathBuf::from(r"/Applications/Wow");
         let root_path = PathBuf::from(r"/Applications/World of Warcraft");
 
-        assert_eq!(
-            root_path.eq(&wow_path_resolution(Some(classic_addon_path)).unwrap()),
-            true
-        );
-        assert_eq!(
-            root_path.eq(&wow_path_resolution(Some(retail_addon_path)).unwrap()),
-            true
-        );
-        assert_eq!(
-            root_path.eq(&wow_path_resolution(Some(retail_interface_path)).unwrap()),
-            true
-        );
-        assert_eq!(
-            root_path.eq(&wow_path_resolution(Some(classic_interface_path)).unwrap()),
-            true
-        );
-        assert_eq!(
+        assert!(root_path.eq(&wow_path_resolution(Some(classic_addon_path)).unwrap()),);
+        assert!(root_path.eq(&wow_path_resolution(Some(retail_addon_path)).unwrap()),);
+        assert!(root_path.eq(&wow_path_resolution(Some(retail_interface_path)).unwrap()),);
+        assert!(root_path.eq(&wow_path_resolution(Some(classic_interface_path)).unwrap()),);
+        assert!(
             root_alternate_path.eq(&wow_path_resolution(Some(classic_alternate_path)).unwrap()),
-            true
         );
     }
 
