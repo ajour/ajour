@@ -192,7 +192,7 @@ mod test {
             files.push(path);
         }
 
-        delete_saved_variables(&folders, &root).unwrap();
+        delete_saved_variables(&folders, root).unwrap();
 
         let mut exists = 0;
         for file in files {
