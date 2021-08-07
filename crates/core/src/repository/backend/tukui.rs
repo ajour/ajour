@@ -158,7 +158,7 @@ pub(crate) async fn batch_fetch_repo_packages(
 
     let fetch_tasks: Vec<_> = tukui_ids
         .iter()
-        .map(|id| tukui::fetch_remote_package(id, &flavor))
+        .map(|id| tukui::fetch_remote_package(&id, &flavor))
         .collect();
 
     tukui_repo_packages.extend(

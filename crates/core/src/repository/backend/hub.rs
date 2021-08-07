@@ -93,7 +93,7 @@ pub(crate) async fn batch_fetch_repo_packages(
         return Ok(hub_repo_packages);
     }
 
-    let hub_packages = hub::fetch_remote_packages(flavor, hub_ids).await?;
+    let hub_packages = hub::fetch_remote_packages(flavor, &hub_ids).await?;
 
     hub_repo_packages.extend(
         hub_packages

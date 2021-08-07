@@ -118,7 +118,10 @@ pub async fn install_addon(
     // Cleanup
     std::fs::remove_file(&zip_path)?;
 
-    let mut addon_folders: Vec<_> = toc_files.iter().filter_map(|p| parse_toc_path(p)).collect();
+    let mut addon_folders: Vec<_> = toc_files
+        .iter()
+        .filter_map(|p| parse_toc_path(&p))
+        .collect();
     addon_folders.sort();
     // Needed since multi-toc can now insert folder name more than once
     addon_folders.dedup();
