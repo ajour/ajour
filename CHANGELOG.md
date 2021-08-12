@@ -14,6 +14,12 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- A new retry button will appear alongside an error message if one of the API servers
+  is down. This new button should make it easier to try fetching the data again
+  instead of relaunching the application.
+
 ## [1.3.0] - 2021-08-05
 
 ### Packaging
