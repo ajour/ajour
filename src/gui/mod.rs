@@ -256,7 +256,6 @@ pub struct Ajour {
     backup_state: BackupState,
     column_settings: ColumnSettings,
     catalog_column_settings: CatalogColumnSettings,
-    onboarding_directory_btn_state: button::State,
     catalog: Option<Catalog>,
     install_addons: HashMap<Flavor, Vec<InstallAddon>>,
     catalog_last_updated: Option<DateTime<Utc>>,
@@ -282,6 +281,10 @@ pub struct Ajour {
     pending_confirmation: Option<Confirm>,
     zstd_compression_level_slider_state: slider::State,
     share_state: ShareState,
+    onboarding_status_button_state: button::State,
+    addons_status_button_state: button::State,
+    weakauras_status_button_state: button::State,
+    catalog_status_button_state: button::State,
 }
 
 impl Default for Ajour {
@@ -315,7 +318,6 @@ impl Default for Ajour {
             backup_state: Default::default(),
             column_settings: Default::default(),
             catalog_column_settings: Default::default(),
-            onboarding_directory_btn_state: Default::default(),
             catalog: None,
             install_addons: Default::default(),
             catalog_last_updated: None,
@@ -350,6 +352,10 @@ impl Default for Ajour {
             pending_confirmation: None,
             zstd_compression_level_slider_state: Default::default(),
             share_state: Default::default(),
+            onboarding_status_button_state: Default::default(),
+            addons_status_button_state: Default::default(),
+            weakauras_status_button_state: Default::default(),
+            catalog_status_button_state: Default::default(),
         }
     }
 }
@@ -1090,14 +1096,22 @@ impl Application for Ajour {
                             color_palette,
                             &error_title,
                             &error_description,
-                            None,
+                            Some((
+                                &mut self.addons_status_button_state,
+                                localized_string("retry"),
+                                Interaction::Refresh(Mode::MyAddons(flavor)),
+                            )),
                         ))
                     }
                     None => Some(element::status::data_container(
                         color_palette,
                         &localized_string("setup-ajour-title")[..],
                         &localized_string("setup-ajour-description")[..],
-                        Some(&mut self.onboarding_directory_btn_state),
+                        Some((
+                            &mut self.onboarding_status_button_state,
+                            localized_string("select-directory"),
+                            Interaction::SelectWowDirectory(None),
+                        )),
                     )),
                 }
             }
@@ -1151,7 +1165,11 @@ impl Application for Ajour {
                             color_palette,
                             &error_title,
                             &error_description,
-                            None,
+                            Some((
+                                &mut self.weakauras_status_button_state,
+                                localized_string("retry"),
+                                Interaction::Refresh(Mode::MyWeakAuras(flavor)),
+                            )),
                         ))
                     }
                     None => Some(element::status::data_container(
@@ -1184,7 +1202,11 @@ impl Application for Ajour {
                             color_palette,
                             &error_title,
                             &error_description,
-                            None,
+                            Some((
+                                &mut self.catalog_status_button_state,
+                                localized_string("retry"),
+                                Interaction::Refresh(Mode::Catalog),
+                            )),
                         ))
                     }
                     _ => None,

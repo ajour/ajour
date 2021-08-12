@@ -221,6 +221,14 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                         }
                     }
                 }
+                Mode::Catalog => {
+                    ajour.catalog = None;
+                    ajour.state.insert(Mode::Catalog, State::Loading);
+                    return Ok(Command::perform(
+                        catalog_download_latest_or_use_cache(),
+                        Message::CatalogDownloaded,
+                    ));
+                }
                 _ => {}
             }
         }
