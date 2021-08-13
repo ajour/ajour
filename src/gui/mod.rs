@@ -281,10 +281,7 @@ pub struct Ajour {
     pending_confirmation: Option<Confirm>,
     zstd_compression_level_slider_state: slider::State,
     share_state: ShareState,
-    onboarding_status_button_state: button::State,
-    addons_status_button_state: button::State,
-    weakauras_status_button_state: button::State,
-    catalog_status_button_state: button::State,
+    status_button_state: button::State,
 }
 
 impl Default for Ajour {
@@ -352,10 +349,7 @@ impl Default for Ajour {
             pending_confirmation: None,
             zstd_compression_level_slider_state: Default::default(),
             share_state: Default::default(),
-            onboarding_status_button_state: Default::default(),
-            addons_status_button_state: Default::default(),
-            weakauras_status_button_state: Default::default(),
-            catalog_status_button_state: Default::default(),
+            status_button_state: Default::default(),
         }
     }
 }
@@ -1097,7 +1091,7 @@ impl Application for Ajour {
                             &error_title,
                             &error_description,
                             Some((
-                                &mut self.addons_status_button_state,
+                                &mut self.status_button_state,
                                 localized_string("retry"),
                                 Interaction::Refresh(Mode::MyAddons(flavor)),
                             )),
@@ -1108,7 +1102,7 @@ impl Application for Ajour {
                         &localized_string("setup-ajour-title")[..],
                         &localized_string("setup-ajour-description")[..],
                         Some((
-                            &mut self.onboarding_status_button_state,
+                            &mut self.status_button_state,
                             localized_string("select-directory"),
                             Interaction::SelectWowDirectory(None),
                         )),
@@ -1166,7 +1160,7 @@ impl Application for Ajour {
                             &error_title,
                             &error_description,
                             Some((
-                                &mut self.weakauras_status_button_state,
+                                &mut self.status_button_state,
                                 localized_string("retry"),
                                 Interaction::Refresh(Mode::MyWeakAuras(flavor)),
                             )),
@@ -1203,7 +1197,7 @@ impl Application for Ajour {
                             &error_title,
                             &error_description,
                             Some((
-                                &mut self.catalog_status_button_state,
+                                &mut self.status_button_state,
                                 localized_string("retry"),
                                 Interaction::Refresh(Mode::Catalog),
                             )),
