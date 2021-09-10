@@ -272,24 +272,31 @@ async fn parse_addon_folders(
     let mut addon_folders: Vec<_> = all_dirs
         .par_iter()
         .filter_map(|id| {
-            // Generate .toc path. If `-BCC` or `-Mainline` exists for Tbc and Era,
-            // respectively, use that over the standard toc.
+            // Generate .toc path.
             let toc_path = {
-                let multi_part = match flavor.base_flavor() {
-                    Flavor::Retail => "-Mainline",
-                    Flavor::ClassicEra => "-Classic",
-                    Flavor::ClassicTbc => "-BCC",
-                    _ => "",
+                let toc_with_flavor = || -> Option<PathBuf> {
+                    let multi_part = match flavor.base_flavor() {
+                        Flavor::Retail => vec!["Mainline"],
+                        Flavor::ClassicEra => vec!["Classic", "Vanilla"],
+                        Flavor::ClassicTbc => vec!["BCC", "TBC"],
+                        _ => vec![],
+                    };
+
+                    for part in multi_part {
+                        for separator in &["-", "_"] {
+                            let toc_with_flavor = root_dir
+                                .join(&id)
+                                .join(format!("{}{}{}.toc", id, separator, part));
+                            if toc_with_flavor.exists() {
+                                return Some(toc_with_flavor);
+                            }
+                        }
+                    }
+
+                    None
                 };
 
-                let standard_path = root_dir.join(&id).join(format!("{}.toc", id));
-                let multi_path = root_dir.join(&id).join(format!("{}{}.toc", id, multi_part));
-
-                if multi_path.exists() {
-                    multi_path
-                } else {
-                    standard_path
-                }
+                toc_with_flavor().unwrap_or_else(|| root_dir.join(&id).join(format!("{}.toc", id)))
             };
 
             if !toc_path.exists() {

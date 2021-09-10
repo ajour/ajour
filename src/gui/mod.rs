@@ -67,6 +67,7 @@ pub enum Mode {
 }
 
 impl Mode {
+    #[allow(dead_code)]
     fn next(&self, flavor: Flavor) -> Self {
         use Mode::*;
         match *self {
@@ -79,6 +80,7 @@ impl Mode {
         }
     }
 
+    #[allow(dead_code)]
     fn previous(&self, flavor: Flavor) -> Self {
         use Mode::*;
         match *self {

@@ -20,6 +20,11 @@ and `Removed`.
   is down. This new button should make it easier to try fetching the data again
   instead of relaunching the application.
 
+### Fixed
+
+- ElvUI (and a few other) addons should now properly show up in Ajour again.
+- Fixed issue where alt + tabbing would change view in Ajour.
+
 ## [1.3.0] - 2021-08-05
 
 ### Packaging
