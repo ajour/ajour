@@ -108,8 +108,6 @@ Windows:
 | <kbd>s</kbd>                     | Go to Settings         |
 | <kbd>r</kbd>                     | Refresh                |
 | <kbd>u</kbd>                     | Update                 |
-| <kbd>Tab</kbd>                   | Go to next tab         |
-| <kbd>Ctrl</kbd> + <kbd>Tab</kbd> | Go to previous tab     |
 
 ## Command Line
 

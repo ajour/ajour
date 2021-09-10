@@ -2458,15 +2458,6 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.catalog_search_state.query = None;
                 }
                 _ => (),
-            },
-            iced::keyboard::KeyCode::Tab if !modifiers.alt => {
-                let flavor = ajour.config.wow.flavor;
-
-                if modifiers.control {
-                    ajour.mode = ajour.mode.previous(flavor);
-                } else {
-                    ajour.mode = ajour.mode.next(flavor);
-                }
             }
             _ => (),
         },
