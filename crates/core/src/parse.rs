@@ -274,26 +274,29 @@ async fn parse_addon_folders(
         .filter_map(|id| {
             // Generate .toc path.
             let toc_path = {
-                let multi_part = match flavor.base_flavor() {
-                    Flavor::Retail => vec!["Mainline"],
-                    Flavor::ClassicEra => vec!["Classic", "Vanilla"],
-                    Flavor::ClassicTbc => vec!["BCC", "TBC"],
-                    _ => vec![],
-                };
+                let toc_with_flavor = || -> Option<PathBuf> {
+                    let multi_part = match flavor.base_flavor() {
+                        Flavor::Retail => vec!["Mainline"],
+                        Flavor::ClassicEra => vec!["Classic", "Vanilla"],
+                        Flavor::ClassicTbc => vec!["BCC", "TBC"],
+                        _ => vec![],
+                    };
 
-                for part in multi_part {
-                    for separator in vec!["-", "_"] {
-                        let multi_path = root_dir
-                            .join(&id)
-                            .join(format!("{}{}{}.toc", id, separator, part));
-                        if multi_part.exists() {
-                            return multi_path;
+                    for part in multi_part {
+                        for separator in &["-", "_"] {
+                            let toc_with_flavor = root_dir
+                                .join(&id)
+                                .join(format!("{}{}{}.toc", id, separator, part));
+                            if toc_with_flavor.exists() {
+                                return Some(toc_with_flavor);
+                            }
                         }
                     }
-                }
 
-                // If we don't have flavor specific toc, we return a default one.
-                root_dir.join(&id).join(format!("{}.toc", id))
+                    None
+                };
+
+                toc_with_flavor().unwrap_or_else(|| root_dir.join(&id).join(format!("{}.toc", id)))
             };
 
             if !toc_path.exists() {

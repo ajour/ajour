@@ -2419,7 +2419,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::RuntimeEvent(iced_native::Event::Keyboard(
             iced_native::keyboard::Event::KeyReleased {
                 key_code,
-                modifiers,
+                modifiers: _,
             },
         )) => match key_code {
             iced::keyboard::KeyCode::A => {
@@ -2458,7 +2458,7 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
                     ajour.catalog_search_state.query = None;
                 }
                 _ => (),
-            }
+            },
             _ => (),
         },
         Message::Interaction(Interaction::PickBackupCompressionFormat(format)) => {
