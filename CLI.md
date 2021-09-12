@@ -67,7 +67,8 @@ OPTIONS:
 
     # Space separated list of flavors to include in backup.
     # If ommited, all flavors will be included
-    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic, classic_ptr, classic_beta]
+    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic,
+    # classic_ptr, classic_beta]
 
     -f, --flavors <flavors>
 
@@ -111,7 +112,8 @@ USAGE:
 
 ARGS:
     # Flavor to install addon under
-    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic, classic_ptr, classic_beta]
+    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic,
+    # classic_ptr, classic_beta]
 
     <flavor>
 
@@ -170,7 +172,8 @@ ARGS:
     <path>
 
     # Flavor to use from the path. If none, we use all we find
-    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic, classic_ptr, classic_beta]
+    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic,
+    #classic_ptr, classic_beta]
 
     [flavor]
 ```
