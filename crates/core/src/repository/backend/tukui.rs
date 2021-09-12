@@ -56,7 +56,11 @@ impl Backend for Tukui {
                     }
                 }
             }
-            Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta | Flavor::ClassicEra | Flavor::ClassicEraPtr => {}
+            Flavor::ClassicTbc
+            | Flavor::ClassicPtr
+            | Flavor::ClassicBeta
+            | Flavor::ClassicEra
+            | Flavor::ClassicEraPtr => {}
         }
 
         Ok(None)

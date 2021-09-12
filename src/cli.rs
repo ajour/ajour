@@ -90,7 +90,7 @@ pub enum Command {
     UpdateAuras,
     /// Install an addon
     Install {
-        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_ptr","classic_beta"])]
+        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_era_ptr","classic_ptr","classic_beta"])]
         /// flavor to install addon under
         flavor: Flavor,
         #[structopt()]
@@ -102,7 +102,7 @@ pub enum Command {
         #[structopt(short, long, default_value = "all", parse(try_from_str = str_to_backup_folder), possible_values = &["all","wtf","addons","config", "screenshots", "fonts"])]
         /// folder to backup
         backup_folder: BackupFolder,
-        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_ptr","classic_beta"])]
+        #[structopt(short, long, parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_tbc","classic_era","classic_era_ptr","classic_ptr","classic_beta"])]
         /// space separated list of flavors to include in backup. If ommited, all flavors will be included.
         flavors: Vec<Flavor>,
         #[structopt()]
@@ -117,7 +117,7 @@ pub enum Command {
     PathAdd {
         /// path to the World of Warcraft directory
         path: PathBuf,
-        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic","classic_ptr","classic_beta"])]
+        #[structopt(parse(try_from_str = str_to_flavor), possible_values = &["retail","ptr","beta","classic_era","classic_era_ptr","classic","classic_ptr","classic_beta"])]
         /// flavor to use from the path. If none, we use all we find
         flavor: Option<Flavor>,
     },
@@ -130,9 +130,10 @@ fn str_to_flavor(s: &str) -> Result<Flavor, &'static str> {
         "ptr" => Ok(Flavor::RetailPtr),
         "classic_tbc" => Ok(Flavor::ClassicTbc),
         "classic_era" => Ok(Flavor::ClassicEra),
+        "classic_era_ptr" => Ok(Flavor::ClassicEraPtr),
         "classic_ptr" => Ok(Flavor::ClassicPtr),
         "classic_beta" => Ok(Flavor::ClassicBeta),
-        _ => Err("valid values are ['retail','ptr','beta','classic_tbc','classic_era','classic_ptr','classic_beta']"),
+        _ => Err("valid values are ['retail','ptr','beta','classic_tbc','classic_era','classic_era_ptr','classic_ptr','classic_beta']"),
     }
 }
 

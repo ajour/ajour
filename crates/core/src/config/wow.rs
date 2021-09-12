@@ -74,7 +74,7 @@ impl Flavor {
             Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => {
                 "wow_burning_crusade".to_owned()
             }
-            Flavor::ClassicEra | Flavor::ClassicEraPtr  => "wow_classic".to_owned(),
+            Flavor::ClassicEra | Flavor::ClassicEraPtr => "wow_classic".to_owned(),
         }
     }
 
@@ -85,7 +85,7 @@ impl Flavor {
             Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => {
                 "burningCrusade".to_owned()
             }
-            Flavor::ClassicEra | Flavor::ClassicEraPtr  => "classic".to_owned(),
+            Flavor::ClassicEra | Flavor::ClassicEraPtr => "classic".to_owned(),
         }
     }
 
@@ -94,7 +94,7 @@ impl Flavor {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => Flavor::Retail,
             Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => Flavor::ClassicTbc,
-            Flavor::ClassicEra | Flavor::ClassicEraPtr  => Flavor::ClassicEra,
+            Flavor::ClassicEra | Flavor::ClassicEraPtr => Flavor::ClassicEra,
         }
     }
 
