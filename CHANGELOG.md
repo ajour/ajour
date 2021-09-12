@@ -14,6 +14,8 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.3.1] - 2021-09-12
+
 ### Added
 
 - A new retry button will appear alongside an error message if one of the API servers
