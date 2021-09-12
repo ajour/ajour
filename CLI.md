@@ -21,8 +21,8 @@ OPTIONS:
         --data <data-directory>    Path to a custom data directory for the app
 
 SUBCOMMANDS:
-    backup     Backup your WTF, AddOns, and/or Ajour config folders
-    install    Install an addon from the command line
+    backup              Backup your WTF, AddOns, and/or Ajour config folders
+    install             Install an addon from the command line
     update              Update all addons, WeakAura and Plater auras
     update-addons       Update all addons
     update-auras        Update all WeakAura and Plater auras
@@ -67,7 +67,7 @@ OPTIONS:
 
     # Space separated list of flavors to include in backup.
     # If ommited, all flavors will be included
-    # [possible values: retail, ptr, beta, classic, classic_ptr]
+    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic, classic_ptr, classic_beta]
 
     -f, --flavors <flavors>
 
@@ -111,7 +111,7 @@ USAGE:
 
 ARGS:
     # Flavor to install addon under
-    # [possible values: retail, ptr, beta, classic, classic_ptr]
+    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic, classic_ptr, classic_beta]
 
     <flavor>
 
@@ -170,7 +170,7 @@ ARGS:
     <path>
 
     # Flavor to use from the path. If none, we use all we find
-    # [possible values: retail, ptr, beta, classic, classic_ptr]
+    # [possible values: retail, ptr, beta, classic_era, classic_era_ptr, classic, classic_ptr, classic_beta]
 
     [flavor]
 ```
