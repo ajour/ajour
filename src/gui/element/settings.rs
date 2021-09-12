@@ -62,7 +62,7 @@ pub fn data_container<'a, 'b>(
                 .size(14)
                 .vertical_alignment(VerticalAlignment::Center);
             let flavor_text_container = Container::new(flavor_text)
-                .width(Length::Units(75))
+                .width(Length::Units(95))
                 .center_y();
             let flavor_button: Element<Interaction> =
                 Button::new(&mut wow_dir_state.button_state, flavor_text_container)
