@@ -31,7 +31,6 @@ endif
 ifdef OPENGL
   DMG_NAME :=ajour-opengl.dmg
   APPIMAGE_NAME :=ajour-opengl.AppImage
-  FEATURE_FLAG :=--no-default-features --features opengl
 else
   DMG_NAME :=ajour.dmg
   APPIMAGE_NAME :=ajour.AppImage
