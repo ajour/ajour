@@ -14,6 +14,14 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Added
+
+- Option to disable keybindings in Ajour.
+
+### Fixed
+
+- Resolved a issue where keybindings would trigger with modifiers.
+
 ## [1.3.1] - 2021-09-12
 
 ### Added
