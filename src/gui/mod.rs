@@ -164,6 +164,7 @@ pub enum Interaction {
     PickBackupCompressionFormat(CompressionFormat),
     PickLocalizationLanguage(Language),
     AlternatingRowColorToggled(bool),
+    KeybindingsToggle(bool),
     ResetColumns,
     ToggleDeleteSavedVariables(bool),
     AddonsQuery(String),

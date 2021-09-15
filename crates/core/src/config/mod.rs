@@ -63,6 +63,9 @@ pub struct Config {
     #[serde(default = "default_true")]
     pub alternating_row_colors: bool,
 
+    #[serde(default = "default_true")]
+    pub is_keybindings_enabled: bool,
+
     #[serde(default)]
     pub language: Language,
 
