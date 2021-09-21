@@ -14,6 +14,10 @@ and `Removed`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Better handling of the new TOC format with flavor in the filename.
+
 ## [1.3.1] - 2021-09-12
 
 ### Added
