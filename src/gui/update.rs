@@ -3294,32 +3294,17 @@ fn save_column_configs(ajour: &mut Ajour) {
 /// Hardcoded binary names for each compilation target
 /// that gets published to the Github Release
 const fn bin_name() -> &'static str {
-    #[cfg(all(target_os = "windows", feature = "opengl"))]
-    {
-        "ajour-opengl.exe"
-    }
-
-    #[cfg(all(target_os = "windows", feature = "wgpu"))]
+    #[cfg(target_os = "windows")]
     {
         "ajour.exe"
     }
 
-    #[cfg(all(target_os = "macos", feature = "opengl"))]
-    {
-        "ajour-opengl"
-    }
-
-    #[cfg(all(target_os = "macos", feature = "wgpu"))]
+    #[cfg(target_os = "macos")]
     {
         "ajour"
     }
 
-    #[cfg(all(target_os = "linux", feature = "opengl"))]
-    {
-        "ajour-opengl.AppImage"
-    }
-
-    #[cfg(all(target_os = "linux", feature = "wgpu"))]
+    #[cfg(target_os = "linux")]
     {
         "ajour.AppImage"
     }
