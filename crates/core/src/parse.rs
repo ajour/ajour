@@ -543,50 +543,70 @@ async fn get_all_repo_packages(
     }
 
     // Get all curse repo packages
-    let curse_repo_packages =
-        curse::batch_fetch_repo_packages(flavor, &curse_ids, Some(fingerprint_info)).await?;
-
-    log::debug!(
-        "{} - {} curse packages fetched",
-        flavor,
-        curse_repo_packages.len()
-    );
+    let curse_repo_packages_result =
+        curse::batch_fetch_repo_packages(flavor, &curse_ids, Some(fingerprint_info)).await;
+    let curse_repo_packages = match curse_repo_packages_result {
+        Ok(packages) => {
+            log::debug!("{} - {} curse packages fetched", flavor, packages.len());
+            packages
+        }
+        Err(error) => {
+            log::debug!("{} - {} curse returned an error", flavor, error);
+            vec![]
+        }
+    };
 
     // Get all tukui repo packages
-    let tukui_repo_packages = tukui::batch_fetch_repo_packages(flavor, &tukui_ids).await?;
-
-    log::debug!(
-        "{} - {} tukui packages fetched",
-        flavor,
-        tukui_repo_packages.len()
-    );
+    let tukui_repo_packages_result = tukui::batch_fetch_repo_packages(flavor, &tukui_ids).await;
+    let tukui_repo_packages = match tukui_repo_packages_result {
+        Ok(packages) => {
+            log::debug!("{} - {} tukui packages fetched", flavor, packages.len());
+            packages
+        }
+        Err(error) => {
+            log::debug!("{} - {} tukui returned an error", flavor, error);
+            vec![]
+        }
+    };
 
     // Get all wowi repo packages
-    let wowi_repo_packages = wowi::batch_fetch_repo_packages(flavor, &wowi_ids).await?;
-
-    log::debug!(
-        "{} - {} wowi packages fetched",
-        flavor,
-        wowi_repo_packages.len()
-    );
+    let wowi_repo_packages_result = wowi::batch_fetch_repo_packages(flavor, &wowi_ids).await;
+    let wowi_repo_packages = match wowi_repo_packages_result {
+        Ok(packages) => {
+            log::debug!("{} - {} wowi packages fetched", flavor, packages.len());
+            packages
+        }
+        Err(error) => {
+            log::debug!("{} - {} wowi returned an error", flavor, error);
+            vec![]
+        }
+    };
 
     // Get all hub repo packages
-    let hub_repo_packages = hub::batch_fetch_repo_packages(flavor, &hub_ids).await?;
-
-    log::debug!(
-        "{} - {} hub packages fetched",
-        flavor,
-        hub_repo_packages.len()
-    );
+    let hub_repo_packages_result = hub::batch_fetch_repo_packages(flavor, &hub_ids).await;
+    let hub_repo_packages = match hub_repo_packages_result {
+        Ok(packages) => {
+            log::debug!("{} - {} hub packages fetched", flavor, packages.len());
+            packages
+        }
+        Err(error) => {
+            log::debug!("{} - {} hub returned an error", flavor, error);
+            vec![]
+        }
+    };
 
     // Get all git repo packages
-    let git_repo_packages = git::batch_fetch_repo_packages(flavor, &git_urls).await?;
-
-    log::debug!(
-        "{} - {} git packages fetched",
-        flavor,
-        git_repo_packages.len()
-    );
+    let git_repo_packages_result = git::batch_fetch_repo_packages(flavor, &git_urls).await;
+    let git_repo_packages = match git_repo_packages_result {
+        Ok(packages) => {
+            log::debug!("{} - {} git packages fetched", flavor, packages.len());
+            packages
+        }
+        Err(error) => {
+            log::debug!("{} - {} git returned an error", flavor, error);
+            vec![]
+        }
+    };
 
     Ok([
         &curse_repo_packages[..],

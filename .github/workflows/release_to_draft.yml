@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         target:
-          - target: windows-wgpu
+          - target: windows
             os: windows-latest
             make: make binary
             binary_path: target/release/ajour.exe
@@ -26,7 +26,7 @@ jobs:
             make: make binary NOSELFUPDATE=1
             binary_path: target/release/ajour.exe
 
-          - target: linux-wgpu
+          - target: linux
             os: ubuntu-16.04
             make: make appimage
             binary_path: ajour.AppImage
@@ -35,7 +35,7 @@ jobs:
             make: make appimage OPENGL=1
             binary_path: ajour-opengl.AppImage
 
-          - target: macos-wgpu
+          - target: macos
             os: macos-latest
             make: make dmg MACOS=1
             binary_path: target/release/osx/ajour.dmg
@@ -43,7 +43,7 @@ jobs:
             os: macos-latest
             make: make dmg OPENGL=1 MACOS=1
             binary_path: target/release/osx/ajour-opengl.dmg
-          - target: macos-wgpu-tar
+          - target: macos-tar
             os: macos-latest
             make: make tar MACOS=1
             binary_path: target/release/ajour.tar.gz
@@ -128,7 +128,7 @@ jobs:
     strategy:
       matrix:
         target:
-          - artifact: windows-wgpu
+          - artifact: windows
             artifact_name: ajour.exe
             asset_name: ajour.exe
             asset_type: application/x-dosexec
@@ -141,7 +141,7 @@ jobs:
             asset_name: ajour-noselfupdate.exe
             asset_type: application/x-dosexec
 
-          - artifact: linux-wgpu
+          - artifact: linux
             artifact_name: ajour.AppImage
             asset_name: ajour.AppImage
             asset_type: application/x-executable
@@ -150,7 +150,7 @@ jobs:
             asset_name: ajour-opengl.AppImage
             asset_type: application/x-executable
 
-          - artifact: macos-wgpu
+          - artifact: macos
             artifact_name: ajour.dmg
             asset_name: ajour.dmg
             asset_type: application/octet-stream
@@ -158,7 +158,7 @@ jobs:
             artifact_name: ajour-opengl.dmg
             asset_name: ajour-opengl.dmg
             asset_type: application/octet-stream
-          - artifact: macos-wgpu-tar
+          - artifact: macos-tar
             artifact_name: ajour.tar.gz
             asset_name: ajour-macos.tar.gz
             asset_type: application/gzip
