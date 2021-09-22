@@ -27,11 +27,11 @@ jobs:
             binary_path: target/release/ajour.exe
 
           - target: linux
-            os: ubuntu-16.04
+            os: ubuntu-18.04
             make: make appimage
             binary_path: ajour.AppImage
           - target: linux-opengl
-            os: ubuntu-16.04
+            os: ubuntu-18.04
             make: make appimage OPENGL=1
             binary_path: ajour-opengl.AppImage
 
@@ -67,11 +67,11 @@ jobs:
           override: true
 
       - name: Install dependencies
-        if: ${{ matrix.target.os == 'ubuntu-16.04' }}
+        if: ${{ matrix.target.os == 'ubuntu-18.04' }}
         run: sudo apt install libxkbcommon-dev
 
       - name: Do we need linuxdeploy?
-        if: ${{ matrix.target.os == 'ubuntu-16.04' }}
+        if: ${{ matrix.target.os == 'ubuntu-18.04' }}
         run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
