@@ -16,6 +16,7 @@ and `Removed`.
 
 ### Fixed
 
+- Better handling of the new TOC format with flavor in the filename.
 - Better error handling if a source goes down.
 
 ## [1.3.1] - 2021-09-12
