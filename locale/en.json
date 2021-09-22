@@ -148,5 +148,6 @@
     "all-sources": "All Sources",
     "share-addons-title": "Import and Export a YAML file of your addons",
     "share-addons-import": "Import",
-    "share-addons-export": "Export"
+    "share-addons-export": "Export",
+    "keybindings-enabled": "Enable keybindings"
 }

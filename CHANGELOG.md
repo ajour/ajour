@@ -14,8 +14,14 @@ and `Removed`.
 
 ## [Unreleased]
 
+
+### Added
+
+- Option to disable keybindings in Ajour.
+
 ### Fixed
 
+- Resolved a issue where keybindings would trigger with modifiers.
 - Better handling of the new TOC format with flavor in the filename.
 - Better error handling if a source goes down.
 

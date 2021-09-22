@@ -2308,6 +2308,12 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
             ajour.config.alternating_row_colors = is_set;
             let _ = ajour.config.save();
         }
+        Message::Interaction(Interaction::KeybindingsToggle(is_set)) => {
+            log::debug!("Interaction::KeybindingsToggle(is_set: {})", is_set,);
+
+            ajour.config.is_keybindings_enabled = is_set;
+            let _ = ajour.config.save();
+        }
         Message::Interaction(Interaction::ExportAddons) => {
             log::debug!("Interaction::ExportAddons");
 
@@ -2427,48 +2433,61 @@ pub fn handle_message(ajour: &mut Ajour, message: Message) -> Result<Command<Mes
         Message::RuntimeEvent(iced_native::Event::Keyboard(
             iced_native::keyboard::Event::KeyReleased {
                 key_code,
-                modifiers: _,
+                modifiers,
             },
-        )) => match key_code {
-            iced::keyboard::KeyCode::A => {
-                let flavor = ajour.config.wow.flavor;
-                ajour.mode = Mode::MyAddons(flavor);
+        )) => {
+            // Bail out of keybindings if keybindings is diabled, or we are
+            // pressing any modifiers.
+            if !ajour.config.is_keybindings_enabled
+                || modifiers != iced::keyboard::Modifiers::default()
+            {
+                return Ok(Command::none());
             }
-            iced::keyboard::KeyCode::C => {
-                ajour.mode = Mode::Catalog;
-            }
-            iced::keyboard::KeyCode::R => {
-                let mode = ajour.mode.clone();
-                return handle_message(ajour, Message::Interaction(Interaction::Refresh(mode)));
-            }
-            iced::keyboard::KeyCode::S => {
-                ajour.mode = Mode::Settings;
-            }
-            iced::keyboard::KeyCode::U => {
-                let mode = ajour.mode.clone();
-                return handle_message(ajour, Message::Interaction(Interaction::UpdateAll(mode)));
-            }
-            iced::keyboard::KeyCode::W => {
-                let flavor = ajour.config.wow.flavor;
-                ajour.mode = Mode::MyWeakAuras(flavor);
-            }
-            iced::keyboard::KeyCode::I => {
-                ajour.mode = Mode::Install;
-            }
-            iced::keyboard::KeyCode::Escape => match ajour.mode {
-                Mode::Settings | Mode::About => {
-                    ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+
+            match key_code {
+                iced::keyboard::KeyCode::A => {
+                    let flavor = ajour.config.wow.flavor;
+                    ajour.mode = Mode::MyAddons(flavor);
                 }
-                Mode::MyAddons(_) => {
-                    ajour.addons_search_state.query = None;
+                iced::keyboard::KeyCode::C => {
+                    ajour.mode = Mode::Catalog;
                 }
-                Mode::Catalog => {
-                    ajour.catalog_search_state.query = None;
+                iced::keyboard::KeyCode::R => {
+                    let mode = ajour.mode.clone();
+                    return handle_message(ajour, Message::Interaction(Interaction::Refresh(mode)));
                 }
+                iced::keyboard::KeyCode::S => {
+                    ajour.mode = Mode::Settings;
+                }
+                iced::keyboard::KeyCode::U => {
+                    let mode = ajour.mode.clone();
+                    return handle_message(
+                        ajour,
+                        Message::Interaction(Interaction::UpdateAll(mode)),
+                    );
+                }
+                iced::keyboard::KeyCode::W => {
+                    let flavor = ajour.config.wow.flavor;
+                    ajour.mode = Mode::MyWeakAuras(flavor);
+                }
+                iced::keyboard::KeyCode::I => {
+                    ajour.mode = Mode::Install;
+                }
+                iced::keyboard::KeyCode::Escape => match ajour.mode {
+                    Mode::Settings | Mode::About => {
+                        ajour.mode = Mode::MyAddons(ajour.config.wow.flavor);
+                    }
+                    Mode::MyAddons(_) => {
+                        ajour.addons_search_state.query = None;
+                    }
+                    Mode::Catalog => {
+                        ajour.catalog_search_state.query = None;
+                    }
+                    _ => (),
+                },
                 _ => (),
-            },
-            _ => (),
-        },
+            }
+        }
         Message::Interaction(Interaction::PickBackupCompressionFormat(format)) => {
             log::debug!("Interaction::PickBackupCompressionFormat({:?})", format);
             ajour.config.compression_format = format;

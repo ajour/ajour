@@ -733,6 +733,23 @@ pub fn data_container<'a, 'b>(
         Column::new().push(checkbox_container)
     };
 
+    let enabled_keybindings_column = {
+        let checkbox = Checkbox::new(
+            config.is_keybindings_enabled,
+            localized_string("keybindings-enabled"),
+            Interaction::KeybindingsToggle,
+        )
+        .style(style::DefaultCheckbox(color_palette))
+        .text_size(DEFAULT_FONT_SIZE)
+        .spacing(5);
+
+        let checkbox: Element<Interaction> = checkbox.into();
+
+        let checkbox_container = Container::new(checkbox.map(Message::Interaction))
+            .style(style::NormalBackgroundContainer(color_palette));
+        Column::new().push(checkbox_container)
+    };
+
     let self_update_channel_container = {
         let channel_title = Container::new(
             Text::new(localized_string("ajour-update-channel")).size(DEFAULT_FONT_SIZE),
@@ -853,6 +870,8 @@ pub fn data_container<'a, 'b>(
         .push(self_update_channel_container)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(config_column)
+        .push(Space::new(Length::Units(0), Length::Units(10)))
+        .push(enabled_keybindings_column)
         .push(Space::new(Length::Units(0), Length::Units(10)))
         .push(auto_update_column);
 
