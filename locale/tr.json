@@ -148,5 +148,6 @@
     "all-sources": "Tüm Kaynaklar",
     "share-addons-title": "Eklentilerinizin bir YAML dosyasını içe ve dışa aktarın",
     "share-addons-import": "İçe aktarmak",
-    "share-addons-export": "İhracat"
+    "share-addons-export": "İhracat",
+    "keybindings-enabled": "Tuş bağlamaları etkinleştir"
 }

@@ -148,5 +148,6 @@
     "all-sources": "Усі джерела",
     "share-addons-title": "Імпортуйте та експортуйте YAML -файл ваших доповнень",
     "share-addons-import": "Імпорт",
-    "share-addons-export": "Експорт"
+    "share-addons-export": "Експорт",
+    "keybindings-enabled": "Увімкнути зв’язки клавіш"
 }
