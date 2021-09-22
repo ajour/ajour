@@ -14,7 +14,6 @@ and `Removed`.
 
 ## [Unreleased]
 
-
 ### Added
 
 - Option to disable keybindings in Ajour.
