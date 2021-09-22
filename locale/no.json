@@ -81,7 +81,7 @@
     "unignore": "Inkluder",
     "unknown": "Ukjent",
     "unpacking": "Pakker ut",
-    "update": "Oppdater",
+    "update": "Last inn på ny",
     "update-all": "Oppdater alle",
     "ajour-update-channel": "Ajour oppdateringskanal",
     "updating": "Oppdaterer",
@@ -148,5 +148,6 @@
     "all-sources": "Alle kilder",
     "share-addons-title": "Importer og eksporter en YAML-fil med addons",
     "share-addons-import": "Import",
-    "share-addons-export": "Eksport"
+    "share-addons-export": "Eksport",
+    "keybindings-enabled": "Aktiver nøkkelbindinger"
 }

@@ -148,5 +148,6 @@
     "all-sources": "Összes forrás",
     "share-addons-title": "Importálja és exportálja a kiegészítők YAML -fájlját",
     "share-addons-import": "Importálás",
-    "share-addons-export": "Export"
+    "share-addons-export": "Export",
+    "keybindings-enabled": "A billentyűzet -bekapcsolás engedélyezése"
 }

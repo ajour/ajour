@@ -148,5 +148,6 @@
     "all-sources": "Todas las fuentes",
     "share-addons-title": "Importa y exporta un archivo YAML de tus complementos",
     "share-addons-import": "Importar",
-    "share-addons-export": "Exportar"
+    "share-addons-export": "Exportar",
+    "keybindings-enabled": "Habilitar combinaciones de teclas"
 }

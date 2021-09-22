@@ -148,5 +148,6 @@
     "all-sources": "Alla källor",
     "share-addons-title": "Importera och exportera en YAML-fil med dina addons",
     "share-addons-import": "Importera",
-    "share-addons-export": "Exportera"
+    "share-addons-export": "Exportera",
+    "keybindings-enabled": "Aktivera nyckelbindningar"
 }

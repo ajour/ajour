@@ -148,5 +148,6 @@
     "all-sources": "Alle Quellen",
     "share-addons-title": "Importieren und exportieren Sie eine YAML-Datei Ihrer Addons",
     "share-addons-import": "Importieren",
-    "share-addons-export": "Export"
+    "share-addons-export": "Export",
+    "keybindings-enabled": "Tastenkombinationen aktivieren"
 }
