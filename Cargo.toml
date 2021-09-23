@@ -1,7 +1,7 @@
 [package]
 name = "ajour"
 description = "A World of Warcraft addon manager"
-version = "1.3.2-rc.1"
+version = "1.3.2"
 authors = ["Casper Rogild Storm"]
 license = "GPL-3.0"
 homepage = "https://github.com/ajour/ajour"
@@ -19,9 +19,9 @@ no-self-update = ["ajour-core/no-self-update"]
 debug = ["iced/debug"]
 
 [dependencies]
-ajour-core = { version = "1.3.2-rc.1", path = "crates/core", features=['gui'] }
-ajour-weak-auras = { version = "1.3.2-rc.1", path = "crates/weak_auras" }
-ajour-widgets = { version = "1.3.2-rc.1", path = "crates/widgets" }
+ajour-core = { version = "1.3.2", path = "crates/core", features=['gui'] }
+ajour-weak-auras = { version = "1.3.2", path = "crates/weak_auras" }
+ajour-widgets = { version = "1.3.2", path = "crates/widgets" }
 
 iced = { version = "0.3.0", default-features = false }
 iced_futures = { version = "0.3.0", features = ["async-std"] }
