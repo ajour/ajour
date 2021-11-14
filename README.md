@@ -1,8 +1,8 @@
 <!-- markdownlint-disable MD004 MD033 -->
 
 <div align="center">
-
-# Ajour
+  
+# Ajour is closing down. Read: https://github.com/ajour/ajour/issues/746.
 
 ![Continuous integration](https://github.com/ajour/ajour/workflows/Continuous-integration/badge.svg)
 ![Security audit](https://github.com/ajour/ajour/workflows/Security%20audit/badge.svg)
