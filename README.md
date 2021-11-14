@@ -1,4 +1,5 @@
-<!-- markdownlint-disable MD004 MD033 -->
+<!-- markdownlint-disable MD004 MD033 MD034 -->
+
 <div align="center">
   
 # https://github.com/ajour/ajour/issues/746
