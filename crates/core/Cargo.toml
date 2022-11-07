@@ -23,7 +23,7 @@ name = "parse_addon_directory"
 name = "parse_toc"
 
 [dependencies]
-regex = "1.4.3"
+regex = "1.5.5"
 fancy-regex = "0.5.0" # Regex with backtracking
 async-std = { version = "1.9.0", features = ["unstable"] }
 dirs-next = "2.0.0"
