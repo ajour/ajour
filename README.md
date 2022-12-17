@@ -1,6 +1,7 @@
 <!-- markdownlint-disable MD004 MD033 MD034 -->
 
 <div align="center">
+  
 # Ajour
 
 ![Continuous integration](https://github.com/ajour/ajour/workflows/Continuous-integration/badge.svg)
