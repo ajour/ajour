@@ -1,10 +1,6 @@
 <!-- markdownlint-disable MD004 MD033 MD034 -->
 
 <div align="center">
-  
-## Ajour is no longer maintained. Please read https://github.com/ajour/ajour/issues/746.
-Thank you all for the support, the feedback and for being an awesome community.
-
 # Ajour
 
 ![Continuous integration](https://github.com/ajour/ajour/workflows/Continuous-integration/badge.svg)
