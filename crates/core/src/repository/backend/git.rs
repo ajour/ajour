@@ -261,6 +261,7 @@ mod github {
     /// Eg:
     /// `foobar-classic` => ClassicEra file.
     /// `foobar-bcc` => ClassicTbc file.
+    /// `foobar-wotlk` => ClassicWotlk file.
     fn find_asset_fallback(release: &Release, flavor: Flavor) -> Option<&ReleaseAsset> {
         let asset = release.assets.iter().find(|a| match flavor.base_flavor() {
             Flavor::Retail => {
@@ -269,6 +270,7 @@ mod github {
                     && !a.name.to_lowercase().contains("vanilla")
                     && !a.name.to_lowercase().contains("bcc")
                     && !a.name.to_lowercase().contains("tbc")
+                    && !a.name.to_lowercase().contains("wotlk")
             }
             Flavor::ClassicEra => {
                 a.name.ends_with("zip")
@@ -276,6 +278,7 @@ mod github {
                         || a.name.to_lowercase().contains("vanilla"))
                     && !a.name.to_lowercase().contains("bcc")
                     && !a.name.to_lowercase().contains("tbc")
+                    && !a.name.to_lowercase().contains("wotlk")
             }
             Flavor::ClassicTbc => {
                 a.name.ends_with("zip")
@@ -283,6 +286,15 @@ mod github {
                     && !a.name.to_lowercase().contains("vanilla")
                     && (a.name.to_lowercase().contains("bcc")
                         || a.name.to_lowercase().contains("tbc"))
+                    && !a.name.to_lowercase().contains("wotlk")
+            }
+            Flavor::ClassicWotlk => {
+                a.name.ends_with("zip")
+                    && !a.name.to_lowercase().contains("classic")
+                    && !a.name.to_lowercase().contains("vanilla")
+                    && !a.name.to_lowercase().contains("bcc")
+                    && !a.name.to_lowercase().contains("tbc")
+                    && a.name.to_lowercase().contains("wotlk")
             }
             _ => a.name.ends_with("zip"),
         });
@@ -413,6 +425,7 @@ mod gitlab {
                         && !a.name.to_lowercase().contains("vanilla")
                         && !a.name.to_lowercase().contains("bcc")
                         && !a.name.to_lowercase().contains("tbc")
+                        && !a.name.to_lowercase().contains("wotlk")
                 }
                 Flavor::ClassicEra => {
                     a.name.ends_with("zip")
@@ -420,6 +433,7 @@ mod gitlab {
                             || a.name.to_lowercase().contains("vanilla"))
                         && !a.name.to_lowercase().contains("bcc")
                         && !a.name.to_lowercase().contains("tbc")
+                        && !a.name.to_lowercase().contains("wotlk")
                 }
                 Flavor::ClassicTbc => {
                     a.name.ends_with("zip")
@@ -427,6 +441,15 @@ mod gitlab {
                         && !a.name.to_lowercase().contains("vanilla")
                         && (a.name.to_lowercase().contains("bcc")
                             || a.name.to_lowercase().contains("tbc"))
+                        && !a.name.to_lowercase().contains("wotlk")
+                }
+                Flavor::ClassicWotlk => {
+                    a.name.ends_with("zip")
+                        && !a.name.to_lowercase().contains("classic")
+                        && !a.name.to_lowercase().contains("vanilla")
+                        && !a.name.to_lowercase().contains("bcc")
+                        && !a.name.to_lowercase().contains("tbc")
+                        && a.name.to_lowercase().contains("wotlk")
                 }
                 _ => a.name.ends_with("zip"),
             });

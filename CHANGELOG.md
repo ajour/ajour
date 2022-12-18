@@ -14,6 +14,20 @@ and `Removed`.
 
 ## [Unreleased]
 
+## [1.4.0] - 2022-12-18
+
+### Added
+
+- Support for WotLK.
+
+### Removed
+
+- Temporary removed support for CurseForge.
+
+### Fixed
+
+- Ajour now depends on another Ajour-Catalog.
+
 ## [1.3.2] - 2021-09-23
 
 ### Added

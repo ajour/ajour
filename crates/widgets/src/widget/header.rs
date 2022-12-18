@@ -160,8 +160,8 @@ where
 
         if self.state.resizing || in_bounds {
             let child_len = self.children.len();
-            let start_offset = if self.left_margin { 1 } else { 0 };
-            let end_offset = if self.right_margin { 1 } else { 0 };
+            let start_offset = usize::from(self.left_margin);
+            let end_offset = usize::from(self.right_margin);
 
             let dividers = self
                 .children
@@ -232,9 +232,9 @@ where
 
                         let max_width = left_width + right_width - 30.0;
 
-                        let left_width = (left_width + delta).max(30.0).min(max_width) as u16;
+                        let left_width = (left_width + delta).clamp(30.0, max_width) as u16;
                         let left_name = &self.names[self.state.resizing_idx - start_offset];
-                        let right_width = (right_width - delta).max(30.0).min(max_width) as u16;
+                        let right_width = (right_width - delta).clamp(30.0, max_width) as u16;
                         let right_name = &self.names[self.state.resizing_idx + 1 - start_offset];
 
                         self.trigger_resize(

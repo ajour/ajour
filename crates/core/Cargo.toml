@@ -1,7 +1,7 @@
 [package]
 name = "ajour-core"
 description = "Core library for Ajour"
-version = "1.3.2"
+version = "1.4.0"
 authors = ["Casper Rogild Storm"]
 license = "GPL-3.0"
 homepage = "https://github.com/ajour/ajour"

@@ -72,7 +72,15 @@ sudo apt install build-essential cmake libxft-dev libssl-dev libx11-dev libxkbco
 If your system has extra dependencies, and they are not listed here please create
 a [pull-request](https://github.com/ajour/ajour/pulls) or open a [issue](https://github.com/ajour/ajour/issues).
 
-### Building
+### Development
+
+#### Linux / Windows / macOS
+
+```sh
+cargo run
+```
+
+### Building release
 
 #### Linux / Windows
 

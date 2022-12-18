@@ -55,7 +55,7 @@ fn main() {
         let addon_cache = Some(Arc::new(Mutex::new(load_addon_cache().await.unwrap())));
 
         let addons =
-            read_addon_directory(addon_cache, fingerprint_cache, &path, Flavor::ClassicTbc)
+            read_addon_directory(addon_cache, fingerprint_cache, &path, Flavor::ClassicWotlk)
                 .await
                 .unwrap();
 

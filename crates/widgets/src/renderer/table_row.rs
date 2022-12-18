@@ -37,9 +37,9 @@ where
             if style.background.is_some() {
                 let background = Primitive::Quad {
                     bounds: Rectangle {
-                        x: bounds.x + style.offset_left as f32,
+                        x: bounds.x + style.offset_left,
                         y: bounds.y,
-                        width: bounds.width - style.offset_right as f32,
+                        width: bounds.width - style.offset_right,
                         height: custom_bounds.height,
                     },
                     background: style

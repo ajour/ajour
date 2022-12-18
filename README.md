@@ -2,9 +2,6 @@
 
 <div align="center">
   
-## Ajour is no longer maintained. Please read https://github.com/ajour/ajour/issues/746.
-Thank you all for the support, the feedback and for being an awesome community.
-
 # Ajour
 
 ![Continuous integration](https://github.com/ajour/ajour/workflows/Continuous-integration/badge.svg)
@@ -56,7 +53,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 
 - Addons will be parsed automatically and resolved from multiple repositories:
   - [Tukui](https://www.tukui.org/)
-  - [CurseForge](https://www.curseforge.com/wow/addons)
+  - [CurseForge](https://www.curseforge.com/wow/addons) (temporary disabled)
   - [WoWInterface](https://www.wowinterface.com/)
   - [Hub](https://wowup.io/)
 - Install new addons from the catalog or directly from a GitHub/GitLab URL
@@ -66,8 +63,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 - Bulk addon update without any limitations
 - Remove addons and their dependencies
 - Ignore addons you don't want to update
-- Supports both Retail, Classic Era, Classic Tbc, Ptr and Beta versions of
-  World of Warcraft
+- Supports Retail, Classic Era, TBC, WotLK, PTR and Beta versions of WoW.
 - 10+ handcrafted themes to choose between
   - [Ability to add your own custom themes](#themes)
 - Ability to backup your whole UI, including all settings from WTF

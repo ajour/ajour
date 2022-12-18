@@ -15,7 +15,7 @@ name: Continuous-integration
 jobs:
   check:
     name: Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # https://github.com/actions/runner-images/issues/6697
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -41,7 +41,7 @@ jobs:
 
   test:
     name: Test Suite
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # https://github.com/actions/runner-images/issues/6697
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
@@ -69,7 +69,7 @@ jobs:
 
   fmt:
     name: Rustfmt
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # https://github.com/actions/runner-images/issues/6697
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -85,7 +85,7 @@ jobs:
 
   clippy:
     name: Clippy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # https://github.com/actions/runner-images/issues/6697
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
@@ -108,7 +108,7 @@ jobs:
   
   poeditor:
     name: POEditor
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # https://github.com/actions/runner-images/issues/6697
     steps:
       - uses: actions/checkout@v2
       - name: Push terms to POEditor

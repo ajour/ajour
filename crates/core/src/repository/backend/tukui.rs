@@ -56,7 +56,8 @@ impl Backend for Tukui {
                     }
                 }
             }
-            Flavor::ClassicTbc
+            Flavor::ClassicWotlk
+            | Flavor::ClassicTbc
             | Flavor::ClassicPtr
             | Flavor::ClassicBeta
             | Flavor::ClassicEra
@@ -117,6 +118,7 @@ fn format_flavor(flavor: &Flavor) -> String {
     let base_flavor = flavor.base_flavor();
     match base_flavor {
         Flavor::Retail => "retail".to_owned(),
+        Flavor::ClassicWotlk => "wotlk".to_owned(),
         Flavor::ClassicTbc => "tbc".to_owned(),
         Flavor::ClassicEra => "classic".to_owned(),
         _ => panic!("Unknown base flavor {}", base_flavor),
@@ -143,7 +145,11 @@ fn changelog_endpoint(id: &str, flavor: &Flavor) -> String {
             "https://www.tukui.org/classic-addons.php?id={}&changelog",
             id
         ),
-        Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => format!(
+        Flavor::ClassicWotlk | Flavor::ClassicPtr | Flavor::ClassicBeta => format!(
+            "https://www.tukui.org/classic-wotlk-addons.php?id={}&changelog",
+            id
+        ),
+        Flavor::ClassicTbc => format!(
             "https://www.tukui.org/classic-tbc-addons.php?id={}&changelog",
             id
         ),
