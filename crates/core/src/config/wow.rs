@@ -50,19 +50,24 @@ pub enum Flavor {
         alias = "bcc"
     )]
     ClassicTbc,
+    #[serde(
+        alias = "wotlk"
+    )]
+    ClassicWotlk,
     #[serde(alias = "ClassicPTR")]
     ClassicPtr,
     ClassicBeta,
 }
 
 impl Flavor {
-    pub const ALL: [Flavor; 8] = [
+    pub const ALL: [Flavor; 9] = [
         Flavor::Retail,
         Flavor::RetailPtr,
         Flavor::RetailBeta,
         Flavor::ClassicEra,
         Flavor::ClassicEraPtr,
         Flavor::ClassicTbc,
+        Flavor::ClassicWotlk,
         Flavor::ClassicPtr,
         Flavor::ClassicBeta,
     ];
@@ -71,7 +76,11 @@ impl Flavor {
     pub(crate) fn curse_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "wow_retail".to_owned(),
-            Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => {
+            Flavor::ClassicWotlk | Flavor::ClassicPtr | Flavor::ClassicBeta => {
+                // Fixme. Fake value, as CurseForge is ignored
+                "wow_wotlk".to_owned()
+            }
+            Flavor::ClassicTbc => {
                 "wow_burning_crusade".to_owned()
             }
             Flavor::ClassicEra | Flavor::ClassicEraPtr => "wow_classic".to_owned(),
@@ -82,7 +91,10 @@ impl Flavor {
     pub(crate) fn hub_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "retail".to_owned(),
-            Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => {
+            Flavor::ClassicWotlk | Flavor::ClassicPtr | Flavor::ClassicBeta => {
+                "wotlk".to_owned()
+            },
+            Flavor::ClassicTbc => {
                 "burningCrusade".to_owned()
             }
             Flavor::ClassicEra | Flavor::ClassicEraPtr => "classic".to_owned(),
@@ -93,7 +105,8 @@ impl Flavor {
     pub fn base_flavor(self) -> Flavor {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => Flavor::Retail,
-            Flavor::ClassicTbc | Flavor::ClassicPtr | Flavor::ClassicBeta => Flavor::ClassicTbc,
+            Flavor::ClassicWotlk | Flavor::ClassicPtr | Flavor::ClassicBeta => Flavor::ClassicWotlk,
+            Flavor::ClassicTbc => Flavor::ClassicTbc,
             Flavor::ClassicEra | Flavor::ClassicEraPtr => Flavor::ClassicEra,
         }
     }
@@ -106,7 +119,8 @@ impl Flavor {
             Flavor::RetailBeta => "_beta_".to_owned(),
             Flavor::ClassicEra => "_classic_era_".to_owned(),
             Flavor::ClassicEraPtr => "_classic_era_ptr_".to_owned(),
-            Flavor::ClassicTbc => "_classic_".to_owned(),
+            Flavor::ClassicTbc => "_classic_tbc_".to_owned(), // Fake value. There is no Classic TBC
+            Flavor::ClassicWotlk => "_classic_".to_owned(),
             Flavor::ClassicPtr => "_classic_ptr_".to_owned(),
             Flavor::ClassicBeta => "_classic_beta_".to_owned(),
         }
@@ -131,6 +145,7 @@ impl std::fmt::Display for Flavor {
                 Flavor::ClassicEra => "Classic Era",
                 Flavor::ClassicEraPtr => "Classic Era PTR",
                 Flavor::ClassicTbc => "Classic TBC",
+                Flavor::ClassicWotlk => "Classic WotLK",
                 Flavor::ClassicBeta => "Classic Beta",
                 Flavor::ClassicPtr => "Classic PTR",
             }

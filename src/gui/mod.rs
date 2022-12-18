@@ -2544,6 +2544,7 @@ fn apply_config(ajour: &mut Ajour, mut config: Config) {
 
     // Migration for the new TBC client. Link ClassicEra flavor to `_classic_era_` instead of
     // `_classic_`
+    // TODO. Decide. Should it be done for TBC => WotLK migration?
     {
         if let Some(classic_era_dir) = config.wow.directories.get(&Flavor::ClassicEra) {
             if classic_era_dir.ends_with("_classic_") {

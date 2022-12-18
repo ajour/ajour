@@ -63,7 +63,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 - Bulk addon update without any limitations
 - Remove addons and their dependencies
 - Ignore addons you don't want to update
-- Supports both Retail, Classic Era, Classic Tbc, Ptr and Beta versions of
+- Supports both Retail, Classic Era, Classic Tbc, Classic Wotlk, Ptr and Beta versions of
   World of Warcraft
 - 10+ handcrafted themes to choose between
   - [Ability to add your own custom themes](#themes)
