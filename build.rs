@@ -12,6 +12,6 @@ fn main() {
         Ok("linux") => {
             // noop
         }
-        tos => panic!("unknown target os {:?}!", tos)
+        tos => panic!("unknown target os {:?}!", tos),
     }
 }

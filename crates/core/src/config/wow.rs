@@ -50,9 +50,7 @@ pub enum Flavor {
         alias = "bcc"
     )]
     ClassicTbc,
-    #[serde(
-        alias = "wotlk"
-    )]
+    #[serde(alias = "wotlk")]
     ClassicWotlk,
     #[serde(alias = "ClassicPTR")]
     ClassicPtr,
@@ -80,9 +78,7 @@ impl Flavor {
                 // Fixme. Fake value, as CurseForge is ignored
                 "wow_wotlk".to_owned()
             }
-            Flavor::ClassicTbc => {
-                "wow_burning_crusade".to_owned()
-            }
+            Flavor::ClassicTbc => "wow_burning_crusade".to_owned(),
             Flavor::ClassicEra | Flavor::ClassicEraPtr => "wow_classic".to_owned(),
         }
     }
@@ -91,12 +87,8 @@ impl Flavor {
     pub(crate) fn hub_format(self) -> String {
         match self {
             Flavor::Retail | Flavor::RetailPtr | Flavor::RetailBeta => "retail".to_owned(),
-            Flavor::ClassicWotlk | Flavor::ClassicPtr | Flavor::ClassicBeta => {
-                "wotlk".to_owned()
-            },
-            Flavor::ClassicTbc => {
-                "burningCrusade".to_owned()
-            }
+            Flavor::ClassicWotlk | Flavor::ClassicPtr | Flavor::ClassicBeta => "wotlk".to_owned(),
+            Flavor::ClassicTbc => "burningCrusade".to_owned(),
             Flavor::ClassicEra | Flavor::ClassicEraPtr => "classic".to_owned(),
         }
     }
