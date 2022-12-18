@@ -326,7 +326,7 @@ impl std::fmt::Display for Language {
                 Language::Spanish => "Español",
                 Language::Swedish => "Svenska",
                 Language::Turkish => "Türkçe",
-                Language::Ukrainian => "Yкраїнська",
+                Language::Ukrainian => "Українська",
             }
         )
     }
