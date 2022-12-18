@@ -53,7 +53,7 @@ respecting and open source. Ajour currently supports Windows, macOS and Linux.
 
 - Addons will be parsed automatically and resolved from multiple repositories:
   - [Tukui](https://www.tukui.org/)
-  - [CurseForge](https://www.curseforge.com/wow/addons)
+  - [CurseForge](https://www.curseforge.com/wow/addons) (temporary disabled)
   - [WoWInterface](https://www.wowinterface.com/)
   - [Hub](https://wowup.io/)
 - Install new addons from the catalog or directly from a GitHub/GitLab URL
