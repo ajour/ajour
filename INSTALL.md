@@ -73,7 +73,9 @@ If your system has extra dependencies, and they are not listed here please creat
 a [pull-request](https://github.com/ajour/ajour/pulls) or open a [issue](https://github.com/ajour/ajour/issues).
 
 ### Development
+
 #### Linux / Windows / macOS
+
 ```sh
 cargo run
 ```
@@ -93,6 +95,7 @@ target/release/ajour
 ```
 
 #### macOS
+
 ```sh
 make app
 cp -r target/release/osx/Ajour.app /Applications/
