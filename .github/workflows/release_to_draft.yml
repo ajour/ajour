@@ -107,7 +107,7 @@ jobs:
     name: Create Release
     outputs:
       upload_url: ${{ steps.create-release.outputs.upload_url }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # https://github.com/actions/runner-images/issues/6697
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -171,7 +171,7 @@ jobs:
             asset_name: ajour-noselfupdate-macos.tar.gz
             asset_type: application/gzip
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # https://github.com/actions/runner-images/issues/6697
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

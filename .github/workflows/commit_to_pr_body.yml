@@ -7,7 +7,7 @@ name: Pull Request updated
 jobs:
   history:
     name: Pull Request Body
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04 # https://github.com/actions/runner-images/issues/6697
     if: startsWith(github.event.pull_request.head.ref, 'release/')
     steps:
       - name: Pull Request Body
